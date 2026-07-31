@@ -40,10 +40,10 @@
 
 **Files:** `VocabularyApiTest.php`, `VocabularyCanonicalApiTest.php`, `VocabularyRelinkApiTest.php`, `archive-next/app/vocabulary/page.tsx`.
 
-- [ ] Run the three vocabulary Laravel suites and `pnpm --filter @archive/next test -- lib/archive-api.test.ts`.
-- [ ] Verify canonical terms, aliases, taxonomy linkage, and department ordering preserve the shared dictionary.
-- [ ] Test-first any missing people/place/event semantic before production changes; otherwise close AS-03.
-- [ ] Commit `docs(tasks): close AS-03 approved terminology`.
+- [x] Run the three vocabulary Laravel suites and `pnpm --filter @archive/next test -- lib/archive-api.test.ts`.
+- [x] Verify canonical terms, aliases, taxonomy linkage, and department ordering preserve the shared dictionary.
+- [x] Match the source configuration behavior: protected core categories plus per-user configurable categories with key, label, definition, icon, and order; validate them during manual entry and import.
+- [x] Commit `feat(vocabulary): complete AS-03 approved terminology`.
 
 ### Task 4: AS-04 Permissions and audit
 

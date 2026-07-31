@@ -655,7 +655,16 @@ export interface DepartmentRoutingPreview {
   toDepartmentId: string;
 }
 
-export type VocabularyKind = "type" | "tag" | "custom";
+export type VocabularyKind = "type" | "tag" | "person" | "place" | "event" | "custom" | (string & {});
+
+export interface VocabularyKindDefinition {
+  key: VocabularyKind;
+  label: string;
+  description: string | null;
+  icon: string | null;
+  order: number;
+  builtIn: boolean;
+}
 
 export interface VocabularyTerm {
   id: string;
@@ -1605,6 +1614,8 @@ export interface ArchiveApiClient {
   previewInboxDepartmentRouting(id: string, departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<DepartmentRoutingPreview>>;
   routeInboxDepartment(id: string, departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ departmentId: string; routingHistory: InboxItem["routingHistory"] }>>;
   vocabularyTerms(departmentId?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ terms: VocabularyTerm[]; preferredTermIds: string[] }>>;
+  vocabularyKinds(options?: AuthRequestOptions): Promise<ApiEnvelope<{ kinds: VocabularyKindDefinition[] }>>;
+  replaceVocabularyKinds(kinds: Array<Omit<VocabularyKindDefinition, "builtIn">>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ kinds: VocabularyKindDefinition[] }>>;
   replaceDepartmentVocabularyPreferences(departmentId: string, termIds: string[], options?: AuthRequestOptions): Promise<ApiEnvelope<{ terms: VocabularyTerm[]; preferredTermIds: string[] }>>;
   createVocabularyTerm(payload: CreateVocabularyTermPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ term: VocabularyTerm }>>;
   deleteVocabularyTerm(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -2577,6 +2588,10 @@ export function createArchiveApiClient({
       post<{ departmentId: string; routingHistory: InboxItem["routingHistory"] }>(`/inbox/${encodeURIComponent(id)}/department-routing`, { departmentId }, options),
     vocabularyTerms: (departmentId?: string, options?: AuthRequestOptions) =>
       get<{ terms: VocabularyTerm[]; preferredTermIds: string[] }>(`/vocabulary${departmentId ? `?departmentId=${encodeURIComponent(departmentId)}` : ""}`, options),
+    vocabularyKinds: (options?: AuthRequestOptions) =>
+      get<{ kinds: VocabularyKindDefinition[] }>("/vocabulary/kinds", options),
+    replaceVocabularyKinds: (kinds, options) =>
+      put<{ kinds: VocabularyKindDefinition[] }>("/vocabulary/kinds", { kinds }, options),
     replaceDepartmentVocabularyPreferences: (departmentId: string, termIds: string[], options?: AuthRequestOptions) =>
       put<{ terms: VocabularyTerm[]; preferredTermIds: string[] }>("/vocabulary/department-preferences", { departmentId, termIds }, options),
     createVocabularyTerm: (payload: CreateVocabularyTermPayload, options?: AuthRequestOptions) =>

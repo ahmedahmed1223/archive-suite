@@ -50,6 +50,53 @@ class VocabularyApiTest extends TestCase
             ->assertJsonPath('term.kind', 'custom');
     }
 
+    public function test_it_supports_person_place_and_event_terms(): void
+    {
+        foreach (['person' => 'مراسل', 'place' => 'غزة', 'event' => 'مؤتمر'] as $kind => $term) {
+            $this->postJson('/api/v1/vocabulary', ['term' => $term, 'kind' => $kind], $this->authHeaders())
+                ->assertCreated()
+                ->assertJsonPath('term.kind', $kind);
+        }
+    }
+
+    public function test_it_allows_configuring_additional_dictionary_categories(): void
+    {
+        $this->putJson('/api/v1/vocabulary/kinds', [
+            'kinds' => [[
+                'key' => 'organization',
+                'label' => 'مؤسسة',
+                'description' => 'الهيئات ووسائل الإعلام',
+                'icon' => '🏢',
+                'order' => 10,
+            ]],
+        ], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonFragment(['key' => 'organization', 'label' => 'مؤسسة']);
+
+        $this->postJson('/api/v1/vocabulary', [
+            'term' => 'وكالة الأنباء',
+            'kind' => 'organization',
+        ], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('term.kind', 'organization');
+
+        $this->getJson('/api/v1/vocabulary/kinds', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonFragment(['key' => 'organization', 'description' => 'الهيئات ووسائل الإعلام']);
+    }
+
+    public function test_it_preserves_a_configured_category_used_by_a_term(): void
+    {
+        $this->putJson('/api/v1/vocabulary/kinds', [
+            'kinds' => [['key' => 'organization', 'label' => 'مؤسسة']],
+        ], $this->authHeaders())->assertOk();
+        $this->postJson('/api/v1/vocabulary', ['term' => 'وكالة الأنباء', 'kind' => 'organization'], $this->authHeaders())
+            ->assertCreated();
+
+        $this->putJson('/api/v1/vocabulary/kinds', ['kinds' => []], $this->authHeaders())
+            ->assertUnprocessable();
+    }
+
     public function test_it_scopes_terms_to_the_owning_user(): void
     {
         $this->postJson('/api/v1/vocabulary', [

@@ -7,7 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { useCapability } from "@/components/RoleGate";
-import { createArchiveApiClient, type ArchiveRecord, type VocabularyTerm } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveRecord, type VocabularyKindDefinition, type VocabularyTerm } from "@/lib/archive-api";
 import { buildChangeImpact, countAffectedRecords } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
 import { selectMissingVocabularyTags } from "@/lib/default-taxonomy";
@@ -37,11 +37,15 @@ export default function VocabularyPage() {
   const [loadState, setLoadState] = useState<VocabularyLoadState>({ status: "loading" });
   const [error, setError] = useState("");
   const [terms, setTerms] = useState<VocabularyTerm[]>([]);
+  const [kindDefinitions, setKindDefinitions] = useState<VocabularyKindDefinition[]>([]);
   const [term, setTerm] = useState("");
   const [kind, setKind] = useState<Kind>("custom");
   const [aliases, setAliases] = useState("");
   const [canonicalTermId, setCanonicalTermId] = useState("");
   const [note, setNote] = useState("");
+  const [kindKey, setKindKey] = useState("");
+  const [kindLabel, setKindLabel] = useState("");
+  const [kindDescription, setKindDescription] = useState("");
   const [filter, setFilter] = useState("");
   const [departmentId, setDepartmentId] = useState("");
   const [preferredTermIds, setPreferredTermIds] = useState<string[]>([]);
@@ -89,10 +93,12 @@ export default function VocabularyPage() {
   async function loadVocabulary() {
     setLoadState({ status: "loading" });
     setError("");
-    const [termsResponse, recordsResponse] = await Promise.all([api.vocabularyTerms(), api.search({ limit: 1000 })]);
-    if (!termsResponse.ok || !recordsResponse.ok) {
+    const [termsResponse, kindsResponse, recordsResponse] = await Promise.all([api.vocabularyTerms(), api.vocabularyKinds(), api.search({ limit: 1000 })]);
+    if (!termsResponse.ok || !kindsResponse.ok || !recordsResponse.ok) {
       const message = !termsResponse.ok
         ? termsResponse.error || "تعذر تحميل المفردات."
+        : !kindsResponse.ok
+          ? kindsResponse.error || "تعذر تحميل فئات القاموس."
         : !recordsResponse.ok
           ? recordsResponse.error || "تعذر تحميل السجلات."
           : "تعذر تحميل بيانات المفردات.";
@@ -103,6 +109,7 @@ export default function VocabularyPage() {
       return;
     }
     setTerms(termsResponse.terms);
+    setKindDefinitions(kindsResponse.kinds);
     setPreferredTermIds(termsResponse.preferredTermIds);
     setRecords(recordsResponse.records);
     setLoadState({ status: "ready" });
@@ -181,6 +188,25 @@ export default function VocabularyPage() {
     setCanonicalTermId("");
     setNote("");
     setKind("custom");
+  }
+
+  async function addDictionaryCategory(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const key = kindKey.trim().toLowerCase();
+    const label = kindLabel.trim();
+    if (!key || !label || kindDefinitions.some((definition) => definition.key === key)) return;
+    const response = await api.replaceVocabularyKinds([
+      ...kindDefinitions.filter((definition) => !definition.builtIn).map(({ key: existingKey, label: existingLabel, description, icon, order }) => ({ key: existingKey, label: existingLabel, description, icon, order })),
+      { key, label, description: kindDescription.trim() || null, icon: null, order: 1000 + kindDefinitions.length }
+    ]);
+    if (!response.ok) {
+      setError(response.error || "تعذر حفظ فئة القاموس.");
+      return;
+    }
+    setKindDefinitions(response.kinds);
+    setKindKey("");
+    setKindLabel("");
+    setKindDescription("");
   }
 
   function adoptDiscovered(item: { term: string; kind: Kind }) {
@@ -269,9 +295,7 @@ export default function VocabularyPage() {
             <label>
               <span>النوع</span>
               <select value={kind} onChange={(event) => setKind(event.target.value as Kind)}>
-                <option value="custom">مخصص</option>
-                <option value="type">نوع محتوى</option>
-                <option value="tag">وسم</option>
+                {kindDefinitions.map((definition) => <option key={definition.key} value={definition.key}>{definition.icon ? `${definition.icon} ` : ""}{definition.label}</option>)}
               </select>
             </label>
             <label>
@@ -303,6 +327,24 @@ export default function VocabularyPage() {
           </div>
         )}
       </PageToolbar>
+
+      {canManageVocabulary && loadState.status === "ready" ? (
+        <section className="panel panel-compact" aria-labelledby="dictionary-categories">
+          <div className="panel-title-row">
+            <div>
+              <h2 id="dictionary-categories">فئات القاموس</h2>
+              <p>الفئات الأساسية محمية للتوافق؛ أضف فئات تشغيلية مثل المؤسسات أو الجنسيات من دون إنشاء قاموس منفصل.</p>
+            </div>
+            <span className="badge">{kindDefinitions.length} فئة</span>
+          </div>
+          <form className="archive-toolbar-grid" onSubmit={addDictionaryCategory}>
+            <label><span>المعرّف</span><input className="search-input" value={kindKey} onChange={(event) => setKindKey(event.target.value)} placeholder="organization" pattern="[a-z][a-z0-9_-]*" /></label>
+            <label><span>الاسم الظاهر</span><input className="search-input" value={kindLabel} onChange={(event) => setKindLabel(event.target.value)} placeholder="مؤسسة" /></label>
+            <label><span>الوصف</span><input className="search-input" value={kindDescription} onChange={(event) => setKindDescription(event.target.value)} placeholder="الهيئات ووسائل الإعلام" /></label>
+            <div className="archive-toolbar-actions"><button className="button button-secondary" type="submit" disabled={!kindKey.trim() || !kindLabel.trim()}>إضافة فئة</button></div>
+          </form>
+        </section>
+      ) : null}
 
       {loadState.status === "loading" ? (
         <div className="panel panel-compact"><Skeleton label="جار تحميل المفردات والسجلات..." /></div>

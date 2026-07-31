@@ -2576,6 +2576,31 @@
         }
       }
     },
+    "/vocabulary/kinds": {
+      "get": {
+        "tags": ["Vocabulary"],
+        "summary": "List the built-in and configured dictionary categories for the current user",
+        "operationId": "listVocabularyKinds",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Vocabulary categories", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VocabularyKindsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "put": {
+        "tags": ["Vocabulary"],
+        "summary": "Replace the additional dictionary categories for the current user",
+        "operationId": "replaceVocabularyKinds",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VocabularyKindsReplaceRequest" } } } },
+        "responses": {
+          "200": { "description": "Vocabulary categories", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VocabularyKindsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/vocabulary/{id}": {
       "delete": {
         "tags": ["Vocabulary"],
@@ -7201,7 +7226,7 @@
         "properties": {
           "id": { "type": "string" },
           "term": { "type": "string" },
-          "kind": { "type": "string", "enum": ["type", "tag", "custom"] },
+          "kind": { "type": "string", "maxLength": 64, "description": "Built-in or user-configured dictionary category key." },
           "aliases": { "type": ["string", "null"] },
           "canonicalTermId": { "type": ["string", "null"] },
           "note": { "type": ["string", "null"] },
@@ -7214,7 +7239,7 @@
         "required": ["term"],
         "properties": {
           "term": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "kind": { "type": "string", "enum": ["type", "tag", "custom"] },
+          "kind": { "type": "string", "maxLength": 64, "description": "Built-in or user-configured dictionary category key." },
           "aliases": { "type": "string", "maxLength": 500 },
           "canonicalTermId": { "type": ["string", "null"], "maxLength": 100 },
           "note": { "type": "string", "maxLength": 2000 }
@@ -7242,6 +7267,45 @@
               "preferredTermIds": { "type": "array", "items": { "type": "string" } }
             }
           }
+        ]
+      },
+      "VocabularyKind": {
+        "type": "object",
+        "required": ["key", "label", "description", "icon", "order", "builtIn"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$" },
+          "label": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "icon": { "type": ["string", "null"] },
+          "order": { "type": "integer", "minimum": 0 },
+          "builtIn": { "type": "boolean" }
+        }
+      },
+      "VocabularyKindsReplaceRequest": {
+        "type": "object",
+        "required": ["kinds"],
+        "properties": {
+          "kinds": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "object",
+              "required": ["key", "label"],
+              "properties": {
+                "key": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$" },
+                "label": { "type": "string", "maxLength": 120 },
+                "description": { "type": ["string", "null"], "maxLength": 500 },
+                "icon": { "type": ["string", "null"], "maxLength": 16 },
+                "order": { "type": "integer", "minimum": 0, "maximum": 10000 }
+              }
+            }
+          }
+        }
+      },
+      "VocabularyKindsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          { "type": "object", "required": ["kinds"], "properties": { "kinds": { "type": "array", "items": { "$ref": "#/components/schemas/VocabularyKind" } } } }
         ]
       },
       "VocabularyTermResponse": {

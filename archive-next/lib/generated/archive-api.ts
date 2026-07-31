@@ -3208,6 +3208,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vocabulary/kinds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the built-in and configured dictionary categories for the current user */
+        get: operations["listVocabularyKinds"];
+        /** Replace the additional dictionary categories for the current user */
+        put: operations["replaceVocabularyKinds"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhooks": {
         parameters: {
             query?: never;
@@ -5531,6 +5549,26 @@ export interface components {
             dryRun: boolean;
             merged: number;
         };
+        VocabularyKind: {
+            builtIn: boolean;
+            description: string | null;
+            icon: string | null;
+            key: string;
+            label: string;
+            order: number;
+        };
+        VocabularyKindsReplaceRequest: {
+            kinds: {
+                description?: string | null;
+                icon?: string | null;
+                key: string;
+                label: string;
+                order?: number;
+            }[];
+        };
+        VocabularyKindsResponse: components["schemas"]["OkEnvelope"] & {
+            kinds: components["schemas"]["VocabularyKind"][];
+        };
         VocabularyRelinkPreviewResponse: components["schemas"]["OkEnvelope"] & {
             affectedCount: number;
             records: {
@@ -5552,8 +5590,8 @@ export interface components {
             /** Format: date-time */
             createdAt: string | null;
             id: string;
-            /** @enum {string} */
-            kind: "type" | "tag" | "custom";
+            /** @description Built-in or user-configured dictionary category key. */
+            kind: string;
             note: string | null;
             term: string;
             /** Format: date-time */
@@ -5562,8 +5600,8 @@ export interface components {
         VocabularyTermCreateRequest: {
             aliases?: string;
             canonicalTermId?: string | null;
-            /** @enum {string} */
-            kind?: "type" | "tag" | "custom";
+            /** @description Built-in or user-configured dictionary category key. */
+            kind?: string;
             note?: string;
             term: string;
         };
@@ -11803,6 +11841,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VocabularyImportResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    listVocabularyKinds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Vocabulary categories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyKindsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    replaceVocabularyKinds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VocabularyKindsReplaceRequest"];
+            };
+        };
+        responses: {
+            /** @description Vocabulary categories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyKindsResponse"];
                 };
             };
             401: components["responses"]["Error"];
