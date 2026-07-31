@@ -1170,6 +1170,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/edit-claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the active edit claim for a record, if any */
+        get: operations["getRecordEditClaim"];
+        put?: never;
+        /** Claim (or renew) a short-lived edit presence marker for a record */
+        post: operations["claimRecordEdit"];
+        /** Release the edit claim for a record */
+        delete: operations["releaseRecordEditClaim"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/history": {
         parameters: {
             query?: never;
@@ -3812,6 +3831,16 @@ export interface components {
             tags?: string[];
             title: string;
             type?: string;
+        };
+        RecordEditClaim: {
+            claimedBy: string | null;
+            claimedByName: string;
+            /** Format: date-time */
+            expiresAt: string;
+            recordId: string;
+        };
+        RecordEditClaimResponse: components["schemas"]["OkEnvelope"] & {
+            claim: components["schemas"]["RecordEditClaim"] | null;
         };
         RecordHistoryEntry: {
             action: string;
@@ -7139,6 +7168,67 @@ export interface operations {
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    getRecordEditClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Edit claim or null */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordEditClaimResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    claimRecordEdit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active claim */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordEditClaimResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    releaseRecordEditClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
         };
     };
     listRecordHistory: {

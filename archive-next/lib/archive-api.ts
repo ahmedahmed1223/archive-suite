@@ -326,6 +326,14 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// V1-848: short-lived, informational-only edit presence marker.
+export interface RecordEditClaim {
+  recordId: string;
+  claimedBy: string | null;
+  claimedByName: string;
+  expiresAt: string;
+}
+
 // V1-839: merges duplicate records into a chosen primary. Duplicates are
 // soft-deleted (restorable via /trash/restore), their own files untouched.
 export interface RecordMergePreview {
@@ -1249,6 +1257,9 @@ export interface ArchiveApiClient {
   createRecordNote(recordId: string, payload: CreateRecordNotePayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  recordEditClaim(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ claim: RecordEditClaim | null }>>;
+  claimRecordEdit(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ claim: RecordEditClaim }>>;
+  releaseRecordEditClaim(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   previewRecordMerge(primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordMergePreview>>;
   mergeRecords(primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordMergeResult>>;
   recordSnapshots(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ snapshots: RecordSnapshot[] }>>;
@@ -1803,6 +1814,12 @@ export function createArchiveApiClient({
       patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
+    recordEditClaim: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ claim: RecordEditClaim | null }>(`/records/${encodeURIComponent(recordId)}/edit-claim`, options),
+    claimRecordEdit: (recordId: string, options?: AuthRequestOptions) =>
+      post<{ claim: RecordEditClaim }>(`/records/${encodeURIComponent(recordId)}/edit-claim`, undefined, options),
+    releaseRecordEditClaim: (recordId: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/records/${encodeURIComponent(recordId)}/edit-claim`, undefined, options),
     previewRecordMerge: (primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions) =>
       post<RecordMergePreview>(`/records/${encodeURIComponent(primaryId)}/merge-preview`, { duplicateIds, store }, options),
     mergeRecords: (primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions) =>

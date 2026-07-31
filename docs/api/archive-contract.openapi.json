@@ -4612,6 +4612,47 @@
         }
       }
     },
+    "/records/{id}/edit-claim": {
+      "get": {
+        "tags": ["Edit Claim"],
+        "summary": "Get the active edit claim for a record, if any",
+        "operationId": "getRecordEditClaim",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Edit claim or null",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordEditClaimResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Edit Claim"],
+        "summary": "Claim (or renew) a short-lived edit presence marker for a record",
+        "operationId": "claimRecordEdit",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Active claim",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordEditClaimResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Edit Claim"],
+        "summary": "Release the edit claim for a record",
+        "operationId": "releaseRecordEditClaim",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/merge-preview": {
       "post": {
         "tags": ["Record Merge"],
@@ -8446,6 +8487,28 @@
             "required": ["projects"],
             "properties": {
               "projects": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } }
+            }
+          }
+        ]
+      },
+      "RecordEditClaim": {
+        "type": "object",
+        "required": ["recordId", "claimedBy", "claimedByName", "expiresAt"],
+        "properties": {
+          "recordId": { "type": "string" },
+          "claimedBy": { "type": "string", "nullable": true },
+          "claimedByName": { "type": "string" },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RecordEditClaimResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["claim"],
+            "properties": {
+              "claim": { "anyOf": [{ "$ref": "#/components/schemas/RecordEditClaim" }, { "type": "null" }] }
             }
           }
         ]
