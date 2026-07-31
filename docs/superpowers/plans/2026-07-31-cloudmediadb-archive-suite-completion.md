@@ -118,10 +118,12 @@
 
 **Files:** `ProjectsApiTest.php`, `archive-next/app/kanban/page.tsx`, `archive-next/lib/organization-quality-workspace.test.ts`.
 
-- [ ] Run `node scripts/laravel-docker.mjs test tests/Feature/ProjectsApiTest.php` and `pnpm --filter @archive/next test -- lib/organization-quality-workspace.test.ts`.
-- [ ] Verify status, assignee, updated time, and optional record linkage remain available in project/Kanban workflows.
-- [ ] Add a failing test before any persistence or accessibility gap fix, then close AS-11.
-- [ ] Commit `docs(tasks): close AS-11 project kanban`.
+- [x] Added a RED then GREEN persistence test for project-task status, assignee,
+  date, and optional record link; projects/workspace checks pass.
+- [x] Added API-contract-backed `/project-tasks` Kanban UI with accessible
+  select controls as the non-drag alternative for status changes.
+- [x] Contract generation/verification and Next typecheck pass.
+- [x] Commit `feat(projects): complete AS-11 project kanban`.
 
 ### Task 12: AS-12 Segments and NLE maps
 

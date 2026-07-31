@@ -523,6 +523,8 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
 }
+export type ProjectTaskStatus = "todo" | "in_progress" | "review" | "done";
+export interface ProjectTask { id: string; projectId: string; title: string; status: ProjectTaskStatus; assignee: string | null; recordId: string | null; dueDate: string | null; createdAt: string; updatedAt: string; }
 
 // V1-840: named time/topic segments on a record, no file copy.
 export interface RecordSegment {
@@ -1474,6 +1476,9 @@ export interface ArchiveApiClient {
   linkProjectRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   unlinkProjectRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   recordProjects(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ projects: Project[] }>>;
+  projectTasks(projectId?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ tasks: ProjectTask[] }>>;
+  createProjectTask(payload: Omit<ProjectTask, "id" | "createdAt" | "updatedAt">, options?: AuthRequestOptions): Promise<ApiEnvelope<{ task: ProjectTask }>>;
+  updateProjectTask(id: string, payload: Partial<Omit<ProjectTask, "id" | "projectId" | "createdAt" | "updatedAt">>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ task: ProjectTask }>>;
   recordSegments(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segments: RecordSegment[] }>>;
   createRecordSegment(recordId: string, payload: RecordSegmentInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segment: RecordSegment }>>;
   updateRecordSegment(id: string, payload: RecordSegmentInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segment: RecordSegment }>>;
@@ -2132,6 +2137,9 @@ export function createArchiveApiClient({
       del<Record<string, never>>(`/projects/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     recordProjects: (recordId: string, options?: AuthRequestOptions) =>
       get<{ projects: Project[] }>(`/records/${encodeURIComponent(recordId)}/projects`, options),
+    projectTasks: (projectId?: string, options?: AuthRequestOptions) => get<{ tasks: ProjectTask[] }>(`/project-tasks${projectId ? `?${new URLSearchParams({ projectId })}` : ""}`, options),
+    createProjectTask: (payload, options?: AuthRequestOptions) => post<{ task: ProjectTask }>("/project-tasks", payload, options),
+    updateProjectTask: (id, payload, options?: AuthRequestOptions) => patch<{ task: ProjectTask }>(`/project-tasks/${encodeURIComponent(id)}`, payload, options),
     recordSegments: (recordId: string, options?: AuthRequestOptions) =>
       get<{ segments: RecordSegment[] }>(`/records/${encodeURIComponent(recordId)}/segments`, options),
     createRecordSegment: (recordId: string, payload: RecordSegmentInput, options?: AuthRequestOptions) =>

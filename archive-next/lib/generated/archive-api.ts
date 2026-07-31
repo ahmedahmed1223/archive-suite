@@ -1322,6 +1322,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/project-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List project tasks */
+        get: operations["listProjectTasks"];
+        put?: never;
+        /** Create a project task */
+        post: operations["createProjectTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-tasks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update project task */
+        patch: operations["updateProjectTask"];
+        trace?: never;
+    };
     "/projects": {
         parameters: {
             query?: never;
@@ -4587,6 +4622,46 @@ export interface components {
         };
         ProjectsResponse: components["schemas"]["OkEnvelope"] & {
             projects: components["schemas"]["Project"][];
+        };
+        ProjectTask: {
+            assignee: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date */
+            dueDate: string | null;
+            id: string;
+            projectId: string;
+            recordId: string | null;
+            /** @enum {string} */
+            status: "todo" | "in_progress" | "review" | "done";
+            title: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ProjectTaskCreateRequest: {
+            assignee?: string | null;
+            /** Format: date */
+            dueDate?: string | null;
+            projectId: string;
+            recordId?: string | null;
+            /** @enum {string} */
+            status?: "todo" | "in_progress" | "review" | "done";
+            title: string;
+        };
+        ProjectTaskResponse: components["schemas"]["OkEnvelope"] & {
+            task: components["schemas"]["ProjectTask"];
+        };
+        ProjectTasksResponse: components["schemas"]["OkEnvelope"] & {
+            tasks: components["schemas"]["ProjectTask"][];
+        };
+        ProjectTaskUpdateRequest: {
+            assignee?: string | null;
+            /** Format: date */
+            dueDate?: string | null;
+            recordId?: string | null;
+            /** @enum {string} */
+            status?: "todo" | "in_progress" | "review" | "done";
+            title?: string;
         };
         ProjectUpdateRequest: {
             name?: string;
@@ -8416,6 +8491,83 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listProjectTasks: {
+        parameters: {
+            query?: {
+                projectId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Project tasks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTasksResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createProjectTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectTaskCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created task */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTaskResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    updateProjectTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectTaskUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated task */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTaskResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     listProjects: {

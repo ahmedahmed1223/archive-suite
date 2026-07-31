@@ -42,6 +42,7 @@ use App\Http\Controllers\Api\V1\DepartmentHandoffController;
 use App\Http\Controllers\Api\V1\DepartmentRoutingController;
 use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\ProjectsController;
+use App\Http\Controllers\Api\V1\ProjectTasksController;
 use App\Http\Controllers\Api\V1\RecordNotesController;
 use App\Http\Controllers\Api\V1\RecordEditClaimController;
 use App\Http\Controllers\Api\V1\FileHealthController;
@@ -303,6 +304,9 @@ Route::prefix('v1')->group(function (): void {
         Route::put('/naming-rules/{key}', [NamingRulesController::class, 'upsert']);
         Route::delete('/naming-rules/{key}', [NamingRulesController::class, 'destroy']);
         Route::get('/projects', [ProjectsController::class, 'index']);
+        Route::get('/project-tasks', [ProjectTasksController::class, 'index']);
+        Route::post('/project-tasks', [ProjectTasksController::class, 'store']);
+        Route::patch('/project-tasks/{id}', [ProjectTasksController::class, 'update']);
         Route::post('/projects', [ProjectsController::class, 'store']);
         Route::patch('/projects/{id}', [ProjectsController::class, 'update']);
         Route::delete('/projects/{id}', [ProjectsController::class, 'destroy']);

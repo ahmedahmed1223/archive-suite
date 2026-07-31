@@ -4870,6 +4870,13 @@
         }
       }
     },
+    "/project-tasks": {
+      "get": { "tags": ["Projects"], "summary": "List project tasks", "operationId": "listProjectTasks", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "projectId", "in": "query", "schema": { "type": "string" } }], "responses": { "200": { "description": "Project tasks", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTasksResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } } },
+      "post": { "tags": ["Projects"], "summary": "Create a project task", "operationId": "createProjectTask", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskCreateRequest" } } } }, "responses": { "201": { "description": "Created task", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/project-tasks/{id}": {
+      "patch": { "tags": ["Projects"], "summary": "Update project task", "operationId": "updateProjectTask", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskUpdateRequest" } } } }, "responses": { "200": { "description": "Updated task", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } } }
+    },
     "/projects/{id}": {
       "patch": {
         "tags": ["Projects"],
@@ -9238,6 +9245,11 @@
           ,"notes": { "type": ["string", "null"], "maxLength": 5000 }
         }
       },
+      "ProjectTask": { "type": "object", "required": ["id", "projectId", "title", "status", "assignee", "recordId", "dueDate", "createdAt", "updatedAt"], "properties": { "id": { "type": "string" }, "projectId": { "type": "string" }, "title": { "type": "string" }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" } } },
+      "ProjectTaskCreateRequest": { "type": "object", "required": ["projectId", "title"], "properties": { "projectId": { "type": "string" }, "title": { "type": "string", "maxLength": 300 }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" } } },
+      "ProjectTaskUpdateRequest": { "type": "object", "minProperties": 1, "properties": { "title": { "type": "string", "maxLength": 300 }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" } } },
+      "ProjectTaskResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["task"], "properties": { "task": { "$ref": "#/components/schemas/ProjectTask" } } }] },
+      "ProjectTasksResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["tasks"], "properties": { "tasks": { "type": "array", "items": { "$ref": "#/components/schemas/ProjectTask" } } } }] },
       "ProjectUpdateRequest": {
         "type": "object",
         "minProperties": 1,

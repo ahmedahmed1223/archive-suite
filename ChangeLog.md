@@ -165,6 +165,11 @@
   بوضوح عن محرر المونتاج في `/projects`. التحقق: 15 اختبار Laravel/107
   assertion، وعقد OpenAPI و`typecheck`.
 
+- **AS-11 مهام المشروع ولوحة كانبان:** أضيف كيان مهمة مشروع مستقل بحالات
+  `todo/in_progress/review/done` ومكلّف وموعد وربط اختياري بمادة، مع لوحة
+  `/project-tasks` تحول الحالة وتظهر آخر تحديث. التحقق: 6 اختبارات Laravel/51
+  assertion، وعقد OpenAPI و`typecheck`.
+
 ## V1-817 تصحيح نطاق البوابات غير المُصادَقة — 2026-07-27
 
 - **المشكلة:** كانت `CORE_ROUTES` في `archive-next/e2e/fixtures/visual-routes.ts`
