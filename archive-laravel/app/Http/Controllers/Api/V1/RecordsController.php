@@ -245,13 +245,7 @@ class RecordsController extends Controller
             // destroy. The row still leaves storage_rows, so every reader of
             // that table behaves exactly as before; the payload survives for
             // the retention window and TrashController can put it back.
-            $rows = DB::table('storage_rows')
-                ->where('store', $validated['store'])
-                ->where(function ($query) use ($id): void {
-                    $query->where('uid', $id)
-                        ->orWhere('data->>\'id\'', $id);
-                })
-                ->get();
+            $rows = $this->storageRows->findManyByUidOrRecordId($validated['store'], $id);
 
             $deleted = 0;
 

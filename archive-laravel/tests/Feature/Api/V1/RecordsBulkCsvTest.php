@@ -140,6 +140,23 @@ class RecordsBulkCsvTest extends TestCase
         $this->assertNotSame('Dry Run Title', $data['title']);
     }
 
+    public function test_import_audit_records_the_batch_outcome_without_csv_contents(): void
+    {
+        $this->seedRecord('item-1');
+        $file = UploadedFile::fake()->createWithContent('records.csv', "uid,title\nitem-1,Imported title\nmissing,Ignored\n");
+
+        $this->post('/api/v1/records/import?store=archive-items', ['file' => $file], $this->authHeaders())
+            ->assertOk();
+
+        $audit = DB::table('audit_logs')->latest('id')->first();
+
+        $this->assertSame('records.csv_import', $audit->event);
+        $this->assertSame('record_import', $audit->resource_type);
+        $metadata = json_decode((string) $audit->metadata, true);
+        $this->assertSame(['accepted' => 1, 'rejected' => 1, 'dryRun' => false], $metadata['import']);
+        $this->assertArrayNotHasKey('results', $metadata['request']);
+    }
+
     public function test_import_rejects_file_larger_than_5mb(): void
     {
         $file = UploadedFile::fake()->create('huge.csv', 5121);

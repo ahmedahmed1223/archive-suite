@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Repositories\StorageRowRepository;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use JsonException;
@@ -14,6 +14,10 @@ use stdClass;
 
 class TypesController extends Controller
 {
+    public function __construct(private readonly StorageRowRepository $storageRows)
+    {
+    }
+
     /**
      * List all type definitions.
      */
@@ -27,8 +31,7 @@ class TypesController extends Controller
         $limit = (int) ($validated['limit'] ?? 50);
         $cursorUid = isset($validated['cursor']) ? StorageRowPayload::decodeCursor($validated['cursor']) : null;
 
-        $query = DB::table('storage_rows')
-            ->where('store', 'types')
+        $query = $this->storageRows->forStore('types')
             ->orderBy('uid')
             ->limit($limit + 1);
 
@@ -57,13 +60,7 @@ class TypesController extends Controller
      */
     public function show(Request $request, string $id): JsonResponse
     {
-        $row = DB::table('storage_rows')
-            ->where('store', 'types')
-            ->where(function ($query) use ($id): void {
-                $query->where('uid', $id)
-                    ->orWhere('data->>\'id\'', $id);
-            })
-            ->first();
+        $row = $this->storageRows->findByUidOrRecordId($id, 'types');
 
         if (!$row instanceof stdClass) {
             return response()->json([
@@ -136,10 +133,7 @@ class TypesController extends Controller
 
         $validated = $validator->validate();
 
-        $row = DB::table('storage_rows')
-            ->where('store', 'types')
-            ->where('uid', $validated['id'])
-            ->first();
+        $row = $this->storageRows->find('types', $validated['id']);
 
         $uid = $validated['id'];
         $data = [
@@ -150,21 +144,16 @@ class TypesController extends Controller
         ];
 
         if (!$row) {
-            DB::table('storage_rows')->insert([
-                'store' => 'types',
-                'uid' => $uid,
+            $this->storageRows->insert('types', $uid, [
                 'data' => json_encode($data, JSON_THROW_ON_ERROR),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
         } else {
-            DB::table('storage_rows')
-                ->where('store', 'types')
-                ->where('uid', $uid)
-                ->update([
-                    'data' => json_encode($data, JSON_THROW_ON_ERROR),
-                    'updated_at' => now(),
-                ]);
+            $this->storageRows->upsert('types', $uid, [
+                'data' => json_encode($data, JSON_THROW_ON_ERROR),
+                'updated_at' => now(),
+            ]);
         }
 
         return response()->json([
@@ -182,10 +171,7 @@ class TypesController extends Controller
             return $denied;
         }
 
-        $deleted = DB::table('storage_rows')
-            ->where('store', 'types')
-            ->where('uid', $id)
-            ->delete();
+        $deleted = $this->storageRows->delete('types', $id);
 
         if ($deleted === 0) {
             return response()->json([
@@ -211,10 +197,7 @@ class TypesController extends Controller
         $user = $request->user();
         $userRole = $user?->role ?? 'viewer';
 
-        $row = DB::table('storage_rows')
-            ->where('store', 'types')
-            ->where('uid', $typeId)
-            ->first();
+        $row = $this->storageRows->find('types', $typeId);
 
         if (!$row instanceof stdClass) {
             return response()->json([

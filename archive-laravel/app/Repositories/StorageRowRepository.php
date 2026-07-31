@@ -43,6 +43,16 @@ final class StorageRowRepository
             ->first();
     }
 
+    /** @return Collection<int, stdClass> */
+    public function findManyByUidOrRecordId(string $store, string $id): Collection
+    {
+        return $this->forStore($store)
+            ->where(function (Builder $query) use ($id): void {
+                $query->where('uid', $id)->orWhereRaw("data->>'id' = ?", [$id]);
+            })
+            ->get();
+    }
+
     /**
      * @param list<array{store: string, uid: string}> $keys
      * @return Collection<string, stdClass> keyed as "store\0uid"

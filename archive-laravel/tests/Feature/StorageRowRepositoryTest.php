@@ -43,4 +43,31 @@ class StorageRowRepositoryTest extends TestCase
         $this->assertNull($repository->find('archive-items', 'shared-id'));
         $this->assertNotNull($repository->find('types', 'shared-id'));
     }
+
+    public function test_it_finds_every_row_matching_a_store_scoped_record_identifier(): void
+    {
+        $repository = app(StorageRowRepository::class);
+        $now = now();
+
+        $repository->insert('archive-items', 'canonical-id', [
+            'data' => json_encode(['id' => 'canonical-id']),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $repository->insert('archive-items', 'legacy-id', [
+            'data' => json_encode(['id' => 'canonical-id']),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $repository->insert('types', 'canonical-id', [
+            'data' => json_encode(['id' => 'canonical-id']),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $rows = $repository->findManyByUidOrRecordId('archive-items', 'canonical-id');
+
+        $this->assertCount(2, $rows);
+        $this->assertSame(['canonical-id', 'legacy-id'], $rows->pluck('uid')->all());
+    }
 }

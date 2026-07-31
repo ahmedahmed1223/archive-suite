@@ -50,6 +50,7 @@ class AuditArchiveApiRequest
         [$event, $resourceType] = match ([$method, $route]) {
             ['POST', 'api/v1/records'] => ['records.create', 'record'],
             ['POST', 'api/v1/records/bulk'] => ['records.bulk_upsert', 'record'],
+            ['POST', 'api/v1/records/import'] => ['records.csv_import', 'record_import'],
             ['POST', 'api/v1/records/{id}/attachments'] => ['record_attachments.create', 'record_attachment'],
             ['DELETE', 'api/v1/records/{id}/attachments/{attachmentId}'] => ['record_attachments.delete', 'record_attachment'],
             ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
@@ -89,6 +90,10 @@ class AuditArchiveApiRequest
 
         if ($route === 'api/v1/records') {
             $resourceId = $response->isSuccessful() ? data_get(json_decode($response->getContent(), true), 'record.id') : null;
+        }
+
+        if ($route === 'api/v1/records/import') {
+            $resourceId = $request->string('store')->toString() ?: null;
         }
 
         if (in_array($route, ['api/v1/records/{id}/attachments', 'api/v1/records/{id}/attachments/{attachmentId}'], true)) {
@@ -190,6 +195,15 @@ class AuditArchiveApiRequest
             if ($recordDiff !== null) {
                 $metadata['diff'] = [...$metadata['diff'], ...$recordDiff];
             }
+        }
+
+        if ($taxonomy['event'] === 'records.csv_import') {
+            $result = $this->responseData($response);
+            $metadata['import'] = [
+                'accepted' => (int) ($result['accepted'] ?? 0),
+                'rejected' => (int) ($result['rejected'] ?? 0),
+                'dryRun' => (bool) ($result['dryRun'] ?? false),
+            ];
         }
 
         return $metadata;
