@@ -524,6 +524,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/department-template-metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return aggregate department template metrics */
+        get: operations["getDepartmentTemplateMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/discover": {
         parameters: {
             query?: never;
@@ -3847,6 +3864,19 @@ export interface components {
         DepartmentRoutingRequest: {
             departmentId: string;
         };
+        DepartmentTemplateMetrics: {
+            departmentId: string;
+            missingFieldCounts: {
+                [key: string]: number;
+            };
+            publishedTemplateCount: number;
+            qualityRuleCount: number;
+            recordCount: number;
+            templateCount: number;
+        };
+        DepartmentTemplateMetricsResponse: components["schemas"]["OkEnvelope"] & {
+            metrics: components["schemas"]["DepartmentTemplateMetrics"];
+        };
         DiscoverResponse: components["schemas"]["OkEnvelope"] & {
             sections: components["schemas"]["DiscoverSection"][];
         };
@@ -6703,6 +6733,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DepartmentQualityPreviewResponse"];
+                };
+            };
+        };
+    };
+    getDepartmentTemplateMetrics: {
+        parameters: {
+            query: {
+                departmentId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregate metrics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentTemplateMetricsResponse"];
                 };
             };
         };

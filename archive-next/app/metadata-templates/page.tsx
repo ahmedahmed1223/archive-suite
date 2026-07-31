@@ -6,7 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
-import { createArchiveApiClient, type DepartmentFieldOwner, type MetadataTemplate, type MetadataTemplateVersion } from "@/lib/archive-api";
+import { createArchiveApiClient, type DepartmentFieldOwner, type DepartmentTemplateMetrics, type MetadataTemplate, type MetadataTemplateVersion } from "@/lib/archive-api";
 import { previewTemplateApplication } from "@/lib/metadata-template-apply";
 import DepartmentQualityPanel from "@/components/DepartmentQualityPanel";
 
@@ -35,6 +35,7 @@ export default function MetadataTemplatesPage() {
   const [fieldOwners, setFieldOwners] = useState<DepartmentFieldOwner[]>([]);
   const [ownerField, setOwnerField] = useState("");
   const [ownerAssignee, setOwnerAssignee] = useState("");
+  const [metrics, setMetrics] = useState<DepartmentTemplateMetrics | null>(null);
 
   async function load() {
     const response = await api.metadataTemplates({ departmentId: departmentId || undefined, includeDisabled: canManageTemplates });
@@ -44,6 +45,7 @@ export default function MetadataTemplatesPage() {
 
   useEffect(() => { void load(); }, [api, canManageTemplates, departmentId]);
   useEffect(() => { if (!departmentId) { setFieldOwners([]); return; } void api.departmentFieldOwners(departmentId).then((response) => { if (response.ok) setFieldOwners(response.owners); }); }, [api, departmentId]);
+  useEffect(() => { if (!departmentId) { setMetrics(null); return; } void api.departmentTemplateMetrics(departmentId).then((response) => { if (response.ok) setMetrics(response.metrics); }); }, [api, departmentId]);
 
   async function addFieldOwner() {
     if (!departmentId.trim() || !ownerField.trim() || !ownerAssignee.trim()) return;
@@ -141,6 +143,7 @@ export default function MetadataTemplatesPage() {
         </article>
       </section>
       <DepartmentQualityPanel departmentId={departmentId} />
+      {metrics ? <article className="panel"><h2>مؤشرات القسم</h2><div className="button-row"><span className="badge">{metrics.templateCount} قالب</span><span className="badge">{metrics.publishedTemplateCount} منشور</span><span className="badge">{metrics.qualityRuleCount} قاعدة جودة</span><span className="badge">{metrics.recordCount} مادة</span></div><p className="helper-text">الحقول الناقصة: {Object.entries(metrics.missingFieldCounts).map(([field, count]) => `${field}: ${count}`).join(" · ") || "لا توجد قواعد مفعلة"}</p></article> : null}
       {canManageTemplates && departmentId ? <article className="panel"><div className="panel-title-row"><div><h2>مالكية الحقول</h2><p>يُقترح المسؤول في طلبات المعلومات؛ لا يمنع ذلك المحرر المخوّل من التصحيح أو الإسناد الصريح.</p></div></div><div className="button-row"><input className="search-input" value={ownerField} onChange={(event) => setOwnerField(event.target.value)} placeholder="اسم الحقل أو * لكل الحقول" /><input className="search-input" value={ownerAssignee} onChange={(event) => setOwnerAssignee(event.target.value)} placeholder="المسؤول" /><button className="button button-primary button-sm" type="button" onClick={() => void addFieldOwner()}>حفظ المسؤول</button></div>{fieldOwners.map((owner) => <div className="analytics-tag-row" key={owner.id}><span>{owner.field} · {owner.owner}</span><button className="button button-secondary button-sm" type="button" onClick={() => void api.replaceDepartmentFieldOwners(departmentId, fieldOwners.filter((item) => item.id !== owner.id)).then((response) => response.ok && setFieldOwners(response.owners))}>إزالة</button></div>)}</article> : null}
     </AppShell>
   );
