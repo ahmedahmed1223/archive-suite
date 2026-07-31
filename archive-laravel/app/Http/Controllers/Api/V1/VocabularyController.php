@@ -42,10 +42,18 @@ class VocabularyController extends Controller
             'term' => ['required', 'string', 'max:200'],
             'kind' => ['nullable', 'string', 'in:'.implode(',', self::KINDS)],
             'aliases' => ['nullable', 'string', 'max:500'],
+            'canonicalTermId' => ['nullable', 'string', 'max:100'],
             'note' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $userId = $this->userId($request);
+        $canonicalTermId = $validated['canonicalTermId'] ?? null;
+        if ($canonicalTermId !== null && ! DB::table('vocabulary_terms')
+            ->where('id', $canonicalTermId)
+            ->where('user_id', $userId)
+            ->exists()) {
+            return response()->json(ApiError::envelope('Canonical vocabulary term not found.', 422), 422);
+        }
         $now = now();
         $id = (string) Str::uuid();
 
@@ -55,6 +63,7 @@ class VocabularyController extends Controller
             'term' => trim((string) $validated['term']),
             'kind' => $validated['kind'] ?? 'custom',
             'aliases' => $validated['aliases'] ?? null,
+            'canonical_term_id' => $canonicalTermId,
             'note' => $validated['note'] ?? null,
             'created_at' => $now,
             'updated_at' => $now,
@@ -399,6 +408,7 @@ class VocabularyController extends Controller
             'term' => $row->term,
             'kind' => $row->kind,
             'aliases' => $row->aliases,
+            'canonicalTermId' => $row->canonical_term_id,
             'note' => $row->note,
             'createdAt' => $row->created_at,
             'updatedAt' => $row->updated_at,

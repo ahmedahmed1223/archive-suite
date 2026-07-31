@@ -7137,6 +7137,7 @@
           "term": { "type": "string" },
           "kind": { "type": "string", "enum": ["type", "tag", "custom"] },
           "aliases": { "type": ["string", "null"] },
+          "canonicalTermId": { "type": ["string", "null"] },
           "note": { "type": ["string", "null"] },
           "createdAt": { "type": ["string", "null"], "format": "date-time" },
           "updatedAt": { "type": ["string", "null"], "format": "date-time" }
@@ -7149,6 +7150,7 @@
           "term": { "type": "string", "minLength": 1, "maxLength": 200 },
           "kind": { "type": "string", "enum": ["type", "tag", "custom"] },
           "aliases": { "type": "string", "maxLength": 500 },
+          "canonicalTermId": { "type": ["string", "null"], "maxLength": 100 },
           "note": { "type": "string", "maxLength": 2000 }
         }
       },

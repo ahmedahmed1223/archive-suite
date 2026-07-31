@@ -26,6 +26,7 @@ interface TermDeletion {
   term: string;
   kind: Kind;
   aliases: string;
+  canonicalTermId: string | null;
   note: string;
 }
 
@@ -39,6 +40,7 @@ export default function VocabularyPage() {
   const [term, setTerm] = useState("");
   const [kind, setKind] = useState<Kind>("custom");
   const [aliases, setAliases] = useState("");
+  const [canonicalTermId, setCanonicalTermId] = useState("");
   const [note, setNote] = useState("");
   const [filter, setFilter] = useState("");
   const [importMessage, setImportMessage] = useState("");
@@ -121,7 +123,7 @@ export default function VocabularyPage() {
     // De-dupe by term client-side: drop any existing entry with the same normalized term.
     const duplicate = terms.find((item) => normalizeText(item.term) === normalizeText(trimmed));
     if (duplicate) await api.deleteVocabularyTerm(duplicate.id);
-    const response = await api.createVocabularyTerm({ term: trimmed, kind, aliases: aliases.trim(), note: note.trim() });
+    const response = await api.createVocabularyTerm({ term: trimmed, kind, aliases: aliases.trim(), note: note.trim(), canonicalTermId: canonicalTermId || null });
     if (!response.ok) {
       setError(response.error || "تعذر حفظ المصطلح.");
       return;
@@ -129,6 +131,7 @@ export default function VocabularyPage() {
     await refreshTerms();
     setTerm("");
     setAliases("");
+    setCanonicalTermId("");
     setNote("");
     setKind("custom");
   }
@@ -148,7 +151,7 @@ export default function VocabularyPage() {
     }
     if (target) {
       setDeleteStack((stack) =>
-        pushUndo(stack, { term: target.term, kind: target.kind, aliases: target.aliases || "", note: target.note || "" })
+        pushUndo(stack, { term: target.term, kind: target.kind, aliases: target.aliases || "", canonicalTermId: target.canonicalTermId || null, note: target.note || "" })
       );
     }
     await refreshTerms();
@@ -161,6 +164,7 @@ export default function VocabularyPage() {
       term: result.entry.term,
       kind: result.entry.kind,
       aliases: result.entry.aliases,
+      canonicalTermId: result.entry.canonicalTermId,
       note: result.entry.note
     });
     if (!response.ok) {
@@ -228,6 +232,10 @@ export default function VocabularyPage() {
               <input className="search-input" value={aliases} onChange={(event) => setAliases(event.target.value)} placeholder="افصل بينها بفواصل" />
             </label>
             <label>
+              <span>القيمة الرئيسية</span>
+              <select value={canonicalTermId} onChange={(event) => setCanonicalTermId(event.target.value)}><option value="">هذا هو المصطلح الرئيسي</option>{terms.filter((item) => item.id !== canonicalTermId).map((item) => <option key={item.id} value={item.id}>{item.term}</option>)}</select>
+            </label>
+            <label>
               <span>بحث داخل القاموس</span>
               <input className="search-input" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="مصطلح، وسم، مرادف..." />
             </label>
@@ -293,7 +301,7 @@ export default function VocabularyPage() {
           <div className="panel-title-row">
             <div>
               <h2>المصطلحات المحفوظة</h2>
-              <p>المرادفات والملاحظات التي يعتمدها الفريق في التوصيف والبحث.</p>
+              <p>المرادفات والملاحظات التي يعتمدها الفريق في التوصيف والبحث. لتغيير وسم مستخدم، راجع معاينة إعادة الربط المدققة قبل التطبيق.</p>
             </div>
             <span className="badge">{savedTerms.length}</span>
           </div>
@@ -306,6 +314,7 @@ export default function VocabularyPage() {
                   <span>
                     <strong>{item.term}</strong>
                     {item.aliases ? <small className="helper-text"> · {item.aliases}</small> : null}
+                    {item.canonicalTermId ? <small className="helper-text"> · بديل معتمد لـ {terms.find((candidate) => candidate.id === item.canonicalTermId)?.term || "مصطلح رئيسي"}</small> : null}
                     {item.note ? <small className="helper-text"> · {item.note}</small> : null}
                   </span>
                   <div className="button-row">

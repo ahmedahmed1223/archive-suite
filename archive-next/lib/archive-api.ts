@@ -613,6 +613,7 @@ export interface VocabularyTerm {
   term: string;
   kind: VocabularyKind;
   aliases: string | null;
+  canonicalTermId?: string | null;
   note: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -622,6 +623,7 @@ export interface CreateVocabularyTermPayload {
   term: string;
   kind?: VocabularyKind;
   aliases?: string;
+  canonicalTermId?: string | null;
   note?: string;
 }
 

@@ -5200,6 +5200,7 @@ export interface components {
         };
         VocabularyTerm: {
             aliases: string | null;
+            canonicalTermId?: string | null;
             /** Format: date-time */
             createdAt: string | null;
             id: string;
@@ -5212,6 +5213,7 @@ export interface components {
         };
         VocabularyTermCreateRequest: {
             aliases?: string;
+            canonicalTermId?: string | null;
             /** @enum {string} */
             kind?: "type" | "tag" | "custom";
             note?: string;
