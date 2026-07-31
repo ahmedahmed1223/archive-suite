@@ -1257,6 +1257,25 @@ export interface paths {
         patch: operations["updateRecordTranscript"];
         trace?: never;
     };
+    "/records/{id}/triage-flag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the quick-triage "needs info" flag for a record, if any */
+        get: operations["getRecordTriageFlag"];
+        /** Set or replace the quick-triage flag for a record */
+        put: operations["setRecordTriageFlag"];
+        post?: never;
+        /** Clear the quick-triage flag for a record */
+        delete: operations["clearRecordTriageFlag"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/bulk": {
         parameters: {
             query?: never;
@@ -3826,6 +3845,21 @@ export interface components {
                 reason?: string;
                 uid: string;
             }[];
+        };
+        RecordTriageFlag: {
+            /** Format: date-time */
+            createdAt: string;
+            flaggedBy: string | null;
+            reason: string;
+            recordId: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        RecordTriageFlagResponse: components["schemas"]["OkEnvelope"] & {
+            flag: components["schemas"]["RecordTriageFlag"] | null;
+        };
+        RecordTriageFlagUpsertRequest: {
+            reason: string;
         };
         RelationGraphEdge: {
             id: string;
@@ -7166,6 +7200,73 @@ export interface operations {
             403: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    getRecordTriageFlag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Triage flag or null */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordTriageFlagResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    setRecordTriageFlag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordTriageFlagUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved flag */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordTriageFlagResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    clearRecordTriageFlag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     bulkUpsertRecords: {

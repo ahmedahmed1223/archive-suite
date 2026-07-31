@@ -4612,6 +4612,53 @@
         }
       }
     },
+    "/records/{id}/triage-flag": {
+      "get": {
+        "tags": ["Triage"],
+        "summary": "Get the quick-triage \"needs info\" flag for a record, if any",
+        "operationId": "getRecordTriageFlag",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Triage flag or null",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordTriageFlagResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "put": {
+        "tags": ["Triage"],
+        "summary": "Set or replace the quick-triage flag for a record",
+        "operationId": "setRecordTriageFlag",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordTriageFlagUpsertRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved flag",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordTriageFlagResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Triage"],
+        "summary": "Clear the quick-triage flag for a record",
+        "operationId": "clearRecordTriageFlag",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/segments": {
       "get": {
         "tags": ["Record Segments"],
@@ -8294,6 +8341,36 @@
             "required": ["projects"],
             "properties": {
               "projects": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } }
+            }
+          }
+        ]
+      },
+      "RecordTriageFlag": {
+        "type": "object",
+        "required": ["recordId", "reason", "flaggedBy", "createdAt", "updatedAt"],
+        "properties": {
+          "recordId": { "type": "string" },
+          "reason": { "type": "string" },
+          "flaggedBy": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RecordTriageFlagUpsertRequest": {
+        "type": "object",
+        "required": ["reason"],
+        "properties": {
+          "reason": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        }
+      },
+      "RecordTriageFlagResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["flag"],
+            "properties": {
+              "flag": { "anyOf": [{ "$ref": "#/components/schemas/RecordTriageFlag" }, { "type": "null" }] }
             }
           }
         ]
