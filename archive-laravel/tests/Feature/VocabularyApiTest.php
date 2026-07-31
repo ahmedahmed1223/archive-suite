@@ -98,4 +98,13 @@ class VocabularyApiTest extends TestCase
             ->assertUnauthorized()
             ->assertJsonPath('ok', false);
     }
+
+    public function test_department_preferences_only_prioritize_owned_terms(): void
+    {
+        $first = $this->postJson('/api/v1/vocabulary', ['term' => 'عام'], $this->authHeaders())->assertCreated()->json('term.id');
+        $preferred = $this->postJson('/api/v1/vocabulary', ['term' => 'قسم'], $this->authHeaders())->assertCreated()->json('term.id');
+        $this->putJson('/api/v1/vocabulary/department-preferences', ['departmentId' => 'news', 'termIds' => [$preferred]], $this->authHeaders())->assertOk();
+        $this->getJson('/api/v1/vocabulary?departmentId=news', $this->authHeaders())->assertOk()->assertJsonPath('terms.0.id', $preferred)->assertJsonCount(2, 'terms');
+        $this->assertNotSame($first, $preferred);
+    }
 }

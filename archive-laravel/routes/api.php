@@ -416,6 +416,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/inbox/{id}', [InboxController::class, 'destroy']);
 
         Route::get('/vocabulary', [VocabularyController::class, 'index']);
+        Route::put('/vocabulary/department-preferences', [VocabularyController::class, 'replaceDepartmentPreferences']);
         Route::post('/vocabulary', [VocabularyController::class, 'store']);
         Route::delete('/vocabulary/{id}', [VocabularyController::class, 'destroy']);
         Route::get('/vocabulary/export', [VocabularyController::class, 'export']);

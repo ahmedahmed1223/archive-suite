@@ -22,14 +22,27 @@ class VocabularyController extends Controller
     {
         $userId = $this->userId($request);
 
+        $departmentId = $request->string('departmentId')->trim()->toString();
         $terms = DB::table('vocabulary_terms')
-            ->where('user_id', $userId)
-            ->orderByDesc('created_at')
+            ->leftJoin('department_vocabulary_preferences as preferences', function ($join) use ($userId, $departmentId): void { $join->on('preferences.term_id','=','vocabulary_terms.id')->where('preferences.user_id','=',$userId)->where('preferences.department_id','=',$departmentId); })
+            ->where('vocabulary_terms.user_id', $userId)
+            ->orderByDesc('preferences.id')
+            ->orderByDesc('vocabulary_terms.created_at')
+            ->select('vocabulary_terms.*')
             ->get()
             ->map(fn (stdClass $row): array => $this->formatTerm($row))
             ->values();
 
         return response()->json(['ok' => true, 'terms' => $terms]);
+    }
+
+    public function replaceDepartmentPreferences(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        $v = $request->validate(['departmentId'=>['required','string','max:100'],'termIds'=>['present','array','max:200'],'termIds.*'=>['string','max:100','distinct']]); $userId=$this->userId($request);
+        if (DB::table('vocabulary_terms')->where('user_id', $userId)->whereIn('id', $v['termIds'])->count() !== count($v['termIds'])) return response()->json(ApiError::envelope('Vocabulary term not found.', 422), 422);
+        DB::transaction(function () use ($v,$userId): void { DB::table('department_vocabulary_preferences')->where('user_id',$userId)->where('department_id',$v['departmentId'])->delete(); $now=now(); $rows=array_map(fn(string $termId)=>['id'=>(string)Str::uuid(),'user_id'=>$userId,'department_id'=>$v['departmentId'],'term_id'=>$termId,'created_at'=>$now,'updated_at'=>$now],$v['termIds']); if($rows!==[]) DB::table('department_vocabulary_preferences')->insert($rows); });
+        return $this->index($request);
     }
 
     public function store(Request $request): JsonResponse
