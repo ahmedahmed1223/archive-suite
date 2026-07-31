@@ -26,3 +26,8 @@
 ## حدود الدليل الآلي
 
 يغطي Playwright ترتيب Tab، رابط التخطي، حبس تركيز حوار الأوامر، Escape وسمات `aria-live` في `archive-next/e2e/keyboard-navigation*.spec.ts`. لا يحل محل اختبار قارئ الشاشة البشري أعلاه.
+
+## التحقق الآلي — 2026-07-31
+
+شغّل الاختبار الحي Laravel + Next.js محليًا على Windows مع
+`keyboard-navigation.spec.ts` و`keyboard-navigation-authenticated.authed.spec.ts`؛ النتيجة **ناجحة**. كشف التشغيل الأول أن Escape لا يعيد التركيز إلى زر «فتح لوحة الأوامر» في Chromium وmobile Chrome. أُصلح ذلك بحفظ العنصر الذي فتح اللوحة واستعادته عبر `onCloseAutoFocus` في `CommandPalette`، ثم نجح التشغيل الأصلي نفسه. تبقى عينة NVDA/VoiceOver البشرية أعلاه مطلوبة لإغلاق V1-303D.

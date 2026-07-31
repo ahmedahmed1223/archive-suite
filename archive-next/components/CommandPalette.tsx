@@ -5,7 +5,7 @@ import { Command } from "cmdk";
 import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { navSectionLabels, primaryNav } from "@/lib/navigation";
 import { getShortcut, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
 import { useFocusMode } from "@/lib/use-focus-mode";
@@ -22,6 +22,7 @@ export function openCommandPalette() {
 export default function CommandPalette() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const openerRef = useRef<HTMLElement | null>(null);
   const { isFocusMode, toggleFocusMode } = useFocusMode();
   const { density, toggleDensity } = useDensity();
 
@@ -29,10 +30,18 @@ export default function CommandPalette() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!event.isComposing && matchesKeyEvent(event, getShortcut("commandPalette"))) {
         event.preventDefault();
-        setOpen((current) => !current);
+        if (open) {
+          setOpen(false);
+        } else {
+          openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          setOpen(true);
+        }
       }
     };
-    const onOpen = () => setOpen(true);
+    const onOpen = () => {
+      openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setOpen(true);
+    };
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener(commandEventName, onOpen);
@@ -41,7 +50,7 @@ export default function CommandPalette() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener(commandEventName, onOpen);
     };
-  }, []);
+  }, [open]);
 
   const grouped = useMemo(
     () =>
@@ -84,7 +93,14 @@ export default function CommandPalette() {
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Portal>
         <Dialog.Overlay className="command-overlay" />
-        <Dialog.Content className="command-dialog" aria-label="لوحة أوامر مسار">
+        <Dialog.Content
+          className="command-dialog"
+          aria-label="لوحة أوامر مسار"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            openerRef.current?.focus();
+          }}
+        >
           <Command className="command-palette" loop dir="rtl">
             <div className="command-input-row">
               <Icons.Search aria-hidden="true" size={18} />
