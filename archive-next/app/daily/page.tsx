@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Clock3, Hourglass, Inbox as InboxIcon, ListChecks, Star } from "lucide-react";
+import { Bell, Clock3, Hourglass, Inbox as InboxIcon, ListChecks, ShoppingBasket, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
@@ -11,6 +11,7 @@ import { useNotifications } from "@/lib/use-notifications";
 import { listFavorites, type Favorite } from "@/lib/favorites";
 import { clearRecent, listRecent, type RecentItem } from "@/lib/recent-items";
 import { listDueLater, removeLater, type LaterEntry } from "@/lib/later-list";
+import { clearBasket, listBasket, removeFromBasket, type WorkBasketEntry } from "@/lib/work-basket";
 import { clearRecentSearches } from "@/lib/recent-searches";
 import { isContextRecordingEnabled, setContextRecording } from "@/lib/personal-context";
 import { formatDate } from "@/lib/record-utils";
@@ -31,6 +32,7 @@ export default function DailyPage() {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [recent, setRecent] = useState<RecentItem[]>([]);
   const [dueLater, setDueLater] = useState<LaterEntry[]>([]);
+  const [basket, setBasket] = useState<WorkBasketEntry[]>([]);
   const [recording, setRecording] = useState(true);
   const [contextStatus, setContextStatus] = useState("");
   // ponytail: عدّاد الحقوق فقط — نقطة `records` مقسّمة بمؤشر بلا إجمالي،
@@ -66,12 +68,23 @@ export default function DailyPage() {
     setFavorites(listFavorites());
     setRecent(listRecent());
     setDueLater(listDueLater());
+    setBasket(listBasket());
     setRecording(isContextRecordingEnabled());
   }, []);
 
   function handleRemoveLater(id: string) {
     removeLater(id);
     setDueLater(listDueLater());
+  }
+
+  function handleRemoveBasketItem(id: string) {
+    removeFromBasket(id);
+    setBasket(listBasket());
+  }
+
+  function handleClearBasket() {
+    clearBasket();
+    setBasket([]);
   }
 
   function handleRecordingChange(enabled: boolean) {
@@ -226,6 +239,36 @@ export default function DailyPage() {
                     <span className="dashboard-recent__meta">{entry.reason}</span>
                   </Link>
                   <button type="button" className="button button-secondary button-sm" onClick={() => handleRemoveLater(entry.id)}>
+                    إزالة
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="panel" aria-label="سلة العمل">
+          <header className="dashboard-recent__header">
+            <h2>
+              <ShoppingBasket aria-hidden="true" size={18} strokeWidth={2} />
+              <span>سلة العمل</span>
+            </h2>
+            {basket.length > 0 ? (
+              <button type="button" className="button button-secondary button-sm" onClick={handleClearBasket}>
+                تفريغ السلة
+              </button>
+            ) : null}
+          </header>
+          {basket.length === 0 ? (
+            <EmptyState icon={<ShoppingBasket aria-hidden="true" />} title="السلة فارغة" description="أضف سجلات من صفحة المادة لجمعها هنا قبل مراجعتها لاحقًا." />
+          ) : (
+            <ul className="dashboard-recent__list">
+              {basket.slice(0, PANEL_ITEM_LIMIT).map((entry) => (
+                <li key={entry.id}>
+                  <Link className="dashboard-recent__item" href={`/archive/${encodeURIComponent(entry.id)}`}>
+                    <span className="dashboard-recent__title">{entry.title || entry.id}</span>
+                  </Link>
+                  <button type="button" className="button button-secondary button-sm" onClick={() => handleRemoveBasketItem(entry.id)}>
                     إزالة
                   </button>
                 </li>

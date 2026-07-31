@@ -33,6 +33,7 @@ import {
 import { clearEditDraftPosition, getEditDraftPosition, saveEditDraftPosition } from "@/lib/edit-draft-position";
 import { isFavorited, toggleFavorite } from "@/lib/favorites";
 import { deferRecord, getLaterEntry, removeLater, type LaterEntry } from "@/lib/later-list";
+import { isInBasket, toggleBasket } from "@/lib/work-basket";
 import { deriveRecordStatus, missingDescribeFields } from "@/lib/record-status";
 import { getShortcut, isTypingTarget, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
 import { recordView } from "@/lib/recent-items";
@@ -1175,6 +1176,7 @@ export default function ArchiveDetailPage() {
   const canEditRecords = useCapability("records.edit");
   const [state, setState] = useState<DetailState>({ status: "loading" });
   const [isFav, setIsFav] = useState(false);
+  const [inBasket, setInBasket] = useState(false);
   const [laterEntry, setLaterEntry] = useState<LaterEntry | null>(null);
   const [laterFormOpen, setLaterFormOpen] = useState(false);
   const [laterReason, setLaterReason] = useState("");
@@ -1401,6 +1403,7 @@ export default function ArchiveDetailPage() {
         historyError: null
       });
       setIsFav(isFavorited(id));
+      setInBasket(isInBasket(id));
       setLaterEntry(getLaterEntry(id));
       recordView(id, recordResponse.record.title, recordResponse.record.type);
 
@@ -1551,6 +1554,19 @@ export default function ArchiveDetailPage() {
                 title={isFav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
               >
                 {isFav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+              </button>
+            ) : null}
+            {state.status === "ready" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setInBasket(toggleBasket(id, { title: state.record.title, type: state.record.type }));
+                }}
+                className={`button ${inBasket ? "button-primary" : "button-secondary"}`}
+                aria-pressed={inBasket}
+                title={inBasket ? "إزالة من سلة العمل" : "إضافة إلى سلة العمل"}
+              >
+                {inBasket ? "إزالة من السلة" : "أضف إلى السلة"}
               </button>
             ) : null}
             {state.status === "ready" ? (
