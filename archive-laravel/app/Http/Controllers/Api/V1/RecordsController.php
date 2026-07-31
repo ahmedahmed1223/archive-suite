@@ -141,6 +141,8 @@ class RecordsController extends Controller
         }
         $now = now();
         $count = 0;
+        $blocked = [];
+        $isAdmin = $request->attributes->get('archive_user')?->role === 'admin';
 
         foreach ($records as $record) {
             $uid = (string) ($record['uid'] ?? $record['id']);
@@ -151,6 +153,13 @@ class RecordsController extends Controller
             // fires below.
             $existingRow = $this->storageRows->find($validated['store'], $uid);
             $existed = $existingRow !== null;
+
+            // V1-866: a frozen record rejects writes at the API level, not
+            // just the UI. Documented override: admins may still write.
+            if ($existed && ! $isAdmin && DB::table('record_freezes')->where('record_id', $uid)->exists()) {
+                $blocked[] = $uid;
+                continue;
+            }
 
             // V1-834: snapshot the pre-write state so a later diff/restore has
             // something to compare against. Best-effort and non-fatal — a
@@ -188,7 +197,7 @@ class RecordsController extends Controller
             $count++;
         }
 
-        return response()->json(['ok' => true, 'count' => $count]);
+        return response()->json(['ok' => true, 'count' => $count, 'blocked' => $blocked]);
     }
 
     /**

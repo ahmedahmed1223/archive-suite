@@ -326,6 +326,14 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// V1-866: enforced at the API level in RecordsController::bulk — admins can override.
+export interface RecordFreeze {
+  recordId: string;
+  reason: string;
+  frozenBy: string | null;
+  createdAt: string;
+}
+
 // V1-848: short-lived, informational-only edit presence marker.
 export interface RecordEditClaim {
   recordId: string;
@@ -1257,6 +1265,9 @@ export interface ArchiveApiClient {
   createRecordNote(recordId: string, payload: CreateRecordNotePayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  recordFreeze(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ freeze: RecordFreeze | null }>>;
+  freezeRecord(recordId: string, reason: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ freeze: RecordFreeze }>>;
+  unfreezeRecord(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   recordEditClaim(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ claim: RecordEditClaim | null }>>;
   claimRecordEdit(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ claim: RecordEditClaim }>>;
   releaseRecordEditClaim(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -1306,7 +1317,7 @@ export interface ArchiveApiClient {
   type(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ type: ArchiveType }>>;
   saveType(payload: ArchiveType, options?: AuthRequestOptions): Promise<ApiEnvelope<{ type: ArchiveType }>>;
   deleteType(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted?: boolean }>>;
-  bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number }>>;
+  bulkRecords(payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; blocked?: string[] }>>;
   bulkDeleteRecords(payload: { store: string; ids: string[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ count: number; results: BulkDeleteResultItem[] }>>;
   safetyPreviewScenarios(options?: AuthRequestOptions): Promise<SafetyPreviewEnvelope<GeneratedSchemas["SafetyPreviewScenariosResponse"]>>;
   runSafetyPreview(payload: SafetyPreviewRunPayload, options?: AuthRequestOptions): Promise<SafetyPreviewEnvelope<SafetyPreviewRun>>;
@@ -1814,6 +1825,12 @@ export function createArchiveApiClient({
       patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
+    recordFreeze: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ freeze: RecordFreeze | null }>(`/records/${encodeURIComponent(recordId)}/freeze`, options),
+    freezeRecord: (recordId: string, reason: string, options?: AuthRequestOptions) =>
+      post<{ freeze: RecordFreeze }>(`/records/${encodeURIComponent(recordId)}/freeze`, { reason }, options),
+    unfreezeRecord: (recordId: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/records/${encodeURIComponent(recordId)}/freeze`, undefined, options),
     recordEditClaim: (recordId: string, options?: AuthRequestOptions) =>
       get<{ claim: RecordEditClaim | null }>(`/records/${encodeURIComponent(recordId)}/edit-claim`, options),
     claimRecordEdit: (recordId: string, options?: AuthRequestOptions) =>
@@ -1981,7 +1998,7 @@ export function createArchiveApiClient({
     deleteType: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted?: boolean }>(`/types/${encodeURIComponent(id)}`, undefined, options),
     bulkRecords: (payload: { store: string; records: ArchiveRecord[] }, options?: AuthRequestOptions) =>
-      post<{ count: number }>("/records/bulk", payload, options),
+      post<{ count: number; blocked?: string[] }>("/records/bulk", payload, options),
     bulkDeleteRecords: (payload: { store: string; ids: string[] }, options?: AuthRequestOptions) =>
       post<{ count: number; results: BulkDeleteResultItem[] }>("/records/bulk-delete", payload, options),
     safetyPreviewScenarios: (options?: AuthRequestOptions) =>

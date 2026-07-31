@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\ProjectsController;
 use App\Http\Controllers\Api\V1\RecordNotesController;
 use App\Http\Controllers\Api\V1\RecordEditClaimController;
+use App\Http\Controllers\Api\V1\RecordFreezeController;
 use App\Http\Controllers\Api\V1\RecordMergeController;
 use App\Http\Controllers\Api\V1\RecordSegmentsController;
 use App\Http\Controllers\Api\V1\RecordSnapshotsController;
@@ -273,6 +274,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/records/{id}/edit-claim', [RecordEditClaimController::class, 'show']);
         Route::post('/records/{id}/edit-claim', [RecordEditClaimController::class, 'claim']);
         Route::delete('/records/{id}/edit-claim', [RecordEditClaimController::class, 'release']);
+        Route::get('/records/{id}/freeze', [RecordFreezeController::class, 'show']);
+        Route::post('/records/{id}/freeze', [RecordFreezeController::class, 'freeze']);
+        Route::delete('/records/{id}/freeze', [RecordFreezeController::class, 'unfreeze']);
         Route::post('/records/{id}/merge-preview', [RecordMergeController::class, 'preview']);
         Route::post('/records/{id}/merge', [RecordMergeController::class, 'merge']);
         Route::get('/records/{id}/snapshots', [RecordSnapshotsController::class, 'index']);

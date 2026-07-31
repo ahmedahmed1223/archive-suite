@@ -1189,6 +1189,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/freeze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the freeze status of a record, if any */
+        get: operations["getRecordFreeze"];
+        put?: never;
+        /** Freeze a record for review, blocking further writes at the API level (admins can still override) */
+        post: operations["freezeRecord"];
+        /** Unfreeze a record */
+        delete: operations["unfreezeRecord"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/history": {
         parameters: {
             query?: never;
@@ -3841,6 +3860,19 @@ export interface components {
         };
         RecordEditClaimResponse: components["schemas"]["OkEnvelope"] & {
             claim: components["schemas"]["RecordEditClaim"] | null;
+        };
+        RecordFreeze: {
+            /** Format: date-time */
+            createdAt: string;
+            frozenBy: string | null;
+            reason: string;
+            recordId: string;
+        };
+        RecordFreezeRequest: {
+            reason: string;
+        };
+        RecordFreezeResponse: components["schemas"]["OkEnvelope"] & {
+            freeze: components["schemas"]["RecordFreeze"] | null;
         };
         RecordHistoryEntry: {
             action: string;
@@ -7229,6 +7261,75 @@ export interface operations {
         responses: {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
+        };
+    };
+    getRecordFreeze: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Freeze status or null */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordFreezeResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    freezeRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordFreezeRequest"];
+            };
+        };
+        responses: {
+            /** @description Freeze applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordFreezeResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    unfreezeRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     listRecordHistory: {

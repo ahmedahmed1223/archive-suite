@@ -4653,6 +4653,55 @@
         }
       }
     },
+    "/records/{id}/freeze": {
+      "get": {
+        "tags": ["Record Freeze"],
+        "summary": "Get the freeze status of a record, if any",
+        "operationId": "getRecordFreeze",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Freeze status or null",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordFreezeResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Record Freeze"],
+        "summary": "Freeze a record for review, blocking further writes at the API level (admins can still override)",
+        "operationId": "freezeRecord",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordFreezeRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Freeze applied",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordFreezeResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Record Freeze"],
+        "summary": "Unfreeze a record",
+        "operationId": "unfreezeRecord",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/merge-preview": {
       "post": {
         "tags": ["Record Merge"],
@@ -8509,6 +8558,35 @@
             "required": ["claim"],
             "properties": {
               "claim": { "anyOf": [{ "$ref": "#/components/schemas/RecordEditClaim" }, { "type": "null" }] }
+            }
+          }
+        ]
+      },
+      "RecordFreeze": {
+        "type": "object",
+        "required": ["recordId", "reason", "frozenBy", "createdAt"],
+        "properties": {
+          "recordId": { "type": "string" },
+          "reason": { "type": "string" },
+          "frozenBy": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RecordFreezeRequest": {
+        "type": "object",
+        "required": ["reason"],
+        "properties": {
+          "reason": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        }
+      },
+      "RecordFreezeResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["freeze"],
+            "properties": {
+              "freeze": { "anyOf": [{ "$ref": "#/components/schemas/RecordFreeze" }, { "type": "null" }] }
             }
           }
         ]
