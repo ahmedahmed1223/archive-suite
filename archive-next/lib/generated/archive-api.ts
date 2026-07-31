@@ -1187,6 +1187,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge duplicate records into this primary record; duplicates are soft-deleted (restorable via /trash/restore), their own files are never touched */
+        post: operations["mergeRecords"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/merge-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview merging duplicate records into this primary record */
+        post: operations["previewRecordMerge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/notes": {
         parameters: {
             query?: never;
@@ -3749,6 +3783,24 @@ export interface components {
         RecordListResponse: components["schemas"]["OkEnvelope"] & {
             nextCursor?: string | null;
             records: components["schemas"]["ArchiveRecord"][];
+        };
+        RecordMergePreviewResponse: components["schemas"]["OkEnvelope"] & {
+            commentCount: number;
+            duplicates: {
+                found: boolean;
+                id: string;
+            }[];
+            noteCount: number;
+            primaryId: string;
+            relationCount: number;
+        };
+        RecordMergeRequest: {
+            duplicateIds: string[];
+            store?: string;
+        };
+        RecordMergeResponse: components["schemas"]["OkEnvelope"] & {
+            merged: string[];
+            primaryId: string;
         };
         RecordNote: {
             authorId: string | null;
@@ -7038,6 +7090,64 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    mergeRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Merge result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordMergeResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    previewRecordMerge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Merge preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordMergePreviewResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listRecordNotes: {

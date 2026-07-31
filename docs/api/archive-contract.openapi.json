@@ -4612,6 +4612,50 @@
         }
       }
     },
+    "/records/{id}/merge-preview": {
+      "post": {
+        "tags": ["Record Merge"],
+        "summary": "Preview merging duplicate records into this primary record",
+        "operationId": "previewRecordMerge",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordMergeRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Merge preview",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordMergePreviewResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/merge": {
+      "post": {
+        "tags": ["Record Merge"],
+        "summary": "Merge duplicate records into this primary record; duplicates are soft-deleted (restorable via /trash/restore), their own files are never touched",
+        "operationId": "mergeRecords",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordMergeRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Merge result",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordMergeResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/triage-flag": {
       "get": {
         "tags": ["Triage"],
@@ -8341,6 +8385,50 @@
             "required": ["projects"],
             "properties": {
               "projects": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } }
+            }
+          }
+        ]
+      },
+      "RecordMergeRequest": {
+        "type": "object",
+        "required": ["duplicateIds"],
+        "properties": {
+          "store": { "type": "string" },
+          "duplicateIds": { "type": "array", "items": { "type": "string" }, "minItems": 1, "maxItems": 50 }
+        }
+      },
+      "RecordMergePreviewResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["primaryId", "duplicates", "relationCount", "noteCount", "commentCount"],
+            "properties": {
+              "primaryId": { "type": "string" },
+              "duplicates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id", "found"],
+                  "properties": { "id": { "type": "string" }, "found": { "type": "boolean" } }
+                }
+              },
+              "relationCount": { "type": "integer", "minimum": 0 },
+              "noteCount": { "type": "integer", "minimum": 0 },
+              "commentCount": { "type": "integer", "minimum": 0 }
+            }
+          }
+        ]
+      },
+      "RecordMergeResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["primaryId", "merged"],
+            "properties": {
+              "primaryId": { "type": "string" },
+              "merged": { "type": "array", "items": { "type": "string" } }
             }
           }
         ]

@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\V1\MetadataTemplatesController;
 use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\ProjectsController;
 use App\Http\Controllers\Api\V1\RecordNotesController;
+use App\Http\Controllers\Api\V1\RecordMergeController;
 use App\Http\Controllers\Api\V1\RecordSegmentsController;
 use App\Http\Controllers\Api\V1\RecordTriageFlagController;
 use App\Http\Controllers\Api\V1\RecordTranscriptController;
@@ -267,6 +268,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/projects/{id}/records/{recordId}', [ProjectsController::class, 'link']);
         Route::delete('/projects/{id}/records/{recordId}', [ProjectsController::class, 'unlink']);
         Route::get('/records/{id}/projects', [ProjectsController::class, 'recordProjects']);
+        Route::post('/records/{id}/merge-preview', [RecordMergeController::class, 'preview']);
+        Route::post('/records/{id}/merge', [RecordMergeController::class, 'merge']);
         Route::get('/records/{id}/triage-flag', [RecordTriageFlagController::class, 'show']);
         Route::put('/records/{id}/triage-flag', [RecordTriageFlagController::class, 'upsert']);
         Route::delete('/records/{id}/triage-flag', [RecordTriageFlagController::class, 'destroy']);

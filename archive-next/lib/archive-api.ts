@@ -326,6 +326,21 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// V1-839: merges duplicate records into a chosen primary. Duplicates are
+// soft-deleted (restorable via /trash/restore), their own files untouched.
+export interface RecordMergePreview {
+  primaryId: string;
+  duplicates: Array<{ id: string; found: boolean }>;
+  relationCount: number;
+  noteCount: number;
+  commentCount: number;
+}
+
+export interface RecordMergeResult {
+  primaryId: string;
+  merged: string[];
+}
+
 // V1-837: quick-triage "needs info" flag, one per record, team-visible.
 export interface RecordTriageFlag {
   recordId: string;
@@ -1219,6 +1234,8 @@ export interface ArchiveApiClient {
   createRecordNote(recordId: string, payload: CreateRecordNotePayload, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  previewRecordMerge(primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordMergePreview>>;
+  mergeRecords(primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordMergeResult>>;
   recordTriageFlag(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ flag: RecordTriageFlag | null }>>;
   setRecordTriageFlag(recordId: string, reason: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ flag: RecordTriageFlag }>>;
   clearRecordTriageFlag(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -1768,6 +1785,10 @@ export function createArchiveApiClient({
       patch<{ note: RecordNote }>(`/record-notes/${encodeURIComponent(id)}`, payload, options),
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
+    previewRecordMerge: (primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions) =>
+      post<RecordMergePreview>(`/records/${encodeURIComponent(primaryId)}/merge-preview`, { duplicateIds, store }, options),
+    mergeRecords: (primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions) =>
+      post<RecordMergeResult>(`/records/${encodeURIComponent(primaryId)}/merge`, { duplicateIds, store }, options),
     recordTriageFlag: (recordId: string, options?: AuthRequestOptions) =>
       get<{ flag: RecordTriageFlag | null }>(`/records/${encodeURIComponent(recordId)}/triage-flag`, options),
     setRecordTriageFlag: (recordId: string, reason: string, options?: AuthRequestOptions) =>
