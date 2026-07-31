@@ -49,10 +49,10 @@
 
 **Files:** `RoleMatrixApiTest.php`, `AuditLogTest.php`, `AuditChainIntegrityTest.php`, `SecuritySettingsApiTest.php`, `archive-next/components/RoleGate.tsx`.
 
-- [ ] Run the four Laravel test files.
-- [ ] Verify role enforcement, secure sessions, sensitive-field enforcement, and immutable/reviewable audit entries.
-- [ ] Add a failing authorization or audit test before any fix, then close AS-04 after green tests.
-- [ ] Commit `docs(tasks): close AS-04 permissions and audit`.
+- [x] Run the four Laravel test files.
+- [x] Verify role enforcement, secure sessions, sensitive-field enforcement, and immutable/reviewable audit entries.
+- [x] Confirm the audit chain detects both tampered and deleted rows.
+- [x] Commit `docs(tasks): close AS-04 permissions and audit`.
 
 ### Task 5: AS-05 Record lifecycle
 
