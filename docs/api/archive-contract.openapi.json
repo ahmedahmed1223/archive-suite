@@ -303,6 +303,20 @@
         }
       }
     },
+    "/records/{id}/transcript/subtitles": {
+      "post": {
+        "tags": ["Records"], "summary": "Import an SRT or WebVTT file into a record transcript", "operationId": "importRecordSubtitles", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "type": "object", "required": ["file"], "properties": { "file": { "type": "string", "format": "binary", "description": "SRT or WebVTT subtitle file." }, "store": { "type": "string" } } } } } },
+        "responses": { "200": { "description": "Updated record", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+      },
+      "put": {
+        "tags": ["Records"], "summary": "Save edited timed subtitles and their presentation style on a record", "operationId": "saveRecordSubtitles", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubtitleContentUpdateRequest" } } } },
+        "responses": { "200": { "description": "Updated record", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+      }
+    },
     "/records/{id}/notes": {
       "get": {
         "tags": ["Record Notes"],
@@ -8064,6 +8078,24 @@
           "fileName": { "type": "string" },
           "checksum": { "type": "string" }
         }
+      },
+      "SubtitleContentUpdateRequest": {
+        "type": "object",
+        "required": ["content", "format"],
+        "properties": {
+          "content": { "type": "string", "minLength": 1, "maxLength": 1000000 },
+          "format": { "type": "string", "enum": ["srt", "vtt"] },
+          "store": { "type": "string" },
+          "style": {
+            "type": "object",
+            "properties": {
+              "fontSize": { "type": "integer", "minimum": 12, "maximum": 72 },
+              "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+              "align": { "type": "string", "enum": ["start", "middle", "end"] }
+            }
+          }
+        },
+        "additionalProperties": false
       },
       "RecordResponse": {
         "allOf": [

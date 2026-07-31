@@ -253,6 +253,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/records/{id}/attachments', [RecordAttachmentsController::class, 'index']);
         Route::post('/records/{id}/attachments', [RecordAttachmentsController::class, 'store']);
         Route::delete('/records/{id}/attachments/{attachmentId}', [RecordAttachmentsController::class, 'destroy']);
+        Route::post('/records/{id}/transcript/srt', [RecordTranscriptController::class, 'importSrt']);
+        Route::post('/records/{id}/transcript/subtitles', [RecordTranscriptController::class, 'importSrt']);
+        Route::put('/records/{id}/transcript/subtitles', [RecordTranscriptController::class, 'updateSubtitles']);
         Route::patch('/records/{id}/transcript', [RecordTranscriptController::class, 'update']);
         Route::get('/records/{id}/notes', [RecordNotesController::class, 'index']);
         Route::post('/records/{id}/notes', [RecordNotesController::class, 'store']);

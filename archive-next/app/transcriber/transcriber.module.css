@@ -46,6 +46,22 @@
   text-align: start;
 }
 
+.subtitlePreview {
+  min-block-size: 5rem;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: #151515;
+  text-shadow: 0 1px 2px #000;
+}
+
+.subtitlePreview p {
+  margin: 0;
+}
+
+.subtitlePreview p + p {
+  margin-block-start: var(--space-2);
+}
+
 @media (min-width: 900px) {
   .console {
     grid-template-columns: minmax(18rem, 0.4fr) minmax(0, 1fr);

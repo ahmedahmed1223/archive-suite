@@ -67,10 +67,10 @@
 
 **Files:** `ChunkedUploadTest.php`, `UploadsApiTest.php`, `ImportPreviewApiTest.php`, `RecordTranscriptApiTest.php`, `archive-next/app/uploads/UploadForm.tsx`.
 
-- [ ] Run the four Laravel import/upload suites.
-- [ ] Verify chunked large uploads, import preview, SRT/transcript linkage, and reviewed cloud ingest configuration.
-- [ ] Add a failing test before any missing import behavior, then close AS-06.
-- [ ] Commit `docs(tasks): close AS-06 media upload and import`.
+- [x] Run the four Laravel import/upload suites plus `RecordSrtImportApiTest`.
+- [x] Verify chunked large uploads, import preview, SRT/WebVTT transcript linkage, and reviewed cloud ingest configuration.
+- [x] Add a Unicode-safe subtitle editor: edit, copy, download, save-to-record, and persist the presentation style without silently changing source media.
+- [x] Commit `feat(import): complete AS-06 media upload and import`.
 
 ### Task 7: AS-07 Advanced search and filters
 

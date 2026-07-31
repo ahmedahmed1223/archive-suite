@@ -1480,6 +1480,8 @@ export interface ArchiveApiClient {
   uploadRecordAttachments(id: string, files: File[], store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ attachments: RecordAttachment[] }>>;
   deleteRecordAttachment(id: string, attachmentId: string, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   updateRecordTranscript(id: string, payload: { transcript: string; store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
+  importRecordSubtitles(id: string, file: File, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
+  saveRecordSubtitles(id: string, payload: { content: string; format: "srt" | "vtt"; store?: string; style?: { fontSize?: number; color?: string; align?: "start" | "middle" | "end" } }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   records(params: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordListPayload>>;
   types(params?: { cursor?: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ types: ArchiveType[]; nextCursor?: string | null }>>;
   type(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ type: ArchiveType }>>;
@@ -2212,6 +2214,12 @@ export function createArchiveApiClient({
       del<{ deleted: boolean }>(`/records/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachmentId)}?${new URLSearchParams({ store })}`, undefined, options),
     updateRecordTranscript: (id: string, payload: { transcript: string; store?: string }, options?: AuthRequestOptions) =>
       patch<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}/transcript`, payload, options),
+    importRecordSubtitles: (id: string, file: File, store = "archive-items", options?: AuthRequestOptions) => {
+      const form = new FormData(); form.set("file", file); form.set("store", store);
+      return request<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}/transcript/subtitles`, { method: "POST", body: form, accessToken: options?.accessToken, extraHeaders: options?.headers });
+    },
+    saveRecordSubtitles: (id, payload, options) =>
+      put<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}/transcript/subtitles`, payload, options),
     records: ({ store, cursor, limit = 50 }: { store: string; cursor?: string; limit?: number }, options?: AuthRequestOptions) => {
       const params = new URLSearchParams({ store, limit: String(clampApiLimit(limit, 50, 200)) });
       if (cursor) params.set("cursor", cursor);

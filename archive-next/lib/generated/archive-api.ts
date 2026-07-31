@@ -1898,6 +1898,24 @@ export interface paths {
         patch: operations["updateRecordTranscript"];
         trace?: never;
     };
+    "/records/{id}/transcript/subtitles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save edited timed subtitles and their presentation style on a record */
+        put: operations["saveRecordSubtitles"];
+        /** Import an SRT or WebVTT file into a record transcript */
+        post: operations["importRecordSubtitles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/triage-flag": {
         parameters: {
             query?: never;
@@ -5256,6 +5274,18 @@ export interface components {
             at: string;
             totalBytes: number;
             usedBytes: number;
+        };
+        SubtitleContentUpdateRequest: {
+            content: string;
+            /** @enum {string} */
+            format: "srt" | "vtt";
+            store?: string;
+            style?: {
+                /** @enum {string} */
+                align?: "start" | "middle" | "end";
+                color?: string;
+                fontSize?: number;
+            };
         };
         /** @enum {string} */
         SuggestionContext: "discover" | "search" | "detail";
@@ -9492,6 +9522,73 @@ export interface operations {
                     "application/json": components["schemas"]["OkEnvelope"] & {
                         record: components["schemas"]["ArchiveRecord"];
                     };
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    saveRecordSubtitles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubtitleContentUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    importRecordSubtitles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description SRT or WebVTT subtitle file.
+                     */
+                    file: string;
+                    store?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordResponse"];
                 };
             };
             401: components["responses"]["Error"];

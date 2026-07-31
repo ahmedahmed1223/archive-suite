@@ -39,6 +39,14 @@ export default function TranscriberPage() {
   const [recentState, setRecentState] = useState<RecentState>({ status: "loading" });
   const [showRaw, setShowRaw] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [subtitleContent, setSubtitleContent] = useState("");
+  const [subtitleFileName, setSubtitleFileName] = useState("captions.srt");
+  const [subtitleRecordId, setSubtitleRecordId] = useState("");
+  const [subtitleFormat, setSubtitleFormat] = useState<"srt" | "vtt">("srt");
+  const [subtitleFontSize, setSubtitleFontSize] = useState(24);
+  const [subtitleColor, setSubtitleColor] = useState("#ffffff");
+  const [subtitleAlign, setSubtitleAlign] = useState<"start" | "middle" | "end">("middle");
+  const [subtitleMessage, setSubtitleMessage] = useState("");
   const [mediaQuery, setMediaQuery] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -161,6 +169,51 @@ export default function TranscriberPage() {
     }
   }
 
+  async function loadSubtitleFile(file: File | undefined) {
+    if (!file) return;
+    const extension = file.name.toLowerCase().endsWith(".vtt") ? "vtt" : file.name.toLowerCase().endsWith(".srt") ? "srt" : null;
+    if (!extension) {
+      setSubtitleMessage("اختر ملف SRT أو WebVTT فقط.");
+      return;
+    }
+    setSubtitleContent(await file.text());
+    setSubtitleFileName(file.name);
+    setSubtitleFormat(extension);
+    setSubtitleMessage(`فُتح ${file.name} للتعديل محليًا.`);
+  }
+
+  async function copySubtitles() {
+    if (!subtitleContent || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(subtitleContent);
+    setSubtitleMessage("نُسخ ملف الترجمة إلى الحافظة.");
+  }
+
+  function downloadSubtitles() {
+    if (!subtitleContent) return;
+    const extension = subtitleFormat === "vtt" ? "vtt" : "srt";
+    const filename = subtitleFileName.replace(/\.(srt|vtt)$/i, "") || "captions";
+    const url = URL.createObjectURL(new Blob([subtitleContent], { type: "text/plain;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${filename}.${extension}`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setSubtitleMessage("حُفظت نسخة ملف الترجمة على جهازك.");
+  }
+
+  async function saveSubtitlesToRecord() {
+    if (!subtitleRecordId.trim() || !subtitleContent.trim()) {
+      setSubtitleMessage("أدخل معرّف المادة ونص الترجمة قبل الحفظ.");
+      return;
+    }
+    const response = await api.saveRecordSubtitles(subtitleRecordId.trim(), {
+      content: subtitleContent,
+      format: subtitleFormat,
+      style: { fontSize: subtitleFontSize, color: subtitleColor, align: subtitleAlign }
+    });
+    setSubtitleMessage(response.ok ? "حُفظت الترجمة والنمط على المادة." : response.error || "تعذر حفظ الترجمة.");
+  }
+
   return (
     <AppShell subtitle="التفريغ الصوتي" contentClassName={`stack ${styles.transcriberContent}`} tipsPage="transcriber">
       <PageToolbar
@@ -173,6 +226,25 @@ export default function TranscriberPage() {
           </>
         }
       />
+
+      <section className="panel stack" aria-labelledby="subtitle-editor-title">
+        <div className="panel-section-header">
+          <div><h2 id="subtitle-editor-title">محرر SRT وWebVTT</h2><p>افتح، عدّل، انسخ، نزّل، أو احفظ الترجمة ونمط عرضها على مادة أرشيفية.</p></div>
+          <span className="badge">{parseSubtitles(subtitleContent).length} مقطع</span>
+        </div>
+        <div className="archive-toolbar-grid">
+          <label><span>ملف الترجمة</span><input type="file" accept=".srt,.vtt,text/plain" onChange={(event) => void loadSubtitleFile(event.target.files?.[0])} /></label>
+          <label><span>معرّف المادة للحفظ</span><input value={subtitleRecordId} onChange={(event) => setSubtitleRecordId(event.target.value)} placeholder="record-id" /></label>
+          <label><span>الصيغة</span><select value={subtitleFormat} onChange={(event) => setSubtitleFormat(event.target.value as "srt" | "vtt")}><option value="srt">SRT</option><option value="vtt">WebVTT</option></select></label>
+          <label><span>حجم النص</span><input type="number" min="12" max="72" value={subtitleFontSize} onChange={(event) => setSubtitleFontSize(Number(event.target.value) || 24)} /></label>
+          <label><span>لون النص</span><input type="color" value={subtitleColor} onChange={(event) => setSubtitleColor(event.target.value)} /></label>
+          <label><span>المحاذاة</span><select value={subtitleAlign} onChange={(event) => setSubtitleAlign(event.target.value as "start" | "middle" | "end")}><option value="start">بداية</option><option value="middle">وسط</option><option value="end">نهاية</option></select></label>
+        </div>
+        <textarea className={styles.rawText} value={subtitleContent} onChange={(event) => setSubtitleContent(event.target.value)} placeholder="ألصق أو افتح ملف SRT / WebVTT هنا…" aria-label="محتوى ملف الترجمة" />
+        <div className="button-row"><button className="button button-secondary" type="button" onClick={() => void copySubtitles()} disabled={!subtitleContent}>نسخ</button><button className="button button-secondary" type="button" onClick={downloadSubtitles} disabled={!subtitleContent}>تنزيل الملف</button><button className="button button-primary" type="button" onClick={() => void saveSubtitlesToRecord()} disabled={!subtitleContent || !subtitleRecordId.trim()}>حفظ على المادة</button></div>
+        {subtitleMessage ? <p className="helper-text" role="status">{subtitleMessage}</p> : null}
+        {subtitleContent ? <div className={styles.subtitlePreview} style={{ fontSize: `${subtitleFontSize}px`, color: subtitleColor, textAlign: subtitleAlign === "middle" ? "center" : subtitleAlign }} aria-label="معاينة نمط الترجمة">{parseSubtitles(subtitleContent).slice(0, 3).map((cue) => <p key={cue.index}>{cue.text}</p>)}</div> : null}
+      </section>
 
       <div className={`split-layout ${styles.console}`} aria-label="أدوات التفريغ الصوتي">
         <div className={styles.formPanel}>
