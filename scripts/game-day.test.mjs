@@ -29,6 +29,15 @@ test("a plan is dry-run by default, Docker-only, project-isolated, and includes 
   assert.ok(plan.generatedCompose.contents.includes("container_name:"), "plan records why generated compose removes fixed container names");
 });
 
+test("network recovery waits for the isolated Laravel gateway to become healthy", () => {
+  const plan = createGameDayPlan({ scenarioIds: ["GD-NET-05"] });
+  const restart = plan.commands.find((command) => command.purpose === "restart-GD-NET-05");
+  const stabilization = plan.commands.find((command) => command.purpose === "stabilize-GD-NET-05");
+
+  assert.deepEqual(restart?.args.slice(-2), ["restart", "laravel"]);
+  assert.deepEqual(stabilization?.args.slice(-5), ["up", "--detach", "--wait", "--no-deps", "laravel"]);
+});
+
 test("game-day execution writes redacted evidence and never claims external manual checks passed", () => {
   const outputDir = mkdtempSync(join(tmpdir(), "archive-game-day-"));
   const result = runGameDay({ scenarioIds: ["GD-DB-01", "GD-CERT-07"], outputDir, now: new Date("2026-07-15T12:00:00Z") });

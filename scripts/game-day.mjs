@@ -56,6 +56,10 @@ export function createGameDayPlan({ scenarioIds = SCENARIOS.map((scenario) => sc
     commands.push(dockerCommand([...composeArgs, ...actions[0]], `fault-${scenario.id}`));
     commands.push(dockerCommand([...composeArgs, "ps", "--all", "--format", "json"], `detect-${scenario.id}`, "service-down"));
     commands.push(dockerCommand([...composeArgs, ...actions[1]], `restore-${scenario.id}`));
+    if (scenario.id === "GD-NET-05") {
+      commands.push(dockerCommand([...composeArgs, "restart", scenario.service], `restart-${scenario.id}`));
+      commands.push(dockerCommand([...composeArgs, "up", "--detach", "--wait", "--no-deps", scenario.service], `stabilize-${scenario.id}`));
+    }
     commands.push(dockerCommand([...composeArgs, "ps", "--all", "--format", "json"], `recover-${scenario.id}`, "service-running"));
     commands.push(dockerCommand([...composeArgs, "exec", "-T", "postgres", "sh", "-lc", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""], `data-integrity-${scenario.id}`));
   }
