@@ -326,6 +326,13 @@ export interface RecordComment {
   updatedAt: string | null;
 }
 
+// V1-868: last recorded source per metadata field, opt-in via bulkRecords' fieldSources.
+export interface RecordFieldSource {
+  field: string;
+  source: "manual" | "template" | "csv" | "bulk";
+  updatedAt: string;
+}
+
 // V1-860: on-demand checksum verification history per attachment.
 export interface FileHealthCheck {
   id: string;
@@ -1291,6 +1298,7 @@ export interface ArchiveApiClient {
   updateRecordNote(id: string, payload: UpdateRecordNotePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ note: RecordNote }>>;
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   unusedFiles(options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: UnusedFile[] }>>;
+  recordFieldSources(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sources: RecordFieldSource[] }>>;
   fileHealthChecks(attachmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ checks: FileHealthCheck[] }>>;
   runFileHealthCheck(attachmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ check: FileHealthCheck }>>;
   previewVocabularyRelink(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<VocabularyRelinkPreview>>;
@@ -1856,6 +1864,8 @@ export function createArchiveApiClient({
     deleteRecordNote: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/record-notes/${encodeURIComponent(id)}`, undefined, options),
     unusedFiles: (options?: AuthRequestOptions) => get<{ files: UnusedFile[] }>("/files/unused", options),
+    recordFieldSources: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ sources: RecordFieldSource[] }>(`/records/${encodeURIComponent(recordId)}/field-sources`, options),
     fileHealthChecks: (attachmentId: string, options?: AuthRequestOptions) =>
       get<{ checks: FileHealthCheck[] }>(`/attachments/${encodeURIComponent(attachmentId)}/health`, options),
     runFileHealthCheck: (attachmentId: string, options?: AuthRequestOptions) =>

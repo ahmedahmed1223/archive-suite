@@ -4834,6 +4834,22 @@
         }
       }
     },
+    "/records/{id}/field-sources": {
+      "get": {
+        "tags": ["Field Sources"],
+        "summary": "List the last recorded source (manual/template/csv/bulk) for each metadata field",
+        "operationId": "listRecordFieldSources",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Field sources",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordFieldSourcesResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/snapshots": {
       "get": {
         "tags": ["Record Snapshots"],
@@ -8817,6 +8833,27 @@
             "properties": {
               "primaryId": { "type": "string" },
               "merged": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        ]
+      },
+      "RecordFieldSource": {
+        "type": "object",
+        "required": ["field", "source", "updatedAt"],
+        "properties": {
+          "field": { "type": "string" },
+          "source": { "type": "string", "enum": ["manual", "template", "csv", "bulk"] },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RecordFieldSourcesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["sources"],
+            "properties": {
+              "sources": { "type": "array", "items": { "$ref": "#/components/schemas/RecordFieldSource" } }
             }
           }
         ]

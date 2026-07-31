@@ -116,6 +116,8 @@ class RecordsController extends Controller
             'records.*.id' => ['sometimes', 'string'],
             'records.*.syncVersion' => ['nullable', 'integer'],
             'records.*.lastModifiedBy' => ['nullable', 'array'],
+            'records.*.fieldSources' => ['sometimes', 'array'],
+            'records.*.fieldSources.*' => ['string', 'in:manual,template,csv,bulk'],
         ]);
 
         $validator->after(function ($validator) use ($request): void {
@@ -146,6 +148,10 @@ class RecordsController extends Controller
 
         foreach ($records as $record) {
             $uid = (string) ($record['uid'] ?? $record['id']);
+            // V1-868: fieldSources is metadata about the write, not part of the
+            // record itself — stripped before it ever reaches storage_rows.data.
+            $fieldSources = (array) ($record['fieldSources'] ?? []);
+            unset($record['fieldSources']);
             $normalized = ['uid' => $uid] + $record;
 
             // V1-758B: existence check happens BEFORE the write so we know
@@ -192,6 +198,19 @@ class RecordsController extends Controller
             // docblock for why the service itself never dispatches this.
             if ($validated['store'] === AutomationRuleRunner::ARCHIVE_STORE) {
                 RecordChanged::dispatch($validated['store'], $uid, $normalized, ! $existed);
+            }
+
+            // V1-868: opt-in per-field source tracking — a caller that never
+            // sends fieldSources leaves this table untouched entirely.
+            foreach ($fieldSources as $field => $source) {
+                try {
+                    DB::table('record_field_sources')->updateOrInsert(
+                        ['record_id' => $uid, 'field' => (string) $field],
+                        ['source' => $source, 'updated_at' => $now]
+                    );
+                } catch (\Throwable) {
+                    // Source tracking is a diagnostic aid, not part of the write contract.
+                }
             }
 
             $count++;

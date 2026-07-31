@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\V1\ProjectsController;
 use App\Http\Controllers\Api\V1\RecordNotesController;
 use App\Http\Controllers\Api\V1\RecordEditClaimController;
 use App\Http\Controllers\Api\V1\FileHealthController;
+use App\Http\Controllers\Api\V1\RecordFieldSourcesController;
 use App\Http\Controllers\Api\V1\RecordFreezeController;
 use App\Http\Controllers\Api\V1\UnusedFilesController;
 use App\Http\Controllers\Api\V1\VocabularyRelinkController;
@@ -284,6 +285,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/records/{id}/freeze', [RecordFreezeController::class, 'unfreeze']);
         Route::post('/records/{id}/merge-preview', [RecordMergeController::class, 'preview']);
         Route::post('/records/{id}/merge', [RecordMergeController::class, 'merge']);
+        Route::get('/records/{id}/field-sources', [RecordFieldSourcesController::class, 'index']);
         Route::get('/records/{id}/snapshots', [RecordSnapshotsController::class, 'index']);
         Route::get('/records/{id}/snapshots/{snapshotId}/diff', [RecordSnapshotsController::class, 'diff']);
         Route::post('/records/{id}/snapshots/{snapshotId}/restore', [RecordSnapshotsController::class, 'restore']);

@@ -1240,6 +1240,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/field-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the last recorded source (manual/template/csv/bulk) for each metadata field */
+        get: operations["listRecordFieldSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/freeze": {
         parameters: {
             query?: never;
@@ -3961,6 +3978,16 @@ export interface components {
         };
         RecordEditClaimResponse: components["schemas"]["OkEnvelope"] & {
             claim: components["schemas"]["RecordEditClaim"] | null;
+        };
+        RecordFieldSource: {
+            field: string;
+            /** @enum {string} */
+            source: "manual" | "template" | "csv" | "bulk";
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        RecordFieldSourcesResponse: components["schemas"]["OkEnvelope"] & {
+            sources: components["schemas"]["RecordFieldSource"][];
         };
         RecordFreeze: {
             /** Format: date-time */
@@ -7456,6 +7483,29 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+        };
+    };
+    listRecordFieldSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Field sources */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordFieldSourcesResponse"];
+                };
+            };
             401: components["responses"]["Error"];
         };
     };
