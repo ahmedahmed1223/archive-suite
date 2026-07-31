@@ -52,19 +52,24 @@ class RecordFieldRequestController extends Controller
             'message' => ['required', 'string', 'min:1', 'max:2000'],
             'assignee' => ['nullable', 'string', 'max:200'],
             'dueDate' => ['nullable', 'date'],
+            'departmentId' => ['nullable', 'string', 'max:100'],
         ]);
 
         $user = $request->attributes->get('archive_user');
         $id = (string) Str::uuid();
         $now = now();
+        $departmentId = $validated['departmentId'] ?? null;
+        $fieldOwner = $departmentId ? DB::table('department_field_owners')->where('department_id', $departmentId)->whereIn('field', [$validated['field'], '*'])->orderByRaw("case when field = ? then 0 else 1 end", [$validated['field']])->value('owner') : null;
 
         DB::table('record_field_requests')->insert([
             'id' => $id,
             'record_id' => $recordId,
             'field' => $validated['field'],
             'message' => $validated['message'],
-            'assignee' => $validated['assignee'] ?? null,
+            'assignee' => $validated['assignee'] ?? $fieldOwner,
             'due_date' => $validated['dueDate'] ?? null,
+            'department_id' => $departmentId,
+            'field_owner' => $fieldOwner,
             'created_by' => $user?->getKey(),
             'created_at' => $now,
             'updated_at' => $now,
@@ -112,6 +117,8 @@ class RecordFieldRequestController extends Controller
             'field' => $row->field,
             'message' => $row->message,
             'assignee' => $row->assignee,
+            'departmentId' => $row->department_id,
+            'fieldOwner' => $row->field_owner,
             'dueDate' => $row->due_date,
             'resolvedAt' => $row->resolved_at,
             'resolvedBy' => $row->resolved_by,

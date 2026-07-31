@@ -73,6 +73,13 @@ class RecordFieldRequestApiTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_it_assigns_the_department_field_owner_without_blocking_an_explicit_assignee(): void
+    {
+        $this->putJson('/api/v1/department-field-owners', ['departmentId' => 'news', 'owners' => [['field' => 'rightsHolder', 'owner' => 'rights@example.com'], ['field' => '*', 'owner' => 'desk@example.com']]], $this->authHeaders())->assertOk();
+        $this->postJson('/api/v1/records/item-1/field-requests', ['field' => 'rightsHolder', 'message' => 'مطلوب', 'departmentId' => 'news'], $this->authHeaders())->assertCreated()->assertJsonPath('request.fieldOwner', 'rights@example.com')->assertJsonPath('request.assignee', 'rights@example.com');
+        $this->postJson('/api/v1/records/item-1/field-requests', ['field' => 'summary', 'message' => 'مطلوب', 'departmentId' => 'news', 'assignee' => 'editor@example.com'], $this->authHeaders())->assertCreated()->assertJsonPath('request.fieldOwner', 'desk@example.com')->assertJsonPath('request.assignee', 'editor@example.com');
+    }
+
     public function test_resolving_an_unknown_request_returns_not_found(): void
     {
         $this->postJson('/api/v1/field-requests/unknown/resolve', [], $this->authHeaders())->assertStatus(404);

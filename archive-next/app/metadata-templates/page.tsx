@@ -6,7 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
-import { createArchiveApiClient, type MetadataTemplate, type MetadataTemplateVersion } from "@/lib/archive-api";
+import { createArchiveApiClient, type DepartmentFieldOwner, type MetadataTemplate, type MetadataTemplateVersion } from "@/lib/archive-api";
 import { previewTemplateApplication } from "@/lib/metadata-template-apply";
 import DepartmentQualityPanel from "@/components/DepartmentQualityPanel";
 
@@ -32,6 +32,9 @@ export default function MetadataTemplatesPage() {
   const [editing, setEditing] = useState<MetadataTemplate | null>(null);
   const [versions, setVersions] = useState<MetadataTemplateVersion[]>([]);
   const [error, setError] = useState("");
+  const [fieldOwners, setFieldOwners] = useState<DepartmentFieldOwner[]>([]);
+  const [ownerField, setOwnerField] = useState("");
+  const [ownerAssignee, setOwnerAssignee] = useState("");
 
   async function load() {
     const response = await api.metadataTemplates({ departmentId: departmentId || undefined, includeDisabled: canManageTemplates });
@@ -40,6 +43,15 @@ export default function MetadataTemplatesPage() {
   }
 
   useEffect(() => { void load(); }, [api, canManageTemplates, departmentId]);
+  useEffect(() => { if (!departmentId) { setFieldOwners([]); return; } void api.departmentFieldOwners(departmentId).then((response) => { if (response.ok) setFieldOwners(response.owners); }); }, [api, departmentId]);
+
+  async function addFieldOwner() {
+    if (!departmentId.trim() || !ownerField.trim() || !ownerAssignee.trim()) return;
+    const owners = [...fieldOwners.filter((item) => item.field !== ownerField.trim()), { field: ownerField.trim(), owner: ownerAssignee.trim() }];
+    const response = await api.replaceDepartmentFieldOwners(departmentId.trim(), owners);
+    if (!response.ok) { setError(response.error || "تعذر حفظ مالكية الحقول."); return; }
+    setFieldOwners(response.owners); setOwnerField(""); setOwnerAssignee("");
+  }
 
   function resetForm() {
     setEditing(null); setName(""); setTypeId(""); setTags(""); setFields("{}"); setUsageRoles(["editor"]); setEnabled(true);
@@ -129,6 +141,7 @@ export default function MetadataTemplatesPage() {
         </article>
       </section>
       <DepartmentQualityPanel departmentId={departmentId} />
+      {canManageTemplates && departmentId ? <article className="panel"><div className="panel-title-row"><div><h2>مالكية الحقول</h2><p>يُقترح المسؤول في طلبات المعلومات؛ لا يمنع ذلك المحرر المخوّل من التصحيح أو الإسناد الصريح.</p></div></div><div className="button-row"><input className="search-input" value={ownerField} onChange={(event) => setOwnerField(event.target.value)} placeholder="اسم الحقل أو * لكل الحقول" /><input className="search-input" value={ownerAssignee} onChange={(event) => setOwnerAssignee(event.target.value)} placeholder="المسؤول" /><button className="button button-primary button-sm" type="button" onClick={() => void addFieldOwner()}>حفظ المسؤول</button></div>{fieldOwners.map((owner) => <div className="analytics-tag-row" key={owner.id}><span>{owner.field} · {owner.owner}</span><button className="button button-secondary button-sm" type="button" onClick={() => void api.replaceDepartmentFieldOwners(departmentId, fieldOwners.filter((item) => item.id !== owner.id)).then((response) => response.ok && setFieldOwners(response.owners))}>إزالة</button></div>)}</article> : null}
     </AppShell>
   );
 }

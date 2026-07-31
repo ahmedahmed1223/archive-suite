@@ -333,6 +333,8 @@ export interface RecordFieldRequest {
   field: string;
   message: string;
   assignee: string | null;
+  departmentId?: string | null;
+  fieldOwner?: string | null;
   dueDate: string | null;
   resolvedAt: string | null;
   resolvedBy: string | null;
@@ -344,7 +346,10 @@ export interface RecordFieldRequestInput {
   message: string;
   assignee?: string | null;
   dueDate?: string | null;
+  departmentId?: string | null;
 }
+
+export interface DepartmentFieldOwner { id: string; departmentId: string; field: string; owner: string; }
 
 // V1-868: last recorded source per metadata field, opt-in via bulkRecords' fieldSources.
 export interface RecordFieldSource {
@@ -1383,6 +1388,8 @@ export interface ArchiveApiClient {
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   unusedFiles(options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: UnusedFile[] }>>;
   openFieldRequests(assignee?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ requests: RecordFieldRequest[] }>>;
+  departmentFieldOwners(departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ owners: DepartmentFieldOwner[] }>>;
+  replaceDepartmentFieldOwners(departmentId: string, owners: Array<{ field: string; owner: string }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ owners: DepartmentFieldOwner[] }>>;
   recordFieldRequests(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ requests: RecordFieldRequest[] }>>;
   createRecordFieldRequest(recordId: string, payload: RecordFieldRequestInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: RecordFieldRequest }>>;
   resolveFieldRequest(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: RecordFieldRequest }>>;
@@ -1977,6 +1984,8 @@ export function createArchiveApiClient({
     unusedFiles: (options?: AuthRequestOptions) => get<{ files: UnusedFile[] }>("/files/unused", options),
     openFieldRequests: (assignee?: string, options?: AuthRequestOptions) =>
       get<{ requests: RecordFieldRequest[] }>(`/field-requests${assignee ? `?${new URLSearchParams({ assignee })}` : ""}`, options),
+    departmentFieldOwners: (departmentId: string, options?: AuthRequestOptions) => get<{ owners: DepartmentFieldOwner[] }>(`/department-field-owners?${new URLSearchParams({ departmentId })}`, options),
+    replaceDepartmentFieldOwners: (departmentId: string, owners: Array<{ field: string; owner: string }>, options?: AuthRequestOptions) => put<{ owners: DepartmentFieldOwner[] }>("/department-field-owners", { departmentId, owners }, options),
     recordFieldRequests: (recordId: string, options?: AuthRequestOptions) =>
       get<{ requests: RecordFieldRequest[] }>(`/records/${encodeURIComponent(recordId)}/field-requests`, options),
     createRecordFieldRequest: (recordId: string, payload: RecordFieldRequestInput, options?: AuthRequestOptions) =>

@@ -4568,6 +4568,7 @@
     },
     "/inbox/{id}/department-routing/preview": { "post": { "tags": ["Inbox Routing"], "summary": "Preview routing an inbox item to a department", "operationId": "previewInboxDepartmentRouting", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentRoutingRequest" } } } }, "responses": { "200": { "description": "Routing preview", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentRoutingPreview" } } } } } } },
     "/inbox/{id}/department-routing": { "post": { "tags": ["Inbox Routing"], "summary": "Route an inbox item to a department", "operationId": "routeInboxDepartment", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentRoutingRequest" } } } }, "responses": { "200": { "description": "Routed inbox item", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentRoutingPreview" } } } } } } },
+    "/department-field-owners": { "get": { "tags": ["Department Fields"], "summary": "List field owners for a department", "operationId": "listDepartmentFieldOwners", "security": [{ "bearerAuth": [] }], "parameters": [{ "name": "departmentId", "in": "query", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Field owners", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentFieldOwnersResponse" } } } } } }, "put": { "tags": ["Department Fields"], "summary": "Replace field owners for a department", "operationId": "replaceDepartmentFieldOwners", "security": [{ "bearerAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentFieldOwnersRequest" } } } }, "responses": { "200": { "description": "Field owners", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepartmentFieldOwnersResponse" } } } } } } },
     "/metadata-templates": {
       "get": {
         "tags": ["Metadata Templates"],
@@ -8832,6 +8833,9 @@
       "DepartmentQualityPreviewResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["ready", "missingFields"], "properties": { "ready": { "type": "boolean" }, "missingFields": { "type": "array", "items": { "type": "string" } }, "ruleId": { "type": "string", "nullable": true } } }] },
       "DepartmentRoutingRequest": { "type": "object", "required": ["departmentId"], "properties": { "departmentId": { "type": "string" } } },
       "DepartmentRoutingPreview": { "type": "object", "required": ["blocked", "fromDepartmentId", "toDepartmentId"], "properties": { "blocked": { "type": "boolean" }, "reason": { "type": ["string", "null"] }, "fromDepartmentId": { "type": ["string", "null"] }, "toDepartmentId": { "type": "string" } } },
+      "DepartmentFieldOwner": { "type": "object", "required": ["id", "departmentId", "field", "owner"], "properties": { "id": { "type": "string" }, "departmentId": { "type": "string" }, "field": { "type": "string" }, "owner": { "type": "string" } } },
+      "DepartmentFieldOwnersRequest": { "type": "object", "required": ["departmentId", "owners"], "properties": { "departmentId": { "type": "string" }, "owners": { "type": "array", "items": { "type": "object", "required": ["field", "owner"], "properties": { "field": { "type": "string" }, "owner": { "type": "string" } } } } } },
+      "DepartmentFieldOwnersResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["owners"], "properties": { "owners": { "type": "array", "items": { "$ref": "#/components/schemas/DepartmentFieldOwner" } } } }] },
       "MetadataTemplate": {
         "type": "object",
         "required": ["id", "typeId", "departmentId", "name", "fields", "tags", "enabled", "usageRoles", "currentVersion", "createdAt", "updatedAt"],
@@ -9221,13 +9225,15 @@
       },
       "RecordFieldRequest": {
         "type": "object",
-        "required": ["id", "recordId", "field", "message", "assignee", "dueDate", "resolvedAt", "resolvedBy", "createdAt"],
+        "required": ["id", "recordId", "field", "message", "assignee", "departmentId", "fieldOwner", "dueDate", "resolvedAt", "resolvedBy", "createdAt"],
         "properties": {
           "id": { "type": "string" },
           "recordId": { "type": "string" },
           "field": { "type": "string" },
           "message": { "type": "string" },
           "assignee": { "type": "string", "nullable": true },
+          "departmentId": { "type": "string", "nullable": true },
+          "fieldOwner": { "type": "string", "nullable": true },
           "dueDate": { "type": "string", "format": "date", "nullable": true },
           "resolvedAt": { "type": "string", "format": "date-time", "nullable": true },
           "resolvedBy": { "type": "string", "nullable": true },
@@ -9241,6 +9247,7 @@
           "field": { "type": "string", "maxLength": 100 },
           "message": { "type": "string", "minLength": 1, "maxLength": 2000 },
           "assignee": { "type": "string", "nullable": true, "maxLength": 200 },
+          "departmentId": { "type": "string", "nullable": true, "maxLength": 100 },
           "dueDate": { "type": "string", "format": "date", "nullable": true }
         }
       },

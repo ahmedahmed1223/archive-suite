@@ -471,6 +471,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/department-field-owners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List field owners for a department */
+        get: operations["listDepartmentFieldOwners"];
+        /** Replace field owners for a department */
+        put: operations["replaceDepartmentFieldOwners"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/department-quality-rules": {
         parameters: {
             query?: never;
@@ -3773,6 +3791,22 @@ export interface components {
             folder?: string;
             totalSize: number;
         };
+        DepartmentFieldOwner: {
+            departmentId: string;
+            field: string;
+            id: string;
+            owner: string;
+        };
+        DepartmentFieldOwnersRequest: {
+            departmentId: string;
+            owners: {
+                field: string;
+                owner: string;
+            }[];
+        };
+        DepartmentFieldOwnersResponse: components["schemas"]["OkEnvelope"] & {
+            owners: components["schemas"]["DepartmentFieldOwner"][];
+        };
         DepartmentQualityPreviewRequest: {
             departmentId: string;
             metadata?: {
@@ -4456,9 +4490,11 @@ export interface components {
             assignee: string | null;
             /** Format: date-time */
             createdAt: string;
+            departmentId: string | null;
             /** Format: date */
             dueDate: string | null;
             field: string;
+            fieldOwner: string | null;
             id: string;
             message: string;
             recordId: string;
@@ -4468,6 +4504,7 @@ export interface components {
         };
         RecordFieldRequestCreateRequest: {
             assignee?: string | null;
+            departmentId?: string | null;
             /** Format: date */
             dueDate?: string | null;
             field: string;
@@ -6543,6 +6580,52 @@ export interface operations {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    listDepartmentFieldOwners: {
+        parameters: {
+            query: {
+                departmentId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Field owners */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentFieldOwnersResponse"];
+                };
+            };
+        };
+    };
+    replaceDepartmentFieldOwners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartmentFieldOwnersRequest"];
+            };
+        };
+        responses: {
+            /** @description Field owners */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartmentFieldOwnersResponse"];
+                };
+            };
         };
     };
     listDepartmentQualityRules: {
