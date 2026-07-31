@@ -2858,6 +2858,14 @@ export interface components {
         BulkMacroRunsResponse: components["schemas"]["OkEnvelope"] & {
             runs: components["schemas"]["BulkMacroRun"][];
         };
+        BulkMacroSetRightsHolderStep: {
+            rightsHolder: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "set-rights-holder";
+        };
         BulkMacroSetWorkflowStatusStep: {
             status: components["schemas"]["BulkMacroWorkflowStatus"];
             /**
@@ -2869,7 +2877,7 @@ export interface components {
         BulkMacrosResponse: components["schemas"]["OkEnvelope"] & {
             macros: components["schemas"]["BulkMacro"][];
         };
-        BulkMacroStep: components["schemas"]["BulkMacroAddTagStep"] | components["schemas"]["BulkMacroSetWorkflowStatusStep"] | components["schemas"]["BulkMacroDeleteStep"];
+        BulkMacroStep: components["schemas"]["BulkMacroAddTagStep"] | components["schemas"]["BulkMacroSetWorkflowStatusStep"] | components["schemas"]["BulkMacroDeleteStep"] | components["schemas"]["BulkMacroSetRightsHolderStep"];
         BulkMacroStepOutcome: {
             after?: unknown;
             before?: unknown;
@@ -2882,7 +2890,7 @@ export interface components {
             type: components["schemas"]["BulkMacroStepType"];
         };
         /** @enum {string} */
-        BulkMacroStepType: "add-tag" | "set-workflow-status" | "delete";
+        BulkMacroStepType: "add-tag" | "set-workflow-status" | "delete" | "set-rights-holder";
         BulkMacroTarget: {
             id: string;
             store: string;

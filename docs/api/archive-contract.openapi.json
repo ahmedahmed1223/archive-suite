@@ -6667,14 +6667,15 @@
           }
         ]
       },
-      "BulkMacroStepType": { "type": "string", "enum": ["add-tag", "set-workflow-status", "delete"] },
+      "BulkMacroStepType": { "type": "string", "enum": ["add-tag", "set-workflow-status", "delete", "set-rights-holder"] },
       "BulkMacroWorkflowStatus": { "type": "string", "enum": ["draft", "editing", "review", "approved", "published", "archived"] },
       "BulkMacroAddTagStep": { "type": "object", "additionalProperties": false, "required": ["type", "tag"], "properties": { "type": { "const": "add-tag" }, "tag": { "type": "string", "minLength": 1, "maxLength": 100 } } },
       "BulkMacroSetWorkflowStatusStep": { "type": "object", "additionalProperties": false, "required": ["type", "status"], "properties": { "type": { "const": "set-workflow-status" }, "status": { "$ref": "#/components/schemas/BulkMacroWorkflowStatus" } } },
       "BulkMacroDeleteStep": { "type": "object", "additionalProperties": false, "required": ["type"], "properties": { "type": { "const": "delete" } } },
+      "BulkMacroSetRightsHolderStep": { "type": "object", "additionalProperties": false, "required": ["type", "rightsHolder"], "properties": { "type": { "const": "set-rights-holder" }, "rightsHolder": { "type": "string", "minLength": 1, "maxLength": 200 } } },
       "BulkMacroStep": {
-        "oneOf": [{ "$ref": "#/components/schemas/BulkMacroAddTagStep" }, { "$ref": "#/components/schemas/BulkMacroSetWorkflowStatusStep" }, { "$ref": "#/components/schemas/BulkMacroDeleteStep" }],
-        "discriminator": { "propertyName": "type", "mapping": { "add-tag": "#/components/schemas/BulkMacroAddTagStep", "set-workflow-status": "#/components/schemas/BulkMacroSetWorkflowStatusStep", "delete": "#/components/schemas/BulkMacroDeleteStep" } }
+        "oneOf": [{ "$ref": "#/components/schemas/BulkMacroAddTagStep" }, { "$ref": "#/components/schemas/BulkMacroSetWorkflowStatusStep" }, { "$ref": "#/components/schemas/BulkMacroDeleteStep" }, { "$ref": "#/components/schemas/BulkMacroSetRightsHolderStep" }],
+        "discriminator": { "propertyName": "type", "mapping": { "add-tag": "#/components/schemas/BulkMacroAddTagStep", "set-workflow-status": "#/components/schemas/BulkMacroSetWorkflowStatusStep", "delete": "#/components/schemas/BulkMacroDeleteStep", "set-rights-holder": "#/components/schemas/BulkMacroSetRightsHolderStep" } }
       },
       "BulkMacroTarget": {
         "type": "object", "required": ["store", "id"], "properties": {

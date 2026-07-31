@@ -351,17 +351,19 @@ assert.deepEqual(contract.components.responses.BulkMacroRunError.content["applic
   { $ref: "#/components/schemas/BulkMacroPreviewError" },
   { $ref: "#/components/schemas/BulkMacroValidationError" }
 ]);
-assert.deepEqual(bulkMacroSchemas.BulkMacroStepType.enum, ["add-tag", "set-workflow-status", "delete"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroStepType.enum, ["add-tag", "set-workflow-status", "delete", "set-rights-holder"]);
 assert.deepEqual(bulkMacroSchemas.BulkMacroWorkflowStatus.enum, ["draft", "editing", "review", "approved", "published", "archived"]);
 assert.deepEqual(bulkMacroSchemas.BulkMacroStep.oneOf, [
   { $ref: "#/components/schemas/BulkMacroAddTagStep" },
   { $ref: "#/components/schemas/BulkMacroSetWorkflowStatusStep" },
-  { $ref: "#/components/schemas/BulkMacroDeleteStep" }
+  { $ref: "#/components/schemas/BulkMacroDeleteStep" },
+  { $ref: "#/components/schemas/BulkMacroSetRightsHolderStep" }
 ]);
 assert.equal(bulkMacroSchemas.BulkMacroStep.discriminator.propertyName, "type");
 assert.deepEqual(bulkMacroSchemas.BulkMacroAddTagStep.required, ["type", "tag"]);
 assert.deepEqual(bulkMacroSchemas.BulkMacroSetWorkflowStatusStep.required, ["type", "status"]);
 assert.deepEqual(bulkMacroSchemas.BulkMacroDeleteStep.required, ["type"]);
+assert.deepEqual(bulkMacroSchemas.BulkMacroSetRightsHolderStep.required, ["type", "rightsHolder"]);
 assert.equal(bulkMacroSchemas.BulkMacroAddTagStep.additionalProperties, false);
 assert.equal(bulkMacroSchemas.BulkMacroSetWorkflowStatusStep.additionalProperties, false);
 assert.equal(bulkMacroSchemas.BulkMacroDeleteStep.additionalProperties, false);

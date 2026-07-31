@@ -6,6 +6,7 @@ use App\Events\RecordChanged;
 use App\Http\Controllers\Api\V1\TrashController;
 use App\Models\BulkMacro;
 use App\Models\BulkMacroRun;
+use App\Models\RightsRecord;
 use App\Models\User;
 use App\Services\Automation\AutomationRuleRunner;
 use Illuminate\Support\Facades\DB;
@@ -133,6 +134,13 @@ class BulkMacroService
                 $steps[] = ['index' => $index, 'type' => $step['type'], 'status' => 'skipped', 'reason' => 'deleted'];
                 continue;
             }
+            // V1-828: rights live in a separate table, not the record JSON — handled
+            // on its own path rather than forced through the generic storage_rows update.
+            if ($step['type'] === 'set-rights-holder') {
+                $steps[] = $this->applyRightsHolderStep($row, $step, $index, $executing);
+                continue;
+            }
+
             $recordBeforeStep = $record;
             $outcome = $this->simulate($record, $step, $index);
             if (! $executing) {
@@ -193,13 +201,36 @@ class BulkMacroService
         ], fn (mixed $value): bool => $value !== null);
     }
 
+    /** @param array<string, mixed> $step */
+    private function applyRightsHolderStep(stdClass $row, array $step, int $index, bool $executing): array
+    {
+        $rightsHolder = (string) ($step['rightsHolder'] ?? '');
+        if (! $executing) {
+            return ['index' => $index, 'type' => 'set-rights-holder', 'status' => 'would_apply', 'after' => $rightsHolder];
+        }
+
+        try {
+            $itemId = (string) ($row->uid ?? $this->decode($row->data)['id'] ?? '');
+            DB::transaction(function () use ($itemId, $rightsHolder): void {
+                $record = RightsRecord::query()->firstOrNew(['item_id' => $itemId]);
+                if (! $record->exists) $record->id = (string) Str::uuid();
+                $record->rights_holder = $rightsHolder;
+                if (! $record->license_type) $record->license_type = 'UNKNOWN';
+                $record->save();
+            });
+            return ['index' => $index, 'type' => 'set-rights-holder', 'status' => 'completed', 'after' => $rightsHolder];
+        } catch (Throwable) {
+            return ['index' => $index, 'type' => 'set-rights-holder', 'status' => 'failed', 'reason' => 'mutation_failed'];
+        }
+    }
+
     /** @param array{store: string, id: string} $target */
     private function failedTarget(BulkMacro $macro, array $target): array
     {
         $steps = [];
         foreach (array_values((array) $macro->steps) as $index => $step) {
             $candidate = is_array($step) ? ($step['type'] ?? null) : null;
-            $type = in_array($candidate, ['add-tag', 'set-workflow-status', 'delete'], true) ? $candidate : 'delete';
+            $type = in_array($candidate, ['add-tag', 'set-workflow-status', 'delete', 'set-rights-holder'], true) ? $candidate : 'delete';
             $steps[] = [
                 'index' => $index,
                 'type' => $type,

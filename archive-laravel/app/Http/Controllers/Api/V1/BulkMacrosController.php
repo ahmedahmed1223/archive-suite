@@ -112,9 +112,10 @@ class BulkMacrosController extends Controller
             'name' => [$creating ? 'required' : 'sometimes', 'string', 'max:200'],
             'steps' => [$creating ? 'required' : 'sometimes', 'array', 'min:1', 'max:10'],
             'steps.*' => ['required', 'array'],
-            'steps.*.type' => ['required', 'string', Rule::in(['add-tag', 'set-workflow-status', 'delete'])],
+            'steps.*.type' => ['required', 'string', Rule::in(['add-tag', 'set-workflow-status', 'delete', 'set-rights-holder'])],
             'steps.*.tag' => ['nullable', 'string', 'max:100'],
             'steps.*.status' => ['nullable', 'string', Rule::in(BulkMacroService::STATUSES)],
+            'steps.*.rightsHolder' => ['nullable', 'string', 'max:200'],
         ]);
         $validator->after(function ($validator) use ($request): void {
             if (! $request->exists('name') && ! $request->exists('steps')) {
@@ -125,11 +126,13 @@ class BulkMacrosController extends Controller
                 $type = $step['type'] ?? null;
                 if ($type === 'add-tag' && trim((string) ($step['tag'] ?? '')) === '') $validator->errors()->add("steps.$index.tag", 'A tag is required.');
                 if ($type === 'set-workflow-status' && ! in_array($step['status'] ?? null, BulkMacroService::STATUSES, true)) $validator->errors()->add("steps.$index.status", 'A valid workflow status is required.');
+                if ($type === 'set-rights-holder' && trim((string) ($step['rightsHolder'] ?? '')) === '') $validator->errors()->add("steps.$index.rightsHolder", 'A rights holder is required.');
 
                 $allowed = match ($type) {
                     'add-tag' => ['type', 'tag'],
                     'set-workflow-status' => ['type', 'status'],
                     'delete' => ['type'],
+                    'set-rights-holder' => ['type', 'rightsHolder'],
                     default => array_keys($step),
                 };
                 foreach (array_diff(array_keys($step), $allowed) as $field) {
