@@ -58,10 +58,10 @@
 
 **Files:** `TrashApiTest.php`, `RecordHistoryApiTest.php`, `RecordSnapshotsApiTest.php`, `RecordFreezeApiTest.php`, `archive-next/app/trash/page.tsx`, `archive-next/app/favorites/page.tsx`.
 
-- [ ] Run the four Laravel lifecycle suites.
-- [ ] Verify manual intake, reviewed history, recoverable deletion, snapshots, freezes, and favorites remain distinct states.
-- [ ] Add a failing lifecycle test before any fix, then close AS-05.
-- [ ] Commit `docs(tasks): close AS-05 record lifecycle`.
+- [x] Run the four Laravel lifecycle suites plus `FavoritesApiTest`.
+- [x] Verify manual intake, reviewed history, recoverable deletion, snapshots, freezes, and favorites remain distinct states.
+- [x] Replace device-local favorites with account-scoped server favorites and prove they are not exposed between users.
+- [x] Commit `feat(records): complete AS-05 record lifecycle`.
 
 ### Task 6: AS-06 Media upload and import
 

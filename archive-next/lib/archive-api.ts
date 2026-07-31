@@ -1037,6 +1037,14 @@ export interface SmbPullPayload {
   localPath?: string;
 }
 
+export interface SavedFavorite {
+  recordId: string;
+  store: string;
+  title: string | null;
+  type: string | null;
+  addedAt: string | null;
+}
+
 export interface WatchedIngestEntry {
   id: string;
   fileName: string;
@@ -1375,6 +1383,9 @@ export interface CollaborationDocument {
 
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
+  favorites(options?: AuthRequestOptions): Promise<ApiEnvelope<{ favorites: SavedFavorite[] }>>;
+  addFavorite(payload: { recordId: string; store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ favorite: SavedFavorite }>>;
+  removeFavorite(recordId: string, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   login(payload: LoginRequest): Promise<ApiEnvelope<AuthSession>>;
   me(options?: AuthRequestOptions): Promise<ApiEnvelope<{ user: ArchiveUser }>>;
   refresh(): Promise<ApiEnvelope<AuthSession>>;
@@ -1909,6 +1920,9 @@ export function createArchiveApiClient({
 
   return {
     health: () => get("/health"),
+    favorites: (options?: AuthRequestOptions) => get<{ favorites: SavedFavorite[] }>("/favorites", options),
+    addFavorite: (payload, options) => post<{ favorite: SavedFavorite }>("/favorites", payload, options),
+    removeFavorite: (recordId, store, options) => del<{ deleted: boolean }>(`/favorites/${encodeURIComponent(recordId)}${store ? `?store=${encodeURIComponent(store)}` : ""}`, options),
     login: async (payload: LoginRequest): Promise<ApiEnvelope<AuthSession>> => {
       const response = await post<AuthSession>("/auth/login", payload);
 

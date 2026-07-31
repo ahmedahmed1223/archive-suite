@@ -31,7 +31,6 @@ import {
   type RightsRecord,
   type SuggestionFeedbackValue
 } from "@/lib/archive-api";
-import { isFavorited, toggleFavorite } from "@/lib/favorites";
 import { deferRecord, getLaterEntry, removeLater, type LaterEntry } from "@/lib/later-list";
 import { isInBasket, toggleBasket } from "@/lib/work-basket";
 import { isInQueue, toggleQueue } from "@/lib/personal-queue";
@@ -1121,7 +1120,9 @@ export default function ArchiveDetailPage() {
         historyLoading: true,
         historyError: null
       });
-      setIsFav(isFavorited(id));
+      void api.favorites().then((response) => {
+        if (active && response.ok) setIsFav(response.favorites.some((favorite) => favorite.recordId === id));
+      });
       setInBasket(isInBasket(id));
       setInQueue(isInQueue(id));
       setLaterEntry(getLaterEntry(id));
@@ -1226,6 +1227,14 @@ export default function ArchiveDetailPage() {
     };
   }, [id, api]);
 
+  async function toggleSavedFavorite() {
+    if (state.status !== "ready") return;
+    const response = isFav
+      ? await api.removeFavorite(id, state.record.store || undefined)
+      : await api.addFavorite({ recordId: id, store: state.record.store || undefined });
+    if (response.ok) setIsFav(!isFav);
+  }
+
   return (
     <AppShell
       subtitle="تفاصيل السجل"
@@ -1265,10 +1274,7 @@ export default function ArchiveDetailPage() {
             {state.status === "ready" ? (
               <button
                 type="button"
-                onClick={() => {
-                  const newFav = toggleFavorite(id, state.record.title);
-                  setIsFav(newFav);
-                }}
+                onClick={() => void toggleSavedFavorite()}
                 className={`button ${isFav ? "button-primary" : "button-secondary"}`}
                 aria-pressed={isFav}
                 title={isFav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}

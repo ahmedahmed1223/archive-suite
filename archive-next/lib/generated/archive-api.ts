@@ -558,6 +558,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's saved archive favorites */
+        get: operations["listFavorites"];
+        put?: never;
+        /** Save an archive record as a favorite for the current user */
+        post: operations["createFavorite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/favorites/{recordId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove the current user's saved favorite */
+        delete: operations["deleteFavorite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/field-requests": {
         parameters: {
             query?: never;
@@ -4016,6 +4051,17 @@ export interface components {
             /** @constant */
             ok: false;
         };
+        FavoriteCreateRequest: {
+            recordId: string;
+            /** @default archive-items */
+            store?: string;
+        };
+        FavoriteResponse: components["schemas"]["OkEnvelope"] & {
+            favorite: components["schemas"]["SavedFavorite"];
+        };
+        FavoritesResponse: components["schemas"]["OkEnvelope"] & {
+            favorites: components["schemas"]["SavedFavorite"][];
+        };
         FileBrowserResponse: components["schemas"]["OkEnvelope"] & {
             entries: components["schemas"]["FileEntry"][];
             path: string;
@@ -5002,6 +5048,14 @@ export interface components {
             scenarios: components["schemas"]["SafetyPreviewScenarioDescriptor"][];
             /** @constant */
             synthetic: true;
+        };
+        SavedFavorite: {
+            /** Format: date-time */
+            addedAt: string | null;
+            recordId: string;
+            store: string;
+            title: string | null;
+            type: string | null;
         };
         SavedSearch: {
             /** @enum {string} */
@@ -6876,6 +6930,71 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+        };
+    };
+    listFavorites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved favorites */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoritesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createFavorite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FavoriteCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved favorite */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    deleteFavorite: {
+        parameters: {
+            query?: {
+                store?: string;
+            };
+            header?: never;
+            path: {
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     listOpenFieldRequests: {

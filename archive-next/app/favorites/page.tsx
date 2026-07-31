@@ -1,37 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import { listFavorites, removeFavorite, type Favorite } from "@/lib/favorites";
+import { createArchiveApiClient, type SavedFavorite } from "@/lib/archive-api";
 
-function formatLocalDate(value: string) {
+function formatLocalDate(value: string | null) {
+  if (!value) return "-";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("ar-SA");
 }
 
 export default function FavoritesPage() {
-  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const api = useMemo(() => createArchiveApiClient(), []);
+  const [favorites, setFavorites] = useState<SavedFavorite[]>([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    setFavorites(listFavorites());
-  }, []);
+    void api.favorites().then((response) => {
+      if (response.ok) setFavorites(response.favorites);
+      else setError(response.error || "تعذر تحميل المفضلة.");
+    });
+  }, [api]);
 
-  const handleRemove = (id: string) => {
-    removeFavorite(id);
-    setFavorites(listFavorites());
+  const handleRemove = async (favorite: SavedFavorite) => {
+    const response = await api.removeFavorite(favorite.recordId, favorite.store);
+    if (response.ok) setFavorites((current) => current.filter((item) => item.recordId !== favorite.recordId || item.store !== favorite.store));
+    else setError(response.error || "تعذر إزالة المفضلة.");
   };
 
   return (
     <AppShell subtitle="المفضلة" navLabel="المفضلة" contentClassName="local-list-content" tipsPage="favorites">
       <PageToolbar
-        eyebrow={<span className="badge">محلي على الجهاز</span>}
+        eyebrow={<span className="badge">محفوظة للحساب</span>}
         title="المفضلة"
-        description="السجلات التي اختارها المستخدم للرجوع السريع من هذا المتصفح دون مزامنة خارجية."
+        description="السجلات التي اختارها المستخدم للرجوع السريع من أي جلسة موثقة."
         meta={
           <>
-            <span className="badge">المفضلات المحلية</span>
+            <span className="badge">المفضلات المحفوظة</span>
             <span className="badge">{favorites.length} عنصر</span>
           </>
         }
@@ -41,6 +48,8 @@ export default function FavoritesPage() {
           </a>
         }
       />
+
+      {error ? <div className="state-banner state-banner-error" role="alert">{error}</div> : null}
 
       {favorites.length === 0 ? (
         <EmptyState
@@ -60,11 +69,11 @@ export default function FavoritesPage() {
 
           <div className="mobile-card-list" role="list" aria-label="بطاقات العناصر المفضلة">
             {favorites.map((favorite) => (
-              <article className="local-list-card" key={favorite.id} role="listitem">
+              <article className="local-list-card" key={`${favorite.store}:${favorite.recordId}`} role="listitem">
                 <div className="local-list-card__main">
                   <div>
                     <span className="badge">مفضلة</span>
-                    <h3>{favorite.title || favorite.id}</h3>
+                    <h3>{favorite.title || favorite.recordId}</h3>
                   </div>
                   <span className="badge">{favorite.type || "غير محدد"}</span>
                 </div>
@@ -75,20 +84,20 @@ export default function FavoritesPage() {
                   </div>
                   <div>
                     <dt>المعرّف</dt>
-                    <dd dir="ltr">{favorite.id}</dd>
+                    <dd dir="ltr">{favorite.recordId}</dd>
                   </div>
                 </dl>
                 <div className="button-row">
                   <a
                     className="button button-secondary button-sm"
-                    href={`/archive/${encodeURIComponent(favorite.id)}`}
+                    href={`/archive/${encodeURIComponent(favorite.recordId)}`}
                   >
                     فتح
                   </a>
                   <button
                     type="button"
                     className="button button-danger button-sm"
-                    onClick={() => handleRemove(favorite.id)}
+                    onClick={() => void handleRemove(favorite)}
                   >
                     حذف
                   </button>
@@ -109,9 +118,9 @@ export default function FavoritesPage() {
               </thead>
               <tbody>
                 {favorites.map((favorite) => (
-                  <tr key={favorite.id}>
+                  <tr key={`${favorite.store}:${favorite.recordId}`}>
                     <td className="wrap-anywhere">
-                      <strong>{favorite.title || favorite.id}</strong>
+                      <strong>{favorite.title || favorite.recordId}</strong>
                     </td>
                     <td>{favorite.type || "-"}</td>
                     <td className="mono-text">
@@ -121,14 +130,14 @@ export default function FavoritesPage() {
                       <div className="button-row">
                         <a
                           className="button button-secondary button-sm"
-                          href={`/archive/${encodeURIComponent(favorite.id)}`}
+                          href={`/archive/${encodeURIComponent(favorite.recordId)}`}
                         >
                           فتح
                         </a>
                         <button
                           type="button"
                           className="button button-danger button-sm"
-                          onClick={() => handleRemove(favorite.id)}
+                          onClick={() => void handleRemove(favorite)}
                         >
                           حذف
                         </button>

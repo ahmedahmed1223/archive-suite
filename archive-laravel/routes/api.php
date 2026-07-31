@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\DelegatedAccessController;
 use App\Http\Controllers\Api\V1\DiscoverController;
 use App\Http\Controllers\Api\V1\FilesController;
+use App\Http\Controllers\Api\V1\FavoritesController;
 use App\Http\Controllers\Api\V1\ImportPreviewController;
 use App\Http\Controllers\Api\V1\InboxController;
 use App\Http\Controllers\Api\V1\IngestController;
@@ -266,6 +267,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/bulk', [RecordsController::class, 'bulk']);
         Route::post('/records/bulk-delete', [RecordsController::class, 'bulkDelete']);
         Route::post('/records/import', [RecordsBulkCsvController::class, 'import']);
+        Route::get('/favorites', [FavoritesController::class, 'index']);
+        Route::post('/favorites', [FavoritesController::class, 'store']);
+        Route::delete('/favorites/{recordId}', [FavoritesController::class, 'destroy']);
         // V1-731: trash. restore is editor (undo of a write they could make);
         // purge is admin-only (the only irreversible step).
         Route::get('/trash', [TrashController::class, 'index']);

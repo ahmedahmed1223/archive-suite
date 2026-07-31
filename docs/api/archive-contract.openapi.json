@@ -939,6 +939,43 @@
         }
       }
     },
+    "/favorites": {
+      "get": {
+        "tags": ["Favorites"],
+        "summary": "List the current user's saved archive favorites",
+        "operationId": "listFavorites",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Saved favorites", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FavoritesResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Favorites"],
+        "summary": "Save an archive record as a favorite for the current user",
+        "operationId": "createFavorite",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FavoriteCreateRequest" } } } },
+        "responses": {
+          "201": { "description": "Saved favorite", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/FavoriteResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/favorites/{recordId}": {
+      "delete": {
+        "tags": ["Favorites"],
+        "summary": "Remove the current user's saved favorite",
+        "operationId": "deleteFavorite",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "recordId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string", "default": "archive-items" } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Ok" }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
     "/trash": {
       "get": {
         "tags": ["Trash"],
@@ -8638,6 +8675,37 @@
           },
           "legacyPasswordUpgrade": { "type": "boolean" }
         }
+      },
+      "SavedFavorite": {
+        "type": "object",
+        "required": ["recordId", "store", "title", "type", "addedAt"],
+        "properties": {
+          "recordId": { "type": "string" },
+          "store": { "type": "string" },
+          "title": { "type": ["string", "null"] },
+          "type": { "type": ["string", "null"] },
+          "addedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "FavoriteCreateRequest": {
+        "type": "object",
+        "required": ["recordId"],
+        "properties": {
+          "recordId": { "type": "string", "maxLength": 100 },
+          "store": { "type": "string", "maxLength": 100, "default": "archive-items" }
+        }
+      },
+      "FavoritesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          { "type": "object", "required": ["favorites"], "properties": { "favorites": { "type": "array", "items": { "$ref": "#/components/schemas/SavedFavorite" } } } }
+        ]
+      },
+      "FavoriteResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          { "type": "object", "required": ["favorite"], "properties": { "favorite": { "$ref": "#/components/schemas/SavedFavorite" } } }
+        ]
       },
       "BackupInfo": {
         "type": "object",
