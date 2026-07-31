@@ -1354,7 +1354,8 @@ export interface paths {
         delete: operations["deleteProject"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update project name, notes, or order */
+        patch: operations["updateProject"];
         trace?: never;
     };
     "/projects/{id}/records": {
@@ -1387,6 +1388,23 @@ export interface paths {
         post: operations["linkProjectRecord"];
         /** Unlink a record from a project */
         delete: operations["unlinkProjectRecord"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{id}/records/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Persist the explicit order of every linked project record */
+        put: operations["reorderProjectRecords"];
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4545,20 +4563,35 @@ export interface components {
             createdAt: string;
             id: string;
             name: string;
+            notes: string | null;
+            sortOrder: number;
             /** Format: date-time */
             updatedAt: string;
         };
         ProjectCreateRequest: {
             name: string;
+            notes?: string | null;
+        };
+        ProjectRecordOrderRequest: {
+            recordIds: string[];
         };
         ProjectRecordsResponse: components["schemas"]["OkEnvelope"] & {
             recordIds: string[];
+            records: {
+                position: number;
+                recordId: string;
+            }[];
         };
         ProjectResponse: components["schemas"]["OkEnvelope"] & {
             project: components["schemas"]["Project"];
         };
         ProjectsResponse: components["schemas"]["OkEnvelope"] & {
             projects: components["schemas"]["Project"][];
+        };
+        ProjectUpdateRequest: {
+            name?: string;
+            notes?: string | null;
+            sortOrder?: number;
         };
         PublicCatalogRecord: {
             /** Format: date-time */
@@ -8448,6 +8481,35 @@ export interface operations {
             404: components["responses"]["Error"];
         };
     };
+    updateProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated project */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
     listProjectRecords: {
         parameters: {
             query?: never;
@@ -8503,6 +8565,35 @@ export interface operations {
         responses: {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
+        };
+    };
+    reorderProjectRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectRecordOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description Ordered project records */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRecordsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     getPublicCatalog: {

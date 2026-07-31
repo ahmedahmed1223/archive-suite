@@ -108,10 +108,11 @@
 
 **Files:** `CollectionsApiTest.php`, `CollectionEditApiTest.php`, `ProjectsApiTest.php`, `archive-next/app/collections/page.tsx`, `archive-next/app/projects/page.tsx`.
 
-- [ ] Run the three Laravel collection/project suites.
-- [ ] Verify ordered collections/projects and associated notes/records are persisted and scoped.
-- [ ] Add a failing test before any project grouping gap fix, then close AS-10.
-- [ ] Commit `docs(tasks): close AS-10 collections and projects`.
+- [x] Ran the collection/project suites (15 tests/107 assertions).
+- [x] Added persisted project notes and strict explicit record order, plus the
+  `/project-groups` operational UI; collection membership remains scoped.
+- [x] Contract generation/verification and Next typecheck pass.
+- [x] Commit `feat(projects): complete AS-10 collections and projects`.
 
 ### Task 11: AS-11 Project tasks and Kanban
 

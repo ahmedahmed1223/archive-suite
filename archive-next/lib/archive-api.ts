@@ -518,6 +518,8 @@ export interface NamingRule {
 export interface Project {
   id: string;
   name: string;
+  notes: string | null;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -1464,9 +1466,11 @@ export interface ArchiveApiClient {
   upsertNamingRule(key: string, prefix: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: NamingRule }>>;
   deleteNamingRule(key: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   projects(options?: AuthRequestOptions): Promise<ApiEnvelope<{ projects: Project[] }>>;
-  createProject(name: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ project: Project }>>;
+  createProject(name: string, notes?: string | null, options?: AuthRequestOptions): Promise<ApiEnvelope<{ project: Project }>>;
+  updateProject(id: string, payload: Partial<Pick<Project, "name" | "notes" | "sortOrder">>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ project: Project }>>;
   deleteProject(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
-  projectRecords(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[] }>>;
+  projectRecords(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[]; records: Array<{ recordId: string; position: number }> }>>;
+  reorderProjectRecords(id: string, recordIds: string[], options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[]; records: Array<{ recordId: string; position: number }> }>>;
   linkProjectRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   unlinkProjectRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   recordProjects(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ projects: Project[] }>>;
@@ -2112,12 +2116,16 @@ export function createArchiveApiClient({
     deleteNamingRule: (key: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/naming-rules/${encodeURIComponent(key)}`, undefined, options),
     projects: (options?: AuthRequestOptions) => get<{ projects: Project[] }>("/projects", options),
-    createProject: (name: string, options?: AuthRequestOptions) =>
-      post<{ project: Project }>("/projects", { name }, options),
+    createProject: (name: string, notes?: string | null, options?: AuthRequestOptions) =>
+      post<{ project: Project }>("/projects", { name, ...(notes?.trim() ? { notes: notes.trim() } : {}) }, options),
+    updateProject: (id: string, payload: Partial<Pick<Project, "name" | "notes" | "sortOrder">>, options?: AuthRequestOptions) =>
+      patch<{ project: Project }>(`/projects/${encodeURIComponent(id)}`, payload, options),
     deleteProject: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/projects/${encodeURIComponent(id)}`, undefined, options),
     projectRecords: (id: string, options?: AuthRequestOptions) =>
-      get<{ recordIds: string[] }>(`/projects/${encodeURIComponent(id)}/records`, options),
+      get<{ recordIds: string[]; records: Array<{ recordId: string; position: number }> }>(`/projects/${encodeURIComponent(id)}/records`, options),
+    reorderProjectRecords: (id: string, recordIds: string[], options?: AuthRequestOptions) =>
+      put<{ recordIds: string[]; records: Array<{ recordId: string; position: number }> }>(`/projects/${encodeURIComponent(id)}/records/order`, { recordIds }, options),
     linkProjectRecord: (id: string, recordId: string, options?: AuthRequestOptions) =>
       post<Record<string, never>>(`/projects/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     unlinkProjectRecord: (id: string, recordId: string, options?: AuthRequestOptions) =>

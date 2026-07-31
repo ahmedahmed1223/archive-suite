@@ -4871,6 +4871,15 @@
       }
     },
     "/projects/{id}": {
+      "patch": {
+        "tags": ["Projects"],
+        "summary": "Update project name, notes, or order",
+        "operationId": "updateProject",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectUpdateRequest" } } } },
+        "responses": { "200": { "description": "Updated project", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+      },
       "delete": {
         "tags": ["Projects"],
         "summary": "Delete a project and its record links",
@@ -4930,6 +4939,17 @@
           "200": { "$ref": "#/components/responses/Ok" },
           "401": { "$ref": "#/components/responses/Error" }
         }
+      }
+    },
+    "/projects/{id}/records/order": {
+      "put": {
+        "tags": ["Projects"],
+        "summary": "Persist the explicit order of every linked project record",
+        "operationId": "reorderProjectRecords",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectRecordOrderRequest" } } } },
+        "responses": { "200": { "description": "Ordered project records", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectRecordsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
       }
     },
     "/records/{id}/projects": {
@@ -9200,10 +9220,12 @@
       },
       "Project": {
         "type": "object",
-        "required": ["id", "name", "createdAt", "updatedAt"],
+        "required": ["id", "name", "notes", "sortOrder", "createdAt", "updatedAt"],
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
+          "notes": { "type": ["string", "null"], "maxLength": 5000 },
+          "sortOrder": { "type": "integer", "minimum": 0 },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         }
@@ -9213,7 +9235,18 @@
         "required": ["name"],
         "properties": {
           "name": { "type": "string", "minLength": 1, "maxLength": 200 }
+          ,"notes": { "type": ["string", "null"], "maxLength": 5000 }
         }
+      },
+      "ProjectUpdateRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": { "name": { "type": "string", "minLength": 1, "maxLength": 200 }, "notes": { "type": ["string", "null"], "maxLength": 5000 }, "sortOrder": { "type": "integer", "minimum": 0 } }
+      },
+      "ProjectRecordOrderRequest": {
+        "type": "object",
+        "required": ["recordIds"],
+        "properties": { "recordIds": { "type": "array", "uniqueItems": true, "items": { "type": "string" } } }
       },
       "ProjectsResponse": {
         "allOf": [
@@ -9244,9 +9277,10 @@
           { "$ref": "#/components/schemas/OkEnvelope" },
           {
             "type": "object",
-            "required": ["recordIds"],
+            "required": ["recordIds", "records"],
             "properties": {
-              "recordIds": { "type": "array", "items": { "type": "string" } }
+              "recordIds": { "type": "array", "items": { "type": "string" } },
+              "records": { "type": "array", "items": { "type": "object", "required": ["recordId", "position"], "properties": { "recordId": { "type": "string" }, "position": { "type": "integer", "minimum": 0 } } } }
             }
           }
         ]

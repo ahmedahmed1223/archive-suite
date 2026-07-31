@@ -304,8 +304,10 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/naming-rules/{key}', [NamingRulesController::class, 'destroy']);
         Route::get('/projects', [ProjectsController::class, 'index']);
         Route::post('/projects', [ProjectsController::class, 'store']);
+        Route::patch('/projects/{id}', [ProjectsController::class, 'update']);
         Route::delete('/projects/{id}', [ProjectsController::class, 'destroy']);
         Route::get('/projects/{id}/records', [ProjectsController::class, 'records']);
+        Route::put('/projects/{id}/records/order', [ProjectsController::class, 'reorder']);
         Route::post('/projects/{id}/records/{recordId}', [ProjectsController::class, 'link']);
         Route::delete('/projects/{id}/records/{recordId}', [ProjectsController::class, 'unlink']);
         Route::get('/records/{id}/projects', [ProjectsController::class, 'recordProjects']);

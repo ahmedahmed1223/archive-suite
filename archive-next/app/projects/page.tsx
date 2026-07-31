@@ -265,7 +265,7 @@ export default function ProjectsPage() {
             {selected ? <span className="badge">المدة {formatClock(projectDuration(selected))}</span> : null}
           </>
         )}
-        actions={<a className="button button-secondary" href="/archive">فتح الأرشيف</a>}
+        actions={<><a className="button button-secondary" href="/project-groups">مشاريع العمل</a><a className="button button-secondary" href="/archive">فتح الأرشيف</a></>}
       />
 
       {feedback ? (

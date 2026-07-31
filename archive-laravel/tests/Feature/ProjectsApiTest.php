@@ -72,4 +72,23 @@ class ProjectsApiTest extends TestCase
     {
         $this->postJson('/api/v1/projects', ['name' => ''], $this->authHeaders())->assertStatus(422);
     }
+
+    public function test_it_persists_project_notes_and_record_order(): void
+    {
+        $project = $this->postJson('/api/v1/projects', ['name' => 'إنتاج وثائقي', 'notes' => 'ملاحظات فريق التحرير'], $this->authHeaders())
+            ->assertCreated()
+            ->assertJsonPath('project.notes', 'ملاحظات فريق التحرير')
+            ->json('project');
+
+        $this->postJson('/api/v1/projects/'.$project['id'].'/records/first', [], $this->authHeaders())->assertOk();
+        $this->postJson('/api/v1/projects/'.$project['id'].'/records/second', [], $this->authHeaders())->assertOk();
+        $this->putJson('/api/v1/projects/'.$project['id'].'/records/order', ['recordIds' => ['second', 'first']], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('recordIds.0', 'second')
+            ->assertJsonPath('recordIds.1', 'first');
+
+        $this->patchJson('/api/v1/projects/'.$project['id'], ['notes' => 'ملاحظات محدثة'], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('project.notes', 'ملاحظات محدثة');
+    }
 }
