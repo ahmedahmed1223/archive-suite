@@ -1388,6 +1388,7 @@ export interface ArchiveApiClient {
   recordHistory(recordId: string, params?: { limit?: number; page?: number; store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: RecordHistoryEntry[]; pagination?: PaginationMeta }>>;
   sync(params?: { limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>>;
   record(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
+  previewRecordChangeImpact(id: string, operation: "update" | "delete", options?: AuthRequestOptions): Promise<ApiEnvelope<{ blocked: boolean; reason: string | null; relations: { id: string; type: string }[]; shares: number; segments: number; reports: number }>>;
   replaceRecordSource(id: string, file: File, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
   recordSourceVersions(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ versions: { id: string; createdAt: string; fileName: string }[] }>>;
   restoreRecordSource(id: string, versionId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: ArchiveRecord }>>;
@@ -2073,6 +2074,7 @@ export function createArchiveApiClient({
       return get<{ entries: SyncLogEntry[]; summary: SyncSummary; pagination?: PaginationMeta }>(`/sync${query ? `?${query}` : ""}`, options);
     },
     record: (id: string, options?: AuthRequestOptions) => get<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}`, options),
+    previewRecordChangeImpact: (id: string, operation: "update" | "delete", options?: AuthRequestOptions) => post(`/records/${encodeURIComponent(id)}/change-impact`, { operation }, options),
     replaceRecordSource: async (id: string, file: File, options?: AuthRequestOptions) => {
       const body = new FormData(); body.append("file", file);
       return request<{ record: ArchiveRecord }>(`/records/${encodeURIComponent(id)}/source-replacements`, { method: "POST", body, accessToken: options?.accessToken });

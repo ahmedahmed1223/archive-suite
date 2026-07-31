@@ -3670,6 +3670,9 @@
         "responses": { "200": { "description": "Replaced record", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordResponse" } } } }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
       }
     },
+    "/records/{id}/change-impact": {
+      "post": { "tags": ["Records"], "summary": "Preview record change impact", "operationId": "previewRecordChangeImpact", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["operation"], "properties": { "operation": { "type": "string", "enum": ["update", "delete"] } } } } } }, "responses": { "200": { "description": "Change impact", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordChangeImpactResponse" } } } } } }
+    },
     "/records/{id}/source-versions/{versionId}/restore": {
       "post": {
         "tags": ["Records"], "summary": "Restore a previous record source", "operationId": "restoreRecordSource", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
@@ -7888,6 +7891,7 @@
         ]
       },
       "RecordSourceVersionsResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["versions"], "properties": { "versions": { "type": "array", "items": { "type": "object", "required": ["id", "createdAt", "fileName"], "properties": { "id": { "type": "string" }, "createdAt": { "type": "string" }, "fileName": { "type": "string" } } } } } }] },
+      "RecordChangeImpactResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["blocked", "relations", "shares", "segments", "reports"], "properties": { "blocked": { "type": "boolean" }, "reason": { "type": ["string", "null"] }, "relations": { "type": "array", "items": { "type": "object" } }, "shares": { "type": "integer" }, "segments": { "type": "integer" }, "reports": { "type": "integer" } } }] },
       "IngestScanResponse": {
         "allOf": [
           { "$ref": "#/components/schemas/OkEnvelope" },

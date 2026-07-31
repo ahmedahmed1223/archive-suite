@@ -1360,6 +1360,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/change-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview record change impact */
+        post: operations["previewRecordChangeImpact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/comments": {
         parameters: {
             query?: never;
@@ -4173,6 +4190,14 @@ export interface components {
                 mxf: boolean;
             };
             metadata: components["schemas"]["RecordBroadcastMetadata"] | null;
+        };
+        RecordChangeImpactResponse: components["schemas"]["OkEnvelope"] & {
+            blocked: boolean;
+            reason?: string | null;
+            relations: Record<string, never>[];
+            reports: number;
+            segments: number;
+            shares: number;
         };
         RecordComment: {
             authorId: string | null;
@@ -7977,6 +8002,35 @@ export interface operations {
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
             409: components["responses"]["Error"];
+        };
+    };
+    previewRecordChangeImpact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    operation: "update" | "delete";
+                };
+            };
+        };
+        responses: {
+            /** @description Change impact */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordChangeImpactResponse"];
+                };
+            };
         };
     };
     listRecordComments: {

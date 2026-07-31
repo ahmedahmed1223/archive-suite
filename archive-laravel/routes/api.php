@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\V1\OnboardingProgressController;
 use App\Http\Controllers\Api\V1\PluginMarketplaceController;
 use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordCommentsController;
+use App\Http\Controllers\Api\V1\RecordChangeImpactController;
 use App\Http\Controllers\Api\V1\RecordAttachmentsController;
 use App\Http\Controllers\Api\V1\RecordHistoryController;
 use App\Http\Controllers\Api\V1\RecordsBulkCsvController;
@@ -239,6 +240,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/records/export', [RecordsBulkCsvController::class, 'export']);
         Route::post('/records', [RecordsController::class, 'store']);
         Route::get('/records/{id}', [RecordsController::class, 'show']);
+        Route::post('/records/{id}/change-impact', [RecordChangeImpactController::class, 'preview']);
         Route::post('/records/{id}/source-replacements', [RecordSourceReplacementController::class, 'replace']);
         Route::get('/records/{id}/source-versions', [RecordSourceReplacementController::class, 'index']);
         Route::post('/records/{id}/source-versions/{versionId}/restore', [RecordSourceReplacementController::class, 'restore']);

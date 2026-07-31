@@ -42,6 +42,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import RecordPresence from "@/components/RecordPresence";
 import RecordAttachmentsPanel from "@/components/RecordAttachmentsPanel";
 import RecordSourceReplacementPanel from "@/components/RecordSourceReplacementPanel";
+import RecordChangeImpactPanel from "@/components/RecordChangeImpactPanel";
 
 export { RecordDescribeForm, type RecordDescribePatch };
 
@@ -1603,6 +1604,7 @@ export default function ArchiveDetailPage() {
             />
             <RecordAttachmentsPanel recordId={id} store={state.record.store || "archive-items"} />
             <RecordSourceReplacementPanel recordId={id} canEdit={canEditRecords} />
+            <RecordChangeImpactPanel recordId={id} canEdit={canEditRecords} />
             <MediaDerivativesTree record={state.record} />
             <RecordHistoryPanel
               entries={state.history}
