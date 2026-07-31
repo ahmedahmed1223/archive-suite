@@ -22,19 +22,19 @@
 
 **Files:** `archive-laravel/tests/Feature/RecordsApiTest.php`, `RecordAttachmentsApiTest.php`, `RecordSnapshotsApiTest.php`, `archive-next/app/archive/page.tsx`, `TASKS.md`, `ChangeLog.md`.
 
-- [ ] Run `node scripts/laravel-docker.mjs test tests/Feature/RecordsApiTest.php tests/Feature/RecordAttachmentsApiTest.php tests/Feature/RecordSnapshotsApiTest.php`.
-- [ ] Verify records carry file, metadata, tags, classifications, approval/review state, and history without a second record store.
-- [ ] If an acceptance field is absent, add its focused failing request/response test before production code; otherwise update AS-01 ledger evidence.
-- [ ] Commit `docs(tasks): close AS-01 unified archival records`.
+- [x] Run `node scripts/laravel-docker.mjs test tests/Feature/RecordsApiTest.php tests/Feature/RecordAttachmentsApiTest.php tests/Feature/RecordSnapshotsApiTest.php` (also covered by the final full Laravel suite: 150 tests / 509 assertions).
+- [x] Verify records carry file, metadata, tags, classifications, approval/review state, and history without a second record store.
+- [x] No acceptance field was absent; ledger evidence was updated after focused verification.
+- [x] Commit `docs(tasks): close AS-01 unified archival records`.
 
 ### Task 2: AS-02 Hierarchy and custom fields
 
 **Files:** `TagNodesApiTest.php`, `TypesControllerTest.php`, `MetadataTemplatesApiTest.php`, `DepartmentMetadataTemplatesApiTest.php`, `archive-next/app/tags/page.tsx`, `archive-next/app/metadata-templates/page.tsx`.
 
-- [ ] Run the four focused Laravel test files above.
-- [ ] Verify nested tag hierarchy, ordered/required custom fields, and department template visibility are persisted and rendered.
-- [ ] Add a failing test before any gap fix, then close AS-02 only after green results.
-- [ ] Commit `docs(tasks): close AS-02 hierarchy and custom fields`.
+- [x] Run the four focused Laravel test files above (also covered by the final full Laravel suite: 150 tests / 509 assertions).
+- [x] Verify nested tag hierarchy, ordered/required custom fields, and department template visibility are persisted and rendered.
+- [x] No acceptance gap remained after the focused suites; AS-02 closed only after green verification.
+- [x] Commit `docs(tasks): close AS-02 hierarchy and custom fields`.
 
 ### Task 3: AS-03 Approved terminology
 
@@ -85,8 +85,8 @@
 
 **Files:** `RecordCommentsApiTest.php`, `RecordNotesApiTest.php`, `RecordFieldRequestApiTest.php`, `RecordEditClaimApiTest.php`, `archive-next/app/archive/[id]/page.tsx`.
 
-- [ ] Run the four Laravel collaboration suites.
-- [ ] Verify preview/detail, safe description editing, comments, and linked follow-up assignment/claims.
+- [x] Run the four Laravel collaboration suites (also covered by the final full Laravel suite: 150 tests / 509 assertions).
+- [x] Verify preview/detail, safe description editing, comments, and linked follow-up assignment/claims.
 - [x] Added coverage for the field-completion assignment panel and connected
   it to the existing authenticated Laravel API; verified note/comment/claim
   suites (23 tests/181 assertions), the UI test, and typecheck.
