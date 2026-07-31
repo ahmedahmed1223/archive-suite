@@ -28,7 +28,7 @@ class MetadataTemplatesApiTest extends TestCase
         $id = $created->json('template.id');
         $this->assertIsString($id);
 
-        $this->getJson('/api/v1/metadata-templates?typeId=news', $this->authHeaders())
+        $this->getJson('/api/v1/metadata-templates?typeId=news&includeDisabled=true', $this->authHeaders())
             ->assertOk()
             ->assertJsonPath('templates.0.id', $id);
 
