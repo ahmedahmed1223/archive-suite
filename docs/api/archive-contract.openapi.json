@@ -4560,10 +4560,14 @@
     "/metadata-templates": {
       "get": {
         "tags": ["Metadata Templates"],
-        "summary": "List metadata templates, optionally filtered by type",
+        "summary": "List enabled metadata templates, optionally filtered by type or department",
         "operationId": "listMetadataTemplates",
         "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
-        "parameters": [{ "name": "typeId", "in": "query", "required": false, "schema": { "type": "string" } }],
+        "parameters": [
+          { "name": "typeId", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "departmentId", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "includeDisabled", "in": "query", "required": false, "schema": { "type": "boolean" } }
+        ],
         "responses": {
           "200": {
             "description": "Metadata templates",
@@ -4588,6 +4592,20 @@
           },
           "401": { "$ref": "#/components/responses/Error" },
           "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/metadata-templates/{id}/versions": {
+      "get": {
+        "tags": ["Metadata Templates"],
+        "summary": "List immutable snapshots of a metadata template",
+        "operationId": "listMetadataTemplateVersions",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Template versions", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MetadataTemplateVersionsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -8776,25 +8794,34 @@
       },
       "MetadataTemplate": {
         "type": "object",
-        "required": ["id", "typeId", "name", "fields", "tags", "createdAt", "updatedAt"],
+        "required": ["id", "typeId", "departmentId", "name", "fields", "tags", "enabled", "usageRoles", "currentVersion", "createdAt", "updatedAt"],
         "properties": {
           "id": { "type": "string" },
           "typeId": { "type": "string", "nullable": true },
+          "departmentId": { "type": "string", "nullable": true },
           "name": { "type": "string" },
           "fields": { "type": "object", "additionalProperties": true },
           "tags": { "type": "array", "items": { "type": "string" } },
+          "enabled": { "type": "boolean" },
+          "usageRoles": { "type": "array", "items": { "type": "string", "enum": ["viewer", "editor", "admin"] } },
+          "currentVersion": { "type": "integer", "minimum": 1 },
+          "createdById": { "type": "string", "nullable": true },
+          "updatedById": { "type": "string", "nullable": true },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
       "MetadataTemplateCreateRequest": {
         "type": "object",
-        "required": ["name"],
+        "required": ["name", "departmentId"],
         "properties": {
           "name": { "type": "string", "minLength": 1, "maxLength": 200 },
           "typeId": { "type": "string", "nullable": true },
+          "departmentId": { "type": "string", "nullable": true, "maxLength": 100 },
           "fields": { "type": "object", "additionalProperties": true },
-          "tags": { "type": "array", "items": { "type": "string" } }
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "enabled": { "type": "boolean" },
+          "usageRoles": { "type": "array", "items": { "type": "string", "enum": ["viewer", "editor", "admin"] } }
         }
       },
       "MetadataTemplateUpdateRequest": {
@@ -8803,8 +8830,11 @@
         "properties": {
           "name": { "type": "string", "minLength": 1, "maxLength": 200 },
           "typeId": { "type": "string", "nullable": true },
+          "departmentId": { "type": "string", "nullable": true, "maxLength": 100 },
           "fields": { "type": "object", "additionalProperties": true },
-          "tags": { "type": "array", "items": { "type": "string" } }
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "enabled": { "type": "boolean" },
+          "usageRoles": { "type": "array", "items": { "type": "string", "enum": ["viewer", "editor", "admin"] } }
         }
       },
       "MetadataTemplatesResponse": {
@@ -8829,6 +8859,23 @@
               "template": { "$ref": "#/components/schemas/MetadataTemplate" }
             }
           }
+        ]
+      },
+      "MetadataTemplateVersion": {
+        "type": "object",
+        "required": ["id", "version", "snapshot", "createdAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "version": { "type": "integer", "minimum": 1 },
+          "snapshot": { "$ref": "#/components/schemas/MetadataTemplate" },
+          "createdById": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "MetadataTemplateVersionsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          { "type": "object", "required": ["versions"], "properties": { "versions": { "type": "array", "items": { "$ref": "#/components/schemas/MetadataTemplateVersion" } } } }
         ]
       },
       "NamingRule": {

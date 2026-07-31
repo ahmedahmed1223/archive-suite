@@ -446,9 +446,15 @@ export interface BrokenLink {
 export interface MetadataTemplate {
   id: string;
   typeId: string | null;
+  departmentId: string | null;
   name: string;
   fields: Record<string, unknown>;
   tags: string[];
+  enabled: boolean;
+  usageRoles: Array<"viewer" | "editor" | "admin">;
+  currentVersion: number;
+  createdById?: string | null;
+  updatedById?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -456,8 +462,25 @@ export interface MetadataTemplate {
 export interface MetadataTemplateInput {
   name?: string;
   typeId?: string | null;
+  departmentId?: string | null;
   fields?: Record<string, unknown>;
   tags?: string[];
+  enabled?: boolean;
+  usageRoles?: Array<"viewer" | "editor" | "admin">;
+}
+
+export interface MetadataTemplateQuery {
+  typeId?: string;
+  departmentId?: string;
+  includeDisabled?: boolean;
+}
+
+export interface MetadataTemplateVersion {
+  id: string;
+  version: number;
+  snapshot: MetadataTemplate;
+  createdById: string | null;
+  createdAt: string;
 }
 
 // ponytail: shared DB-backed filename prefix rules (V1-858) — key is a project or type id.
@@ -1363,10 +1386,11 @@ export interface ArchiveApiClient {
   setRecordTriageFlag(recordId: string, reason: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ flag: RecordTriageFlag }>>;
   clearRecordTriageFlag(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   linkAudit(options?: AuthRequestOptions): Promise<ApiEnvelope<{ brokenLinks: BrokenLink[] }>>;
-  metadataTemplates(typeId?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: MetadataTemplate[] }>>;
+  metadataTemplates(query?: MetadataTemplateQuery, options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: MetadataTemplate[] }>>;
   createMetadataTemplate(payload: MetadataTemplateInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
   updateMetadataTemplate(id: string, payload: MetadataTemplateInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ template: MetadataTemplate }>>;
   deleteMetadataTemplate(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  metadataTemplateVersions(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ versions: MetadataTemplateVersion[] }>>;
   namingRules(options?: AuthRequestOptions): Promise<ApiEnvelope<{ rules: NamingRule[] }>>;
   upsertNamingRule(key: string, prefix: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: NamingRule }>>;
   deleteNamingRule(key: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -1972,14 +1996,21 @@ export function createArchiveApiClient({
     clearRecordTriageFlag: (recordId: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/records/${encodeURIComponent(recordId)}/triage-flag`, undefined, options),
     linkAudit: (options?: AuthRequestOptions) => get<{ brokenLinks: BrokenLink[] }>("/link-audit", options),
-    metadataTemplates: (typeId?: string, options?: AuthRequestOptions) =>
-      get<{ templates: MetadataTemplate[] }>(`/metadata-templates${typeId ? `?${new URLSearchParams({ typeId })}` : ""}`, options),
+    metadataTemplates: (query?: MetadataTemplateQuery, options?: AuthRequestOptions) => {
+      const params = new URLSearchParams();
+      if (query?.typeId) params.set("typeId", query.typeId);
+      if (query?.departmentId) params.set("departmentId", query.departmentId);
+      if (query?.includeDisabled) params.set("includeDisabled", "1");
+      return get<{ templates: MetadataTemplate[] }>(`/metadata-templates${params.size ? `?${params}` : ""}`, options);
+    },
     createMetadataTemplate: (payload: MetadataTemplateInput, options?: AuthRequestOptions) =>
       post<{ template: MetadataTemplate }>("/metadata-templates", payload, options),
     updateMetadataTemplate: (id: string, payload: MetadataTemplateInput, options?: AuthRequestOptions) =>
       patch<{ template: MetadataTemplate }>(`/metadata-templates/${encodeURIComponent(id)}`, payload, options),
     deleteMetadataTemplate: (id: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/metadata-templates/${encodeURIComponent(id)}`, undefined, options),
+    metadataTemplateVersions: (id: string, options?: AuthRequestOptions) =>
+      get<{ versions: MetadataTemplateVersion[] }>(`/metadata-templates/${encodeURIComponent(id)}/versions`, options),
     namingRules: (options?: AuthRequestOptions) => get<{ rules: NamingRule[] }>("/naming-rules", options),
     upsertNamingRule: (key: string, prefix: string, options?: AuthRequestOptions) =>
       put<{ rule: NamingRule }>(`/naming-rules/${encodeURIComponent(key)}`, { prefix }, options),

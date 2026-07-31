@@ -980,7 +980,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List metadata templates, optionally filtered by type */
+        /** List enabled metadata templates, optionally filtered by type or department */
         get: operations["listMetadataTemplates"];
         put?: never;
         /** Create a metadata template */
@@ -1007,6 +1007,23 @@ export interface paths {
         head?: never;
         /** Update a metadata template */
         patch: operations["updateMetadataTemplate"];
+        trace?: never;
+    };
+    "/metadata-templates/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List immutable snapshots of a metadata template */
+        get: operations["listMetadataTemplateVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/montage-projects": {
@@ -3926,6 +3943,10 @@ export interface components {
         MetadataTemplate: {
             /** Format: date-time */
             createdAt: string;
+            createdById?: string | null;
+            currentVersion: number;
+            departmentId: string | null;
+            enabled: boolean;
             fields: {
                 [key: string]: unknown;
             };
@@ -3935,14 +3956,19 @@ export interface components {
             typeId: string | null;
             /** Format: date-time */
             updatedAt: string;
+            updatedById?: string | null;
+            usageRoles: ("viewer" | "editor" | "admin")[];
         };
         MetadataTemplateCreateRequest: {
+            departmentId: string | null;
+            enabled?: boolean;
             fields?: {
                 [key: string]: unknown;
             };
             name: string;
             tags?: string[];
             typeId?: string | null;
+            usageRoles?: ("viewer" | "editor" | "admin")[];
         };
         MetadataTemplateResponse: components["schemas"]["OkEnvelope"] & {
             template: components["schemas"]["MetadataTemplate"];
@@ -3951,12 +3977,26 @@ export interface components {
             templates: components["schemas"]["MetadataTemplate"][];
         };
         MetadataTemplateUpdateRequest: {
+            departmentId?: string | null;
+            enabled?: boolean;
             fields?: {
                 [key: string]: unknown;
             };
             name?: string;
             tags?: string[];
             typeId?: string | null;
+            usageRoles?: ("viewer" | "editor" | "admin")[];
+        };
+        MetadataTemplateVersion: {
+            /** Format: date-time */
+            createdAt: string;
+            createdById?: string | null;
+            id: string;
+            snapshot: components["schemas"]["MetadataTemplate"];
+            version: number;
+        };
+        MetadataTemplateVersionsResponse: components["schemas"]["OkEnvelope"] & {
+            versions: components["schemas"]["MetadataTemplateVersion"][];
         };
         MontageProject: {
             /** @description Timeline clips; item shape is client-defined and stored as-is. */
@@ -7186,6 +7226,8 @@ export interface operations {
     listMetadataTemplates: {
         parameters: {
             query?: {
+                departmentId?: string;
+                includeDisabled?: boolean;
                 typeId?: string;
             };
             header?: never;
@@ -7275,6 +7317,30 @@ export interface operations {
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listMetadataTemplateVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Template versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetadataTemplateVersionsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     listMontageProjects: {

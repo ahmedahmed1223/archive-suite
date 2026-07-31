@@ -1036,6 +1036,11 @@ export default function SettingsPage() {
               <a className="button button-secondary button-small" href="/data-center">الذهاب إلى المركز</a>
             </div>
             <div className="panel-compact">
+              <h3>قوالب الأقسام</h3>
+              <p className="helper-text">قوالب مركزية بإصدارات وصلاحيات استعمال على مستوى القسم.</p>
+              <a className="button button-secondary button-small" href="/metadata-templates">إدارة القوالب</a>
+            </div>
+            <div className="panel-compact">
               <h3>المستخدمون والأدوار</h3>
               <p className="helper-text">إدارة الوصول والأذونات.</p>
               <a className="button button-secondary button-small" href="/settings/users">إدارة المستخدمين</a>

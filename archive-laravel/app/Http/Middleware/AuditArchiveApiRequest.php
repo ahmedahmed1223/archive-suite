@@ -56,6 +56,9 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/records/{id}/attachments'] => ['record_attachments.create', 'record_attachment'],
             ['POST', 'api/v1/records/{id}/source-replacements'] => ['record_source.replace', 'record_source'],
             ['POST', 'api/v1/records/{id}/change-impact'] => ['record_change.impact_preview', 'record'],
+            ['POST', 'api/v1/metadata-templates'] => ['metadata_templates.create', 'metadata_template'],
+            ['PATCH', 'api/v1/metadata-templates/{id}'] => ['metadata_templates.update', 'metadata_template'],
+            ['DELETE', 'api/v1/metadata-templates/{id}'] => ['metadata_templates.delete', 'metadata_template'],
             ['POST', 'api/v1/records/{id}/source-versions/{versionId}/restore'] => ['record_source.restore', 'record_source'],
             ['DELETE', 'api/v1/records/{id}/attachments/{attachmentId}'] => ['record_attachments.delete', 'record_attachment'],
             ['POST', 'api/v1/records/{id}/notes'] => ['record_notes.create', 'record_note'],
@@ -99,6 +102,14 @@ class AuditArchiveApiRequest
 
         if ($route === 'api/v1/records/import') {
             $resourceId = $request->string('store')->toString() ?: null;
+        }
+
+        if (in_array($route, ['api/v1/metadata-templates/{id}', 'api/v1/metadata-templates/{id}/versions'], true)) {
+            $resourceId = $request->route('id');
+        }
+
+        if ($route === 'api/v1/metadata-templates' && $response->isSuccessful()) {
+            $resourceId = data_get($this->responseData($response), 'template.id');
         }
 
         if ($route === 'api/v1/ingest/watched/batches/{batchId}/apply') {

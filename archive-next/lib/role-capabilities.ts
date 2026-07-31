@@ -13,6 +13,7 @@ export type Capability =
   | "collections.manage"
   | "tags.manage"
   | "vocabulary.manage"
+  | "templates.manage"
   | "delegations.manage"
   | "shares.manage"
   | "trash.restore"
@@ -31,6 +32,7 @@ const allCapabilities: readonly Capability[] = [
   "collections.manage",
   "tags.manage",
   "vocabulary.manage",
+  "templates.manage",
   "delegations.manage",
   "shares.manage",
   "trash.restore",
@@ -49,6 +51,7 @@ export const ROLE_CAPABILITIES: Record<NavigationRole, readonly Capability[]> = 
     "collections.manage",
     "tags.manage",
     "vocabulary.manage",
+    "templates.manage",
     "delegations.manage",
     "shares.manage",
     "trash.restore"

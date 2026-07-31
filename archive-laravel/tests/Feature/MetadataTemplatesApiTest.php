@@ -15,6 +15,7 @@ class MetadataTemplatesApiTest extends TestCase
         $created = $this->postJson('/api/v1/metadata-templates', [
             'name' => 'قالب أخبار',
             'typeId' => 'news',
+            'departmentId' => 'news',
             'fields' => ['description' => 'خبر عاجل'],
             'tags' => ['عاجل'],
         ], $this->authHeaders())
