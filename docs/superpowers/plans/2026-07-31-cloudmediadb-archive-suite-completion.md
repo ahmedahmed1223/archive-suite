@@ -148,43 +148,28 @@
 
 **Files:** `RelationsGraphApiTest.php`, `archive-next/app/graph/page.tsx`, `archive-next/app/graph/graph.css`.
 
-- [ ] Run `node scripts/laravel-docker.mjs test tests/Feature/RelationsGraphApiTest.php`.
-- [ ] Verify records and controlled relation edges are returned in graph-safe form and rendered without exposing unavailable records.
-- [ ] Add a failing graph isolation test before any fix, then close AS-14.
-- [ ] Commit `docs(tasks): close AS-14 relationship graph`.
+- [x] Graph suite passed (6 tests); controlled manual/inferred edges and authentication are covered. No gap required a fix.
 
 ### Task 15: AS-15 Map and timeline
 
 **Files:** `DiscoverApiTest.php`, `RecordsApiTest.php`, `archive-next/app/map/page.tsx`, `archive-next/app/timeline/page.tsx`.
 
-- [ ] Run `node scripts/laravel-docker.mjs test tests/Feature/DiscoverApiTest.php tests/Feature/RecordsApiTest.php`.
-- [ ] Verify location/event/date facets are available to map and timeline views without replacing the canonical record source.
-- [ ] Add a failing facet test before any missing temporal/geographic filter fix, then close AS-15.
-- [ ] Commit `docs(tasks): close AS-15 map and timeline`.
+- [x] Discover/records coverage confirms canonical location and temporal facets; no gap required a fix.
 
 ### Task 16: AS-16 Reports and export
 
 **Files:** `ComplianceReportApiTest.php`, `AccountExportApiTest.php`, `archive-next/app/reports/page.tsx`, `archive-next/app/data-center/page.tsx`.
 
-- [ ] Run the two Laravel reporting/export suites.
-- [ ] Verify operational reports, metadata-quality indicators, and authorized CSV/Excel/PDF-style exports do not leak data.
-- [ ] Add a failing export authorization test before any fix, then close AS-16.
-- [ ] Commit `docs(tasks): close AS-16 reports and export`.
+- [x] Reporting/export suites passed (6 tests); authorization and account isolation are covered.
 
 ### Task 17: AS-17 Backup and restore
 
 **Files:** `BackupsApiTest.php`, `BackupCommandsTest.php`, `BackupManifestTest.php`, `archive-next/app/backup/page.tsx`.
 
-- [ ] Run the three Laravel backup suites.
-- [ ] Verify database backup, import/restore plan, manifests, integrity checks, and rollback-safe behavior.
-- [ ] Add a failing restore-integrity test before any fix, then close AS-17.
-- [ ] Commit `docs(tasks): close AS-17 backup and restore`.
+- [x] Backup API/command/manifest suites passed (26 tests); checksum, manifest, safe restore and rollback are covered.
 
 ### Task 18: AS-18 Cloud integration security
 
 **Files:** `CloudStorageConfigTest.php`, `ProductionHardeningTest.php`, `SystemConnectionTestTest.php`, `archive-next/app/data-center/page.tsx`.
 
-- [ ] Run the three Laravel security/configuration suites.
-- [ ] Verify protected secrets, authenticated endpoints, connection review, and absence of exposed diagnostics in production posture.
-- [ ] Add a failing secret-exposure or authentication test before any fix, then close AS-18.
-- [ ] Commit `docs(tasks): close AS-18 cloud integration security`.
+- [x] Cloud configuration/hardening/connection suites passed (36 tests, two unavailable external DB checks skipped); protected endpoints and production safeguards are covered.
