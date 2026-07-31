@@ -14,7 +14,7 @@ export const SCENARIOS = Object.freeze([
   { id: "GD-WORKER-03", title: "Queue worker outage", service: "laravel-worker", execution: "docker", detection: "Operator snapshot reports a missing worker and queue backlog.", recovery: "Restart the worker and confirm its health check plus queue drain.", dataSafety: "Jobs are paused, not removed or retried destructively.", externalRequirements: "Native service-manager recovery must be recorded externally; no native command is run." },
   { id: "GD-REVERB-04", title: "Reverb outage", service: "laravel-reverb", execution: "docker", detection: "Operator snapshot reports the Reverb listener unavailable.", recovery: "Restart Reverb and confirm the TCP health check.", dataSafety: "The fault never modifies database, cache, or storage volumes.", externalRequirements: "Native service-manager recovery must be recorded externally; no native command is run." },
   { id: "GD-NET-05", title: "Application network interruption", service: "laravel", execution: "docker", detection: "Public health requests fail while the isolated Compose project remains inspectable.", recovery: "Unpause the Laravel gateway and rerun health.", dataSafety: "Uses Docker pause/unpause only; no host firewall or public network changes.", externalRequirements: "Native service-manager recovery must be recorded externally; no native command is run." },
-  { id: "GD-DISK-06", title: "Ephemeral disk pressure", service: "laravel-fpm", execution: "docker", detection: "A bounded temporary file causes the application process to report storage pressure.", recovery: "Remove only the runner-owned /tmp file and rerun health.", dataSafety: "Requires explicit disk opt-in; writes only a bounded temporary file in the isolated container.", externalRequirements: "Native service-manager recovery must be recorded externally; no native command is run." },
+  { id: "GD-DISK-06", title: "Ephemeral disk pressure", service: "laravel-fpm", execution: "docker", detection: "The runner confirms its bounded temporary pressure sentinel; a full-disk application alarm requires separate operator evidence.", recovery: "Remove only the runner-owned /tmp file and rerun health.", dataSafety: "Requires explicit disk opt-in; writes only a bounded temporary file in the isolated container.", externalRequirements: "Native service-manager recovery and a production full-disk alarm must be recorded externally; no native command is run." },
   { id: "GD-CERT-07", title: "Public certificate failure", service: null, execution: "external-manual", detection: "Validate public TLS expiry, chain, hostname, and renewal alert from a real public endpoint.", recovery: "Follow the deployed edge certificate renewal runbook and preserve its external evidence.", dataSafety: "No public certificate, DNS record, or edge configuration is changed by this runner.", externalRequirements: "Native and real public-certificate checks are external/manual requirements and are never executed or passed by this runner." },
 ]);
 
@@ -54,7 +54,10 @@ export function createGameDayPlan({ scenarioIds = SCENARIOS.map((scenario) => sc
     const actions = actionFor(scenario);
     if (!actions.length) continue;
     commands.push(dockerCommand([...composeArgs, ...actions[0]], `fault-${scenario.id}`));
-    commands.push(dockerCommand([...composeArgs, "ps", "--all", "--format", "json"], `detect-${scenario.id}`, "service-down"));
+    const detection = scenario.id === "GD-DISK-06"
+      ? dockerCommand([...composeArgs, "exec", "-T", scenario.service, "sh", "-lc", "test -s /tmp/archive-game-day-fill"], `detect-${scenario.id}`)
+      : dockerCommand([...composeArgs, "ps", "--all", "--format", "json"], `detect-${scenario.id}`, "service-down");
+    commands.push(detection);
     commands.push(dockerCommand([...composeArgs, ...actions[1]], `restore-${scenario.id}`));
     if (scenario.id === "GD-NET-05") {
       commands.push(dockerCommand([...composeArgs, "restart", scenario.service], `restart-${scenario.id}`));

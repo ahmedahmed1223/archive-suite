@@ -38,6 +38,14 @@ test("network recovery waits for the isolated Laravel gateway to become healthy"
   assert.deepEqual(stabilization?.args.slice(-5), ["up", "--detach", "--wait", "--no-deps", "laravel"]);
 });
 
+test("disk-pressure drill verifies its bounded sentinel instead of pretending the service is down", () => {
+  const plan = createGameDayPlan({ scenarioIds: ["GD-DISK-06"] });
+  const detection = plan.commands.find((command) => command.purpose === "detect-GD-DISK-06");
+
+  assert.equal(detection?.expect, "success");
+  assert.deepEqual(detection?.args.slice(-3), ["sh", "-lc", "test -s /tmp/archive-game-day-fill"]);
+});
+
 test("game-day execution writes redacted evidence and never claims external manual checks passed", () => {
   const outputDir = mkdtempSync(join(tmpdir(), "archive-game-day-"));
   const result = runGameDay({ scenarioIds: ["GD-DB-01", "GD-CERT-07"], outputDir, now: new Date("2026-07-15T12:00:00Z") });

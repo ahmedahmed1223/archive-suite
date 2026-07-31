@@ -56,7 +56,7 @@ successful unless the operator has reviewed the generated record.
 | GD-WORKER-03 | stop/start worker | worker health and queue drain |
 | GD-REVERB-04 | stop/start Reverb | listener TCP health |
 | GD-NET-05 | pause/unpause Laravel gateway | public health after unpause |
-| GD-DISK-06 | bounded temporary container file | file removal and health |
+| GD-DISK-06 | bounded temporary container file | file presence/removal and health; a production full-disk alarm needs separate operator evidence |
 | GD-CERT-07 | none | external public TLS validation and renewal evidence |
 
 Native service-manager checks and real public-certificate checks are
