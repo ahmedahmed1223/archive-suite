@@ -4656,6 +4656,67 @@
         }
       }
     },
+    "/records/{id}/snapshots": {
+      "get": {
+        "tags": ["Record Snapshots"],
+        "summary": "List prior metadata snapshots for a record, newest first",
+        "operationId": "listRecordSnapshots",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Snapshots",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordSnapshotsResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/snapshots/{snapshotId}/diff": {
+      "get": {
+        "tags": ["Record Snapshots"],
+        "summary": "Diff a prior snapshot against the record's current metadata",
+        "operationId": "diffRecordSnapshot",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "snapshotId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Field-level diff",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordSnapshotDiffResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/snapshots/{snapshotId}/restore": {
+      "post": {
+        "tags": ["Record Snapshots"],
+        "summary": "Restore chosen metadata fields from a prior snapshot; files, rights, and share links are never touched",
+        "operationId": "restoreRecordSnapshot",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "snapshotId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordSnapshotRestoreRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Restored fields",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordSnapshotRestoreResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/triage-flag": {
       "get": {
         "tags": ["Triage"],
@@ -8429,6 +8490,71 @@
             "properties": {
               "primaryId": { "type": "string" },
               "merged": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        ]
+      },
+      "RecordSnapshot": {
+        "type": "object",
+        "required": ["id", "recordId", "changedBy", "createdAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "recordId": { "type": "string" },
+          "changedBy": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RecordSnapshotsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["snapshots"],
+            "properties": {
+              "snapshots": { "type": "array", "items": { "$ref": "#/components/schemas/RecordSnapshot" } }
+            }
+          }
+        ]
+      },
+      "RecordSnapshotFieldDiff": {
+        "type": "object",
+        "required": ["field", "previous", "current", "changed"],
+        "properties": {
+          "field": { "type": "string" },
+          "previous": {},
+          "current": {},
+          "changed": { "type": "boolean" }
+        }
+      },
+      "RecordSnapshotDiffResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["fields"],
+            "properties": {
+              "fields": { "type": "array", "items": { "$ref": "#/components/schemas/RecordSnapshotFieldDiff" } }
+            }
+          }
+        ]
+      },
+      "RecordSnapshotRestoreRequest": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["title", "description", "type", "subtype", "tags"] }
+          }
+        }
+      },
+      "RecordSnapshotRestoreResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["restoredFields"],
+            "properties": {
+              "restoredFields": { "type": "array", "items": { "type": "string" } }
             }
           }
         ]

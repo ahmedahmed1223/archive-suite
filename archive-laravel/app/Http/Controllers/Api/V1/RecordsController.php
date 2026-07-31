@@ -149,7 +149,26 @@ class RecordsController extends Controller
             // V1-758B: existence check happens BEFORE the write so we know
             // whether this was a create or an update once RecordChanged
             // fires below.
-            $existed = $this->storageRows->find($validated['store'], $uid) !== null;
+            $existingRow = $this->storageRows->find($validated['store'], $uid);
+            $existed = $existingRow !== null;
+
+            // V1-834: snapshot the pre-write state so a later diff/restore has
+            // something to compare against. Best-effort and non-fatal — a
+            // snapshot failure must never block the actual save.
+            if ($existed) {
+                try {
+                    DB::table('record_metadata_snapshots')->insert([
+                        'id' => (string) Str::uuid(),
+                        'store' => $validated['store'],
+                        'record_id' => $uid,
+                        'snapshot' => is_string($existingRow->data ?? null) ? $existingRow->data : json_encode($existingRow->data ?? [], JSON_THROW_ON_ERROR),
+                        'changed_by' => $request->attributes->get('archive_user')?->getKey(),
+                        'created_at' => $now,
+                    ]);
+                } catch (\Throwable) {
+                    // Snapshotting is a diagnostic aid, not part of the write contract.
+                }
+            }
 
             $this->storageRows->upsert($validated['store'], $uid, [
                     'data' => json_encode($normalized, JSON_THROW_ON_ERROR),

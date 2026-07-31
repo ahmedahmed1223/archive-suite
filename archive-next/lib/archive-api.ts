@@ -341,6 +341,21 @@ export interface RecordMergeResult {
   merged: string[];
 }
 
+// V1-834: prior metadata snapshots, captured on every record write.
+export interface RecordSnapshot {
+  id: string;
+  recordId: string;
+  changedBy: string | null;
+  createdAt: string;
+}
+
+export interface RecordSnapshotFieldDiff {
+  field: string;
+  previous: unknown;
+  current: unknown;
+  changed: boolean;
+}
+
 // V1-837: quick-triage "needs info" flag, one per record, team-visible.
 export interface RecordTriageFlag {
   recordId: string;
@@ -1236,6 +1251,9 @@ export interface ArchiveApiClient {
   deleteRecordNote(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   previewRecordMerge(primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordMergePreview>>;
   mergeRecords(primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<RecordMergeResult>>;
+  recordSnapshots(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ snapshots: RecordSnapshot[] }>>;
+  diffRecordSnapshot(recordId: string, snapshotId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ fields: RecordSnapshotFieldDiff[] }>>;
+  restoreRecordSnapshot(recordId: string, snapshotId: string, fields?: string[], options?: AuthRequestOptions): Promise<ApiEnvelope<{ restoredFields: string[] }>>;
   recordTriageFlag(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ flag: RecordTriageFlag | null }>>;
   setRecordTriageFlag(recordId: string, reason: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ flag: RecordTriageFlag }>>;
   clearRecordTriageFlag(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
@@ -1789,6 +1807,12 @@ export function createArchiveApiClient({
       post<RecordMergePreview>(`/records/${encodeURIComponent(primaryId)}/merge-preview`, { duplicateIds, store }, options),
     mergeRecords: (primaryId: string, duplicateIds: string[], store?: string, options?: AuthRequestOptions) =>
       post<RecordMergeResult>(`/records/${encodeURIComponent(primaryId)}/merge`, { duplicateIds, store }, options),
+    recordSnapshots: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ snapshots: RecordSnapshot[] }>(`/records/${encodeURIComponent(recordId)}/snapshots`, options),
+    diffRecordSnapshot: (recordId: string, snapshotId: string, options?: AuthRequestOptions) =>
+      get<{ fields: RecordSnapshotFieldDiff[] }>(`/records/${encodeURIComponent(recordId)}/snapshots/${encodeURIComponent(snapshotId)}/diff`, options),
+    restoreRecordSnapshot: (recordId: string, snapshotId: string, fields?: string[], options?: AuthRequestOptions) =>
+      post<{ restoredFields: string[] }>(`/records/${encodeURIComponent(recordId)}/snapshots/${encodeURIComponent(snapshotId)}/restore`, fields ? { fields } : undefined, options),
     recordTriageFlag: (recordId: string, options?: AuthRequestOptions) =>
       get<{ flag: RecordTriageFlag | null }>(`/records/${encodeURIComponent(recordId)}/triage-flag`, options),
     setRecordTriageFlag: (recordId: string, reason: string, options?: AuthRequestOptions) =>

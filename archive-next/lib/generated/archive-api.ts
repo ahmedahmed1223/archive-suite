@@ -1274,6 +1274,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List prior metadata snapshots for a record, newest first */
+        get: operations["listRecordSnapshots"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/snapshots/{snapshotId}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Diff a prior snapshot against the record's current metadata */
+        get: operations["diffRecordSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/snapshots/{snapshotId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore chosen metadata fields from a prior snapshot; files, rights, and share links are never touched */
+        post: operations["restoreRecordSnapshot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/transcript": {
         parameters: {
             query?: never;
@@ -3897,6 +3948,31 @@ export interface components {
                 reason?: string;
                 uid: string;
             }[];
+        };
+        RecordSnapshot: {
+            changedBy: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            recordId: string;
+        };
+        RecordSnapshotDiffResponse: components["schemas"]["OkEnvelope"] & {
+            fields: components["schemas"]["RecordSnapshotFieldDiff"][];
+        };
+        RecordSnapshotFieldDiff: {
+            changed: boolean;
+            current: unknown;
+            field: string;
+            previous: unknown;
+        };
+        RecordSnapshotRestoreRequest: {
+            fields?: ("title" | "description" | "type" | "subtype" | "tags")[];
+        };
+        RecordSnapshotRestoreResponse: components["schemas"]["OkEnvelope"] & {
+            restoredFields: string[];
+        };
+        RecordSnapshotsResponse: components["schemas"]["OkEnvelope"] & {
+            snapshots: components["schemas"]["RecordSnapshot"][];
         };
         RecordTriageFlag: {
             /** Format: date-time */
@@ -7274,6 +7350,84 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    listRecordSnapshots: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Snapshots */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordSnapshotsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    diffRecordSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                snapshotId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Field-level diff */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordSnapshotDiffResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    restoreRecordSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                snapshotId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RecordSnapshotRestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Restored fields */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordSnapshotRestoreResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };
