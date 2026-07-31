@@ -39,7 +39,7 @@ test('V1-IA-ADMIN-001 admin reads a live healthy system status surface', async (
   const { account, page } = await roleSession('admin');
   await page.goto('/status', { waitUntil: 'networkidle' });
   await ui(page.getByRole('heading', { name: 'حالة النظام' })).toBeVisible();
-  await ui(page.getByRole('status')).toContainText('اتصال الخادم سليم');
+  await ui(page.getByRole('status').filter({ hasText: 'اتصال الخادم سليم' })).toContainText('اتصال الخادم سليم');
   await ui(page.locator('.workspace-commandbar__user')).toContainText(account.name);
   await page.screenshot({ path: testInfo.outputPath('admin-health.png'), fullPage: true });
 });
