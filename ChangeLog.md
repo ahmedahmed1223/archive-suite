@@ -170,6 +170,10 @@
   `/project-tasks` تحول الحالة وتظهر آخر تحديث. التحقق: 6 اختبارات Laravel/51
   assertion، وعقد OpenAPI و`typecheck`.
 
+- **AS-12 إعدادات المقاطع وخرائط NLE:** تحقّق محرر المونتاج من المقاطع بنقاط
+  دخول/خروج وترتيب Rough Cut، وتصدير JSON وEDL وFCPXML مع مراجع المصدر.
+  التحقق: 17 اختبار Laravel/97 assertion و13 اختبار Next.js.
+
 ## V1-817 تصحيح نطاق البوابات غير المُصادَقة — 2026-07-27
 
 - **المشكلة:** كانت `CORE_ROUTES` في `archive-next/e2e/fixtures/visual-routes.ts`

@@ -129,10 +129,10 @@
 
 **Files:** `RecordSegmentsApiTest.php`, `MontageProjectsApiTest.php`, `archive-next/lib/montage-nle-export.test.ts`, `archive-next/app/projects/page.tsx`.
 
-- [ ] Run the two Laravel suites and `pnpm --filter @archive/next test -- lib/montage-nle-export.test.ts`.
-- [ ] Verify in/out points, clips, rough-cut sequencing, and structured JSON/NLE exports are valid and preserve source references.
-- [ ] Add a failing export test before any gap fix, then close AS-12.
-- [ ] Commit `docs(tasks): close AS-12 segments and NLE maps`.
+- [x] Verified segments, montage projects, and the NLE export suite: 17 Laravel
+  tests/97 assertions and 13 Next.js export tests pass.
+- [x] In/out points, ordered clips/Rough Cut, source references, and JSON/EDL/FCPXML exports are covered; no gap required a fix.
+- [x] Commit `docs(tasks): close AS-12 segments and NLE maps`.
 
 ### Task 13: AS-13 Project sharing
 
