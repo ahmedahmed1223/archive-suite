@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import SearchAutocomplete from "./SearchAutocomplete";
 
 describe("SearchAutocomplete", () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
 
   it("selects an option with the keyboard", async () => {
     const onSelect = vi.fn();
@@ -24,8 +28,7 @@ describe("SearchAutocomplete", () => {
     await screen.findByRole("option", { name: "Riyadh archive interview" });
 
     fireEvent.blur(input);
-
-    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
   });
 
   it("does not restore suggestions when a pending request resolves after blur", async () => {
@@ -38,7 +41,27 @@ describe("SearchAutocomplete", () => {
     fireEvent.blur(input);
     releaseSuggestions?.([{ kind: "record", label: "Riyadh archive interview", value: "Riyadh archive interview", recordId: "clip-001" }]);
 
-    await new Promise((resolve) => window.setTimeout(resolve, 0));
-    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("listbox")).not.toBeInTheDocument());
+  });
+
+  it("keeps suggestions mounted until the search-button pointer interaction can finish", async () => {
+    vi.useFakeTimers();
+    const fetchSuggestions = vi.fn().mockResolvedValue([{ value: "سجل اختبار", label: "سجل اختبار", kind: "record" }]);
+
+    function Harness() {
+      const [value, setValue] = useState("");
+      return <form><SearchAutocomplete value={value} onChange={setValue} onSelect={() => undefined} fetchSuggestions={fetchSuggestions} /><button type="submit">بحث</button></form>;
+    }
+
+    render(<Harness />);
+    const input = screen.getByRole("combobox", { name: "اقتراحات البحث" });
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "سجل" } });
+    await act(async () => { vi.advanceTimersByTime(180); await Promise.resolve(); });
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+
+    fireEvent.blur(input, { relatedTarget: screen.getByRole("button", { name: "بحث" }) });
+
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
   });
 });
