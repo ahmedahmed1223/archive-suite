@@ -24,6 +24,7 @@ type HealthState =
   | { status: "error"; message: string };
 
 const EXPERT_SKIP_STORAGE_KEY = "masar:first-run:expert-skip:v1";
+const INTERACTIVE_TEST_FEEDBACK_STORAGE_KEY = "masar:interactive-test-feedback:v1";
 
 type ProgressState =
   | { status: "idle" | "loading" }
@@ -47,6 +48,8 @@ export default function FirstRunPage() {
   const [updatingStage, setUpdatingStage] = useState<OnboardingStageId | null>(null);
   const [health, setHealth] = useState<HealthState>({ status: "idle" });
   const [expertSkip, setExpertSkip] = useState(false);
+  const [interactiveTestFeedback, setInteractiveTestFeedback] = useState("");
+  const [feedbackStatus, setFeedbackStatus] = useState("");
   const currentPreset = onboardingPresets[preset];
   const progressSteps = progressState.status === "ready" ? toOnboardingProgressSteps(progressState.progress) : [];
   const completedCount = progressSteps.filter((step) => step.completed).length;
@@ -66,7 +69,7 @@ export default function FirstRunPage() {
   );
   const journeySteps: Array<{ id: SetupStepId; title: string; description: string }> = [
     { id: "server", title: "تشغيل الخادم", description: "فحص API ومحرك البيانات تلقائياً." },
-    { id: "account", title: "تسجيل الدخول", description: "التحقق من جلسة المستخدم الحالية." },
+    { id: "account", title: "تأكيد الدخول", description: "سجّل الدخول عند الحاجة لاستئناف التهيئة المحفوظة." },
     { id: "settings", title: "مراجعة الإعدادات", description: "اختبار الاتصالات ومراجعة إعدادات التشغيل." },
     { id: "ready", title: "بدء العمل", description: "الانتقال إلى مساحة العمل بعد اكتمال الجاهزية." }
   ];
@@ -76,6 +79,7 @@ export default function FirstRunPage() {
     const nextPreset = storedPreset === "advanced" ? "advanced" : "quick";
     setPreset(nextPreset);
     setExpertSkip(window.localStorage.getItem(EXPERT_SKIP_STORAGE_KEY) === "true");
+    setInteractiveTestFeedback(window.localStorage.getItem(INTERACTIVE_TEST_FEEDBACK_STORAGE_KEY) || "");
   }, []);
 
   useEffect(() => {
@@ -171,12 +175,30 @@ export default function FirstRunPage() {
     window.localStorage.setItem(EXPERT_SKIP_STORAGE_KEY, String(checked));
   }
 
+  function updateInteractiveTestFeedback(value: string) {
+    setInteractiveTestFeedback(value);
+    setFeedbackStatus("");
+    window.localStorage.setItem(INTERACTIVE_TEST_FEEDBACK_STORAGE_KEY, value);
+  }
+
+  async function copyInteractiveTestFeedback() {
+    const note = interactiveTestFeedback.trim();
+    if (!note) return;
+
+    try {
+      await navigator.clipboard.writeText(`ملاحظات الفحص التفاعلي\n${note}`);
+      setFeedbackStatus("تم النسخ. ألصق الملاحظات في محادثة المتابعة.");
+    } catch {
+      setFeedbackStatus("تعذر النسخ تلقائيًا. انسخ النص من الحقل وأرسله في محادثة المتابعة.");
+    }
+  }
+
   return (
     <AppShell subtitle="أول تشغيل" navLabel="مسار التهيئة" contentClassName="first-run-content" tipsPage="first-run">
       <PageToolbar
         eyebrow={<span className="badge">أول تشغيل</span>}
         title={`تهيئة ${BRAND.arabicName}`}
-        description="مسار عملي لأول تشغيل: اختر تهيئة سريعة أو متقدمة، نفذ أوامر Control Center بأمان، ثم تحقق من صحة الخادم والواجهة قبل بدء الاستخدام اليومي."
+        description="اتبع الخطوة الحالية، ثم نفّذ تعليمات المسار الذي اخترته. لا يظهر تسجيل الدخول إلا عندما يصبح مطلوبًا لاستئناف التهيئة."
         meta={(
           <>
             <span className="badge">setup.bat</span>
@@ -193,12 +215,13 @@ export default function FirstRunPage() {
             </button>
             <FirstRunTour />
             <a className="button button-secondary" href="/help">المساعدة</a>
-            <a className="button button-primary" href="/login">تسجيل الدخول</a>
+            {auth.status === "authenticated" ? <a className="button button-primary" href="/">فتح مساحة العمل</a> : null}
           </>
         )}
       />
 
-      <section className="panel" aria-label="رحلة الجاهزية" aria-live="polite">
+      <div className="first-run-workspace-grid">
+      <section className="panel first-run-journey" aria-label="رحلة الجاهزية" aria-live="polite">
         <div className="panel-section-header helper-row">
           <div>
             <h2>رحلة الإعداد الموحدة</h2>
@@ -229,7 +252,7 @@ export default function FirstRunPage() {
         </ol>
       </section>
 
-      <section className="page-section" aria-labelledby="preset-heading">
+      <section className="page-section first-run-preset" aria-labelledby="preset-heading">
         <div className="panel">
           <div className="panel-section-header">
             <h2 id="preset-heading">اختر مسار التهيئة</h2>
@@ -255,10 +278,23 @@ export default function FirstRunPage() {
             </div>
             <code dir="ltr">{currentPreset.command}</code>
           </div>
+          <ol className="first-run-steps" aria-label="خطوات التهيئة المختارة">
+            {currentPreset.steps.map((step, index) => (
+              <li className="first-run-step" key={step.id}>
+                <div className="first-run-step__body">
+                  <span className="badge">خطوة {index + 1}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                  {step.command ? <code>{step.command}</code> : null}
+                  {step.href ? <a className="button button-secondary button-sm" href={step.href}>{step.actionLabel}</a> : null}
+                </div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
-      <section className="page-section" aria-labelledby="health-heading">
+      <section className="page-section first-run-health" aria-labelledby="health-heading">
         <div className="dense-grid">
           <article className="health-metric" data-tone={health.status === "ready" ? "success" : health.status === "error" ? "danger" : "accent"}>
             <div className="health-metric__icon">
@@ -298,7 +334,7 @@ export default function FirstRunPage() {
         </div>
       </section>
 
-      <section className="page-section" aria-labelledby="steps-heading">
+      <section className="page-section first-run-progress" aria-labelledby="steps-heading">
         <article className="panel">
           <div className="panel-section-header helper-row">
             <div>
@@ -357,7 +393,7 @@ export default function FirstRunPage() {
       </section>
 
       {isAdmin ? (
-        <section className="page-section" aria-labelledby="defaults-heading">
+        <section className="page-section first-run-defaults" aria-labelledby="defaults-heading">
           <article className="panel">
             <div className="panel-section-header">
               <h2 id="defaults-heading">تصنيفات ووسوم افتراضية جاهزة</h2>
@@ -371,7 +407,34 @@ export default function FirstRunPage() {
         </section>
       ) : null}
 
-      <section className="page-section" aria-labelledby="security-heading">
+      <section className="page-section first-run-feedback" aria-labelledby="interactive-test-feedback-heading">
+        <article className="panel stack">
+          <div className="panel-section-header">
+            <h2 id="interactive-test-feedback-heading">ملاحظات الفحص التفاعلي</h2>
+            <p>دوّن أي تعديل مطلوب أثناء الفحص. تُحفظ الملاحظات على هذا الجهاز، ثم انسخها وأرسلها في محادثة المتابعة.</p>
+          </div>
+          <textarea
+            value={interactiveTestFeedback}
+            onChange={(event) => updateInteractiveTestFeedback(event.target.value)}
+            aria-label="ملاحظات الفحص التفاعلي"
+            placeholder="مثال: في خطوة إضافة مادة، أريد تبسيط حقل التصنيف…"
+            rows={5}
+          />
+          <div className="button-row">
+            <button
+              type="button"
+              className="button button-secondary"
+              onClick={() => void copyInteractiveTestFeedback()}
+              disabled={!interactiveTestFeedback.trim()}
+            >
+              نسخ ملاحظات الفحص
+            </button>
+            {feedbackStatus ? <p className="helper-text" role="status">{feedbackStatus}</p> : null}
+          </div>
+        </article>
+      </section>
+
+      <section className="page-section first-run-security" aria-labelledby="security-heading">
         <article className="panel">
           <div className="panel-section-header">
             <h2 id="security-heading">تنبيهات آمنة لأول تشغيل</h2>
@@ -386,6 +449,7 @@ export default function FirstRunPage() {
           </ul>
         </article>
       </section>
+      </div>
     </AppShell>
   );
 }

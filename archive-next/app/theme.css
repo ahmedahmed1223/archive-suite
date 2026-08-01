@@ -59,13 +59,14 @@
   --color-amber-dim: #B07A2E;
   --color-amber-glow: rgba(212, 148, 58, 0.15);
 
-  --color-brand-primary: #D4943A;
-  --color-brand-primary-strong: #E5AD5A;
+  --color-brand-primary: #E8B447;
+  --color-brand-primary-strong: #F2C96D;
   --color-brand-ink: #E4E7EC;
   --color-brand-warm: #2A2318;
   --color-brand-sand: #1A1610;
-  --color-brand-indigo: #5B7BAA;
-  --color-brand-gold: #D4943A;
+  --color-brand-indigo: #28458C;
+  --color-brand-gold: #E8B447;
+  --color-brand-teal: #1B7E8D;
   --color-shadow: #000000;
 
   --color-bg-primary: #111318;
@@ -91,11 +92,11 @@
   --color-border-strong: #3A3D46;
   --color-border-focus: #D4943A;
 
-  --color-accent-primary: #D4943A;
-  --color-accent-primary-hover: #E5AD5A;
-  --color-accent-primary-active: #B07A2E;
-  --color-accent-secondary: #5B7BAA;
-  --color-accent-tertiary: #D4943A;
+  --color-accent-primary: #E8B447;
+  --color-accent-primary-hover: #F2C96D;
+  --color-accent-primary-active: #C88A24;
+  --color-accent-secondary: #4D74C4;
+  --color-accent-tertiary: #1B7E8D;
   --color-accent-rose: #C45B5B;
 
   --color-status-success: #4CAF50;
@@ -178,13 +179,14 @@
   --color-amber-dim: #b07a2e;
   --color-amber-glow: rgb(212 148 58 / 14%);
 
-  --color-brand-primary: #d4943a;
-  --color-brand-primary-strong: #e5ad5a;
+  --color-brand-primary: #b67813;
+  --color-brand-primary-strong: #d49324;
   --color-brand-ink: #1e1b16;
   --color-brand-warm: #efe7d6;
   --color-brand-sand: #fbf7ef;
-  --color-brand-indigo: #5b7baa;
-  --color-brand-gold: #d4943a;
+  --color-brand-indigo: #28458c;
+  --color-brand-gold: #b67813;
+  --color-brand-teal: #176b78;
   --color-shadow: #1e1b16;
 
   --color-bg-primary: #f5f2ec;
@@ -211,11 +213,11 @@
   --color-border-strong: #d2cbba;
   --color-border-focus: #d4943a;
 
-  --color-accent-primary: #d4943a;
-  --color-accent-primary-hover: #e5ad5a;
-  --color-accent-primary-active: #b07a2e;
-  --color-accent-secondary: #5b7baa;
-  --color-accent-tertiary: #d4943a;
+  --color-accent-primary: #b67813;
+  --color-accent-primary-hover: #d49324;
+  --color-accent-primary-active: #92580b;
+  --color-accent-secondary: #28458c;
+  --color-accent-tertiary: #176b78;
   --color-accent-rose: #c45b5b;
 
   --color-status-success: #3f9142;

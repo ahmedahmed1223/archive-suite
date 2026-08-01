@@ -34,6 +34,13 @@ describe("in-app guide", () => {
     expect(viewerPayload.some((chapter) => chapter.body.includes("إدارة النظام"))).toBe(false);
   });
 
+  it("publishes the concise changelog summary and user actions in the whats-new chapter", () => {
+    const whatsNew = getGuideChapters("viewer").find((chapter) => chapter.id === "whats-new");
+
+    expect(whatsNew?.body).toContain("ملخص تحديثات 31 يوليو");
+    expect(whatsNew?.body).toContain("ما الذي ينبغي عليك فعله الآن؟");
+  });
+
   it("searches Arabic chapter titles and Markdown body without exposing restricted chapters", () => {
     expect(filterGuideChapters(chapters, "editor", "الوصف").map((chapter) => chapter.id)).toEqual(["editor-upload"]);
     expect(filterGuideChapters(chapters, "viewer", "المستخدمين")).toEqual([]);

@@ -10,4 +10,8 @@ describe("shouldShowWhatsNew", () => {
   it("does not repeat release notes after acknowledging the current release", () => {
     expect(shouldShowWhatsNew("2026.07.18", "2026.07.18")).toBe(false);
   });
+
+  it("does not show when the user permanently dismissed updates", () => {
+    expect(shouldShowWhatsNew(null, "2026.07.31", true)).toBe(false);
+  });
 });

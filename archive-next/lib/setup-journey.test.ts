@@ -80,4 +80,27 @@ describe("first-run server progress wiring", () => {
     expect(source).toContain("api.updateOnboardingStage(");
     expect(source).not.toContain("ONBOARDING_STORAGE_KEY");
   });
+
+  it("keeps login contextual and provides a copyable interactive-test feedback note", () => {
+    const source = readFileSync(new URL("../app/first-run/page.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain('aria-label="خطوات التهيئة المختارة"');
+    expect(source).toContain("currentPreset.steps.map");
+    expect(source).not.toContain('<a className="button button-primary" href="/login">تسجيل الدخول</a>');
+    expect(source).toContain("ملاحظات الفحص التفاعلي");
+    expect(source).toContain("INTERACTIVE_TEST_FEEDBACK_STORAGE_KEY");
+    expect(source).toContain("نسخ ملاحظات الفحص");
+  });
+
+  it("uses responsive page grids for the dashboard and first-run workspace", () => {
+    const firstRun = readFileSync(new URL("../app/first-run/page.tsx", import.meta.url), "utf8");
+    const dashboard = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+    const styles = readFileSync(new URL("../app/styles/06-widgets.css", import.meta.url), "utf8");
+
+    expect(firstRun).toContain('className="first-run-workspace-grid"');
+    expect(dashboard).toContain('className="dashboard-workspace-grid"');
+    expect(styles).toContain(".first-run-workspace-grid");
+    expect(styles).toContain(".dashboard-workspace-grid");
+    expect(styles).toContain("grid-template-columns: minmax(15rem, 0.75fr) minmax(0, 1.65fr)");
+  });
 });

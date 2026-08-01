@@ -73,6 +73,21 @@
   justify-content: flex-start;
 }
 
+@media (min-width: 760px) {
+  .page-toolbar__title-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .page-toolbar__actions {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    justify-content: end;
+    align-items: center;
+  }
+}
+
 .app-nav-link {
   gap: var(--space-2);
   white-space: nowrap;

@@ -1094,9 +1094,74 @@
 }
 
 .dashboard-quick {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: var(--space-2);
+}
+
+.dashboard-workspace-grid,
+.first-run-workspace-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dashboard-quick {
+  grid-area: quick;
+}
+
+.dashboard-recent {
+  grid-area: recent;
+}
+
+.first-run-journey {
+  grid-area: journey;
+}
+
+.first-run-preset {
+  grid-area: preset;
+}
+
+.first-run-health {
+  grid-area: health;
+}
+
+.first-run-progress {
+  grid-area: progress;
+}
+
+.first-run-defaults {
+  grid-area: defaults;
+}
+
+.first-run-feedback {
+  grid-area: feedback;
+}
+
+.first-run-security {
+  grid-area: security;
+}
+
+@media (min-width: 1120px) {
+  .dashboard-workspace-grid {
+    grid-template-columns: minmax(15rem, 0.75fr) minmax(0, 1.65fr);
+    grid-template-areas: "quick recent";
+    align-items: start;
+  }
+
+  .dashboard-quick {
+    grid-template-columns: 1fr;
+  }
+
+  .first-run-workspace-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.85fr);
+    grid-template-areas:
+      "journey journey"
+      "preset health"
+      "progress defaults"
+      "progress feedback"
+      "security security";
+    align-items: start;
+  }
 }
 
 /* ── Recent-records card grid ("أُضيف حديثاً") ── */

@@ -118,53 +118,55 @@ export default function HomeDashboard() {
         <>
           <MetricStrip items={metrics} ariaLabel="مؤشرات الأرشيف" />
 
-          <nav className="dashboard-quick" aria-label="مهام سريعة">
-            {quickLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  className="dashboard-quick__link"
-                  data-tone={link.tone ?? "default"}
-                  href={link.href}
-                >
-                  <Icon aria-hidden="true" size={18} strokeWidth={2} />
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          <div className="dashboard-workspace-grid">
+            <nav className="dashboard-quick" aria-label="مهام سريعة">
+              {quickLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <Link
+                    key={link.href}
+                    className="dashboard-quick__link"
+                    data-tone={link.tone ?? "default"}
+                    href={link.href}
+                  >
+                    <Icon aria-hidden="true" size={18} strokeWidth={2} />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
 
-          <section className="panel dashboard-recent" aria-label="أُضيف حديثاً">
-            <header className="dashboard-recent__header">
-              <h2>
-                <Clock3 aria-hidden="true" size={18} strokeWidth={2} />
-                <span>أُضيف حديثاً</span>
-              </h2>
-              <Link className="dashboard-recent__all" href="/archive">عرض الكل</Link>
-            </header>
+            <section className="panel dashboard-recent" aria-label="أُضيف حديثاً">
+              <header className="dashboard-recent__header">
+                <h2>
+                  <Clock3 aria-hidden="true" size={18} strokeWidth={2} />
+                  <span>أُضيف حديثاً</span>
+                </h2>
+                <Link className="dashboard-recent__all" href="/archive">عرض الكل</Link>
+              </header>
 
-            {state.records.length === 0 ? (
-              <EmptyState
-                icon={<Archive aria-hidden="true" />}
-                title="لا توجد سجلات بعد"
-                description="ابدأ بإضافة أول مادة إلى الأرشيف."
-                actions={<Link className="ui-button ui-button-primary" href="/uploads">إضافة مادة</Link>}
-              />
-            ) : (
-              <ul className="dashboard-recent__grid">
-                {state.records.map((record) => (
-                  <li key={record.id}>
-                    <Link className="dashboard-recent__card" href={`/archive/${encodeURIComponent(record.id)}`}>
-                      {record.type ? <span className="dashboard-recent__card-type">{record.type}</span> : null}
-                      <span className="dashboard-recent__card-title">{record.title || "بدون عنوان"}</span>
-                      {record.updatedAt ? <span className="dashboard-recent__card-date">{formatDate(record.updatedAt)}</span> : null}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+              {state.records.length === 0 ? (
+                <EmptyState
+                  icon={<Archive aria-hidden="true" />}
+                  title="لا توجد سجلات بعد"
+                  description="ابدأ بإضافة أول مادة إلى الأرشيف."
+                  actions={<Link className="ui-button ui-button-primary" href="/uploads">إضافة مادة</Link>}
+                />
+              ) : (
+                <ul className="dashboard-recent__grid">
+                  {state.records.map((record) => (
+                    <li key={record.id}>
+                      <Link className="dashboard-recent__card" href={`/archive/${encodeURIComponent(record.id)}`}>
+                        {record.type ? <span className="dashboard-recent__card-type">{record.type}</span> : null}
+                        <span className="dashboard-recent__card-title">{record.title || "بدون عنوان"}</span>
+                        {record.updatedAt ? <span className="dashboard-recent__card-date">{formatDate(record.updatedAt)}</span> : null}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
         </>
       ) : null}
     </AppShell>
