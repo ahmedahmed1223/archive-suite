@@ -552,8 +552,9 @@
 }
 
 .workspace-commandbar__search:hover {
-  border-color: color-mix(in srgb, var(--color-brand-primary) 42%, var(--color-border-secondary));
-  background: color-mix(in srgb, var(--color-brand-primary) 6%, var(--color-bg-secondary));
+  border-color: color-mix(in srgb, var(--focus-accent) 52%, var(--focus-border));
+  background: color-mix(in srgb, var(--focus-surface-raised) 90%, var(--focus-accent));
+  box-shadow: var(--shadow-md);
 }
 
 .workspace-commandbar__quick {

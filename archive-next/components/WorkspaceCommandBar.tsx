@@ -58,6 +58,7 @@ export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: 
         type="button"
         className="workspace-commandbar__search"
         onClick={openCommandPalette}
+        aria-label="بحث، فتح صفحة، أو تنفيذ أمر"
         aria-keyshortcuts="Control+K Meta+K"
       >
         <Search size={18} aria-hidden="true" />

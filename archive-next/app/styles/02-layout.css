@@ -11,7 +11,7 @@
   max-inline-size: 100%;
   gap: var(--space-3);
   align-items: center;
-  border: 1px solid var(--color-border-secondary);
+  border: 1px solid var(--focus-border);
   border-radius: var(--radius-lg);
   padding: var(--space-3);
   background: color-mix(in srgb, var(--color-bg-secondary) 92%, transparent);
@@ -59,11 +59,12 @@
 .workspace-commandbar__search {
   justify-content: space-between;
   min-block-size: var(--control-height);
-  border: 1px solid var(--color-border-secondary);
+  border: 1px solid var(--focus-border);
   border-radius: var(--radius-lg);
   padding-inline: var(--space-3);
-  color: var(--color-text-tertiary);
-  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  background: var(--focus-surface-raised);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
 }
 
@@ -73,13 +74,19 @@
 }
 
 .workspace-commandbar__search kbd {
-  border: 1px solid var(--color-border-secondary);
+  border: 1px solid var(--focus-border);
   border-radius: var(--radius-sm);
   padding: 0.1rem 0.35rem;
   color: var(--color-text-tertiary);
-  background: var(--color-surface-subtle);
+  background: var(--focus-surface);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
+}
+
+.workspace-commandbar__search:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-color: var(--focus-accent);
 }
 
 .workspace-commandbar__tools {
