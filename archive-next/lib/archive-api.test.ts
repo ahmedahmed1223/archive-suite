@@ -25,6 +25,26 @@ describe("archive API uploads", () => {
   });
 });
 
+describe("archive API authentication", () => {
+  it("sends the explicit remember-me choice when logging in", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(Response.json({
+      ok: true,
+      user: { id: "admin", email: "admin@example.test", role: "admin" },
+      accessToken: "live-access-token",
+      expiresAt: "2030-01-01T00:00:00.000Z"
+    }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    await api.login({ email: "admin@example.test", password: "not-a-real-password", rememberMe: true });
+
+    expect(fetchImpl.mock.calls[0]?.[1]?.body).toBe(JSON.stringify({
+      email: "admin@example.test",
+      password: "not-a-real-password",
+      rememberMe: true
+    }));
+  });
+});
+
 describe("department vocabulary preferences API client", () => {
   it("loads prioritized terms and replaces the selected department preferences", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, terms: [], preferredTermIds: [] }), { status: 200 }));

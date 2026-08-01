@@ -31,6 +31,9 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('ok', true)
             ->assertJsonPath('user.email', 'admin@example.test');
 
+        $this->assertSame(0, $this->responseCookie($login, 'va_refresh')?->getExpiresTime());
+        $this->assertSame(0, $this->responseCookie($login, 'va_session')?->getExpiresTime());
+
         $accessToken = $login->json('accessToken');
         $this->assertIsString($accessToken);
 
@@ -39,6 +42,32 @@ class AuthApiTest extends TestCase
         ])
             ->assertOk()
             ->assertJsonPath('user.email', 'admin@example.test');
+    }
+
+    public function test_remember_me_persists_login_cookies_across_refreshes(): void
+    {
+        User::query()->create([
+            'name' => 'Archive Admin',
+            'email' => 'admin@example.test',
+            'password' => Hash::make('secret-password'),
+        ]);
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => 'admin@example.test',
+            'password' => 'secret-password',
+            'rememberMe' => true,
+        ])->assertOk();
+
+        $this->assertGreaterThan(now()->getTimestamp(), $this->responseCookie($login, 'va_refresh')?->getExpiresTime() ?? 0);
+        $this->assertDatabaseHas('api_sessions', ['remember_me' => true]);
+
+        $refresh = $this->call('POST', '/api/v1/auth/refresh', [], [
+            'va_refresh' => $this->responseCookieValue($login, 'va_refresh'),
+        ], [], ['HTTP_ACCEPT' => 'application/json'])
+            ->assertOk();
+
+        $this->assertGreaterThan(now()->getTimestamp(), $this->responseCookie($refresh, 'va_refresh')?->getExpiresTime() ?? 0);
+        $this->assertDatabaseHas('api_sessions', ['remember_me' => true]);
     }
 
     public function test_it_rejects_invalid_login(): void

@@ -17,7 +17,7 @@ interface AuthSessionState {
 }
 
 interface AuthSessionContextValue extends AuthSessionState {
-  login(payload: { email: string; password: string }): Promise<{ ok: true } | { ok: false; error: string }>;
+  login(payload: { email: string; password: string; rememberMe?: boolean }): Promise<{ ok: true } | { ok: false; error: string }>;
   logout(): Promise<void>;
   refreshSession(): Promise<boolean>;
 }

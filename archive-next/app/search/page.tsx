@@ -15,7 +15,7 @@ import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, typ
 import { useAuthSession } from "@/lib/auth-session";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
 import { buildSearchPlaybackHref } from "@/lib/search";
-import { listRecentSearches, recordRecentSearch } from "@/lib/recent-searches";
+import { clearRecentSearches, listRecentSearches, recordRecentSearch } from "@/lib/recent-searches";
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
 import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -135,6 +135,7 @@ function SearchPageContent() {
   const [allRecords, setAllRecords] = useState<ArchiveRecord[]>([]);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+  const [recentSearches, setRecentSearches] = useState(() => listRecentSearches());
   const [savedStatus, setSavedStatus] = useState("");
   const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);
   const hasCompletedWorkspacePreferenceRestore = useRef(false);
@@ -216,6 +217,7 @@ function SearchPageContent() {
 
       setAllRecords(response.records);
       recordRecentSearch(q);
+      setRecentSearches(listRecentSearches());
       setState({
         status: "ready",
         records: response.records,
@@ -263,6 +265,7 @@ function SearchPageContent() {
 
   useEffect(() => {
     void refreshSavedSearches();
+    setRecentSearches(listRecentSearches());
     if (initialQuery || initialStore || initialType !== "all" || initialTag) {
       void search(initialQuery, initialStore, initialPage, initialType, initialTag);
     }
@@ -370,6 +373,17 @@ function SearchPageContent() {
     await refreshSavedSearches();
   };
 
+  const runRecentSearch = (value: string) => {
+    setQuery(value);
+    setCurrentPage(1);
+    void search(value, store, 1, typeFilter, tagFilter, searchMode);
+  };
+
+  const clearSearchHistory = () => {
+    clearRecentSearches();
+    setRecentSearches([]);
+  };
+
   const handleSuggestionFeedback = async (suggestion: ArchiveSuggestion, value: SuggestionFeedbackValue) => {
     const response = await api.submitSuggestionFeedback(suggestion.key, { value, context: "search" });
     if (!response.ok) throw new Error(response.error || "تعذر حفظ تقييم الاقتراح.");
@@ -456,66 +470,65 @@ function SearchPageContent() {
           </>
         )}
       >
-        <form className="archive-toolbar-grid" onSubmit={handleSearch}>
-          <label>
-            <span>الكلمات المفتاحية</span>
-            <SearchAutocomplete
-              value={query}
-              onChange={setQuery}
-              onSelect={(suggestion) => setQuery(suggestion.value)}
-              fetchSuggestions={fetchSearchSuggestions}
-              placeholder={'العنوان، الوسوم، الوصف... أو type:video AND tag:"تاريخ شفهي"'}
-              className="search-input"
-            />
-            <span id="advanced-search-hint" className="helper-text">
-              للبحث المهيكل استخدم مثلاً: <code dir="ltr">type:video AND tag:"تاريخ شفهي"</code>
-            </span>
-          </label>
-          <label>
-            <span>المخزن</span>
-            <input
-              type="text"
-              placeholder="اتركه فارغاً لكل المخازن"
-              value={store}
-              onChange={(event) => setStore(event.target.value)}
-              className="search-input"
-            />
-          </label>
-          <label>
-            <span>النوع</span>
-            <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-              <option value="all">كل الأنواع</option>
-              {typeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>الوسم</span>
-            <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
-              <option value="">كل الوسوم</option>
-              {tagOptions.map((tag) => <option key={tag.value} value={tag.value}>{tag.label} ({tag.count})</option>)}
-            </select>
-          </label>
-          <label><span>من التاريخ</span><input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
-          <label><span>إلى التاريخ</span><input type="date" min={dateFrom || undefined} value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
-          <label>
-            <span>اكتمال التوصيف</span>
-            <select value={descriptionState} onChange={(event) => setDescriptionState(event.target.value as "" | "complete" | "incomplete")}>
-              <option value="">كل المواد</option><option value="complete">مكتمل</option><option value="incomplete">ناقص</option>
-            </select>
-          </label>
-          <label>
-            <span>نمط البحث</span>
-            <select value={searchMode} onChange={(event) => setSearchMode(event.target.value as SearchMode)}>
-              <option value="keyword">عادي</option>
-              <option value="semantic">دلالي</option>
-              <option value="transcript">داخل التفريغات الزمنية</option>
-            </select>
-          </label>
-          <div className="archive-toolbar-actions">
+        <form className="search-workbench-form" onSubmit={handleSearch}>
+          <div className="search-query-row">
+            <label>
+              <span>الكلمات المفتاحية</span>
+              <SearchAutocomplete
+                value={query}
+                onChange={setQuery}
+                onSelect={(suggestion) => setQuery(suggestion.value)}
+                fetchSuggestions={fetchSearchSuggestions}
+                placeholder={'العنوان، الوسوم، الوصف... أو type:video AND tag:"تاريخ شفهي"'}
+                className="search-input"
+              />
+              <span id="advanced-search-hint" className="helper-text">
+                للبحث المهيكل استخدم مثلاً: <code dir="ltr">type:video AND tag:"تاريخ شفهي"</code>
+              </span>
+            </label>
             <button type="submit" className="button button-primary">بحث</button>
           </div>
+          <details className="search-advanced-filters">
+            <summary>تصفية متقدمة</summary>
+            <div className="archive-toolbar-grid">
+              <label>
+                <span>المخزن</span>
+                <input type="text" placeholder="اتركه فارغاً لكل المخازن" value={store} onChange={(event) => setStore(event.target.value)} className="search-input" />
+              </label>
+              <label>
+                <span>النوع</span>
+                <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+                  <option value="all">كل الأنواع</option>
+                  {typeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>الوسم</span>
+                <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
+                  <option value="">كل الوسوم</option>
+                  {tagOptions.map((tag) => <option key={tag.value} value={tag.value}>{tag.label} ({tag.count})</option>)}
+                </select>
+              </label>
+              <label><span>من التاريخ</span><input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
+              <label><span>إلى التاريخ</span><input type="date" min={dateFrom || undefined} value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
+              <label>
+                <span>اكتمال التوصيف</span>
+                <select value={descriptionState} onChange={(event) => setDescriptionState(event.target.value as "" | "complete" | "incomplete")}>
+                  <option value="">كل المواد</option><option value="complete">مكتمل</option><option value="incomplete">ناقص</option>
+                </select>
+              </label>
+              <label>
+                <span>نمط البحث</span>
+                <select value={searchMode} onChange={(event) => setSearchMode(event.target.value as SearchMode)}>
+                  <option value="keyword">عادي</option>
+                  <option value="semantic">دلالي</option>
+                  <option value="transcript">داخل التفريغات الزمنية</option>
+                </select>
+              </label>
+            </div>
+            <SearchFilterBuilder value={query} onChange={setQuery} />
+          </details>
         </form>
-        <SearchFilterBuilder value={query} onChange={setQuery} />
         {searchMode === "transcript" ? <p className="helper-text">يعرض هذا النمط المقاطع ذات التوقيت الموثوق فقط، ويتيح تشغيل الفيديو مباشرةً من لحظة التطابق.</p> : null}
         {searchMode === "semantic" && facets?.mode === "keyword-fallback" ? <p className="form-status">تعذر تنفيذ البحث الدلالي حاليًا؛ عُرضت نتائج البحث العادي بدلًا منه.</p> : null}
         <div className="archive-toolbar-row">
@@ -531,6 +544,19 @@ function SearchPageContent() {
             </div>
           ) : null}
         </div>
+        {recentSearches.length > 0 ? (
+          <section className="recent-searches-strip" aria-label="عمليات البحث الأخيرة">
+            <div className="recent-searches-strip__header">
+              <span>عمليات البحث الأخيرة</span>
+              <button type="button" className="button button-ghost button-sm" onClick={clearSearchHistory}>مسح السجل</button>
+            </div>
+            <div className="saved-views-strip">
+              {recentSearches.map((recent) => (
+                <button key={recent.value} type="button" className="saved-view-chip" onClick={() => runRecentSearch(recent.value)}>{recent.label}</button>
+              ))}
+            </div>
+          </section>
+        ) : null}
         {facets ? (
               <div className="facet-strip" aria-label="ملخص التصنيفات">
             {facets.types?.slice(0, 5).map((item) => (

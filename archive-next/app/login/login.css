@@ -204,6 +204,38 @@
   box-shadow: var(--shadow-focus);
 }
 
+.login-remember {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-block-size: 2.75rem;
+  padding: var(--space-2) 0;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.login-remember input {
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  margin-block: 0.15rem;
+  accent-color: var(--color-brand-primary);
+}
+
+.login-remember span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.login-remember strong {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.login-remember small {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
 .login-card__actions {
   display: flex;
   flex-wrap: wrap;

@@ -4331,11 +4331,12 @@ export interface components {
             brokenLinks: components["schemas"]["BrokenLink"][];
         };
         LoginRequest: {
+            /** Format: email */
+            email: string;
             password: string;
             /** @default false */
             rememberMe?: boolean;
             totp?: string;
-            username: string;
         };
         MediaJob: {
             /** Format: date-time */

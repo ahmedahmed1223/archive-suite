@@ -25,6 +25,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'rememberMe' => ['sometimes', 'boolean'],
         ]);
 
         $user = User::query()->where('email', $validated['email'])->first();
@@ -33,7 +34,7 @@ class AuthController extends Controller
             return response()->json(ApiError::envelope('Invalid credentials.', 401), 401);
         }
 
-        return $this->issueSession($user, 200);
+        return $this->issueSession($user, 200, $validated['rememberMe'] ?? false);
     }
 
     public function me(Request $request): JsonResponse
@@ -60,9 +61,10 @@ class AuthController extends Controller
         }
 
         $user = $session->user;
+        $rememberMe = $session->remember_me;
         $session->delete();
 
-        return $this->issueSession($user, 200);
+        return $this->issueSession($user, 200, $rememberMe);
     }
 
     public function logout(Request $request): JsonResponse
@@ -114,7 +116,7 @@ class AuthController extends Controller
             && in_array(parse_url($origin, PHP_URL_HOST), ['127.0.0.1', 'localhost', '::1'], true);
     }
 
-    private function issueSession(User $user, int $status): JsonResponse
+    private function issueSession(User $user, int $status, bool $rememberMe = false): JsonResponse
     {
         $accessToken = ApiToken::create();
         $refreshToken = ApiToken::create();
@@ -124,6 +126,7 @@ class AuthController extends Controller
         ApiSession::query()->create([
             'id' => (string) Str::uuid(),
             'user_id' => $user->id,
+            'remember_me' => $rememberMe,
             'access_token_hash' => ApiToken::hash($accessToken),
             'refresh_token_hash' => ApiToken::hash($refreshToken),
             'access_expires_at' => $accessExpiresAt,
@@ -137,8 +140,8 @@ class AuthController extends Controller
             'accessToken' => $accessToken,
             'expiresAt' => $accessExpiresAt->toISOString(),
         ], $status)
-            ->withCookie($this->refreshCookie($refreshToken, $refreshExpiresAt))
-            ->withCookie($this->sessionCookie($refreshExpiresAt));
+            ->withCookie($this->refreshCookie($refreshToken, $refreshExpiresAt, $rememberMe))
+            ->withCookie($this->sessionCookie($refreshExpiresAt, $rememberMe));
     }
 
     private function sessionFromRefreshCookie(Request $request): ?ApiSession
@@ -155,12 +158,12 @@ class AuthController extends Controller
             ->first();
     }
 
-    private function refreshCookie(string $token, mixed $expiresAt): Cookie
+    private function refreshCookie(string $token, mixed $expiresAt, bool $rememberMe): Cookie
     {
         return cookie(
             name: $this->cookieName(),
             value: $token,
-            minutes: max(1, now()->diffInMinutes($expiresAt)),
+            minutes: $rememberMe ? max(1, now()->diffInMinutes($expiresAt)) : 0,
             path: self::REFRESH_COOKIE_PATH,
             domain: null,
             secure: (bool) config('archive.auth.secure_cookies'),
@@ -170,12 +173,12 @@ class AuthController extends Controller
         );
     }
 
-    private function sessionCookie(mixed $expiresAt): Cookie
+    private function sessionCookie(mixed $expiresAt, bool $rememberMe): Cookie
     {
         return cookie(
             name: $this->sessionCookieName(),
             value: '1',
-            minutes: max(1, now()->diffInMinutes($expiresAt)),
+            minutes: $rememberMe ? max(1, now()->diffInMinutes($expiresAt)) : 0,
             path: '/',
             domain: null,
             secure: (bool) config('archive.auth.secure_cookies'),

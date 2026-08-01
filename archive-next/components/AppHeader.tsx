@@ -3,7 +3,7 @@
 import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BRAND } from "@/lib/brand";
-import { getDailyNavigation, isActivePath, navSectionLabels, primaryNav } from "@/lib/navigation";
+import { isActivePath, navSectionLabels, primaryNav } from "@/lib/navigation";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -15,7 +15,6 @@ import FocusModeToggle from "@/components/FocusModeToggle";
 import { NotificationsPanel } from "@/components/NotificationsPanel";
 import RecentFavoritesMenu from "@/components/RecentFavoritesMenu";
 import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
-import { SIDEBAR_VIEWPORT_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { useTheme } from "@/components/ThemeProvider";
 import { filterGuideChapters, getGuideChapterForPath } from "@/lib/in-app-guide";
 
@@ -42,21 +41,8 @@ export default function AppHeader({
   const isLightTheme = theme.settings.currentPreset === LIGHT_PRESET;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigationTriggerRef = useRef<HTMLButtonElement>(null);
-  const navMoreRef = useRef<HTMLDetailsElement>(null);
+  const navGroupRefs = useRef<HTMLDetailsElement[]>([]);
   const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl / Cmd + K");
-  const isSidebarLayout = useMediaQuery(SIDEBAR_VIEWPORT_QUERY);
-
-  // Wide screens turn the header into a persistent sidebar with room to
-  // spare, so start "المزيد" expanded there instead of hiding most pages
-  // behind a click. Set imperatively (not via the `open` prop) so it only
-  // forces the state once per breakpoint crossing rather than fighting a
-  // user's manual collapse on every unrelated re-render (route change, etc).
-  useEffect(() => {
-    if (isSidebarLayout && navMoreRef.current) {
-      navMoreRef.current.open = true;
-    }
-  }, [isSidebarLayout]);
-
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
@@ -104,8 +90,12 @@ export default function AppHeader({
   const userLabel = auth.user?.name ?? auth.user?.email ?? auth.user?.id;
   const activeLink = primaryNav.find((link) => isActivePath(pathname, link.href));
   const activeSection = activeLink?.section;
-  const navigation = getDailyNavigation(activeSection, auth.user?.role ?? "viewer");
   const role = auth.user?.role ?? "viewer";
+  const navigationGroups = Object.entries(navSectionLabels).map(([section, label]) => ({
+    section,
+    label,
+    items: primaryNav.filter((item) => item.section === section)
+  }));
   const breadcrumbItems: BreadcrumbItem[] = [{ label: "الرئيسية", href: "/" }];
   const contextualGuide = getGuideChapterForPath(pathname, filterGuideChapters([
     { id: "viewer-search", title: "", audience: ["viewer", "editor", "admin"] as const, body: "", href: "/search" },
@@ -115,6 +105,9 @@ export default function AppHeader({
   if (activeSection) breadcrumbItems.push({ label: navSectionLabels[activeSection] });
   if (activeLink && activeLink.href !== "/") breadcrumbItems.push({ label: activeLink.label, href: activeLink.href });
   breadcrumbItems.push(...breadcrumbExtra);
+
+  const expandNavigationGroups = () => navGroupRefs.current.forEach((group) => { group.open = true; });
+  const collapseNavigationGroups = () => navGroupRefs.current.forEach((group) => { group.open = false; });
 
   return (
     <header className="topbar" data-layout="app-header" data-nav-open={isMenuOpen ? "true" : "false"}>
@@ -198,31 +191,20 @@ export default function AppHeader({
         </button>
       </div>
       <nav id="app-primary-nav" className="route-links" aria-label={navLabel}>
-        <div className="nav-section" data-section={activeSection ?? "daily"}>
-          <span className="nav-section-label">يوميًا</span>
-          {navigation.daily.map((link) => {
-              const isActive = isActivePath(pathname, link.href);
-              const Icon = navIcon(link.icon);
-
-              return (
-                <Link
-                  key={link.href}
-                  className="badge app-nav-link"
-                  data-section={link.section}
-                  href={link.href}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  <Icon aria-hidden="true" className="app-nav-link__icon" size={16} strokeWidth={2} />
-                  <span>{link.label}</span>
-                </Link>
-              );
-          })}
+        <div className="nav-group-actions" aria-label="أدوات مجموعات التنقل">
+          <button type="button" className="button button-ghost button-sm" onClick={expandNavigationGroups}>فتح كل المجموعات</button>
+          <button type="button" className="button button-ghost button-sm" onClick={collapseNavigationGroups}>طي كل المجموعات</button>
         </div>
-        <details className="nav-more" ref={navMoreRef}>
-          <summary>المزيد</summary>
-          {navigation.more.map((group) => (
-            <div className="nav-section" data-section={group.section} key={group.section}>
-              <span className="nav-section-label">{group.label}</span>
+        {navigationGroups.map((group, index) => (
+          <details
+            className="nav-group"
+            data-section={group.section}
+            key={group.section}
+            open={group.section === activeSection || (!activeSection && index === 1)}
+            ref={(element) => { if (element) navGroupRefs.current[index] = element; }}
+          >
+            <summary>{group.label}</summary>
+            <div className="nav-section" data-section={group.section}>
               {group.items.map((link) => {
                 const isActive = isActivePath(pathname, link.href);
                 const Icon = navIcon(link.icon);
@@ -234,8 +216,8 @@ export default function AppHeader({
                 );
               })}
             </div>
-          ))}
-        </details>
+          </details>
+        ))}
       </nav>
       <div className="app-breadcrumb"><Breadcrumb items={breadcrumbItems} /></div>
     </header>

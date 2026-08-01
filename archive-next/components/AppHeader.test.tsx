@@ -59,23 +59,18 @@ describe("AppHeader navigation", () => {
   });
 });
 
-describe("AppHeader wide-sidebar layout (V1-nav)", () => {
-  test("'المزيد' starts collapsed on narrow/mid viewports", () => {
+describe("AppHeader grouped navigation", () => {
+  test("groups routes by function and can expand every group", () => {
     mockSession();
-    mockMatchMedia("(max-width: 760px)");
+    mockMatchMedia("");
     render(<AppHeader subtitle="الرئيسية" />);
 
-    const details = document.querySelector(".nav-more") as HTMLDetailsElement;
-    expect(details.open).toBe(false);
-  });
+    const groups = Array.from(document.querySelectorAll(".nav-group")) as HTMLDetailsElement[];
+    expect(groups.length).toBeGreaterThan(2);
+    expect(screen.getByText("المكتبة").closest("details")?.open).toBe(true);
 
-  test("'المزيد' starts expanded once the header becomes a persistent sidebar (>=1120px)", () => {
-    mockSession();
-    mockMatchMedia("(min-width: 1120px)");
-    render(<AppHeader subtitle="الرئيسية" />);
-
-    const details = document.querySelector(".nav-more") as HTMLDetailsElement;
-    expect(details.open).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "فتح كل المجموعات" }));
+    expect(groups.every((group) => group.open)).toBe(true);
   });
 });
 

@@ -58,7 +58,8 @@ function LoginPageContent() {
     const data = new FormData(event.currentTarget);
     const email = String(data.get("email") ?? "");
     const password = String(data.get("password") ?? "");
-    const response = await auth.login({ email, password });
+    const rememberMe = data.get("rememberMe") === "on";
+    const response = await auth.login({ email, password, rememberMe });
 
     if (!response.ok) {
       setState({ status: "error", message: response.error });
@@ -147,6 +148,14 @@ function LoginPageContent() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+
+              <label className="login-remember">
+                <input name="rememberMe" type="checkbox" disabled={state.status === "loading"} />
+                <span>
+                  <strong>تذكّرني على هذا الجهاز</strong>
+                  <small>لا تفعّله على جهاز مشترك.</small>
+                </span>
+              </label>
 
               <div className="login-card__actions">
                 <button type="submit" className="button button-primary" disabled={state.status === "loading"}>

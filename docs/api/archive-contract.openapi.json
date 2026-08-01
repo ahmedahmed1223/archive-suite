@@ -5607,9 +5607,9 @@
       },
       "LoginRequest": {
         "type": "object",
-        "required": ["username", "password"],
+        "required": ["email", "password"],
         "properties": {
-          "username": { "type": "string", "minLength": 1 },
+          "email": { "type": "string", "format": "email" },
           "password": { "type": "string", "minLength": 1 },
           "totp": { "type": "string" },
           "rememberMe": { "type": "boolean", "default": false }
