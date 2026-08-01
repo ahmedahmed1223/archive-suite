@@ -25,6 +25,30 @@ describe("archive API uploads", () => {
   });
 });
 
+describe("archive API report exports", () => {
+  it("uses the access token issued by login when downloading the compliance CSV", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({
+        ok: true,
+        user: { id: "admin", email: "admin@example.test", role: "admin" },
+        accessToken: "report-access-token",
+        expiresAt: "2030-01-01T00:00:00.000Z"
+      }))
+      .mockResolvedValueOnce(new Response("event,resource\nrecords.bulk_upsert,record\n", {
+        status: 200,
+        headers: { "content-disposition": 'attachment; filename="compliance.csv"' }
+      }));
+    const api = createArchiveApiClient({ baseUrl: "http://archive.test/api/v1", fetchImpl });
+
+    await api.login({ email: "admin@example.test", password: "not-a-real-password" });
+    await api.downloadComplianceReport();
+
+    const exportRequest = fetchImpl.mock.calls[1]?.[1] as RequestInit;
+    expect(new Headers(exportRequest.headers).get("Authorization")).toBe("Bearer report-access-token");
+  });
+});
+
 describe("archive API authentication", () => {
   it("sends the explicit remember-me choice when logging in", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(Response.json({

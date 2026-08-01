@@ -2187,7 +2187,8 @@ export function createArchiveApiClient({
       if (params?.outcome) queryParams.set("outcome", params.outcome);
       const query = queryParams.toString();
       const headers = new Headers({ Accept: "text/csv" });
-      if (options?.accessToken) headers.set("Authorization", `Bearer ${options.accessToken}`);
+      const accessToken = options?.accessToken ?? cachedAccessToken;
+      if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
 
       try {
         const response = await fetchImpl(`${baseUrl}/reports/compliance/export${query ? `?${query}` : ""}`, {
