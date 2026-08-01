@@ -26,13 +26,15 @@
 
 .data-table th,
 .data-table td {
-  border-block-end: 1px solid var(--color-border-secondary);
+  min-block-size: var(--focus-row-min-height);
+  border-block-end: 1px solid var(--focus-border);
   padding: var(--density-cell-padding, var(--space-2) var(--space-3));
   text-align: start;
   vertical-align: top;
 }
 
 .data-table th {
+  background: var(--focus-surface);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);

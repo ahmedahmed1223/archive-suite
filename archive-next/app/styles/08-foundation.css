@@ -4,6 +4,18 @@
    import order in layout.tsx — these share one cascade.
    ═══════════════════════════════════════════════════════════════ */
 
+/* Focus Command semantic layer. These aliases follow the active theme preset,
+   so dark and light modes retain their established contrast relationships. */
+:root {
+  --focus-canvas: var(--color-bg-primary);
+  --focus-surface: var(--color-bg-secondary);
+  --focus-surface-raised: var(--color-surface-elevated);
+  --focus-border: var(--color-border-secondary);
+  --focus-accent: var(--color-brand-primary);
+  --focus-ring: var(--color-border-focus);
+  --focus-row-min-height: 2.5rem;
+}
+
 /* Masar Command Workspace foundation */
 .app-shell {
   grid-template-columns: minmax(0, 1fr);
@@ -13,7 +25,7 @@
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--color-brand-warm) 32%, transparent), transparent 22rem),
     radial-gradient(circle at 14% 8%, color-mix(in srgb, var(--color-brand-indigo) 8%, transparent), transparent 20rem),
-    var(--color-bg-primary);
+    var(--focus-canvas);
 }
 
 .app-shell > *,
@@ -203,9 +215,9 @@
 }
 
 .workspace-panel {
-  border: 1px solid var(--color-border-secondary);
+  border: 1px solid var(--focus-border);
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--color-bg-secondary) 96%, var(--color-brand-warm));
+  background: color-mix(in srgb, var(--focus-surface) 96%, var(--color-brand-warm));
   box-shadow: var(--shadow-sm);
 }
 
@@ -883,7 +895,7 @@ textarea:focus-visible,
 [role="button"]:focus-visible,
 [role="menuitem"]:focus-visible,
 [tabindex]:not([tabindex="-1"]):focus-visible {
-  outline: 3px solid var(--color-border-focus);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
