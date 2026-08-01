@@ -112,3 +112,30 @@ test.describe('keyboard navigation: skip link + no dead-end tabbing', () => {
     });
   }
 });
+
+test.describe('keyboard navigation: mobile command entry', () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test.beforeEach(async ({ context }) => {
+    await context.addInitScript(
+      ([key, release]) => {
+        window.localStorage.setItem(key, release);
+      },
+      [WHATS_NEW_STORAGE_KEY, WHATS_NEW_RELEASE] as const,
+    );
+  });
+
+  test('opens the command dialog and restores focus to the mobile trigger', async ({ page }) => {
+    await page.goto('/first-run', { waitUntil: 'networkidle' });
+
+    const trigger = page.getByRole('button', { name: 'فتح الأوامر' });
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+
+    const dialog = page.getByRole('dialog', { name: 'لوحة أوامر مسار' });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+  });
+});

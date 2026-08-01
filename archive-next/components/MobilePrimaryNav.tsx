@@ -4,6 +4,7 @@ import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { openCommandPalette } from "@/components/CommandPalette";
 import { getDailyNavigation, isActivePath, primaryNav } from "@/lib/navigation";
 import { useAuthSession } from "@/lib/auth-session";
 
@@ -32,6 +33,10 @@ export default function MobilePrimaryNav() {
           </Link>
         );
       })}
+      <button type="button" className="mobile-primary-nav__command" onClick={openCommandPalette} aria-label="فتح الأوامر">
+        <Icons.Search aria-hidden="true" size={20} strokeWidth={2} />
+        <span>الأوامر</span>
+      </button>
       <button type="button" onClick={openAllRoutes} aria-controls="app-primary-nav">
         <Icons.Menu aria-hidden="true" size={20} strokeWidth={2} />
         <span>المزيد</span>

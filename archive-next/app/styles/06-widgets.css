@@ -682,7 +682,7 @@
     inset-inline: var(--space-2);
     inset-block-end: calc(var(--space-2) + env(safe-area-inset-bottom));
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 2px;
     border: 1px solid color-mix(in srgb, var(--color-brand-primary) 22%, var(--color-border-secondary));
     border-radius: var(--radius-xl);
@@ -712,6 +712,11 @@
   .mobile-primary-nav a[aria-current="page"] {
     color: var(--color-text-inverse);
     background: var(--color-brand-primary);
+  }
+
+  .mobile-primary-nav__command {
+    color: var(--focus-accent);
+    background: color-mix(in srgb, var(--focus-surface-raised) 88%, var(--focus-accent));
   }
 
   .mobile-primary-nav button:focus-visible,
