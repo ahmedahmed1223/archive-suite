@@ -19,6 +19,13 @@
 - If you change a public contract, update the OpenAPI document, Laravel implementation, Next.js client, and contract checks in the same change.
 - `archive-app/` and `archive-server/` are legacy fallback/reference implementations; do not add net-new features there unless asked.
 
+## Arabic language standard
+- Write Arabic interface copy, user documentation, release notes, and user-facing agent messages in clear, natural Modern Standard Arabic; write for an Arabic-speaking product user, not as a word-for-word rendering of English.
+- Prefer established product language such as: `إصدار تجريبي` (not a literal rendering of “prerelease”), `سجل التغييرات`, `إعدادات`, `صلاحيات`, `نسخة احتياطية`, `استعادة`, `بحث محفوظ`, `سجل تدقيق`, and `مهمة`.
+- Preserve English only where it is an exact technical identifier or copy-and-paste value: commands, file paths, API routes, environment variables, package names, image names, code symbols, and standard names such as `Docker`, `Next.js`, `Laravel`, and `GitHub Actions`.
+- Do not invent Arabic calques for technical terms when an established Arabic expression is clearer. Explain a necessary English term naturally on first use, then use one consistent term throughout the same document or screen.
+- Before completing Arabic copy, read it aloud for fluency: remove translated-English word order, unnecessary parenthetical English, ambiguous pronouns, and mixed-direction punctuation. Keep sentences short and use active voice.
+
 ## Key scripts
 - `pnpm install` — install workspace dependencies
 - `pnpm dev` — run canonical Laravel API + local Next.js frontend
