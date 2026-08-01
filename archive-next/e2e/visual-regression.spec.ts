@@ -5,6 +5,7 @@ import {
   gotoPublicRoute,
   VIEWPORTS,
 } from './fixtures/visual-routes';
+import { WHATS_NEW_RELEASE, WHATS_NEW_STORAGE_KEY } from '../lib/whats-new';
 
 /**
  * V1-303E: live visual review for the core routes at the three required
@@ -63,6 +64,34 @@ test.describe('visual regression: zero horizontal overflow + screenshot evidence
           });
         });
       }
+    });
+  }
+});
+
+test.describe('visual regression: Focus Command shell', () => {
+  for (const viewport of VIEWPORTS) {
+    test(`first-run exposes the expected command entry @ ${viewport.name}`, async ({ page, context }) => {
+      await context.addInitScript(
+        ([key, release]) => window.localStorage.setItem(key, release),
+        [WHATS_NEW_STORAGE_KEY, WHATS_NEW_RELEASE] as const,
+      );
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto('/first-run', { waitUntil: 'networkidle' });
+
+      const commandEntry = viewport.width <= 375
+        ? page.getByRole('button', { name: 'فتح الأوامر' })
+        : page.getByRole('button', { name: 'بحث، فتح صفحة، أو تنفيذ أمر' });
+      await expect(commandEntry).toBeVisible();
+
+      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+      expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+      await assertNoClippedInteractiveElements(page, viewport.width, `/first-run @ ${viewport.name}`);
+
+      await page.screenshot({
+        path: `visual-evidence/focus-command-shell--${viewport.name}.png`,
+        fullPage: true,
+      });
     });
   }
 });

@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { CORE_ROUTES, gotoPublicRoute, VIEWPORTS } from './fixtures/visual-routes';
+import { WHATS_NEW_RELEASE, WHATS_NEW_STORAGE_KEY } from '../lib/whats-new';
 
 // V1-303/V1-401: automated axe-core gate for the canonical routes, at the
 // project's required breakpoints (375/768/1280).
@@ -27,5 +28,30 @@ for (const viewport of VIEWPORTS) {
         ).toEqual([]);
       });
     }
+
+    test('Focus Command shell exposes the command entry without serious/critical axe violations', async ({ page, context }) => {
+      await context.addInitScript(
+        ([key, release]) => window.localStorage.setItem(key, release),
+        [WHATS_NEW_STORAGE_KEY, WHATS_NEW_RELEASE] as const,
+      );
+      await page.goto('/first-run', { waitUntil: 'networkidle' });
+
+      const commandEntry = viewport.width <= 375
+        ? page.getByRole('button', { name: 'فتح الأوامر' })
+        : page.getByRole('button', { name: 'بحث، فتح صفحة، أو تنفيذ أمر' });
+      await expect(commandEntry).toBeVisible();
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa'])
+        .analyze();
+      const seriousOrWorse = results.violations.filter(
+        (violation) => violation.impact === 'serious' || violation.impact === 'critical',
+      );
+
+      expect(
+        seriousOrWorse,
+        seriousOrWorse.map((v) => `${v.id}: ${v.help} (${v.nodes.length} nodes)`).join('\n'),
+      ).toEqual([]);
+    });
   });
 }

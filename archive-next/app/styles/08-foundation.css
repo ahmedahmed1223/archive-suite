@@ -718,6 +718,48 @@
   }
 }
 
+/* The 761–1119px range is neither the compact phone layout nor the desktop
+   sidebar. Keep the command bar visible and move the long route inventory into
+   the existing drawer pattern so it cannot dominate the tablet viewport. */
+@media (min-width: 761px) and (max-width: 1119px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    padding-block: var(--space-2);
+  }
+
+  .topbar .nav-toggle {
+    display: inline-flex;
+    justify-self: end;
+  }
+
+  .topbar .route-links {
+    display: none;
+  }
+
+  .topbar[data-nav-open="true"] .route-links {
+    position: fixed;
+    z-index: 60;
+    inset-block: max(var(--space-2), env(safe-area-inset-top)) max(var(--space-2), env(safe-area-inset-bottom));
+    inset-inline-start: max(var(--space-2), env(safe-area-inset-left));
+    display: grid;
+    inline-size: min(24rem, calc(100vw - 2rem));
+    max-block-size: calc(100dvh - 1rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .navigation-backdrop {
+    position: fixed;
+    z-index: 50;
+    inset: 0;
+    min-block-size: 100dvh;
+    border: 0;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--color-text-primary) 42%, transparent);
+  }
+}
+
 @media (min-width: 1120px) {
   .app-shell {
     grid-template-columns: minmax(17rem, 18.75rem) minmax(0, 1fr);
