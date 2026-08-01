@@ -17,6 +17,15 @@ const HOP_BY_HOP_RESPONSE_HEADERS = new Set([
  */
 type CookieOptions = { path?: string; domain?: string; expires?: Date; httpOnly?: boolean; secure?: boolean; sameSite?: "strict" | "lax" | "none"; maxAge?: number };
 
+/**
+ * Some fetch implementations expose multiple Set-Cookie values as one comma
+ * joined header. Split only at the start of the next cookie so commas inside
+ * an Expires attribute remain intact.
+ */
+function splitSetCookieHeader(value: string): string[] {
+  return value.split(/,(?=\s*[^;,\s]+=)/).map((cookie) => cookie.trim()).filter(Boolean);
+}
+
 function setCookie(response: NextResponse, value: string) {
   const [pair, ...attributes] = value.split(";");
   const separator = pair.indexOf("=");
@@ -50,7 +59,9 @@ export function forwardArchiveApiResponse(upstream: Response): NextResponse {
 
   const response = new NextResponse(upstream.body, { status: upstream.status, statusText: upstream.statusText, headers });
   const upstreamHeaders = upstream.headers as Headers & { getSetCookie?: () => string[] };
-  for (const cookie of upstreamHeaders.getSetCookie?.() ?? []) setCookie(response, cookie);
+  const headerCookies = upstreamHeaders.getSetCookie?.() ?? [];
+  const cookies = headerCookies.length > 0 ? headerCookies : [upstream.headers.get("set-cookie") ?? ""];
+  for (const cookie of cookies.flatMap(splitSetCookieHeader)) setCookie(response, cookie);
 
   return response;
 }
