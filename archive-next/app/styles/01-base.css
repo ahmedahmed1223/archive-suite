@@ -181,6 +181,14 @@ a:hover {
   scrollbar-color: color-mix(in srgb, var(--color-brand-primary) 36%, transparent) transparent;
 }
 
+.sidebar-navigation {
+  display: contents;
+}
+
+.sidebar-scroll-control {
+  display: none;
+}
+
 .app-breadcrumb {
   grid-column: 1 / -1;
 }

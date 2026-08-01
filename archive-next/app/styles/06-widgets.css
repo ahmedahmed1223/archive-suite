@@ -1006,16 +1006,58 @@
     background: var(--color-surface-subtle);
   }
 
-  .app-shell > .topbar .route-links {
+  .app-shell > .topbar .sidebar-navigation {
     order: 3;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    flex: 1 1 auto;
+    min-block-size: 0;
+    gap: var(--space-2);
+  }
+
+  .app-shell > .topbar .route-links {
     display: grid;
     grid-auto-rows: max-content;
     gap: var(--space-4);
     justify-content: stretch;
+    min-block-size: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding: 0 var(--space-1) var(--space-4);
-    scrollbar-width: thin;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .app-shell > .topbar .route-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidebar-scroll-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 2.75rem;
+    border: 1px solid var(--color-border-secondary);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    background: var(--color-surface-subtle);
+    cursor: pointer;
+  }
+
+  .sidebar-scroll-control:hover:not(:disabled) {
+    color: var(--color-text-primary);
+    border-color: var(--color-brand-primary);
+    background: var(--color-surface-selected);
+  }
+
+  .sidebar-scroll-control:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+
+  .sidebar-scroll-control:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
   }
 
   .app-shell > .topbar .nav-section {

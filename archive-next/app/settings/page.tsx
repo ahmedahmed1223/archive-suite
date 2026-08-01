@@ -59,6 +59,7 @@ const roadmapItems = [
 ];
 
 const odbcCoreTables = ["items", "users", "settings", "audit"] as const;
+const disabledOdbcProbe: OdbcProbe = { enabled: false, driverLoaded: false, dsn: "", status: "disabled", tables: [] };
 
 type OdbcCoreTable = (typeof odbcCoreTables)[number];
 
@@ -243,6 +244,8 @@ export default function SettingsPage() {
 
         if (response.ok) {
           setOdbc(response.odbc);
+        } else if (response.code === "NOT_FOUND" || response.code === "not_found") {
+          setOdbc(disabledOdbcProbe);
         } else {
           setOdbcError(response.error || "تعذر تحميل حالة ODBC.");
         }

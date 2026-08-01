@@ -42,6 +42,8 @@ export default function AppHeader({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigationTriggerRef = useRef<HTMLButtonElement>(null);
   const navGroupRefs = useRef<HTMLDetailsElement[]>([]);
+  const routeLinksRef = useRef<HTMLElement>(null);
+  const [navigationScroll, setNavigationScroll] = useState({ up: false, down: false });
   const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl / Cmd + K");
   useEffect(() => {
     setIsMenuOpen(false);
@@ -106,8 +108,38 @@ export default function AppHeader({
   if (activeLink && activeLink.href !== "/") breadcrumbItems.push({ label: activeLink.label, href: activeLink.href });
   breadcrumbItems.push(...breadcrumbExtra);
 
-  const expandNavigationGroups = () => navGroupRefs.current.forEach((group) => { group.open = true; });
-  const collapseNavigationGroups = () => navGroupRefs.current.forEach((group) => { group.open = false; });
+  const updateNavigationScroll = () => {
+    const navigation = routeLinksRef.current;
+    if (!navigation) return;
+    const maxScroll = Math.max(0, navigation.scrollHeight - navigation.clientHeight);
+    setNavigationScroll({ up: navigation.scrollTop > 1, down: navigation.scrollTop < maxScroll - 1 });
+  };
+
+  useEffect(() => {
+    const navigation = routeLinksRef.current;
+    if (!navigation) return;
+    updateNavigationScroll();
+    window.addEventListener("resize", updateNavigationScroll);
+    return () => window.removeEventListener("resize", updateNavigationScroll);
+  }, []);
+
+  const scrollNavigation = (direction: 1 | -1) => {
+    const navigation = routeLinksRef.current;
+    if (!navigation) return;
+    navigation.scrollBy({
+      top: direction * Math.max(240, Math.round(navigation.clientHeight * 0.72)),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+    });
+  };
+
+  const expandNavigationGroups = () => {
+    navGroupRefs.current.forEach((group) => { group.open = true; });
+    updateNavigationScroll();
+  };
+  const collapseNavigationGroups = () => {
+    navGroupRefs.current.forEach((group) => { group.open = false; });
+    updateNavigationScroll();
+  };
 
   return (
     <header className="topbar" data-layout="app-header" data-nav-open={isMenuOpen ? "true" : "false"}>
@@ -190,35 +222,43 @@ export default function AppHeader({
           <span>{isLightTheme ? "الوضع الداكن" : "الوضع الفاتح"}</span>
         </button>
       </div>
-      <nav id="app-primary-nav" className="route-links" aria-label={navLabel}>
-        <div className="nav-group-actions" aria-label="أدوات مجموعات التنقل">
-          <button type="button" className="button button-ghost button-sm" onClick={expandNavigationGroups}>فتح كل المجموعات</button>
-          <button type="button" className="button button-ghost button-sm" onClick={collapseNavigationGroups}>طي كل المجموعات</button>
-        </div>
-        {navigationGroups.map((group, index) => (
-          <details
-            className="nav-group"
-            data-section={group.section}
-            key={group.section}
-            open={group.section === activeSection || (!activeSection && index === 1)}
-            ref={(element) => { if (element) navGroupRefs.current[index] = element; }}
-          >
-            <summary>{group.label}</summary>
-            <div className="nav-section" data-section={group.section}>
-              {group.items.map((link) => {
-                const isActive = isActivePath(pathname, link.href);
-                const Icon = navIcon(link.icon);
-                return (
-                  <Link key={link.href} className="badge app-nav-link" data-section={link.section} href={link.href} aria-current={isActive ? "page" : undefined}>
-                    <Icon aria-hidden="true" className="app-nav-link__icon" size={16} strokeWidth={2} />
-                    <span>{link.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </details>
-        ))}
-      </nav>
+      <div className="sidebar-navigation">
+        <button type="button" className="sidebar-scroll-control" aria-label="تمرير القائمة لأعلى" title="تمرير القائمة لأعلى" disabled={!navigationScroll.up} onClick={() => scrollNavigation(-1)}>
+          <Icons.ChevronUp aria-hidden="true" size={18} strokeWidth={2} />
+        </button>
+        <nav id="app-primary-nav" className="route-links" aria-label={navLabel} ref={routeLinksRef} onScroll={updateNavigationScroll}>
+          <div className="nav-group-actions" aria-label="أدوات مجموعات التنقل">
+            <button type="button" className="button button-ghost button-sm" onClick={expandNavigationGroups}>فتح كل المجموعات</button>
+            <button type="button" className="button button-ghost button-sm" onClick={collapseNavigationGroups}>طي كل المجموعات</button>
+          </div>
+          {navigationGroups.map((group, index) => (
+            <details
+              className="nav-group"
+              data-section={group.section}
+              key={group.section}
+              open={group.section === activeSection || (!activeSection && index === 1)}
+              ref={(element) => { if (element) navGroupRefs.current[index] = element; }}
+            >
+              <summary>{group.label}</summary>
+              <div className="nav-section" data-section={group.section}>
+                {group.items.map((link) => {
+                  const isActive = isActivePath(pathname, link.href);
+                  const Icon = navIcon(link.icon);
+                  return (
+                    <Link key={link.href} className="badge app-nav-link" data-section={link.section} href={link.href} aria-current={isActive ? "page" : undefined}>
+                      <Icon aria-hidden="true" className="app-nav-link__icon" size={16} strokeWidth={2} />
+                      <span>{link.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </details>
+          ))}
+        </nav>
+        <button type="button" className="sidebar-scroll-control" aria-label="تمرير القائمة لأسفل" title="تمرير القائمة لأسفل" disabled={!navigationScroll.down} onClick={() => scrollNavigation(1)}>
+          <Icons.ChevronDown aria-hidden="true" size={18} strokeWidth={2} />
+        </button>
+      </div>
       <div className="app-breadcrumb"><Breadcrumb items={breadcrumbItems} /></div>
     </header>
   );

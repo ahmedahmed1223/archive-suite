@@ -72,6 +72,25 @@ describe("AppHeader grouped navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "فتح كل المجموعات" }));
     expect(groups.every((group) => group.open)).toBe(true);
   });
+
+  test("scrolls the desktop navigation from its explicit controls", () => {
+    mockSession();
+    mockMatchMedia("");
+    render(<AppHeader subtitle="الرئيسية" />);
+
+    const navigation = screen.getByRole("navigation");
+    Object.defineProperties(navigation, {
+      scrollHeight: { value: 800 },
+      clientHeight: { value: 300 },
+      scrollTop: { value: 120, writable: true }
+    });
+    const scrollBy = vi.fn();
+    Object.assign(navigation, { scrollBy });
+    fireEvent.scroll(navigation);
+
+    fireEvent.click(screen.getByRole("button", { name: "تمرير القائمة لأسفل" }));
+    expect(scrollBy).toHaveBeenCalledWith(expect.objectContaining({ top: expect.any(Number) }));
+  });
 });
 
 describe("AppHeader contextual guide", () => {
