@@ -107,9 +107,19 @@ async function auditAxe(page: Page, label: string): Promise<void> {
 
 /** `loading` never reaches networkidle by design — it is a hung request. */
 async function visit(page: Page, url: string, state: RouteState): Promise<void> {
-  await page.goto(url, {
-    waitUntil: state === 'loading' ? 'domcontentloaded' : 'networkidle',
-  });
+  try {
+    await page.goto(url, {
+      // Some live pages keep a stream or background polling connection open.
+      // A bounded network-idle wait gives ordinary data screens time to settle
+      // without turning that intentional traffic into a false test failure.
+      waitUntil: state === 'loading' ? 'domcontentloaded' : 'networkidle',
+      timeout: 8_000,
+    });
+  } catch (error) {
+    if (!(error instanceof Error) || !/Timeout .* exceeded/.test(error.message)) {
+      throw error;
+    }
+  }
 }
 
 for (const viewport of VIEWPORTS) {

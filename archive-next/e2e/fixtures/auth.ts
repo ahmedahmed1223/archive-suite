@@ -23,6 +23,7 @@ import {
  */
 
 let cachedManifest: ProvisionManifest | null = null;
+const roleContexts = new Map<RoleName, BrowserContext>();
 
 function manifest(): ProvisionManifest {
   if (cachedManifest) return cachedManifest;
@@ -56,57 +57,49 @@ export interface RoleFixtures {
 
 export const test = base.extend<RoleFixtures>({
   roleSession: async ({ browser }, use) => {
-    const opened: BrowserContext[] = [];
+    const openedPages: Page[] = [];
     const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000';
 
     await use(async (role: RoleName) => {
-      const context = await browser.newContext({ baseURL, storageState: storageStatePath(role) });
-      opened.push(context);
+      let context = roleContexts.get(role);
+      if (!context) {
+        context = await browser.newContext({ baseURL, storageState: storageStatePath(role) });
+        roleContexts.set(role, context);
 
-      // The API ROTATES the refresh token on every use (AuthController::refresh
-      // deletes the session and issues a new one), so the storage-state cookie
-      // is single-use: only the first context per role could ever refresh.
-      // Log in fresh per context so each one owns its own rotation chain.
-      const account = ROLE_ACCOUNTS[role];
-      const login = await context.request.post('/api/v1/auth/login', {
-        data: { email: account.email, password: account.password },
-      });
-      if (!login.ok()) {
-        throw new Error(`roleSession(${role}): fresh login failed with ${login.status()}`);
+        // Fresh contexts would otherwise trigger the modal whats-new dialog,
+        // which makes every background element invisible to role queries.
+        // shouldShowWhatsNew is a strict equality check, so the stored value
+        // must be the real current release.
+        await context.addInitScript(
+          ([key, release]) => {
+            window.localStorage.setItem(key, release);
+          },
+          [WHATS_NEW_STORAGE_KEY, WHATS_NEW_RELEASE] as const,
+        );
       }
-      const loginPayload = await login.json() as { user?: { name?: unknown } };
-      const sessionAccount: RoleAccount = {
-        ...account,
-        ...(typeof loginPayload.user?.name === 'string' ? { name: loginPayload.user.name } : {}),
-      };
+
+      // Refresh rotates the cookie. Reusing the role's worker-local context
+      // preserves that newly issued cookie for its next page, avoiding a fresh
+      // login for every a11y state while keeping each role fully isolated.
+      const account = ROLE_ACCOUNTS[role];
       const cookies = await context.cookies(baseURL);
       if (!cookies.some((cookie) => cookie.name === 'va_session')) {
-        throw new Error(`roleSession(${role}): fresh login did not persist va_session for ${baseURL}`);
+        throw new Error(`roleSession(${role}): provisioned storage state has no va_session for ${baseURL}`);
       }
 
-      // Fresh contexts would otherwise trigger the modal whats-new dialog,
-      // which makes every background element invisible to role queries.
-      // shouldShowWhatsNew is a strict equality check, so the stored value
-      // must be the real current release.
-      await context.addInitScript(
-        ([key, release]) => {
-          window.localStorage.setItem(key, release);
-        },
-        [WHATS_NEW_STORAGE_KEY, WHATS_NEW_RELEASE] as const,
-      );
-
       const page = await context.newPage();
+      openedPages.push(page);
 
       return {
-        account: sessionAccount,
+        account,
         data: manifest().roles[role],
         page,
         context,
       };
     });
 
-    for (const context of opened) {
-      await context.close();
+    for (const page of openedPages) {
+      await page.close();
     }
   },
 });

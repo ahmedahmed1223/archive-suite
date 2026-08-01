@@ -23,6 +23,15 @@ for (const role of ROLE_NAMES) {
   });
 }
 
+test('reuses the role context while keeping different roles isolated', async ({ roleSession }) => {
+  const firstViewer = await roleSession('viewer');
+  const secondViewer = await roleSession('viewer');
+  const editor = await roleSession('editor');
+
+  expect(secondViewer.context).toBe(firstViewer.context);
+  expect(editor.context).not.toBe(firstViewer.context);
+});
+
 test('only the admin fixture can render the global backup surface', async ({ roleSession }) => {
   const admin = await roleSession('admin');
   await admin.page.goto('/backup');

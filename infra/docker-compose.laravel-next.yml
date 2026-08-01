@@ -98,7 +98,7 @@ services:
       APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
       APP_URL: ${LARAVEL_APP_URL:-http://localhost:8000}
       ARCHIVE_SECURE_COOKIES: ${ARCHIVE_SECURE_COOKIES:-false}
-      ARCHIVE_CORS_ORIGINS: ${ARCHIVE_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      ARCHIVE_CORS_ORIGINS: ${ARCHIVE_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
       # V1-101: db:seed --force refuses to run in production without these
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_NAME: ${ADMIN_NAME:-Archive Admin}

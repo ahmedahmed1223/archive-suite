@@ -62,7 +62,7 @@ return [
         'legacy_password_upgrade' => (bool) env('ARCHIVE_LEGACY_PASSWORD_UPGRADE', false),
         'csp_policy' => env('ARCHIVE_CSP_POLICY', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"),
         'cors_origins' => array_values(array_filter(
-            array_map('trim', explode(',', env('ARCHIVE_CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173')))
+            array_map('trim', explode(',', env('ARCHIVE_CORS_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173')))
         )),
     ],
 

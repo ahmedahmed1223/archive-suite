@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createArchiveApiClient } from "@/lib/archive-api";
 import type { ScheduledUpload, ScheduledUploadStatus } from "@/lib/archive-api";
 import { scheduleSummary, validateScheduleTime } from "@/lib/scheduled-upload";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 
 const STATUS_LABELS: Record<ScheduledUploadStatus, string> = {
   scheduled: "مجدولة",
@@ -175,75 +175,77 @@ export default function ScheduledUploadsClient() {
             </TabsTrigger>
           ))}
         </TabsList>
+
+        <TabsContent value={tab}>
+          <div className="scheduled-uploads-search">
+            <span id="scheduled-uploads-search-label">بحث بالملف أو العنوان</span>
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              aria-label="بحث بالملف أو العنوان"
+            />
+          </div>
+
+          {error ? <p className="state-banner state-banner-error">{error}</p> : null}
+
+          {filtered.length === 0 ? (
+            <p className="helper-text">لا توجد رفعات مجدولة تطابق الفلترة الحالية.</p>
+          ) : (
+            <ul className="scheduled-uploads-list">
+              {filtered.map((item) => (
+                <li key={item.id} className="scheduled-upload-row">
+                  <div className="scheduled-upload-row__main">
+                    <span className="scheduled-upload-row__name">{item.fileName}</span>
+                    <span className={STATUS_BADGE_CLASS[item.status]}>{STATUS_LABELS[item.status]}</span>
+                    {item.scheduledAt ? (
+                      <span className="helper-text">{scheduleSummary(item.scheduledAt, item.timeZone, "ar")}</span>
+                    ) : null}
+                    {item.failureMessage ? <span className="helper-text">{item.failureMessage}</span> : null}
+                  </div>
+                  <div className="scheduled-upload-row__actions">
+                    {item.status === "completed" && item.recordId ? (
+                      <a className="button button-secondary" href={`/archive/${item.recordId}`}>
+                        فتح السجل
+                      </a>
+                    ) : null}
+                    {item.canReschedule ? (
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={() => openReschedule(item)}
+                        disabled={busyId === item.id}
+                      >
+                        إعادة الجدولة
+                      </button>
+                    ) : null}
+                    {item.canCancel ? (
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={() => setCancelTarget(item)}
+                        disabled={busyId === item.id}
+                      >
+                        إلغاء
+                      </button>
+                    ) : null}
+                    {item.canRetry ? (
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={() => handleRetry(item)}
+                        disabled={busyId === item.id}
+                      >
+                        إعادة المحاولة
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </TabsContent>
       </Tabs>
-
-      <div className="scheduled-uploads-search">
-        <span id="scheduled-uploads-search-label">بحث بالملف أو العنوان</span>
-        <input
-          type="search"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          aria-label="بحث بالملف أو العنوان"
-        />
-      </div>
-
-      {error ? <p className="state-banner state-banner-error">{error}</p> : null}
-
-      {filtered.length === 0 ? (
-        <p className="helper-text">لا توجد رفعات مجدولة تطابق الفلترة الحالية.</p>
-      ) : (
-        <ul className="scheduled-uploads-list">
-          {filtered.map((item) => (
-            <li key={item.id} className="scheduled-upload-row">
-              <div className="scheduled-upload-row__main">
-                <span className="scheduled-upload-row__name">{item.fileName}</span>
-                <span className={STATUS_BADGE_CLASS[item.status]}>{STATUS_LABELS[item.status]}</span>
-                {item.scheduledAt ? (
-                  <span className="helper-text">{scheduleSummary(item.scheduledAt, item.timeZone, "ar")}</span>
-                ) : null}
-                {item.failureMessage ? <span className="helper-text">{item.failureMessage}</span> : null}
-              </div>
-              <div className="scheduled-upload-row__actions">
-                {item.status === "completed" && item.recordId ? (
-                  <a className="button button-secondary" href={`/archive/${item.recordId}`}>
-                    فتح السجل
-                  </a>
-                ) : null}
-                {item.canReschedule ? (
-                  <button
-                    type="button"
-                    className="button button-secondary"
-                    onClick={() => openReschedule(item)}
-                    disabled={busyId === item.id}
-                  >
-                    إعادة الجدولة
-                  </button>
-                ) : null}
-                {item.canCancel ? (
-                  <button
-                    type="button"
-                    className="button button-secondary"
-                    onClick={() => setCancelTarget(item)}
-                    disabled={busyId === item.id}
-                  >
-                    إلغاء
-                  </button>
-                ) : null}
-                {item.canRetry ? (
-                  <button
-                    type="button"
-                    className="button button-secondary"
-                    onClick={() => handleRetry(item)}
-                    disabled={busyId === item.id}
-                  >
-                    إعادة المحاولة
-                  </button>
-                ) : null}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
 
       {cancelTarget ? (
         <section

@@ -97,7 +97,7 @@ test("the Laravel image excludes local runtime storage from its build context", 
 test("the canonical FPM service consumes the deploy-time CORS origin", () => {
   const compose = read("infra/docker-compose.laravel-next.yml");
 
-  assert.match(compose, /ARCHIVE_CORS_ORIGINS: \$\{ARCHIVE_CORS_ORIGINS:-http:\/\/localhost:3000,http:\/\/localhost:5173\}/);
+  assert.match(compose, /ARCHIVE_CORS_ORIGINS: \$\{ARCHIVE_CORS_ORIGINS:-http:\/\/localhost:3000,http:\/\/127\.0\.0\.1:3000,http:\/\/localhost:5173,http:\/\/127\.0\.0\.1:5173\}/);
 });
 
 test("the scheduler establishes its health heartbeat before entering its loop", () => {

@@ -67,6 +67,10 @@ describe("ScheduledUploadsClient", () => {
     renderClient();
 
     expect(await screen.findByText(/لا توجد رفعات مجدولة/)).toBeInTheDocument();
+    const activeTab = screen.getByRole("tab", { name: "الكل" });
+    const panelId = activeTab.getAttribute("aria-controls");
+    expect(panelId).toBeTruthy();
+    expect(document.getElementById(panelId ?? "")).toHaveAttribute("role", "tabpanel");
   });
 
   test("renders the error state when the initial fetch fails", async () => {
