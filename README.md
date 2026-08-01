@@ -1,206 +1,112 @@
 # مسار / Masar
 
-منصة أرشيف ميديا ذكية مبنية لتشغيل تجربة فيديو متكاملة في بيئة محلية وسحابة.
+**مسار** منصة لإدارة المواد الأرشيفية والإنتاج الإعلامي. تجمع في مكان واحد حفظ
+الملفات، ووصفها، والبحث فيها، ومراجعتها، ومتابعة العمل عليها؛ لتخدم فرق الأرشفة
+والتحرير والإنتاج دون فصل العمل اليومي عن الحوكمة والتدقيق.
 
-هذا المستودع هو monorepo يعتمد الآن **Next.js + Laravel** كمسار التطوير الأساسي:
+## حالة الإصدار
 
-- `archive-next/` — canonical frontend بواجهة Next.js 16 + TypeScript.
-- `archive-laravel/` — canonical backend/API مبني على Laravel 13.
-
-> أُزيلت حزم legacy نهائياً بتاريخ 2026-07-12 وتبقى متاحة فقط عبر تاريخ git.
-
-## حالة الإصدار والروابط السريعة
-
-الإصدار الحالي هو **`v1.0.0-rc.1`**. اجتاز التحقق المحلي الكامل، لكن نشره
-العام محجوب عمدًا إلى حين اكتمال أدلة القبول الخارجي (الأداء المرجعي، الأجهزة
-النظيفة، والتكاملات الحية). لا تستخدم وسم RC كإقرار GA أو كبديل عن بروفة
-الإصدار.
+الإصدار [`v1.0.0-rc.1`](docs/release-notes/v1.0.0-rc.1.md) متاح كإصدار تجريبي
+للتقييم والمراجعة. اجتاز التحقق المحلي للمشروع، لكنه **ليس إصدارًا عامًا** ولا
+يتضمن حاليًا حزم تثبيت أو صور Docker منشورة. لا تستخدمه في بيئة إنتاج قبل استكمال
+متطلبات القبول وإعلان الإصدار العام.
 
 - [دليل الميزات والاستخدام](docs/features-guide.md)
-- [دليل إطلاق ودعم RC](docs/ops/rc-launch-and-support.md)
-- [بروفة إصدار نظيفة](docs/ops/v1-505-release-rehearsal.md)
-- [عمليات القرار والإصدار وGA](docs/release/v1-601-605-ga-operations.md)
-- [ملاحظات إصدار RC](docs/release-notes/v1.0.0-rc.1.md)
+- [دليل تشغيل ودعم الإصدار التجريبي](docs/ops/rc-launch-and-support.md)
+- [بروفة الإصدار على بيئة نظيفة](docs/ops/v1-505-release-rehearsal.md)
+- [إجراءات القرار والإصدار العام](docs/release/v1-601-605-ga-operations.md)
 
-## نظرة عامة
+## ما الذي يقدمه النظام؟
 
-المشروع مصمم كي يعمل كمنصة أرشيف إعلامي:
+- سجل موحّد للمواد الأرشيفية، مع البيانات الوصفية والتصنيف والوسوم وحالة الاعتماد.
+- إدارة ملفات مستقلة تدعم الرفع والتنظيم والنقل والبحث، ثم تحويل الملف إلى مادة
+  أرشيفية عندما يقرر المستخدم ذلك.
+- بحث متقدم ونتائج قابلة للتصفية بحسب النوع والتصنيف والوسوم والتاريخ وحالة العمل.
+- مراجعات وتعليقات ومهام ومشروعات تساعد الفريق على متابعة المادة من الإدخال إلى
+  الاستخدام.
+- أدوات مساعدة للنسخ النصي والتلخيص واقتراح الوسوم واستخراج الكيانات؛ وتبقى
+  المراجعة البشرية جزءًا أساسيًا من الاعتماد.
+- صلاحيات وسجل تدقيق وتقارير تشغيلية وإعدادات تخزين قابلة للتوسّع.
 
-- إدارة الفيديوهات والملفات والبيانات الوصفية.
-- دعم البحث المتقدم والفلاتر والمخططات الزمنية.
-- تكامل AI للوسوم والتلخيص والتفريغ.
-- دعم تخزين متعدد: local, Dropbox, S3, Azure Blob, Google Drive.
+## البنية المعتمدة
 
-## بنية المستودع
+هذا المستودع `monorepo`، ومسار التطوير المعتمد فيه هو **Next.js + Laravel**:
 
-```text
-Arch_App/
-  ├─ archive-next/     # canonical frontend
-  ├─ archive-laravel/  # canonical backend/API
-  ├─ .git/
-  ├─ .gitignore
-  ├─ package.json
-  ├─ pnpm-workspace.yaml
-  ├─ pnpm-lock.yaml
-  └─ README.md
-```
+- `archive-next/` — واجهة المستخدم المعتمدة، مبنية بـ `Next.js` و`TypeScript`.
+- `archive-laravel/` — واجهة البرمجة والخدمات الخلفية المعتمدة، مبنية بـ `Laravel`.
+- `docs/api/archive-contract.openapi.json` — عقد `OpenAPI` المرجعي بين الواجهة
+  والخدمة الخلفية.
 
-## إعداد بيئة التطوير
+تُحفظ المجلدات القديمة لأغراض المرجع والتاريخ فقط؛ لا تضف إليها ميزات جديدة.
+للاطلاع على هيكلة مساحة العمل ومسارات التطوير، راجع [CLAUDE.md](CLAUDE.md).
 
-### تثبيت الحزم
+## بدء سريع
 
-من جذر المستودع:
+### المتطلبات
+
+- `Node.js 26.5.0`
+- `pnpm 11.9.0`
+- `Docker Desktop` with Docker Compose
+
+تُثبّت نسختا `PHP 8.4.23` و`Composer 2.9.5` داخل Docker، لذلك لا يلزم تثبيتهما
+على جهاز التطوير. النسخ المعتمدة موثقة في `infra/platform/toolchain.v1.json`.
+
+### التثبيت والتشغيل
+
+نفّذ الأوامر من جذر المستودع:
 
 ```powershell
-cd ".\Arch_App"
 pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-خط الأدوات المدعوم للمسار القانوني محفوظ آلياً في
-`infra/platform/toolchain.v1.json`: Node.js 26.5.0 (خط 26 فقط)، pnpm 11.9.0،
-PHP 8.4.23، وComposer 2.9.5. يوفر Docker نسختي PHP وComposer، فلا يلزم تثبيتهما
-على المضيف.
-
-### تشغيل الواجهة الأمامية
+يشغّل `pnpm dev` خدمة Laravel داخل Docker وواجهة Next.js محليًا. ويمكن تشغيل كل
+جزء على حدة عند الحاجة:
 
 ```powershell
-pnpm run dev
+pnpm dev:next
+pnpm dev:laravel
 ```
 
-يشغّل هذا الأمر Laravel داخل Docker وNext.js محلياً. لا تحتاج PHP/Composer محلياً.
-
-### تشغيل أجزاء منفردة
+### التحقق قبل المراجعة أو الدمج
 
 ```powershell
-pnpm run dev:next       # Next.js فقط
-pnpm run dev:laravel    # Laravel API فقط عبر Docker
+pnpm verify
+pnpm verify:laravel-next:live
 ```
 
-### التحقق من الصحة
+`pnpm verify` هو فحص المشروع الأساسي: يتحقق من عقد الواجهة البرمجية، والأنواع،
+والبناء، والاختبارات، ونظافة المستودع. أما
+`pnpm verify:laravel-next:live` فيجري اختبارًا حيًا لتكامل Laravel وNext.js.
+
+## النشر والإعدادات
+
+يوفر `Control Center` إعدادًا محليًا وتشغيلًا يعتمد Docker:
 
 ```powershell
-pnpm run verify
-```
-
-هذا هو gate الجديد للمسار المعتمد: عقد API، TypeScript لـ core/Next، بناء Next، واختبارات Laravel عبر Docker.
-
-للتحقق الجزئي أثناء التطوير:
-
-```powershell
-pnpm run verify:laravel
-pnpm run verify:laravel-next:live
-```
-
-`verify:laravel-next:live` يبني Next.js مع `ARCHIVE_API_BASE_URL` موجهاً إلى Laravel ثم يشغّل اختبار Playwright على المسار الإنتاجي. عند تشغيل build إنتاجي يدوي، اضبط نفس المتغير وقت البناء حتى تُولد rewrites:
-
-```powershell
-$env:ARCHIVE_API_BASE_URL="https://api.example.com/api/v1"
-pnpm run build:next
-```
-
-## النشر عبر Docker
-
-استخدم Control Center لنشر الحزمة القانونية Laravel + Next.js من
-`infra/docker-compose.yml`. ينشئ `infra/.env`، يولّد الأسرار الناقصة، ثم يدير
-`docker compose up -d --build` للمسار نفسه:
-
-```bash
 pnpm setup
-# أو: pnpm deploy
+pnpm deploy
 ```
 
-### الرفع المجدول (V1-712)
+هذه الأوامر تُشغّل التطبيق من مصدره في بيئتك؛ وليست بديلًا عن حزمة إصدار قابلة
+للتثبيت. تعليمات `Docker`، ومتغيرات البيئة، وإدارة كلمة مرور المسؤول، وربط التخزين
+السحابي موثقة بالإنجليزية في [DEPLOYMENT.md](DEPLOYMENT.md) و
+[docs/control-center.md](docs/control-center.md).
 
-حزمة `infra/docker-compose.laravel-next.yml` تشغّل `laravel-scheduler` (حلقة
-`schedule:work` لأوامر `uploads:dispatch-scheduled`/`recover-scheduled`/
-`cleanup-scheduled`) إلى جانب `laravel-worker` الذي يستهلك قائمة
-`scheduled-uploads` قبل `default`. إعدادات الدُفعة/الإيجار/المحاولات/الاستبقاء
-موثّقة في `infra/.env.example` (قسم "Scheduled uploads") وتُقرأ من
-`archive-laravel/config/scheduled-uploads.php`. صحة الجدولة (`schedulerFresh`،
-`oldestDueSeconds`، `queueDepth`) ظاهرة في حقل `scheduledUploads` من
-`/api/v1/health`، منفصلة عن حالة `ok`/رمز HTTP حتى لا يُسقط بطء المجدول الحزمة
-كلها.
+يدعم النظام التخزين المحلي و`Dropbox` و`S3` و`Azure Blob` و`Google Drive`، إلى
+جانب `FTP/FTPS` و`SMB/CIFS` و`SFTP/SSH` و`WebDAV`.
 
-## CI/CD والمراقبة
+## للمساهمين
 
-اعتمد المشروع **GitHub Actions** كمسار CI/CD الافتراضي:
+- استخدم `pnpm` من جذر المستودع، وليس مدير حزم بديلًا.
+- حدّث عقد `OpenAPI` والواجهة والخدمة الخلفية معًا عند تغيير أي واجهة عامة.
+- شغّل `pnpm verify` قبل فتح `Pull Request`.
+- احفظ العمل الجديد داخل `archive-next/` و`archive-laravel/`.
 
-- `.github/workflows/ci.yml` — تحقق Laravel + Next، عقود API، build، hygiene، واختبارات Laravel.
-- `.github/workflows/docker.yml` — تحقق Compose الافتراضي، بناء صورة Next، ونشر اختياري إلى GHCR عند tags أو تشغيل يدوي.
+تجد تفاصيل البنية، والاختبارات، و`CI/CD`، وسياسة العمل في [CLAUDE.md](CLAUDE.md).
 
-تكامل Sentry اختياري ولا يرسل أي أحداث بدون DSN. لإرسال أخطاء الواجهة والخادم اضبط:
+## الدعم
 
-```bash
-SENTRY_DSN=
-SENTRY_LARAVEL_DSN=
-NEXT_PUBLIC_SENTRY_DSN=
-SENTRY_ENVIRONMENT=production
-SENTRY_RELEASE=<git-sha-or-version>
-```
-
-ولرفع source maps من GitHub Actions أضف أسرار المستودع:
-
-```text
-SENTRY_ORG
-SENTRY_PROJECT
-SENTRY_AUTH_TOKEN
-```
-
-## النشر الموجّه
-
-`Setup-Archive.bat` / `setup.sh` هما مشغلا Control Center للحزمة القانونية Laravel + Next:
-
-```bash
-# Windows:
-.\Setup-Archive.bat                    # القائمة: 1 = Quick start، q/0 = خروج
-.\Setup-Archive.bat change-admin-password --generate
-# Linux/macOS:
-bash setup.sh change-admin-password --generate
-bash setup.sh deploy               # أو: pnpm setup / pnpm deploy
-```
-
-يفحص البيئة، يولّد الأسرار، ويرفع الحزمة المُحصّنة. التفاصيل في [`DEPLOYMENT.md`](DEPLOYMENT.md).
-
-### إعداد Cloud وFileStore
-
-- كلمة مرور `ADMIN_PASSWORD` تظهر في معالج البداية لأول دخول فقط؛ يمكن توليدها أو تغييرها لاحقًا عبر `Setup-Archive.bat change-admin-password --generate`.
-- `PGADMIN_PASSWORD` مخصّصة لتسجيل الدخول إلى واجهة pgAdmin، بينما `POSTGRES_PASSWORD` مخصّصة لاتصال قاعدة البيانات المحفوظ داخلها.
-- يدعم FileStore: القرص، Dropbox، S3، Azure Blob، Google Drive، FTP/FTPS، SMB/CIFS، SFTP/SSH، وWebDAV.
-- صفحة **مدير الملفات** مستقلة عن الأرشيف: رفع، بحث، مجلدات، تنزيل، نسخ، نقل، وحذف. الرفع يضاف افتراضيًا إلى صندوق التجهيز، لكنه لا ينشئ مادة أرشيف تلقائيًا؛ تبدأ الأرشفة فقط بأمر المستخدم.
-
-## توصيف الأجزاء
-
-### `archive-next/`
-
-واجهة Next.js المعتمدة، وتملك:
-
-- App Router وTypeScript.
-- مسارات archive/files/share/media/jobs/login/help/reports/settings.
-- اتصال `/api/v1/*` عبر Laravel API.
-
-### `archive-laravel/`
-
-خادم API المعتمد، ويوفر:
-
-- Auth عبر access token وHttpOnly refresh cookie.
-- records/search/files/share/rights/media/ingest.
-- queues ومعالجات وسائط قابلة للتبديل.
-- audit logs وسياسات API.
-
-## ملاحظات تقنية
-
-- يعتمد المستودع على `pnpm` workspace.
-- استخدام `pnpm-lock.yaml` لضمان اعتمادية قابلة للتكرار.
-- الحزمة الوحيدة في الـ workspace هي `@archive/next`؛ التشارك مع `archive-laravel` يمر عبر عقد `docs/api/archive-contract.openapi.json`.
-- أُزيلت حزم legacy بتاريخ 2026-07-12 وتبقى متاحة فقط عبر تاريخ git.
-
-## للمطورين
-
-- اعمل في فرع مستقل لكل ميزة أو إصلاح.
-- استخدم `pnpm install --frozen-lockfile` من جذر المشروع.
-- شغل `pnpm run verify` قبل فتح أي PR؛ وللتحقق الحي الكامل شغل `pnpm run verify:laravel-next:live`.
-- في بناء Next.js الإنتاجي اضبط `ARCHIVE_API_BASE_URL` وقت البناء، وليس عند التشغيل فقط.
-
----
-
-مسار / Masar هي نقطة انطلاق لتطوير منصة أرشيف ميديا متكاملة، وتوفر أساسًا نظيفًا للعمل بين واجهة مستخدم متقدمة وخادم إنتاج مرن.
+للدعم أثناء تقييم الإصدار التجريبي أو الإبلاغ عن مشكلة، ابدأ بـ
+[دليل التشغيل والدعم](docs/ops/rc-launch-and-support.md). عند الإبلاغ، أرفق
+الخطوات التي سبقت المشكلة والوقت التقريبي وسجلًا منقحًا من أي بيانات حساسة.
