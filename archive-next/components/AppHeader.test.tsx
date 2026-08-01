@@ -43,6 +43,16 @@ function mockSession(role: "admin" | "editor" | "viewer" = "viewer") {
 }
 
 describe("AppHeader navigation", () => {
+  test("keeps command palette and navigation controls discoverable", () => {
+    mockSession();
+    mockMatchMedia("");
+
+    render(<AppHeader subtitle="مساحة العمل" />);
+
+    expect(screen.getByRole("button", { name: "فتح لوحة الأوامر" })).toBeVisible();
+    expect(screen.getByRole("navigation", { name: "المسارات الرئيسية" })).toBeVisible();
+  });
+
   test("opens navigation and returns focus to its trigger on Escape", () => {
     mockSession();
     mockMatchMedia("");

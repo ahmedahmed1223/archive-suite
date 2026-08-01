@@ -781,6 +781,24 @@
     inline-size: 100%;
   }
 
+  .app-shell > .topbar .topbar-actions .command-trigger {
+    color: var(--color-text-secondary);
+    border-color: var(--focus-border);
+    background: var(--focus-surface);
+    box-shadow: none;
+  }
+
+  .app-shell > .topbar .topbar-actions .command-trigger:hover {
+    color: var(--focus-accent);
+    border-color: color-mix(in srgb, var(--focus-accent) 48%, var(--focus-border));
+    background: color-mix(in srgb, var(--focus-surface) 92%, var(--focus-accent));
+  }
+
+  .app-shell > .topbar .topbar-actions .command-trigger:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
   .app-shell > .topbar .topbar-actions .session-chip {
     max-inline-size: none;
   }
@@ -805,14 +823,44 @@
   }
 
   .app-shell > .topbar .app-nav-link {
+    position: relative;
     display: flex;
     justify-content: flex-start;
     min-block-size: 2.6rem;
+    border: 1px solid transparent;
+    color: var(--color-text-secondary);
+  }
+
+  .app-shell > .topbar .app-nav-link:hover {
+    border-color: color-mix(in srgb, var(--focus-accent) 28%, var(--focus-border));
+    color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--focus-surface) 90%, var(--focus-accent));
   }
 
   .app-shell > .topbar .app-nav-link[aria-current="page"] {
-    background:
-      linear-gradient(135deg, var(--color-brand-primary), color-mix(in srgb, var(--color-brand-primary) 62%, var(--color-brand-indigo)));
+    border-color: color-mix(in srgb, var(--focus-accent) 44%, var(--focus-border));
+    color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--focus-surface-raised) 88%, var(--focus-accent));
+  }
+
+  .app-shell > .topbar .app-nav-link[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    inset-block: var(--space-2);
+    inset-inline-start: 0;
+    inline-size: 0.25rem;
+    border-radius: var(--radius-full);
+    background: var(--focus-accent);
+  }
+
+  .app-shell > .topbar .app-nav-link:focus-visible {
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .app-shell > .topbar .sidebar-scroll-control:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
   }
 }
 
