@@ -27,7 +27,15 @@ export const metadata: Metadata = {
   description: `${BRAND.descriptor} في ${BRAND.lockupName}`,
   applicationName: BRAND.latinName,
   icons: {
-    icon: "/favicon.svg"
+    icon: [
+      {
+        url: "/brand/masar-mark-2026.png?v=20260801",
+        type: "image/png",
+        sizes: "1254x1254"
+      }
+    ],
+    shortcut: "/brand/masar-mark-2026.png?v=20260801",
+    apple: "/brand/masar-mark-2026.png?v=20260801"
   }
 };
 
