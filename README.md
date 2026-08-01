@@ -7,7 +7,7 @@
 
 ## Project status
 
-[`v1.0.0-rc.1`](docs/release-notes/v1.0.0-rc.1.md) is an experimental release
+[`v1.0.0-rc.2`](docs/release-notes/v1.0.0-rc.2.md) is an experimental release
 candidate for evaluation and review. It passed the local project verification
 gate, but it is **not a General Availability release** and currently ships no
 installable artifacts or published Docker images. Do not use it in production
