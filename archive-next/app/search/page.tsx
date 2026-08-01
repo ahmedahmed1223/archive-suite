@@ -311,6 +311,7 @@ function SearchPageContent() {
 
   const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    event.currentTarget.querySelector<HTMLInputElement>("[role=\"combobox\"]")?.blur();
     setCurrentPage(1);
     await search(query, store, 1, typeFilter, tagFilter, searchMode);
   };
@@ -456,19 +457,6 @@ function SearchPageContent() {
             <span className="badge">{savedSearches.length} بحث محفوظ</span>
           </>
         )}
-        actions={(
-          <>
-            <button type="button" className="button button-primary" onClick={() => void saveCurrentSearch()} disabled={!query.trim() && !store && typeFilter === "all" && !tagFilter}>
-              حفظ البحث
-            </button>
-            <button type="button" className="button button-secondary" onClick={resetSearch}>
-              تصفير
-            </button>
-            <a className="button button-secondary" href="/search/saved">
-              إدارة البحوث المحفوظة
-            </a>
-          </>
-        )}
       >
         <form className="search-workbench-form" onSubmit={handleSearch}>
           <div className="search-query-row">
@@ -529,6 +517,17 @@ function SearchPageContent() {
             <SearchFilterBuilder value={query} onChange={setQuery} />
           </details>
         </form>
+        <div className="search-workbench-actions">
+          <button type="button" className="button button-primary" onClick={() => void saveCurrentSearch()} disabled={!query.trim() && !store && typeFilter === "all" && !tagFilter}>
+            حفظ البحث
+          </button>
+          <button type="button" className="button button-secondary" onClick={resetSearch}>
+            تصفير
+          </button>
+          <a className="button button-secondary" href="/search/saved">
+            إدارة البحوث المحفوظة
+          </a>
+        </div>
         {searchMode === "transcript" ? <p className="helper-text">يعرض هذا النمط المقاطع ذات التوقيت الموثوق فقط، ويتيح تشغيل الفيديو مباشرةً من لحظة التطابق.</p> : null}
         {searchMode === "semantic" && facets?.mode === "keyword-fallback" ? <p className="form-status">تعذر تنفيذ البحث الدلالي حاليًا؛ عُرضت نتائج البحث العادي بدلًا منه.</p> : null}
         <div className="archive-toolbar-row">

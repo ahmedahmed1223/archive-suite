@@ -14,10 +14,11 @@ export default function SearchAutocomplete({ value, onChange, onSelect, fetchSug
   const listId = useId();
   const [items, setItems] = useState<SearchSuggestion[]>([]);
   const [active, setActive] = useState(-1);
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    if (value.trim().length < 2) {
+    if (!isFocused || value.trim().length < 2) {
       setItems([]);
       return;
     }
@@ -30,10 +31,10 @@ export default function SearchAutocomplete({ value, onChange, onSelect, fetchSug
       }).catch(() => { if (alive) setItems([]); });
     }, 180);
     return () => { alive = false; window.clearTimeout(timer); };
-  }, [fetchSuggestions, value]);
+  }, [fetchSuggestions, isFocused, value]);
 
   return <div className="search-autocomplete">
-    <input aria-label="اقتراحات البحث" role="combobox" value={value} placeholder={placeholder} className={className} onChange={(event) => onChange(event.target.value)} aria-controls={listId} aria-expanded={items.length > 0} onKeyDown={(event) => {
+    <input aria-label="اقتراحات البحث" role="combobox" value={value} placeholder={placeholder} className={className} onFocus={() => setIsFocused(true)} onChange={(event) => onChange(event.target.value)} onBlur={() => { setIsFocused(false); setItems([]); }} aria-controls={listId} aria-expanded={items.length > 0} onKeyDown={(event) => {
       if (event.key === "ArrowDown") { event.preventDefault(); setActive((current) => Math.min(current + 1, items.length - 1)); }
       if (event.key === "ArrowUp") { event.preventDefault(); setActive((current) => Math.max(current - 1, 0)); }
       if (event.key === "Enter" && items[active]) onSelect(items[active]);

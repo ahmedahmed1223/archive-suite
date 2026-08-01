@@ -804,6 +804,38 @@
 }
 
 @media (max-width: 760px) {
+  .workspace-commandbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .workspace-commandbar__context,
+  .workspace-commandbar__quick {
+    display: none;
+  }
+
+  .workspace-commandbar__search {
+    padding-inline: var(--space-2);
+  }
+
+  .workspace-commandbar__search kbd {
+    display: none;
+  }
+
+  .onboarding-prompt {
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+
+  .onboarding-prompt p {
+    display: none;
+  }
+
+  .onboarding-prompt .button-row {
+    gap: var(--space-1);
+  }
+
   .primary-action-link span,
   .session-chip > span {
     display: none;

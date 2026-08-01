@@ -35,6 +35,11 @@ describe("responsive RTL workspace source contract", () => {
     expect(foundationCss).toMatch(/@media\s*\(max-width:\s*760px\)\s*{[\s\S]*input:not\(\[type="checkbox"\]\):not\(\[type="radio"\]\),\s*select,\s*textarea\s*{[^}]*font-size:\s*1rem;/s);
   });
 
+  it("keeps the mobile command bar focused on its primary command", () => {
+    expect(foundationCss).toMatch(/@media\s*\(max-width:\s*760px\)\s*{[\s\S]*\.workspace-commandbar__context,\s*\.workspace-commandbar__quick\s*{[^}]*display:\s*none;/s);
+    expect(foundationCss).toMatch(/@media\s*\(max-width:\s*760px\)\s*{[\s\S]*\.workspace-commandbar\s*{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto;/s);
+  });
+
   it("gives standalone checklist checkboxes a labelled 44px hit area", () => {
     expect(helpPage).toMatch(/<li className="checklist-item"[^>]*>\s*<label className="checklist-control">\s*<input type="checkbox"[^>]*\/>\s*<span>{item}<\/span>\s*<\/label>/s);
     expect(componentsCss).toMatch(/\.checklist-control\s*{[^}]*min-block-size:\s*2\.75rem;/s);

@@ -534,6 +534,17 @@
   gap: var(--space-3);
 }
 
+.search-workbench-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.search-workbench-actions .button {
+  flex: 0 0 auto;
+}
+
 .search-query-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
