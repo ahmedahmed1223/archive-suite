@@ -1,112 +1,124 @@
-# مسار / Masar
+# Masar / مسار
 
-**مسار** منصة لإدارة المواد الأرشيفية والإنتاج الإعلامي. تجمع في مكان واحد حفظ
-الملفات، ووصفها، والبحث فيها، ومراجعتها، ومتابعة العمل عليها؛ لتخدم فرق الأرشفة
-والتحرير والإنتاج دون فصل العمل اليومي عن الحوكمة والتدقيق.
+**مسار** نظام مركزي لإدارة الأصول الأرشيفية والإعلامية. يوفّر سجلًا موحّدًا للمواد
+وبياناتها الوصفية، وإدارة للملفات والبحث والمراجعة والتعاون، مع ضوابط للصلاحيات
+والتدقيق. صُمم لفرق الأرشفة والتحرير والإنتاج لتنتقل المادة من الاستلام إلى
+الاستخدام ضمن سير عمل واضح وقابل للتوسع.
 
-## حالة الإصدار
+## Project status
 
-الإصدار [`v1.0.0-rc.1`](docs/release-notes/v1.0.0-rc.1.md) متاح كإصدار تجريبي
-للتقييم والمراجعة. اجتاز التحقق المحلي للمشروع، لكنه **ليس إصدارًا عامًا** ولا
-يتضمن حاليًا حزم تثبيت أو صور Docker منشورة. لا تستخدمه في بيئة إنتاج قبل استكمال
-متطلبات القبول وإعلان الإصدار العام.
+[`v1.0.0-rc.1`](docs/release-notes/v1.0.0-rc.1.md) is an experimental release
+candidate for evaluation and review. It passed the local project verification
+gate, but it is **not a General Availability release** and currently ships no
+installable artifacts or published Docker images. Do not use it in production
+until the remaining acceptance requirements are closed and a GA release is
+announced.
 
-- [دليل الميزات والاستخدام](docs/features-guide.md)
-- [دليل تشغيل ودعم الإصدار التجريبي](docs/ops/rc-launch-and-support.md)
-- [بروفة الإصدار على بيئة نظيفة](docs/ops/v1-505-release-rehearsal.md)
-- [إجراءات القرار والإصدار العام](docs/release/v1-601-605-ga-operations.md)
+- [Features and usage guide](docs/features-guide.md)
+- [RC launch and support guide](docs/ops/rc-launch-and-support.md)
+- [Clean release rehearsal](docs/ops/v1-505-release-rehearsal.md)
+- [Release and GA operations](docs/release/v1-601-605-ga-operations.md)
 
-## ما الذي يقدمه النظام؟
+## System overview
 
-- سجل موحّد للمواد الأرشيفية، مع البيانات الوصفية والتصنيف والوسوم وحالة الاعتماد.
-- إدارة ملفات مستقلة تدعم الرفع والتنظيم والنقل والبحث، ثم تحويل الملف إلى مادة
-  أرشيفية عندما يقرر المستخدم ذلك.
-- بحث متقدم ونتائج قابلة للتصفية بحسب النوع والتصنيف والوسوم والتاريخ وحالة العمل.
-- مراجعات وتعليقات ومهام ومشروعات تساعد الفريق على متابعة المادة من الإدخال إلى
-  الاستخدام.
-- أدوات مساعدة للنسخ النصي والتلخيص واقتراح الوسوم واستخراج الكيانات؛ وتبقى
-  المراجعة البشرية جزءًا أساسيًا من الاعتماد.
-- صلاحيات وسجل تدقيق وتقارير تشغيلية وإعدادات تخزين قابلة للتوسّع.
+- A unified archival record for assets, metadata, classifications, tags, and
+  approval state.
+- Independent file management for uploading, organizing, moving, and finding
+  files before an operator chooses to archive them.
+- Advanced search and filters by type, classification, tag, date, and work
+  status.
+- Reviews, comments, tasks, and projects to follow an asset from intake to
+  delivery.
+- Human-reviewed assistance for transcription, summaries, tag suggestions, and
+  entity extraction.
+- Role-based access, audit trails, operational reporting, and extensible
+  storage configuration.
 
-## البنية المعتمدة
+## Canonical architecture
 
-هذا المستودع `monorepo`، ومسار التطوير المعتمد فيه هو **Next.js + Laravel**:
+This repository is a monorepo. The canonical development path is **Next.js +
+Laravel**:
 
-- `archive-next/` — واجهة المستخدم المعتمدة، مبنية بـ `Next.js` و`TypeScript`.
-- `archive-laravel/` — واجهة البرمجة والخدمات الخلفية المعتمدة، مبنية بـ `Laravel`.
-- `docs/api/archive-contract.openapi.json` — عقد `OpenAPI` المرجعي بين الواجهة
-  والخدمة الخلفية.
+- `archive-next/` — canonical `Next.js` and `TypeScript` frontend.
+- `archive-laravel/` — canonical `Laravel` backend and API.
+- `docs/api/archive-contract.openapi.json` — canonical `OpenAPI` contract
+  shared by the frontend and backend.
 
-تُحفظ المجلدات القديمة لأغراض المرجع والتاريخ فقط؛ لا تضف إليها ميزات جديدة.
-للاطلاع على هيكلة مساحة العمل ومسارات التطوير، راجع [CLAUDE.md](CLAUDE.md).
+Legacy paths are retained for reference and history only. Do not add new
+features to them. See [CLAUDE.md](CLAUDE.md) for workspace architecture and
+development workflows.
 
-## بدء سريع
+## Quick start
 
-### المتطلبات
+### Requirements
 
 - `Node.js 26.5.0`
 - `pnpm 11.9.0`
 - `Docker Desktop` with Docker Compose
 
-تُثبّت نسختا `PHP 8.4.23` و`Composer 2.9.5` داخل Docker، لذلك لا يلزم تثبيتهما
-على جهاز التطوير. النسخ المعتمدة موثقة في `infra/platform/toolchain.v1.json`.
+`PHP 8.4.23` and `Composer 2.9.5` run inside Docker, so they are not required
+on the development host. The supported toolchain is pinned in
+`infra/platform/toolchain.v1.json`.
 
-### التثبيت والتشغيل
+### Install and run
 
-نفّذ الأوامر من جذر المستودع:
+Run the following commands from the repository root:
 
 ```powershell
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-يشغّل `pnpm dev` خدمة Laravel داخل Docker وواجهة Next.js محليًا. ويمكن تشغيل كل
-جزء على حدة عند الحاجة:
+`pnpm dev` starts Laravel in Docker and Next.js locally. Run either component
+alone when needed:
 
 ```powershell
 pnpm dev:next
 pnpm dev:laravel
 ```
 
-### التحقق قبل المراجعة أو الدمج
+### Verify before review or merge
 
 ```powershell
 pnpm verify
 pnpm verify:laravel-next:live
 ```
 
-`pnpm verify` هو فحص المشروع الأساسي: يتحقق من عقد الواجهة البرمجية، والأنواع،
-والبناء، والاختبارات، ونظافة المستودع. أما
-`pnpm verify:laravel-next:live` فيجري اختبارًا حيًا لتكامل Laravel وNext.js.
+`pnpm verify` is the canonical project gate for API contracts, types, builds,
+tests, and repository hygiene. `pnpm verify:laravel-next:live` runs the live
+Laravel and Next.js integration check.
 
-## النشر والإعدادات
+## Deployment and configuration
 
-يوفر `Control Center` إعدادًا محليًا وتشغيلًا يعتمد Docker:
+`Control Center` provides local Docker-based setup and deployment:
 
 ```powershell
 pnpm setup
 pnpm deploy
 ```
 
-هذه الأوامر تُشغّل التطبيق من مصدره في بيئتك؛ وليست بديلًا عن حزمة إصدار قابلة
-للتثبيت. تعليمات `Docker`، ومتغيرات البيئة، وإدارة كلمة مرور المسؤول، وربط التخزين
-السحابي موثقة بالإنجليزية في [DEPLOYMENT.md](DEPLOYMENT.md) و
-[docs/control-center.md](docs/control-center.md).
+These commands run the application from source in your environment; they are
+not a substitute for a downloadable release artifact. See
+[DEPLOYMENT.md](DEPLOYMENT.md) and [docs/control-center.md](docs/control-center.md)
+for Docker deployment, environment variables, administrator credentials, and
+cloud-storage configuration.
 
-يدعم النظام التخزين المحلي و`Dropbox` و`S3` و`Azure Blob` و`Google Drive`، إلى
-جانب `FTP/FTPS` و`SMB/CIFS` و`SFTP/SSH` و`WebDAV`.
+Supported storage includes local disk, `Dropbox`, `S3`, `Azure Blob`,
+`Google Drive`, `FTP/FTPS`, `SMB/CIFS`, `SFTP/SSH`, and `WebDAV`.
 
-## للمساهمين
+## Contributing
 
-- استخدم `pnpm` من جذر المستودع، وليس مدير حزم بديلًا.
-- حدّث عقد `OpenAPI` والواجهة والخدمة الخلفية معًا عند تغيير أي واجهة عامة.
-- شغّل `pnpm verify` قبل فتح `Pull Request`.
-- احفظ العمل الجديد داخل `archive-next/` و`archive-laravel/`.
+- Use `pnpm` from the repository root.
+- Update the `OpenAPI` contract, frontend, and backend together when changing a
+  public interface.
+- Run `pnpm verify` before opening a `Pull Request`.
+- Keep new product work in `archive-next/` and `archive-laravel/`.
 
-تجد تفاصيل البنية، والاختبارات، و`CI/CD`، وسياسة العمل في [CLAUDE.md](CLAUDE.md).
+See [CLAUDE.md](CLAUDE.md) for architecture, testing, CI/CD, and contribution
+workflows.
 
-## الدعم
+## Support
 
-للدعم أثناء تقييم الإصدار التجريبي أو الإبلاغ عن مشكلة، ابدأ بـ
-[دليل التشغيل والدعم](docs/ops/rc-launch-and-support.md). عند الإبلاغ، أرفق
-الخطوات التي سبقت المشكلة والوقت التقريبي وسجلًا منقحًا من أي بيانات حساسة.
+For RC evaluation support or incident reporting, start with the
+[RC launch and support guide](docs/ops/rc-launch-and-support.md). Include
+reproduction steps, an approximate timestamp, and redacted logs only.

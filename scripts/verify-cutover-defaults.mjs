@@ -61,11 +61,10 @@ assert.match(claude, /Backend \(canonical\).*`archive-laravel`/);
 assert.match(claude, /removed on 2026-07-12/);
 
 const readme = read("README.md");
-// README is Arabic-first; verify the durable cutover facts rather than an
-// obsolete English code-block layout.
+// README prose can evolve independently from the stable cutover facts.
 assert.match(readme, /`archive-next\/`/);
 assert.match(readme, /`archive-laravel\/`/);
-assert.match(readme, /المجلدات القديمة/);
+assert.match(readme, /legacy/i);
 
 const tasks = read("TASKS.md");
 assert.match(tasks, /المسار القانوني.*archive-next.*archive-laravel/);
