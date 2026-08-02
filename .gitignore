@@ -89,3 +89,5 @@ Desktop.ini
 
 # Git Bash crash dumps (Windows)
 *.stackdump
+
+docs/performance/runs/
