@@ -9,12 +9,38 @@ export function percentile(values, percentage) {
   return sorted[Math.min(sorted.length - 1, Math.ceil((percentage / 100) * sorted.length) - 1)];
 }
 
+/**
+ * resourceProfileId is copied from the contract by the collector, so on its
+ * own it proves nothing about where a run executed. This compares the
+ * observed machine against the declared profile, so a run measured on a
+ * developer workstation cannot be adopted as the baseline.
+ *
+ * Fails closed: an unreadable or absent observation is an error, not a pass.
+ * Node reports host CPU/memory unless the container limits are cgroup-visible
+ * to it, so a constrained run that reports host figures fails here by design —
+ * the fix is to make the limits visible, not to loosen the check.
+ */
+export function environmentProfileErrors(contract, observed) {
+  if (!observed || typeof observed !== "object") return ["run must record environmentProfile (regenerate it with scripts/performance-collect.mjs)."];
+
+  const errors = [];
+  const declared = contract.resourceProfile;
+  const declaredCpus = Number.parseInt(String(declared.cpu), 10);
+
+  if (/ubuntu|linux/i.test(declared.os) && observed.platform !== "linux") errors.push(`environmentProfile.platform is ${observed.platform}; the profile declares ${declared.os}.`);
+  if (Number.isFinite(declaredCpus) && observed.cpus !== declaredCpus) errors.push(`environmentProfile.cpus is ${observed.cpus}; the profile declares ${declaredCpus}.`);
+  if (Math.abs(Number(observed.memoryGiB) - Number(declared.memoryGiB)) > 1) errors.push(`environmentProfile.memoryGiB is ${observed.memoryGiB}; the profile declares ${declared.memoryGiB}.`);
+
+  return errors;
+}
+
 export function evaluatePerformanceRun(contract, run) {
   const errors = validatePerformanceContract(contract);
   const violations = [];
   if (!run || run.contractVersion !== contract.contractVersion) errors.push("run contractVersion must match the baseline contract.");
   if (!contract.measurement.environments.includes(run?.environment)) errors.push("run environment is not declared by the contract.");
   if (run?.resourceProfileId !== contract.resourceProfile.id) errors.push("run resourceProfileId must match the baseline resource profile.");
+  errors.push(...environmentProfileErrors(contract, run?.environmentProfile));
   const measurements = run?.measurements || {};
   const metricBudgets = {
     lcpP75Ms: contract.budgets.frontend.lcpP75Ms,
