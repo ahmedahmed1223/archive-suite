@@ -9,6 +9,20 @@
 
 ## إغلاق حواجز الإصدار — 2026-08-02
 
+- **V1-307B/C/D أداء الأساس (baseline):** أُغلق. حاصد
+  `e2e/performance-baseline.authed.spec.ts` (LCP/CLS/INP + P95 بحث/فتح
+  سجل/بدء رفع، 20 عيّنة لكل مقياس) شُغِّل فعليًا على `rc-baseline-linux-x64`
+  عبر حاوية `mcr.microsoft.com/playwright:v1.61.1-noble` مقيّدة بـ
+  `--cpus=4 --memory=8g`، مقابل بيانات V1-307A الكاملة (100,000 سجل، 10,000
+  ملف، 1 GiB). بوابة `scripts/performance-regression.mjs` تحقّقت من مطابقة
+  البيئة المرصودة فعليًا (`environmentProfile` عبر cgroup، لا `os.cpus()`
+  التي تُبلّغ المضيف داخل أي حاوية) للملف المعلن، لا من ادّعاء مجرّد. جميع
+  المقاييس ضمن الميزانية بهامش واسع (أعلى قيمة: LCP 576ms مقابل ميزانية
+  2500ms). حزمة الأدلة الخمس كاملة في
+  [`docs/evidence/v1-307/`](docs/evidence/v1-307/). تفاصيل الإصلاحات
+  (ثغرة الادّعاء الصامت، رفض CORS، فشل مموَّه بـ`pipefail`) في
+  [`docs/performance/README.md`](docs/performance/README.md).
+
 - **V1-303D الوصولية:** أُغلق. أضيف `e2e/screen-reader-sample.authed.spec.ts`
   يلتقط لكل مسار يومي شجرة الوصولية لـ `#main-content` وترتيب النطق الكامل عند
   Tab، ويفشل إذا وُجد عنصر قابل للتركيز بلا اسم منطوق — وهو العيب الذي تكشفه

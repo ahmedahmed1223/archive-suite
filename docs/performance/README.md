@@ -22,7 +22,45 @@ node scripts/performance-regression.mjs docs/performance/runs/run.docker.json
 يولّد الحاصد 20 عيّنة لكل مقياس (5 مسارات × 4 مرات، بدورة على العروض
 375/768/1280) و20 عيّنة لكل عملية API.
 
-## ما يبقى مفتوحًا في V1-307B/C/D
+## الإغلاق — 2026-08-02
+
+تشغيل كامل على ملف الموارد المعلن فعليًا، عبر حاوية `mcr.microsoft.com/playwright:v1.61.1-noble`
+مقيّدة بـ`--cpus=4 --memory=8g`. البوابة نفسها تحقّقت من ملف البيئة المرصود عبر cgroup:
+`{"platform":"linux","cpus":4,"memoryGiB":8,"constrained":true}` — مطابق تمامًا لـ`rc-baseline-linux-x64`.
+
+**مشكلتان حقيقيتان ظهرتا وحُلّتا أثناء هذا التشغيل، لا وُجّهتا حولهما:**
+
+1. **Origin مرفوض (403):** صفحة المتصفح داخل الحاوية أرسلت
+   `Origin: http://host.docker.internal:3000`، وفاحص CORS في
+   `AuthController::rejectDisallowedOrigin` يسمح فقط بـ`127.0.0.1`/`localhost`.
+   الحل: وكيل TCP محلي *داخل الحاوية الاستهلاكية* على `127.0.0.1:3000` يمرّر
+   إلى `host.docker.internal:3000` — فيصبح Origin الفعلي مسموحًا به افتراضيًا
+   دون أي تعديل على إعدادات أمان الخادم.
+2. **ملف بيانات ناقص:** نُسي `docs/acceptance/datasets/v1-307a.manifest.json`
+   عند نسخ المستودع داخل الحاوية، فرفضت `validatePerformanceContract` التشغيل.
+
+**درس مُسجَّل:** تشغيل سابق فشل صامتًا بسبب `cmd | tail -8` يُخفي حالة خروج
+الأمر الفعلي عن `set -e` — البوابة قبلت وقتها بيانات Playwright *قديمة* من
+تشغيل ويندوز سابق، موسومة زورًا كـ`linux/4/8/constrained`. اكتُشف يدويًا
+بمقارنة القيم بملف قديم على القرص، لا بالبوابة نفسها. أُصلح بإضافة `pipefail`
+وحذف الأدلة الملوّثة فورًا.
+
+حزمة الأدلة الكاملة في [`docs/evidence/v1-307/`](../evidence/v1-307/):
+`run.docker.json`، `resource-profile.json`، `source-commit.txt`،
+`image-digests.json`، `attachment-checksums.json`، `dataset-manifest.json`.
+
+القياسات النهائية (كلها ضمن الميزانية بهامش واسع):
+
+| المقياس | P75/P95 المقاس | الميزانية |
+| --- | ---: | ---: |
+| lcpP75Ms | 472 | 2500 |
+| clsP75 | ~0.037 | 0.1 |
+| inpP75Ms | 72 | 200 |
+| searchP95Ms | 75 | 1500 |
+| recordOpenP95Ms | 78.8 | 1000 |
+| uploadSessionStartP95Ms | 82.5 | 2000 |
+
+## ما كان مفتوحًا في V1-307B/C/D
 
 **التشغيل على ملف الموارد المعلن.** العقد يعرّف
 `rc-baseline-linux-x64` (Ubuntu 24.04، 4 vCPU، 8 GiB). تشغيل 2026-08-02 جرى

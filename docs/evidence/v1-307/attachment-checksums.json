@@ -1,0 +1,15 @@
+{
+  "store": "benchmark-synthetic",
+  "seed": 42,
+  "totalFiles": 10000,
+  "totalBytes": 1073741824,
+  "sampleSource": "record_attachments WHERE disk = 'local' ORDER BY path LIMIT 5",
+  "sample": [
+    { "path": "benchmark-synthetic/42/file-000000.bin", "sizeBytes": 116294, "checksumSha256": "93016d5b1d4d18cf1052621702e8815be8064196585226d669ca5d9b2dd03481" },
+    { "path": "benchmark-synthetic/42/file-000001.bin", "sizeBytes": 14563, "checksumSha256": "56fb5a74d8cd1f7ea257e59082418a2ab438089879b913fe834e68162b00b410" },
+    { "path": "benchmark-synthetic/42/file-000002.bin", "sizeBytes": 187827, "checksumSha256": "60840f1ea19f302f08be7275f610d2d56fded0ef9e73e1b2f13199f47a12e160" },
+    { "path": "benchmark-synthetic/42/file-000003.bin", "sizeBytes": 88880, "checksumSha256": "4aa22f0c24f79c30029da5c9a8b3caeff56c01808b1cb815aa3084feed20fa5c" },
+    { "path": "benchmark-synthetic/42/file-000004.bin", "sizeBytes": 5782, "checksumSha256": "c2623efe62baa697f30deb7376b78779950f25b4513495277fae524ec8df0bb6" }
+  ],
+  "note": "Checksums are recorded per-file at generation time by GenerateBenchmarkDatasetCommand into record_attachments.checksum_sha256. This is a 5-file sample of 10,000, not a full manifest — sufficient to prove the checksums exist and are per-file, not a placeholder."
+}
