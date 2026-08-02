@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -10,11 +11,38 @@ import { ROOT, loadPerformanceContract } from "./performance-contract.mjs";
  * counterpart, every run silently claims the declared baseline profile
  * regardless of where it ran. performance-regression.mjs compares the two.
  */
+function readCgroupLimits() {
+  // os.cpus() and os.totalmem() read /proc, which reports the HOST inside a
+  // container — a `--cpus=4 --memory=8g` container would otherwise look like
+  // the 28-thread host it runs on. cgroup v2 is where the real limits live.
+  const read = (file) => { try { return readFileSync(file, "utf8").trim(); } catch { return null; } };
+  const toGiB = (bytes) => Math.round((Number(bytes) / 1024 ** 3) * 10) / 10;
+
+  // cgroup v2 first, then v1 — Docker Desktop on WSL2 still exposes v1.
+  const v2 = read("/sys/fs/cgroup/cpu.max");
+  if (v2 && v2 !== "max") {
+    const [quota, period] = v2.split(/\s+/);
+    const memory = read("/sys/fs/cgroup/memory.max");
+    return { cpus: Math.round(Number(quota) / Number(period)), memoryGiB: memory && memory !== "max" ? toGiB(memory) : null };
+  }
+
+  const quotaV1 = Number(read("/sys/fs/cgroup/cpu/cpu.cfs_quota_us"));
+  const periodV1 = Number(read("/sys/fs/cgroup/cpu/cpu.cfs_period_us"));
+  const memoryV1 = Number(read("/sys/fs/cgroup/memory/memory.limit_in_bytes"));
+  if (!Number.isFinite(quotaV1) || quotaV1 <= 0 || !periodV1) return { cpus: null, memoryGiB: null };
+
+  // v1 writes an "unlimited" memory limit as a huge sentinel, not a flag.
+  const unlimited = memoryV1 >= Number.MAX_SAFE_INTEGER || memoryV1 > 1024 ** 5;
+  return { cpus: Math.round(quotaV1 / periodV1), memoryGiB: unlimited ? null : toGiB(memoryV1) };
+}
+
 export function observeEnvironmentProfile() {
+  const limits = readCgroupLimits();
   return {
     platform: os.platform(),
-    cpus: os.cpus().length,
-    memoryGiB: Math.round((os.totalmem() / 1024 ** 3) * 10) / 10
+    cpus: limits.cpus ?? os.cpus().length,
+    memoryGiB: limits.memoryGiB ?? Math.round((os.totalmem() / 1024 ** 3) * 10) / 10,
+    constrained: limits.cpus !== null
   };
 }
 

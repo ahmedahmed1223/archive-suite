@@ -45,9 +45,27 @@ node scripts/performance-regression.mjs docs/performance/runs/run.docker.json
 البوابة صراحةً بثلاثة أسباب: `win32` بدل Ubuntu، و28 معالجًا بدل 4، و31.7 GiB
 بدل 8.
 
+**ملف الموارد صار قابلًا للتحقق.** `os.cpus()` يقرأ `/proc` أي يبلّغ المضيف
+حتى داخل حاوية مقيّدة، فلا حاوية كانت تستطيع تحقيق العقد. صار المجمّع يقرأ
+حدود cgroup الفعلية (v2 ثم v1 — Docker Desktop على WSL2 ما زال v1)، وتحقّق
+عمليًا:
+
+```bash
+docker run --rm --cpus=4 --memory=8g -v <redacted-local-path>/Arch_App:/work -w /work node:24-slim \
+  node -e "import('./scripts/performance-collect.mjs').then(m=>console.log(JSON.stringify(m.observeEnvironmentProfile())))"
+# {"platform":"linux","cpus":4,"memoryGiB":8,"constrained":true}
+```
+
+هذه القيم تطابق `rc-baseline-linux-x64` تمامًا، فالتشغيل داخل حاوية بهذه
+الحدود ينسب دليله بحق.
+
 **الخطوات المتبقية للإغلاق:**
 
-1. تشغيل المكدس والمتصفح داخل بيئة مقيّدة بـ4 vCPU و8 GiB على Ubuntu 24.04.
+1. تشغيل الحاصد نفسه داخل تلك الحاوية: صورة
+   `mcr.microsoft.com/playwright:v1.61.1-noble` (Ubuntu 24.04) بالحدود ذاتها،
+   مع `pnpm install` داخلها — لا يمكن إعادة استخدام `node_modules` المبنية على
+   Windows. ثم تشغيل `performance-collect` من داخل الحاوية نفسها ليُسجَّل
+   ملف البيئة الصحيح.
 2. حفظ حزمة الأدلة التي يشترطها `docs/acceptance/datasets/v1-307a.manifest.json`:
    `dataset-manifest.json`، `resource-profile.json`، `source-commit.txt`،
    `image-digests.json`، `attachment-checksums.json`.
