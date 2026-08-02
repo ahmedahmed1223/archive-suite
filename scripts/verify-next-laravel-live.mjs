@@ -190,6 +190,7 @@ async function main() {
       "e2e/auth-fixtures.authed.spec.ts",
       "e2e/onboarding-progress.authed.spec.ts",
       "e2e/scheduled-uploads.authed.spec.ts",
+      "e2e/screen-reader-sample.authed.spec.ts",
     ];
   const e2eCommand = pnpmInvocation([
     "--filter",

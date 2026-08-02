@@ -1,0 +1,713 @@
+# /archive/[id] — viewer
+
+URL: `/archive/e2e-viewer-record-1`
+
+## ترتيب النطق عند Tab
+
+| # | العنصر | الدور | الاسم المنطوق |
+| - | ------ | ----- | ------------- |
+| 1 | `a` | a | الانتقال إلى المحتوى الرئيسي |
+| 2 | `a` | a | مسار - الرئيسية |
+| 3 | `a` | a | إضافة مادة |
+| 4 | `button` | button | العناصر الأخيرة والمفضّلة |
+| 5 | `button` | button | فتح الإشعارات |
+| 6 | `button` | button | تسجيل الخروج |
+| 7 | `button` | button | التبديل إلى تباعد مضغوط |
+| 8 | `button` | button | تفعيل وضع التركيز |
+| 9 | `button` | button | فتح لوحة الأوامر |
+| 10 | `button` | button | التبديل إلى الوضع الفاتح |
+| 11 | `button` | button | فتح كل المجموعات |
+| 12 | `button` | button | طي كل المجموعات |
+| 13 | `summary` | summary | الإدخال |
+| 14 | `summary` | summary | المكتبة |
+| 15 | `a` | a | اللوحة |
+| 16 | `a` | a | يومي |
+| 17 | `a` | a | الأرشيف |
+| 18 | `a` | a | البحث |
+| 19 | `a` | a | الاكتشاف |
+| 20 | `a` | a | المفضلة |
+| 21 | `a` | a | قوائم القراءة |
+| 22 | `a` | a | الخط الزمني |
+| 23 | `a` | a | العلاقات |
+| 24 | `a` | a | الخريطة |
+| 25 | `a` | a | الملفات |
+| 26 | `summary` | summary | التنظيم |
+| 27 | `summary` | summary | المشاركة |
+| 28 | `summary` | summary | المؤشرات |
+| 29 | `summary` | summary | النظام |
+| 30 | `button` | button | تمرير القائمة لأسفل |
+| 31 | `a` | a | الرئيسية |
+| 32 | `a` | a | الأرشيف |
+| 33 | `button` | button | بحث، فتح صفحة، أو تنفيذ أمر...Ctrl / Cmd + K |
+| 34 | `a` | a | إضافة |
+| 35 | `a` | a | النشاط |
+| 36 | `a` | a | الصحة |
+| 37 | `button` | button | التنبيهات |
+| 38 | `a` | a | فتح الجولة |
+| 39 | `button` | button | إخفاء التذكير |
+| 40 | `a` | a | العودة إلى الأرشيف |
+
+## شجرة الوصولية (#main-content)
+
+```yaml
+- main:
+  - strong: E2E Viewer
+  - text: مساحة العمل المكتبة
+  - strong: الأرشيف
+  - button "بحث، فتح صفحة، أو تنفيذ أمر... Ctrl / Cmd + K"
+  - navigation "أوامر سريعة":
+    - link "إضافة":
+      - /url: /uploads
+    - link "النشاط":
+      - /url: /activity
+    - link "الصحة":
+      - /url: /status
+  - button "التنبيهات"
+  - region "مسار أول تشغيل":
+    - strong: هل هذا أول تشغيل؟
+    - paragraph: راجع مسار التهيئة السريع أو المتقدم قبل بدء العمل اليومي.
+    - link "فتح الجولة":
+      - /url: /first-run
+    - button "إخفاء التذكير"
+  - text: تفاصيل السجل
+  - heading "سجل viewer المعزول" [level=1]
+  - paragraph: بيانات معزولة للدور viewer (V1-303B).
+  - link "العودة إلى الأرشيف":
+    - /url: /archive
+  - link "اسأل المساعد عن هذا السجل":
+    - /url: /copilot?recordId=e2e-viewer-record-1
+  - button "إضافة إلى المفضلة"
+  - button "أضف إلى السلة"
+  - button "أضف إلى الطابور"
+  - button "لاحقًا"
+  - button "استخراج النص (OCR)" [disabled]
+  - text: archive document ٢‏/٨‏/٢٠٢٦
+  - complementary "الموجودون في السجل الآن":
+    - strong: 1 يشاهدون الآن
+    - text: EV · E2E Viewer
+  - paragraph: "تعذّر تفعيل استخراج النص: لا يحتوي هذا السجل على مسار ملف قابل للاستخدام في metadata."
+  - article "جاهزية المادة":
+    - heading "جاهزية المادة" [level=2]
+    - paragraph: حالة مشتقة من بيانات السجل الحالية، ولا تمنع الحفظ أو تفرض دورة اعتماد.
+    - paragraph: لم تُرسل للمراجعة بعد.
+    - text: مسودة 4 من 6
+    - list:
+      - listitem: ملف المصدر
+      - listitem: العنوان
+      - listitem: الوصف
+      - listitem: الوسوم
+      - listitem: الحقوق
+      - listitem: المراجعة
+    - paragraph: "الإجراء التالي: أضف مسار ملف صالح في البيانات الوصفية ليمكن تشغيله واستخراج نصه."
+  - article:
+    - heading "معلومات السجل" [level=2]
+    - strong: المعرّف
+    - text: e2e-viewer-record-1
+    - strong: UID
+    - text: e2e-viewer-record-1
+    - strong: المخزن
+    - text: archive
+    - strong: النوع
+    - text: document
+    - strong: الإنشاء
+    - time: ٢‏/٨‏/٢٠٢٦
+    - strong: آخر تحديث
+    - time: ٢‏/٨‏/٢٠٢٦
+    - strong: الوسوم
+    - text: e2e-viewer
+  - article:
+    - heading "مساعد الذكاء الاصطناعي" [level=2]
+    - paragraph: تلخيص ووسوم وكيانات وتدقيق أولي من النص. لا تُطبَّق أي نتيجة تلقائياً.
+    - text: مراجعة بشرية إلزامية
+    - paragraph: يتطلب إنشاء المسودة صلاحية تحرير السجلات.
+  - article:
+    - heading "ملاحظاتي" [level=2]
+    - paragraph: ملاحظات خاصة بالسجل، عامة أو مرتبطة بزمن داخل المادة.
+    - text: 0 ملاحظات ملاحظة جديدة
+    - textbox "ملاحظة جديدة":
+      - /placeholder: اكتب ملاحظة شخصية عن هذا السجل... استخدم @ للإشارة لزميل
+    - text: توقيت اختياري بالثواني
+    - textbox "توقيت اختياري بالثواني":
+      - /placeholder: "مثال: 83"
+    - button "إضافة ملاحظة" [disabled]
+    - strong: لا توجد ملاحظات بعد
+    - paragraph: أضف ملاحظة عامة أو اربطها بزمن داخل المادة لاستخدامها لاحقاً في المراجعة.
+  - article:
+    - heading "تعليقات الفريق" [level=2]
+    - paragraph: تعليقات مرئية للفريق حول هذا السجل، موثقة في سجل التدقيق.
+    - text: 0 تعليقات تعليق جديد
+    - textbox "تعليق جديد":
+      - /placeholder: اكتب تعليقاً يراه بقية أعضاء الفريق... استخدم @ للإشارة لزميل
+    - button "نشر التعليق" [disabled]
+    - strong: لا توجد تعليقات بعد
+    - paragraph: أضف أول تعليق فريق حول هذا السجل.
+  - article:
+    - heading "طلبات استكمال البيانات" [level=2]
+    - paragraph: إسناد عنصر ناقص إلى زميل أو مالك الحقل مع موعد متابعة اختياري.
+    - text: 0 مفتوحة
+    - strong: لا توجد طلبات استكمال
+    - paragraph: أنشئ طلباً عندما تحتاج بيانات من عضو آخر قبل اعتماد المادة.
+  - article:
+    - heading "حقوق الاستخدام" [level=2]
+    - strong: صاحب الحقوق
+    - text: E2E Viewer Holder
+    - strong: الترخيص
+    - text: OWNED
+    - strong: ينتهي في
+    - time: ١٦‏/٨‏/٢٠٢٦
+    - strong: ملاحظات
+    - paragraph: V1-303B viewer fixture.
+  - article:
+    - heading "العلاقات" [level=2]
+    - paragraph: روابط يدوية ومستنتجة حول هذا السجل.
+    - text: 0 صلات
+    - strong: لا توجد علاقات ظاهرة لهذا السجل
+    - paragraph: افتح خريطة العلاقات لإنشاء علاقة يدوية أو تحسين الوسوم حتى تظهر الروابط المستنتجة.
+    - link "فتح خريطة العلاقات":
+      - /url: /graph?recordId=e2e-viewer-record-1
+  - article "الموقع الجغرافي":
+    - heading "الموقع الجغرافي" [level=2]
+    - paragraph: إحداثيات GPS وربط السجل مكانياً بسجلات قريبة.
+    - strong: لا يوجد موقع جغرافي مسجل
+    - paragraph: أضف إحداثيات لهذا السجل لعرضه على الخريطة وربطه بسجلات قريبة.
+    - button "إضافة موقع"
+  - article:
+    - heading "المرفقات" [level=2]
+    - paragraph: ملفات متعددة مرتبطة بهذا السجل الوصفي.
+    - text: "0"
+    - paragraph: لا توجد ملفات بعد؛ السجل صالح كسجل وصفي مستقل.
+    - text: إضافة مرفقات
+  - region "استبدال ملف المصدر":
+    - heading "استبدال ملف المصدر" [level=2]
+    - paragraph: يحفظ المصدر السابق ويُبقي هوية المادة وتعليقاتها وحقوقها وروابطها كما هي.
+    - paragraph: تحتاج صلاحية التحرير لاستبدال المصدر.
+  - region "معاينة أثر الحذف":
+    - heading "معاينة أثر الحذف" [level=2]
+    - paragraph: لا تنفذ هذه المعاينة أي تغيير.
+  - article "شجرة المشتقات":
+    - heading "شجرة المشتقات" [level=2]
+    - paragraph: تتبع التحويلات ومخرجاتها من المادة الأصلية إلى أي مشتق لاحق.
+    - text: 0 مخرج
+    - list "شجرة مشتقات الوسائط":
+      - listitem:
+        - strong: المادة الأصلية
+        - code: e2e-viewer-record-1
+      - listitem:
+        - list "تحويلات المادة الأصلية":
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٣:٤٠:٠٣ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٠٠:٣٨ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٢٧:٥٣ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٣٣:٥٠ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٣٤:١٣ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٤٠:٥٩ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٤١:١٢ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٤٤:٤١ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٤٥:٢٤ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٥١:٥١ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٥٢:٤١ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٤:٥٢:٥٥ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٥:٠٠:٢٠ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٥:٠٠:٣٣ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٥:٠٤:٠٩ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٥:٠٤:٣٠ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٥:٠٦:٤٧ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ١‏/٨‏/٢٠٢٦، ٥:٠٧:١٠ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل فشل
+              - time: أضيفت ٢‏/٨‏/٢٠٢٦، ٥:٠٨:٠١ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل قيد المعالجة
+              - time: أضيفت ٢‏/٨‏/٢٠٢٦، ٥:١٠:١٥ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل قيد المعالجة
+              - time: أضيفت ٢‏/٨‏/٢٠٢٦، ٥:١٠:٥٥ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+          - listitem:
+            - group:
+              - strong: صورة مصغرة
+              - text: لا يوجد مسار مصدر مسجل قيد المعالجة
+              - time: أضيفت ٢‏/٨‏/٢٠٢٦، ٥:١١:٥١ م
+              - paragraph: "فشلت المعالجة: Invalid sourcePath: must be a relative path without traversal."
+              - paragraph: لا توجد مخرجات محفوظة لهذه المهمة حتى الآن.
+  - article:
+    - heading "سجل التغييرات" [level=2]
+    - paragraph: تاريخ التغييرات المدعوم بسجل التدقيق لهذا السجل.
+    - text: 50 أحداث
+    - list:
+      - listitem:
+        - text: media.workflow.queue success ٢‏/٨‏/٢٠٢٦، ٢:١١:٥١ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ٢‏/٨‏/٢٠٢٦، ٢:١١:٥١ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ٢‏/٨‏/٢٠٢٦، ٢:١١:٥١ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ٢‏/٨‏/٢٠٢٦، ٢:١٠:٥٥ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ٢‏/٨‏/٢٠٢٦، ٢:١٠:٥٥ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ٢‏/٨‏/٢٠٢٦، ٢:١٠:٥٥ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ٢‏/٨‏/٢٠٢٦، ٢:١٠:١٥ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ٢‏/٨‏/٢٠٢٦، ٢:١٠:١٥ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ٢‏/٨‏/٢٠٢٦، ٢:١٠:١٥ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ٢‏/٨‏/٢٠٢٦، ٢:٠٨:٠١ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ٢‏/٨‏/٢٠٢٦، ٢:٠٨:٠١ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ٢‏/٨‏/٢٠٢٦، ٢:٠٨:٠١ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ٢:٠٧:١٠ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ٢:٠٧:١٠ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ٢:٠٧:١٠ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ٢:٠٦:٤٧ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ٢:٠٦:٤٧ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ٢:٠٦:٤٧ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ٢:٠٤:٣٠ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ٢:٠٤:٣٠ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ٢:٠٤:٣٠ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ٢:٠٤:٠٩ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ٢:٠٤:٠٩ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ٢:٠٤:٠٩ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ٢:٠٠:٣٣ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ٢:٠٠:٣٣ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ٢:٠٠:٣٣ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ٢:٠٠:٢٠ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ٢:٠٠:٢٠ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ٢:٠٠:٢٠ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ١:٥٢:٥٥ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ١:٥٢:٥٥ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ١:٥٢:٥٥ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ١:٥٢:٤١ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ١:٥٢:٤١ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ١:٥٢:٤١ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ١:٥١:٥١ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ١:٥١:٥١ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ١:٥١:٥١ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ١:٤٥:٢٤ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ١:٤٥:٢٤ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ١:٤٥:٢٣ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ١:٤٤:٤١ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ١:٤٤:٤٠ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ١:٤٤:٤٠ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ١:٤١:١٢ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ١:٤١:١٢ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: records.bulk_upsert success ١‏/٨‏/٢٠٢٦، ١:٤١:١٢ م
+        - strong: قابل للمراجعة من payload
+        - paragraph: يمكن مراجعة payload المنقح أدناه قبل قرار إعادة تطبيقه أو عكسه يدوياً.
+        - strong: حقول التغيير
+        - text: store records.0.uid records.0.id records.0.title records.0.description records.0.type records.0.tags.0
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: media.workflow.queue success ١‏/٨‏/٢٠٢٦، ١:٤٠:٥٩ م
+        - strong: لا يوجد إجراء استعادة آلي
+        - paragraph: هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.
+        - strong: حقول التغيير
+        - text: recordId operation
+        - group: عرض payload منقح للمراجعة
+      - listitem:
+        - text: تحديث الحقوق success ١‏/٨‏/٢٠٢٦، ١:٤٠:٥٩ م
+        - strong: راجع diff قبل الاستعادة
+        - paragraph: التغيير موثق كطلب منقح. لا تنفذ استعادة إلا بعد مطابقة السجل الحالي.
+        - strong: حقول التغيير
+        - text: itemId rightsHolder licenseType expiresAt notes
+        - group: عرض payload منقح للمراجعة
+  - article "بيانات البث MOS/MXF":
+    - heading "بيانات البث (MOS/MXF)" [level=2]
+    - paragraph: معرّفات MOS ومعلومات حزمة MXF المرتبطة بهذه المادة.
+    - text: يتطلب إعداد
+    - status:
+      - strong: لا يوجد تكامل بث مُهيّأ
+      - text: حدد MOS_ENDPOINT أو MXF_ENDPOINT في إعدادات الخادم لتفعيل بيانات البث لهذا السجل.
+```
