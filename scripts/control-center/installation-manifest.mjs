@@ -75,7 +75,12 @@ function normalizeReleaseEnvironment(value) {
   const normalized = {};
   for (const [key, raw] of Object.entries(value)) {
     if (!RELEASE_ENVIRONMENT_KEY.test(key)) fail("releaseEnvironment contains an unsupported or sensitive key.");
-    const item = requireString(raw, `releaseEnvironment.${key}`);
+    // ARCHIVE_COMPOSE_PROFILES joins the selected non-core profiles and is
+    // legitimately "" for a core-only install (no media/edge add-ons) — that
+    // is a normal, supported configuration, not missing data.
+    const item = key === "ARCHIVE_COMPOSE_PROFILES" && raw === ""
+      ? raw
+      : requireString(raw, `releaseEnvironment.${key}`);
     const isImage = key.startsWith("ARCHIVE_RELEASE_IMAGE_");
     if (CREDENTIAL_URL.test(item) || SECRET_VALUE.test(item) || (isImage && !IMAGE_REFERENCE.test(item))) fail(`releaseEnvironment.${key} contains a sensitive value or credential.`);
     normalized[key] = item;

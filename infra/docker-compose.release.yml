@@ -7,6 +7,9 @@ x-laravel-env: &laravel-env
   APP_DEBUG: "false"
   APP_KEY: ${LARAVEL_APP_KEY:?Set LARAVEL_APP_KEY in .env}
   APP_URL: ${LARAVEL_APP_URL:-http://localhost}
+  ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+  ADMIN_NAME: ${ADMIN_NAME:-Archive Admin}
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
   DB_CONNECTION: pgsql
   DB_HOST: postgres
   DB_PORT: "5432"
@@ -25,7 +28,7 @@ services:
     image: ${ARCHIVE_RELEASE_IMAGE_POSTGRES:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
     environment: { POSTGRES_USER: "${POSTGRES_USER:-archive}", POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}", POSTGRES_DB: "${POSTGRES_DB:-archive}" }
-    volumes: [postgres_data:/var/lib/postgresql/data]
+    volumes: [postgres_data:/var/lib/postgresql]
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"], interval: 10s, timeout: 5s, retries: 5 }
     networks: [archive]
   redis:
