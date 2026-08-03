@@ -1,4 +1,19 @@
-# V1-210D — قبول Windows نظيف: مُغلق
+# V1-210D — قبول Windows (وضع Docker، online): مُغلق
+
+## حدود النطاق — اقرأ أولًا
+
+التحقق أدناه جرى على منصة **`windows-10-11-docker`** (حالتها `conditional` في
+`infra/platform/compatibility.v1.json`)، وهو ما سجّله المانفست فعليًا
+(`"platform": "windows-10-11-docker"`).
+
+**لا يدّعي هذا البند أي دعم لـ`windows-native`** — تلك المنصة تبقى `planned`
+في العقد، ومسار Native نفسه غير مُنفَّذ (`doctor --mode=native` يرفض التشغيل،
+راجع `docs/platform-parity.md`). الإغلاق هنا يتبع سابقة V1-211D التي أُغلقت
+عبر Docker بقرار موثَّق في 2026-07-22، وبمعيار أعلى منها (دورة إصدار موقَّع
+كاملة بدل تشغيل اختبارات فقط).
+
+عوائق قبول clean-host الخارجية الباقية مسجّلة في
+[`docs/ops/acceptance-clean-host-blockers.md`](../../ops/acceptance-clean-host-blockers.md).
 
 ## النتيجة
 
