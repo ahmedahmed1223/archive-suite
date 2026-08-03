@@ -410,7 +410,7 @@ function buildUpdateAdapter(environment = {}) {
     releaseCompose(args, { ...options, inherit: hasFlag("json") ? false : options.inherit, env: { ...environment, ...(options.env || {}) } });
   const adapter = createDockerRuntimeAdapter({ compose: composeWithEnv, health: healthProbe });
   return {
-    exec: (args) => adapter.exec(args),
+    exec: (args, options) => adapter.exec(args, options),
     start: () => adapter.start(),
     stop: () => adapter.stop(),
     pull: () => { const result = composeWithEnv(["pull"]); return { ok: (result.status ?? 1) === 0, status: result.status }; },
