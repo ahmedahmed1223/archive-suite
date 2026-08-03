@@ -30,6 +30,30 @@ isolated application container:
 node scripts/game-day.mjs --execute --allow-disk-fault GD-DISK-06
 ```
 
+## Host port collision with a running dev stack
+
+The runner strips fixed `container_name` entries so Compose can scope the
+drill, but it does **not** remap published host ports. If the canonical dev
+stack is up, `laravel-reverb` and `next` are already bound to `8080`/`3000`
+and the drill fails during `start-isolated-stack` with:
+
+```
+Bind for 0.0.0.0:8080 failed: port is already allocated
+```
+
+The evidence record still records this correctly as `not-proven` with scoped
+cleanup proved, so no false pass is produced — but the drill does not run.
+Override the published ports (both are env-driven) instead of stopping the dev
+stack:
+
+```powershell
+$env:REVERB_SERVER_PUBLISHED_PORT = "8380"; $env:NEXT_PUBLIC_PORT = "3300"
+node scripts/game-day.mjs --execute GD-DB-01
+```
+
+Verified 2026-08-03: the identical drill went from `not-proven` (port
+collision) to `executed` with every command `proved: true` after the override.
+
 ## Safety and evidence
 
 Each run uses an `archive-gameday-*` Compose project. Before an executed run,
