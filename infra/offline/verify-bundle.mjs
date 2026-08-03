@@ -1,8 +1,24 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 
-const sha256 = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+// Chunked, not readFileSync: Node caps a single buffer at 2 GiB. Image
+// archives sit at ~0.5 GiB on the core profile today, but this verifier ships
+// inside the bundle and is what an operator runs against whatever profile they
+// received — a media/OCR bundle would push a single archive past the cap and
+// fail verification with ERR_FS_FILE_TOO_LARGE instead of a checksum result.
+const sha256 = (path) => {
+  const hash = createHash("sha256");
+  const descriptor = openSync(path, "r");
+  try {
+    const buffer = Buffer.allocUnsafe(8 * 1024 * 1024);
+    let bytesRead;
+    while ((bytesRead = readSync(descriptor, buffer, 0, buffer.length, null)) > 0) hash.update(buffer.subarray(0, bytesRead));
+  } finally {
+    closeSync(descriptor);
+  }
+  return hash.digest("hex");
+};
 const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)]);
 
 export function verifyBundle(inputDir, { log = (message) => process.stdout.write(message) } = {}) {

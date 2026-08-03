@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { closeSync, cpSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { verifyBundle } from "../infra/offline/verify-bundle.mjs";
@@ -11,7 +11,22 @@ const run = (command, args, options = {}) => {
   if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} failed${result.stderr ? `: ${result.stderr.trim()}` : ""}`);
   return result.stdout?.trim();
 };
-const sha256 = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+// Hashed in chunks, not via readFileSync: Node caps a single buffer at 2 GiB
+// and a real release archive exceeds that (the core-profile bundle is ~2.4 GB),
+// so readFileSync throws ERR_FS_FILE_TOO_LARGE on the very artifact this
+// module exists to checksum.
+const sha256 = (path) => {
+  const hash = createHash("sha256");
+  const descriptor = openSync(path, "r");
+  try {
+    const buffer = Buffer.allocUnsafe(8 * 1024 * 1024);
+    let bytesRead;
+    while ((bytesRead = readSync(descriptor, buffer, 0, buffer.length, null)) > 0) hash.update(buffer.subarray(0, bytesRead));
+  } finally {
+    closeSync(descriptor);
+  }
+  return hash.digest("hex");
+};
 const files = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? files(join(dir, entry.name)) : [join(dir, entry.name)]);
 const normalizedVersion = (value) => {
   if (!/^v?[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/.test(value ?? "")) throw new Error("version must be semver, for example v1.0.0-rc.1");

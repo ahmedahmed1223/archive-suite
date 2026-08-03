@@ -1,11 +1,26 @@
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdtempSync, openSync, readFileSync, readSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = resolve(new URL("..", import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/, (m) => m.slice(1)));
-const sha256 = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+// Chunked, not readFileSync: Node caps a single buffer at 2 GiB and the
+// release archive this tool is pointed at exceeds that (~2.4 GB for the core
+// profile), so readFileSync throws ERR_FS_FILE_TOO_LARGE on the one file the
+// rehearsal must checksum.
+const sha256 = (path) => {
+  const hash = createHash("sha256");
+  const descriptor = openSync(path, "r");
+  try {
+    const buffer = Buffer.allocUnsafe(8 * 1024 * 1024);
+    let bytesRead;
+    while ((bytesRead = readSync(descriptor, buffer, 0, buffer.length, null)) > 0) hash.update(buffer.subarray(0, bytesRead));
+  } finally {
+    closeSync(descriptor);
+  }
+  return hash.digest("hex");
+};
 const NO_PULL_POLICY = "--pull never"; // The bundle's Compose policy is authoritative.
 
 function assertReleaseDownload(bundle) {

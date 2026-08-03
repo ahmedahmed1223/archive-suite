@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync, readSync } from "node:fs";
 import { join } from "node:path";
 import { verifyBundle } from "../../infra/offline/verify-bundle.mjs";
 
@@ -22,7 +22,21 @@ export class ReleaseDescriptorError extends Error {
 function fail(code, message, nextActions) { throw new ReleaseDescriptorError(code, message, nextActions); }
 function readJson(path) { try { return JSON.parse(readFileSync(path, "utf8")); } catch { fail("RELEASE_DESCRIPTOR_INVALID", "Release descriptor could not be read as valid JSON."); } }
 function envName(id) { return `ARCHIVE_RELEASE_IMAGE_${id.replaceAll("-", "_").toUpperCase()}`; }
-function checksum(path) { return createHash("sha256").update(readFileSync(path)).digest("hex"); }
+// Chunked, not readFileSync: Node caps a single buffer at 2 GiB, and this
+// verifies image archives during an offline install — a large-profile image
+// would abort the install with ERR_FS_FILE_TOO_LARGE rather than a mismatch.
+function checksum(path) {
+  const hash = createHash("sha256");
+  const descriptor = openSync(path, "r");
+  try {
+    const buffer = Buffer.allocUnsafe(8 * 1024 * 1024);
+    let bytesRead;
+    while ((bytesRead = readSync(descriptor, buffer, 0, buffer.length, null)) > 0) hash.update(buffer.subarray(0, bytesRead));
+  } finally {
+    closeSync(descriptor);
+  }
+  return hash.digest("hex");
+}
 
 export function loadReleaseDescriptor(path = DEFAULT_PATH) {
   const descriptor = readJson(path);
