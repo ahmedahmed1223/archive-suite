@@ -124,7 +124,11 @@ function verifyEvidence(dir, evidencePath) {
   const evidence = JSON.parse(readFileSync(resolve(evidencePath), "utf8"));
   const archive = join(resolve(dir, ".."), `${basename(dir)}.tar.gz`);
   if (evidence.sourceCommit !== manifest.sourceCommit || evidence.manifestSha256 !== sha256(manifestPath) || evidence.archiveSha256 !== sha256(archive)) throw new Error("stale rehearsal evidence: artifact identity mismatch");
-  if (evidence.fileCount !== 14 || evidence.fileCount !== manifest.files.length || evidence.imageCount !== 7 || evidence.imageCount !== manifest.images.length) throw new Error("stale rehearsal evidence: bundle counts mismatch");
+  // Counts are compared against the manifest only. Pinning literals here as
+  // well made this unpassable the moment the bundle gained a file: the payload
+  // is 16 files today while the literal still said 14, so the two clauses
+  // contradicted each other and no evidence record could ever satisfy both.
+  if (evidence.fileCount !== manifest.files.length || evidence.imageCount !== manifest.images.length) throw new Error("stale rehearsal evidence: bundle counts mismatch");
   if (!evidence.http || !evidence.healthy || !evidence.cleanup || Object.values(evidence.cleanupAbsence).some((value) => value !== true)) throw new Error("rehearsal evidence does not prove core HTTP health/cleanup");
   process.stdout.write(`Verified rehearsal evidence for ${evidence.sourceCommit}.\n`);
 }
@@ -139,7 +143,7 @@ function rehearsal(dir, evidencePath) {
   const manifestPath = join(dir, "manifest.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const archivePath = join(resolve(dir, ".."), `${basename(dir)}.tar.gz`);
-  const evidence = { schemaVersion: 1, project, version, sourceCommit: manifest.sourceCommit, manifestSha256: sha256(manifestPath), archiveSha256: null, fileCount: 14, imageCount: 7, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, http: false, cleanup: false, cleanupAbsence: { containers: false, volumes: false, networks: false } };
+  const evidence = { schemaVersion: 1, project, version, sourceCommit: manifest.sourceCommit, manifestSha256: sha256(manifestPath), archiveSha256: null, fileCount: manifest.files.length, imageCount: manifest.images.length, startedAt: new Date().toISOString(), pullPolicy: "never", buildDirectives: 0, loadedImages: [], healthy: false, http: false, cleanup: false, cleanupAbsence: { containers: false, volumes: false, networks: false } };
   rmSync(env, { force: true });
   try {
     run(process.execPath, [join(dir, "generate-env.mjs"), env], { env: { ...process.env, ARCHIVE_VERSION: version } });
