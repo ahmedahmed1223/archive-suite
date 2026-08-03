@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "version": "1.0.0-test1",
+  "source": "online",
+  "mode": "docker",
+  "platform": "windows-10-11-docker",
+  "runtimeProfiles": ["core"],
+  "capabilities": [],
+  "artifacts": [
+    { "id": "postgres", "digest": "sha256:12a379b47ad65289572ea0756efc11b7c241a6662833e8af7038cd3b73d647e0" },
+    { "id": "redis", "digest": "sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005" },
+    { "id": "laravel", "digest": "sha256:b81a56fd825307797eac0c3635ad3ca6b15fb66dc2448ffd711dabff9b4f8fad" },
+    { "id": "laravel-fpm", "digest": "sha256:cfbd9144796ff9545d3adb6db2314520613fef3f4f957b1496af430975a6b38c" },
+    { "id": "laravel-worker", "digest": "sha256:34eef2efdf4514ea3c35e3d4a910173d11a29bd72973790fd5003336c6c662c6" },
+    { "id": "laravel-reverb", "digest": "sha256:1ccd0215ebc84e26e33559d84f986a37f2006f6247fb84ee68341937c05a5311" },
+    { "id": "next", "digest": "sha256:ef15eccdc3fdd10a8c2a070f89ea57b46f4a967d5b6cf5026259b451d0440e10" }
+  ],
+  "services": ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"],
+  "dataPaths": { "storage": "<redacted-local-path>/v1210d-data" },
+  "releaseEnvironment": {
+    "ARCHIVE_RELEASE_PULL_POLICY": "missing",
+    "ARCHIVE_COMPOSE_PROFILES": "",
+    "ARCHIVE_RELEASE_IMAGE_POSTGRES": "pgvector/pgvector:1.0.0-test1@sha256:12a379b47ad65289572ea0756efc11b7c241a6662833e8af7038cd3b73d647e0",
+    "ARCHIVE_RELEASE_IMAGE_REDIS": "redis:1.0.0-test1@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005",
+    "ARCHIVE_RELEASE_IMAGE_LARAVEL": "ghcr.io/archive-suite/laravel:1.0.0-test1@sha256:b81a56fd825307797eac0c3635ad3ca6b15fb66dc2448ffd711dabff9b4f8fad",
+    "ARCHIVE_RELEASE_IMAGE_LARAVEL_FPM": "ghcr.io/archive-suite/laravel-fpm:1.0.0-test1@sha256:cfbd9144796ff9545d3adb6db2314520613fef3f4f957b1496af430975a6b38c",
+    "ARCHIVE_RELEASE_IMAGE_LARAVEL_WORKER": "ghcr.io/archive-suite/laravel-worker:1.0.0-test1@sha256:34eef2efdf4514ea3c35e3d4a910173d11a29bd72973790fd5003336c6c662c6",
+    "ARCHIVE_RELEASE_IMAGE_LARAVEL_REVERB": "ghcr.io/archive-suite/laravel-reverb:1.0.0-test1@sha256:1ccd0215ebc84e26e33559d84f986a37f2006f6247fb84ee68341937c05a5311",
+    "ARCHIVE_RELEASE_IMAGE_NEXT": "ghcr.io/archive-suite/next:1.0.0-test1@sha256:ef15eccdc3fdd10a8c2a070f89ea57b46f4a967d5b6cf5026259b451d0440e10"
+  },
+  "lastSuccessfulStep": "health-verified",
+  "previousVersion": "1.0.0-test2",
+  "operation": { "type": "rollback", "status": "succeeded", "failedStep": null, "nextActions": [] },
+  "note": "Captured after the full install(1.0.0-test1) -> update(1.0.0-test2) -> rollback(1.0.0-test1) cycle completed successfully. previousVersion/operation reflect the rollback step, the last operation run."
+}
