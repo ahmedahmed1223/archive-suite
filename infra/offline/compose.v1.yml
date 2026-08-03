@@ -93,6 +93,11 @@ services:
       PORT: "3000"
       HOSTNAME: 0.0.0.0
       ARCHIVE_API_BASE_URL: http://laravel:8000/api/v1
+    # Without this the bundle publishes no port at all: the stack starts and
+    # the operator has no way to reach it, and the rehearsal's HTTP probe can
+    # never pass. HTTP_PORT is what offline-bundle.mjs rehearse already sets.
+    ports:
+      - "${HTTP_PORT:-3000}:3000"
     depends_on: { laravel: { condition: service_started } }
 volumes:
   postgres_data:
