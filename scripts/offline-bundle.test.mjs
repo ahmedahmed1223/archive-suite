@@ -130,8 +130,12 @@ test("cleanup deletes rehearsal secrets and checks networks when compose down fa
 test("evidence binds source commit, manifest, final archive, exact counts, core HTTP and cleanup absence", () => {
   const script = read("scripts/offline-bundle.mjs");
   for (const field of ["sourceCommit", "manifestSha256", "archiveSha256", "fileCount", "imageCount", "containers", "volumes", "networks"]) assert.match(script, new RegExp(field));
-  assert.match(script, /fileCount:\s*14/);
-  assert.match(script, /imageCount:\s*7/);
+  // Counts must be derived, not pinned. Asserting the literals here is what
+  // kept fileCount at 14 after the payload grew to 16, which made
+  // verify-evidence unpassable — the test protected the defect.
+  assert.match(script, /fileCount:\s*manifest\.files\.length/);
+  assert.match(script, /imageCount:\s*manifest\.images\.length/);
+  assert.doesNotMatch(script, /fileCount\s*!==\s*\d/);
   assert.match(script, /evidence\.http/);
   assert.doesNotMatch(script, /evidence\.https/);
 });
