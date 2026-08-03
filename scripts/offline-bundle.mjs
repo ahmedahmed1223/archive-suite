@@ -68,7 +68,12 @@ export function build(version, output, { runCommand = run } = {}) {
   writeFileSync(join(dir, "SHA256SUMS"), checked.map((file) => `${file.sha256}  ${file.path}`).join("\n") + "\n");
   verifyBundle(dir);
   const archiveName = `${basename(dir)}.tar.gz`;
-  runCommand("tar", ["-czf", join(output, archiveName), "-C", output, basename(dir)]);
+  // GNU tar reads a leading `C:\...` as an rsync-style remote host spec and
+  // fails with "Cannot connect to C: resolve failed", so a bundle can never be
+  // archived on Windows without this. Only GNU tar understands the flag, and
+  // only Windows produces drive-letter paths, so it stays platform-scoped.
+  const localOnly = process.platform === "win32" ? ["--force-local"] : [];
+  runCommand("tar", [...localOnly, "-czf", join(output, archiveName), "-C", output, basename(dir)]);
   process.stdout.write(`${join(output, archiveName)}\n`);
 }
 

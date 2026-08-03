@@ -164,7 +164,9 @@ test("builder path writes workflow-shaped digest-only application refs into a co
     build("v1.0.0-rc.1", output, { runCommand: (command, args) => {
       if (command === "git") return "test-commit";
       if (command === "docker" && args[0] === "save") writeFileSync(args[args.indexOf("--output") + 1], `tar:${args.at(-1)}`);
-      if (command === "tar") writeFileSync(args[1], "archive");
+      // Locate the archive by its flag rather than a fixed index: build()
+      // prepends --force-local on Windows, so args[1] is not stable.
+      if (command === "tar") writeFileSync(args[args.indexOf("-czf") + 1], "archive");
       return "";
     } });
     const manifest = JSON.parse(readFileSync(join(output, "archive-suite-offline-v1.0.0-rc.1", "manifest.json"), "utf8"));
