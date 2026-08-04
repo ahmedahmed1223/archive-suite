@@ -179,4 +179,47 @@ class DropboxIngestTransportTest extends TestCase
 
         $this->transport->pull(['user' => $stranger]);
     }
+
+    /**
+     * Found by the V1-X01 live storage run: ingest disks are configured
+     * throw=false, so a failed chunk write returned false instead of raising.
+     * Progress then advanced past bytes that never landed, assembly stitched a
+     * short file, and the row was marked complete -- permanently, since a later
+     * pull() short-circuits on status=complete. A write failure must abort.
+     */
+    public function test_a_failed_chunk_write_aborts_instead_of_completing_a_truncated_file(): void
+    {
+        Http::fake([
+            'api.dropboxapi.com/2/files/list_folder' => Http::response([
+                'entries' => [
+                    ['.tag' => 'file', 'name' => 'clip.mp4', 'path_display' => '/Archive/clip.mp4', 'size' => 11],
+                ],
+                'cursor' => 'cursor-1', 'has_more' => false,
+            ]),
+            'content.dropboxapi.com/2/files/download' => Http::response('hello world'),
+        ]);
+
+        // Faithful stand-in for the pre-fix path: put() reports failure the way a
+        // throw=false disk does, and the chunk it never wrote reads back as null.
+        $failingDisk = \Mockery::mock(\Illuminate\Contracts\Filesystem\Filesystem::class);
+        $failingDisk->shouldReceive('put')->andReturnFalse();
+        $failingDisk->shouldReceive('get')->andReturnNull();
+        $failingDisk->shouldReceive('deleteDirectory')->andReturnTrue();
+        Storage::shouldReceive('disk')->andReturn($failingDisk);
+
+        // Captured rather than expectException so the completion assertion below
+        // still runs, and so PHPUnit's own failure (a RuntimeException subclass)
+        // cannot be swallowed by the catch.
+        $thrown = null;
+        try {
+            $this->transport->pull(['user' => $this->user]);
+        } catch (\RuntimeException $e) {
+            $thrown = $e;
+        }
+
+        $this->assertNotNull($thrown, 'A failed chunk write must not complete silently.');
+        $this->assertStringContainsString('Unable to write Dropbox download chunk', $thrown->getMessage());
+
+        $this->assertNotSame('complete', DB::table('dropbox_download_progress')->value('status'));
+    }
 }

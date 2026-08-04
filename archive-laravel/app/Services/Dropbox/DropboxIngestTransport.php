@@ -106,7 +106,13 @@ class DropboxIngestTransport implements IngestTransport
             $length = min($chunkBytes, $totalSize - $bytesDownloaded);
             $index = intdiv($bytesDownloaded, $chunkBytes);
             $response = $this->gateway->downloadRange($token, $path, $bytesDownloaded, $length);
-            $disk->put($chunkDir.'/'.$index, $response->body());
+            // Disks are configured throw=false, so a failed write returns false
+            // rather than raising. Advancing the offset past an unwritten chunk
+            // would persist progress for bytes that never landed, and assembly
+            // would later stitch a short file and mark it complete.
+            if (! $disk->put($chunkDir.'/'.$index, $response->body())) {
+                throw new \RuntimeException('Unable to write Dropbox download chunk to the ingest disk.');
+            }
 
             $bytesDownloaded += $length;
             DB::table('dropbox_download_progress')
@@ -131,9 +137,20 @@ class DropboxIngestTransport implements IngestTransport
         $chunkCount = $totalSize > 0 ? (int) ceil($totalSize / $chunkBytes) : 0;
         $assembled = '';
         for ($index = 0; $index < $chunkCount; $index++) {
-            $assembled .= $disk->get($chunkDir.'/'.$index);
+            // A missing chunk reads back as null here, which would append nothing
+            // and silently shorten the assembled file.
+            $chunk = $disk->get($chunkDir.'/'.$index);
+            if ($chunk === null) {
+                throw new \RuntimeException('Dropbox download chunk is missing; refusing to assemble a truncated file.');
+            }
+            $assembled .= $chunk;
         }
-        $disk->put($localKey, $assembled);
+        if (strlen($assembled) !== $totalSize) {
+            throw new \RuntimeException('Assembled Dropbox download does not match the expected size.');
+        }
+        if (! $disk->put($localKey, $assembled)) {
+            throw new \RuntimeException('Unable to write the assembled Dropbox download to the ingest disk.');
+        }
         $disk->deleteDirectory($chunkDir);
 
         DB::table('dropbox_download_progress')
