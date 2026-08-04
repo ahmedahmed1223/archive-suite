@@ -91,3 +91,8 @@ Desktop.ini
 *.stackdump
 
 docs/performance/runs/
+
+# Live-acceptance evidence is generated on the target host and must stay out of
+# source control (docs/acceptance/v1-extended-capabilities.md). The redacted
+# summary that IS committed lives in docs/evidence/<task>/.
+artifacts/

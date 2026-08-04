@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "kind": "v1-x01-live-external-storage",
+  "generatedAt": "2026-08-04T09:56:38.022Z",
+  "provider": {
+    "kind": "s3-compatible",
+    "implementation": "minio",
+    "selfHosted": true,
+    "pathStyle": true
+  },
+  "scopeLimits": [
+    "Self-hosted MinIO over the S3 protocol; not a commercial AWS S3 or Dropbox account.",
+    "Single-node provider: no cross-region, versioning, lifecycle, or provider-side IAM policy coverage.",
+    "Dropbox OAuth/webhook paths are not exercised by this run."
+  ],
+  "status": "passed",
+  "secretScan": {
+    "scanned": 5,
+    "leakedPhases": [],
+    "clean": true
+  },
+  "cleanup": {
+    "scope": "archive-x01-minio",
+    "requested": true,
+    "proved": true
+  },
+  "phases": [
+    {
+      "phase": "identity",
+      "ok": true,
+      "exitStatus": 0,
+      "payload": {
+        "phase": "identity",
+        "ok": true,
+        "driver": "s3",
+        "bucketConfigured": true,
+        "endpointConfigured": true,
+        "pathStyle": true,
+        "credentialsConfigured": true
+      },
+      "stderr": ""
+    },
+    {
+      "phase": "rwd",
+      "ok": true,
+      "exitStatus": 0,
+      "payload": {
+        "phase": "rwd",
+        "ok": true,
+        "wroteSha256": "f965324a6af61f6f7df3211208217669aa0494ff5539241dec7e1bed82cda4fa",
+        "readSha256": "f965324a6af61f6f7df3211208217669aa0494ff5539241dec7e1bed82cda4fa",
+        "existsAfterWrite": true,
+        "existsAfterDelete": false
+      },
+      "stderr": ""
+    },
+    {
+      "phase": "large",
+      "ok": true,
+      "exitStatus": 0,
+      "payload": {
+        "phase": "large",
+        "ok": true,
+        "sizeBytes": 67108864,
+        "requestedMb": 64,
+        "streamed": true,
+        "peakMemoryBytes": 50331648,
+        "sha256Match": true,
+        "uploadSeconds": 0.51
+      },
+      "stderr": ""
+    },
+    {
+      "phase": "expect-failure",
+      "ok": true,
+      "exitStatus": 0,
+      "payload": {
+        "phase": "expect-failure",
+        "ok": true,
+        "productPathThrew": true,
+        "rawDiskThrew": false,
+        "rawDiskReturned": false,
+        "note": "raw disk returns false without raising (throw=false); the product adapter converts that to an exception",
+        "error": "Unable to write storage destination stream."
+      },
+      "stderr": ""
+    },
+    {
+      "phase": "integrity",
+      "ok": true,
+      "exitStatus": 0,
+      "payload": {
+        "phase": "integrity",
+        "ok": true,
+        "partialObjectPresent": false,
+        "remainingObjects": 0
+      },
+      "stderr": ""
+    }
+  ]
+}

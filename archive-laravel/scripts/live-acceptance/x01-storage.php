@@ -40,15 +40,56 @@ function emit(array $payload): void
     echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), "\n";
 }
 
-/** 1 MiB of non-compressible-ish deterministic data; flat bytes would hide transfer bugs. */
-function makePayload(int $sizeMb): string
+/** 1 MiB of varied deterministic data; flat bytes would hide transfer bugs. */
+function megabyte(): string
 {
-    $chunk = '';
-    for ($i = 0; $i < 32768; $i++) {
-        $chunk .= hash('sha256', "v1-x01-block-{$i}", true); // 32 bytes each => 1 MiB
+    static $chunk = null;
+    if ($chunk === null) {
+        $chunk = '';
+        for ($i = 0; $i < 32768; $i++) {
+            $chunk .= hash('sha256', "v1-x01-block-{$i}", true); // 32 bytes each => 1 MiB
+        }
     }
 
-    return str_repeat($chunk, max(1, $sizeMb));
+    return $chunk;
+}
+
+/**
+ * Stage the payload on disk rather than in a string. A multi-GiB archive object
+ * must never need to fit in memory, and buffering it here would only prove the
+ * harness can hold it -- an earlier 64 MiB buffered run died on memory_limit.
+ *
+ * @return array{handle: resource, sha256: string, bytes: int}
+ */
+function stagePayload(int $sizeMb): array
+{
+    $handle = fopen('php://temp/maxmemory:1048576', 'r+');
+    $hash = hash_init('sha256');
+    $bytes = 0;
+    for ($i = 0; $i < max(1, $sizeMb); $i++) {
+        $mb = megabyte();
+        fwrite($handle, $mb);
+        hash_update($hash, $mb);
+        $bytes += strlen($mb);
+    }
+    rewind($handle);
+
+    return ['handle' => $handle, 'sha256' => hash_final($hash), 'bytes' => $bytes];
+}
+
+/** Hash a stream incrementally so verification is memory-flat too. */
+function hashStream($stream): string
+{
+    $hash = hash_init('sha256');
+    while (! feof($stream)) {
+        $buffer = fread($stream, 1048576);
+        if ($buffer === false) {
+            break;
+        }
+        hash_update($hash, $buffer);
+    }
+
+    return hash_final($hash);
 }
 
 $phase = $argv[1] ?? 'identity';
@@ -95,41 +136,75 @@ try {
 
     if ($phase === 'large') {
         $key = PREFIX.'/large.bin';
-        $body = makePayload($sizeMb);
-        $expected = hash('sha256', $body);
-        $started = microtime(true);
-        $disk->put($key, $body);
-        $uploadSeconds = microtime(true) - $started;
-        $readBack = $disk->get($key);
-        $actual = hash('sha256', (string) $readBack);
-        $size = $disk->size($key);
-        $disk->delete($key);
-        emit([
-            'phase' => 'large',
-            'ok' => $expected === $actual && $size === strlen($body),
-            'sizeBytes' => $size,
-            'requestedMb' => $sizeMb,
-            'sha256Match' => $expected === $actual,
-            'uploadSeconds' => round($uploadSeconds, 2),
-        ]);
+        $staged = stagePayload($sizeMb);
+        $adapter = new App\Services\Storage\FlysystemStorageAdapter($disk);
+        try {
+            $started = microtime(true);
+            $adapter->writeStream($key, $staged['handle']);
+            $uploadSeconds = microtime(true) - $started;
+            $readStream = $adapter->readStream($key);
+            $actual = hashStream($readStream);
+            fclose($readStream);
+            $size = $disk->size($key);
+            emit([
+                'phase' => 'large',
+                'ok' => $staged['sha256'] === $actual && $size === $staged['bytes'],
+                'sizeBytes' => $size,
+                'requestedMb' => $sizeMb,
+                'streamed' => true,
+                'peakMemoryBytes' => memory_get_peak_usage(true),
+                'sha256Match' => $staged['sha256'] === $actual,
+                'uploadSeconds' => round($uploadSeconds, 2),
+            ]);
+        } finally {
+            // Always drop the object, so a mid-phase failure cannot leave residue
+            // that the integrity phase would then misreport as a partial write.
+            $disk->delete($key);
+            if (is_resource($staged['handle'])) {
+                fclose($staged['handle']);
+            }
+        }
         exit(0);
     }
 
-    // Run while the provider is paused: a clean, loud failure is the pass condition.
+    // Run while the provider is down. Pass condition: the product path fails
+    // loudly. Also records what the raw disk does, because disks are configured
+    // throw=false and that difference is exactly where a silent truncation bug
+    // was found (DropboxIngestTransport, commit 493c026c).
     if ($phase === 'expect-failure') {
         $key = PREFIX.'/interrupted.bin';
-        $threw = false;
+        // A few MiB is plenty to prove outage handling; the size path is the
+        // large phase's job.
+        $staged = stagePayload(4);
+
+        $rawReturned = null;
+        $rawThrew = false;
+        try {
+            $rawReturned = $disk->put($key, $staged['handle']);
+        } catch (Throwable $e) {
+            $rawThrew = true;
+        }
+
+        rewind($staged['handle']);
+        $productThrew = false;
         $error = '';
         try {
-            $disk->put($key, makePayload(max(1, $sizeMb)));
+            (new App\Services\Storage\FlysystemStorageAdapter($disk))->writeStream($key, $staged['handle']);
         } catch (Throwable $e) {
-            $threw = true;
+            $productThrew = true;
             $error = redact($e->getMessage());
         }
+        if (is_resource($staged['handle'])) {
+            fclose($staged['handle']);
+        }
+
         emit([
             'phase' => 'expect-failure',
-            'ok' => $threw,
-            'threw' => $threw,
+            'ok' => $productThrew,
+            'productPathThrew' => $productThrew,
+            'rawDiskThrew' => $rawThrew,
+            'rawDiskReturned' => $rawReturned,
+            'note' => 'raw disk returns false without raising (throw=false); the product adapter converts that to an exception',
             'error' => mb_substr($error, 0, 400),
         ]);
         exit(0);
