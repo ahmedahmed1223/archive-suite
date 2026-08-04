@@ -87,6 +87,10 @@ Desktop.ini
 !.vscode/extensions.json
 !.vscode/settings.json
 
+# JetBrains IDEs (PhpStorm/WebStorm). dataSources.xml can carry a real DB
+# connection; this was untracked entirely, not filtered.
+.idea/
+
 # Git Bash crash dumps (Windows)
 *.stackdump
 
