@@ -1,6 +1,7 @@
 # Canonical Laravel + Next.js stack.
-# This is the target deployment shape after the Laravel/Next cutover. The older
-# Node/SPA/PocketBase compose files stay available as legacy variants only.
+# This is the target deployment shape after the Laravel/Next cutover. The
+# older Node/SPA/PocketBase stack (archive-app/archive-server) was removed
+# from the repo on 2026-07-12 and is recoverable from git history only.
 
 services:
   postgres:

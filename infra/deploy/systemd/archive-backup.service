@@ -1,5 +1,5 @@
 [Unit]
-Description=Daily backup for archive-server (PocketBase volume + Postgres dump)
+Description=Daily backup for Archive Suite (Laravel storage + Postgres dump)
 Requires=docker.service
 After=docker.service
 
