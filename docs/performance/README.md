@@ -89,7 +89,7 @@ node scripts/performance-regression.mjs docs/performance/runs/run.docker.json
 عمليًا:
 
 ```bash
-docker run --rm --cpus=4 --memory=8g -v <redacted-local-path>/Arch_App:/work -w /work node:24-slim \
+docker run --rm --cpus=4 --memory=8g -v "$PWD:/work" -w /work node:24-slim \
   node -e "import('./scripts/performance-collect.mjs').then(m=>console.log(JSON.stringify(m.observeEnvironmentProfile())))"
 # {"platform":"linux","cpus":4,"memoryGiB":8,"constrained":true}
 ```

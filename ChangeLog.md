@@ -3,7 +3,7 @@
 > **هذا الملف أرشيف المنجزات المعتمدة.** نُقلت إليه تفاصيل البنود المكتملة من `TASKS.md` في 17 يوليو 2026، ويبقى `TASKS.md` مخصصًا لما لم يكتمل فقط.
 > أُعيد تسميته من `TASKS.md` بعد إنجاز جميع بنوده. للموجة الجديدة (مُستخرَجة من تقارير P4) راجع [`TASKS.md`](TASKS.md).
 >
-> **المصدر الأصلي:** 9 تقارير فحص (HTML) في `<redacted-local-path>\Reports`.
+> **المصدر الأصلي:** 9 تقارير فحص (HTML) في `<مجلد-التقارير-الخارجي>`.
 > **المنهجية:** كل بند هنا تم التحقق منه مقابل الكود الفعلي وقت التنفيذ. البنود المُسقطة (مُنفّذة قبل التقرير أو غير دقيقة) موثّقة في [القسم 8 (ملحق)](#8-ملحق--بنود-أُسقطت-مُنفّذة-بالفعل-أو-غير-دقيقة-في-التقارير).
 > **آخر تحديث (كأرشيف):** 18 يوليو 2026.
 
@@ -903,7 +903,7 @@
 - بقي `scripts/control-center.mjs` نقطة الدخول العامة نفسها للأوامر والقائمة التفاعلية، لكنه أصبح shell تركيبيًا يستدعي وحدات مركزة تحت `scripts/control-center/`: `cli.mjs` لتحليل الأعلام والأمر، `configuration.mjs` لقراءة/كتابة `.env` والنسخ الاحتياطي وإخفاء الأسرار، `docker-compose.mjs` لاكتشاف Compose وتمرير الـprofiles المتحقق منها، و`operations.mjs` لعمليات الخادم والهجرات والنسخ الاحتياطية والتشخيص/التحديث.
 - أضيف `runtime-adapter.mjs` بعقد lifecycle موحد: `install`, `start`, `stop`, `restart`, `status`, `health`, `logs`, `exec`, `update`, `rollback`, `uninstall`. Docker adapter يربط العمليات المنفذة بـCompose ويحافظ على السلوك السابق؛ `update` و`rollback` و`uninstall` غير المنفذة في هذا adapter تعيد `{ ok: false, supported: false, operation, reason: "unsupported" }` بلا أمر أو سلوك وهمي. لا يوجد تنفيذ Native في هذه الشريحة.
 - حفظ التفكيك قرار V1-208A: `core` افتراضي، و`media` و`edge` اختيار صريح فقط، وcapabilities ليست Compose profiles. أضيف اختبار RED ثم GREEN للعقد والنتائج غير المدعومة، واختبار تركيبي للـentry point، مع بقاء اختبارات CLI عبر العملية الفعلية.
-- التحقق: `node --test scripts/control-center.test.mjs scripts/control-center/runtime-adapter.test.mjs` نجح 23/23؛ `node --test scripts/platform-contract.test.mjs` نجح 4/4؛ `node --check` لكل وحدات Control Center و`git diff --check` نجحا. محاولة `pnpm verify:infra` فشلت خارج الكود: Node `v24.15.0` لا يطابق `>=22.13.0 <23`، وDocker لا يستطيع قراءة `<redacted-user>\.docker\config.json` ثم يرفض `compose --env-file`. التفاصيل الكاملة في `.superpowers/sdd/v1-208b-report.md`.
+- التحقق: `node --test scripts/control-center.test.mjs scripts/control-center/runtime-adapter.test.mjs` نجح 23/23؛ `node --test scripts/platform-contract.test.mjs` نجح 4/4؛ `node --check` لكل وحدات Control Center و`git diff --check` نجحا. محاولة `pnpm verify:infra` فشلت خارج الكود: Node `v24.15.0` لا يطابق `>=22.13.0 <23`، وDocker لا يستطيع قراءة `~/.docker/config.json` ثم يرفض `compose --env-file`. التفاصيل الكاملة في `.superpowers/sdd/v1-208b-report.md`.
 - **تصحيح مراجعة لاحق:** نُقلت طبقة CLI/display الفعلية إلى `scripts/control-center/cli.mjs`: الألوان، logging، العناوين والفواصل، banner، menu، وreadline prompt/confirm/close. صار `control-center.mjs` يركب هذه الواجهة ولا ينشئ `readline` أو banner/menu محليًا؛ بقيت الواجهة العامة نفسها. وُسّع اختبار adapter من تسمية العمليات إلى سلوك كل `install/start/stop/restart/status/health/logs/exec`، مع أوامر Compose الدقيقة ونتائج فشل Compose/health، إضافة إلى العمليات غير المدعومة. التحقق المحدّث: Control Center + adapter ‏24/24 وcontract ‏4/4.
 
 ## V1-208A — توحيد عقد الخيارات — مكتمل 2026-07-14
@@ -911,7 +911,7 @@
 - فُصلت خيارات التشغيل القانونية في `infra/platform/compatibility.v1.json` وschema إلى runtime profiles هي `core` و`media` و`edge`، وcapabilities هي `ocr` و`ai` و`observability`. كل منصة تعلن المجموعتين بصورة مستقلة؛ ولا يُعامل أي capability كـDocker Compose profile.
 - صار Control Center يبدأ بـ`core` فقط. يتيح Setup اختيار `media` صراحةً لمعالجة الوسائط/OCR الاختيارية ذات العبء الأعلى، و`edge` صراحةً للوصول العام وTLS، ويحفظ الاختيار في `ARCHIVE_COMPOSE_PROFILES`. قيمة shell لهذا المتغير تعلو الإعداد المحفوظ لجلسة واحدة، بينما ترفض البوابة تمرير `ocr` أو `ai` كـprofile.
 - أُضيفت بوابة drift في `scripts/platform-contract.mjs`: تتحقق من تطابق أسماء Compose الاختيارية مع العقد ومن أن Setup يحلها من العقد، وتفشل برسالة صريحة عند إدخال capability أو اسم مخالف. دليل TDD: اختبار RED أثبت أن الافتراضي القديم كان `media,edge`، ثم صار GREEN مع `core` فقط؛ و`node --test scripts/platform-contract.test.mjs` نجح 3/3 و`node --test scripts/control-center.test.mjs` نجح 18/18.
-- محاولة `pnpm verify:infra` لم تصل إلى تحقق Compose بسبب البيئة المحلية: Node `v24.15.0` خارج العقد `>=22.13.0 <23`، وDocker لا يملك صلاحية قراءة `<redacted-user>\.docker\config.json` ولا يتعرف على `compose --env-file`. لا يُخفى ذلك كنجاح؛ تفاصيله في تقرير V1-208A.
+- محاولة `pnpm verify:infra` لم تصل إلى تحقق Compose بسبب البيئة المحلية: Node `v24.15.0` خارج العقد `>=22.13.0 <23`، وDocker لا يملك صلاحية قراءة `~/.docker/config.json` ولا يتعرف على `compose --env-file`. لا يُخفى ذلك كنجاح؛ تفاصيله في تقرير V1-208A.
 - **تصحيح مراجعة لاحق:** schema صار مغلقاً فعلياً (`additionalProperties: false`) مع مفاتيح صريحة فقط لكل من runtime profiles وcapabilities. أزيل فحص النص الهش لمسار Setup؛ بدله اختبار CLI سلوكي يشغّل `status` مع `PATH` فارغ و`ARCHIVE_COMPOSE_PROFILES=ocr` ويثبت أن capability تُرفض قبل أي اكتشاف Docker. صُحح وصف `core` كي لا ينسب Caddy إليه؛ Caddy جزء من `edge`. التحقق المحدّث: contract ‏4/4 وControl Center ‏19/19.
 
 ## إصلاح CI/إنتاج: تصادم مفاتيح throttle عبر كل المسارات المحدودة — 2026-07-14
@@ -2031,7 +2031,7 @@
 
 ## 13. مقترحات الميزات 2026 — مهام جديدة
 
-> **المصدر:** `<redacted-local-path>\Reports\archive-suite-feature-proposals-2026.md` — 27 ميزة عبر 5 محاور.
+> **المصدر:** `<مجلد-التقارير-الخارجي>\archive-suite-feature-proposals-2026.md` — 27 ميزة عبر 5 محاور.
 > **المنهجية:** البنود الـ 10 المُغطّاة بالفعل في أقسام سابقة (TagAutocomplete→#79، touch gestures→#79، PWA basic→#39، setup wizard→#73، ثغرات أمان→#74-76، مراقبة→#57، بحث→#14+#52، i18n→#58، a11y→#22+#49) لم تُضف هنا. فقط المهام الحقيقية الجديدة مدرجة.
 > **التأثير المتوقع:** رفع درجة التدقيق الشامل من 69.7 إلى 85+.
 
@@ -2238,8 +2238,8 @@
 ## 14. مقترحات تقارير 2026 — ميزات جديدة وتحسينات الاستخدام اليومي
 
 > **المصادر:**
-> - `<redacted-local-path>\Reports\archive-suite-daily-use-proposals.md` — 5 مقترحات للاستخدام اليومي
-> - `<redacted-local-path>\Reports\archive-suite-new-feature-proposals.md` — 4 مقترحات تطويرية جديدة
+> - `<مجلد-التقارير-الخارجي>\archive-suite-daily-use-proposals.md` — 5 مقترحات للاستخدام اليومي
+> - `<مجلد-التقارير-الخارجي>\archive-suite-new-feature-proposals.md` — 4 مقترحات تطويرية جديدة
 >
 > **تاريخ الإضافة:** 9 يونيو 2026.
 
@@ -4052,7 +4052,7 @@
   - ✅ شريحة 2/4 — Next.js shell أولي (2026-06-27): أُضيفت حزمة workspace `archive-next` باسم `@archive/next` مع Next.js 16، TypeScript، App Router، صفحة RTL عربية تقرأ عقد API، وسكربتات `dev:next`/`build:next`/`typecheck:next`. مرّت `pnpm run typecheck`, `pnpm run build:next`, `pnpm run verify:api-contracts`, و`pnpm run build:spa`.
   - ✅ شريحة 2b — Next.js API client أولي (2026-06-27): أُضيف `archive-next/lib/archive-api.ts` بعميل typed خفيف لـ health/me/search/rights/share مبني على عقد API، واستُخدم في الصفحة الرئيسية. مرّت `pnpm run typecheck` و`pnpm run build:next`.
   - شريحة 3 — Laravel API: إنشاء `archive-laravel` لاحقاً مع Sanctum أو session cookies، migrations مطابقة للـ Prisma schema، queues للمعالجة الثقيلة، وطبقة file storage متوافقة مع التخزين المحلي/S3.
-  - ✅ شريحة 3/4 — Laravel scaffold أولي (2026-06-27): أُنشئ `archive-laravel` عبر Composer داخل Docker بـ Laravel 13، وأُضيفت routes أولية `/api/v1/health` و`/api/v1/public/openapi.json` تقرأ العقد المشترك، مع اختبار Feature. مرّ `docker run --rm -v "<redacted-local-path>\Arch_App:/app" -w /app/archive-laravel composer:latest php artisan test` بنتيجة 4 اختبارات و21 assertion.
+  - ✅ شريحة 3/4 — Laravel scaffold أولي (2026-06-27): أُنشئ `archive-laravel` عبر Composer داخل Docker بـ Laravel 13، وأُضيفت routes أولية `/api/v1/health` و`/api/v1/public/openapi.json` تقرأ العقد المشترك، مع اختبار Feature. مرّ `docker run --rm -v "<جذر-المستودع>:/app" -w /app/archive-laravel composer:latest php artisan test` بنتيجة 4 اختبارات و21 assertion.
   - ✅ شريحة 3b — Laravel schema أساس (2026-06-27): أُضيف migration لـ `storage_rows` و`rights_records` مطابق كبداية لعقد records/rights، مع اختبار `ArchiveSchemaTest`. مرّت Laravel tests بنتيجة 5 اختبارات و37 assertion.
   - ✅ شريحة 3c — Laravel rights API (2026-06-27): أُضيفت endpoints `GET/POST /api/v1/rights`, `GET /api/v1/rights/expiring`, و`GET /api/v1/rights/{itemId}/enforcement` فوق `rights_records`، مع upsert يحافظ على معرف السجل واختبارات Feature. مرّت `php artisan test` داخل Docker بنتيجة 8 اختبارات و54 assertion، ومرّ `pnpm run typecheck` و`pnpm run verify:api-contracts`.
   - ✅ شريحة 3d — Laravel API key guard (2026-06-27): أُضيف middleware `archive.api_key` يحمي route group الحقوق عبر `X-Archive-Api-Key` أو Bearer token، مع `ARCHIVE_API_KEY` في `.env.example` واختبارات رفض الطلبات غير الموثقة/غير المضبوطة. مرّت Laravel tests بنتيجة 10 اختبارات و58 assertion، ومرّ `pnpm run typecheck` و`pnpm run verify:api-contracts`.

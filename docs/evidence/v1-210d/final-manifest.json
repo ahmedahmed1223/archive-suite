@@ -16,7 +16,7 @@
     { "id": "next", "digest": "sha256:ef15eccdc3fdd10a8c2a070f89ea57b46f4a967d5b6cf5026259b451d0440e10" }
   ],
   "services": ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"],
-  "dataPaths": { "storage": "<redacted-local-path>/v1210d-data" },
+  "dataPaths": { "storage": "<host-data-dir>" },
   "releaseEnvironment": {
     "ARCHIVE_RELEASE_PULL_POLICY": "missing",
     "ARCHIVE_COMPOSE_PROFILES": "",

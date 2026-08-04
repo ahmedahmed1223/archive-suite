@@ -100,7 +100,7 @@ systemd=false
 # RECOMMENDED WINDOWS HOST OPTIMIZATIONS (run as Administrator)
 # ============================================================================
 # 1. Disable Windows Defender real-time scanning for Docker directory:
-#    Add "<redacted-local-path>\Arch_App" to Defender exclusions
+#    Add the repository directory to Defender exclusions
 #
 # 2. Update Hyper-V network drivers:
 #    Get-NetAdapter | where Name -like "vEthernet*" | Restart-NetAdapter
