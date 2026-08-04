@@ -1,0 +1,36 @@
+# V1-X02 live ODBC acceptance image -- TEST ONLY, NOT A SHIPPED ARTIFACT.
+#
+# The shipped image (Dockerfile.worker) installs
+#   curl ftp mbstring zip pdo pdo_pgsql pcntl
+# and NOT odbc, so odbc_drivers()/odbc_connect() do not exist there and the
+# contracted /api/v1/system/odbc* routes can only ever answer
+# "driver-unavailable". This image adds the extension and a real driver so the
+# ODBC bridge logic can be exercised against a live database.
+#
+# It deliberately does not modify the production image: adding unixODBC and a
+# driver there changes image size and CVE surface, which is a release decision,
+# not a test decision. See TASKS.md V1-X02 for the tracked gap.
+FROM archive-laravel-runtime-test
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        unixodbc \
+        unixodbc-dev \
+        odbc-postgresql; \
+    # Without this, ext/odbc's config.m4 resolves to the DB2 CLI backend and the
+    # build dies on a missing /home/db2inst1/.../sqlcli1.h. Prepending an empty
+    # PHP_ALWAYS_SHARED lets --with-unixODBC select the unixODBC backend
+    # (docker-library/php#103).
+    docker-php-source extract; \
+    { echo 'AC_DEFUN([PHP_ALWAYS_SHARED],[])dnl'; echo; cat /usr/src/php/ext/odbc/config.m4; } > /tmp/odbc.m4; \
+    mv /tmp/odbc.m4 /usr/src/php/ext/odbc/config.m4; \
+    docker-php-ext-configure odbc --with-unixODBC=shared,/usr; \
+    docker-php-ext-install odbc; \
+    docker-php-source delete; \
+    apt-get purge -y unixodbc-dev; \
+    apt-get autoremove -y; \
+    rm -rf /var/lib/apt/lists/*
+
+# Debian registers the driver as "PostgreSQL Unicode" in /etc/odbcinst.ini.
+RUN php -r "exit(function_exists('odbc_connect') ? 0 : 1);"

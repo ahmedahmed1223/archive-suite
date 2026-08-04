@@ -11,28 +11,22 @@ class NativeOdbcConnectionFactory implements OdbcConnectionFactory
      */
     public function availableDrivers(): array
     {
-        if (! function_exists('odbc_drivers')) {
+        // PHP's odbc extension has never shipped an odbc_drivers() function --
+        // it exposes odbc_connect/odbc_data_source/odbc_tables and no driver
+        // enumeration at all. Gating on it left this method returning [] in
+        // every environment that has ever run, so OdbcConnectionProbe always
+        // reported driverLoaded=false / "driver-unavailable" and every
+        // contracted /api/v1/system/odbc* route was dead even with the
+        // extension, a registered psqlODBC driver and a working DSN present.
+        //
+        // The capability that actually matters is the connect function. A
+        // missing or broken driver still surfaces, as a connection error from
+        // odbc_connect(), which probe() already catches and reports.
+        if (! function_exists('odbc_connect')) {
             return [];
         }
 
-        $drivers = odbc_drivers();
-        if (! is_array($drivers)) {
-            return [];
-        }
-
-        $names = [];
-        foreach ($drivers as $key => $value) {
-            if (is_string($key) && ! is_int($key)) {
-                $names[] = $key;
-                continue;
-            }
-
-            if (is_string($value) && $value !== '') {
-                $names[] = $value;
-            }
-        }
-
-        return array_values(array_unique($names));
+        return ['odbc'];
     }
 
     public function connect(string $dsn, ?string $username, ?string $password): OdbcConnection
