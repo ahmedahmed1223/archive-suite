@@ -142,7 +142,7 @@ class BackupManifestTest extends TestCase
         // per-file manifest check, not the pre-existing whole-archive gate.
         $payload['files'][0]['contentBase64'] = base64_encode('tampered bytes');
 
-        $encoded = gzencode(json_encode($payload), 9);
+        $encoded = $this->encodeArchive($payload);
         file_put_contents($path, $encoded);
         file_put_contents($path.'.sha256', hash('sha256', $encoded));
 
@@ -164,7 +164,51 @@ class BackupManifestTest extends TestCase
     {
         $path = $this->backupDir.DIRECTORY_SEPARATOR.$name;
 
-        return json_decode((string) gzdecode((string) file_get_contents($path)), true);
+        $raw = (string) gzdecode((string) file_get_contents($path));
+
+        // Backups are line-delimited so they can be written and restored without
+        // holding the whole archive in memory. Reassemble the logical shape the
+        // assertions expect.
+        $archive = ['manifest' => [], 'tables' => [], 'files' => []];
+
+        foreach (explode("\n", trim($raw)) as $line) {
+            if (trim($line) === '') {
+                continue;
+            }
+
+            $record = json_decode($line, true);
+
+            if (isset($record['format'])) {
+                $archive['manifest'] = $record['manifest'];
+            } elseif (($record['kind'] ?? null) === 'table') {
+                $archive['tables'][$record['name']] = $record['rows'];
+            } elseif (($record['kind'] ?? null) === 'file') {
+                $archive['files'][] = $record;
+            }
+        }
+
+        return $archive;
+    }
+
+    /**
+     * Inverse of decodeArchive(), so a test can tamper with one entry and write
+     * the archive back in the format the service actually reads.
+     *
+     * @param  array{manifest: array<string, mixed>, tables: array<string, mixed>, files: array<int, array<string, mixed>>}  $archive
+     */
+    private function encodeArchive(array $archive): string
+    {
+        $lines = [json_encode(['format' => 'ndjson-v1', 'manifest' => $archive['manifest']])];
+
+        foreach ($archive['tables'] as $table => $rows) {
+            $lines[] = json_encode(['kind' => 'table', 'name' => $table, 'rows' => $rows]);
+        }
+
+        foreach ($archive['files'] as $file) {
+            $lines[] = json_encode($file + ['kind' => 'file']);
+        }
+
+        return (string) gzencode(implode("\n", $lines)."\n", 9);
     }
 
     /**

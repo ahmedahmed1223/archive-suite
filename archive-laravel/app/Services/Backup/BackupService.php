@@ -24,6 +24,9 @@ class BackupService
 
     private const INSERT_CHUNK_SIZE = 500;
 
+    /** Marker on line one of a line-delimited archive; absent in older formats. */
+    private const NDJSON_FORMAT = 'ndjson-v1';
+
     // Framework plumbing: rebuilt by migrations/queue workers, never
     // meaningful application data. Everything else the schema reports is
     // backed up automatically — adding a migration is enough, no edit here.
@@ -74,7 +77,9 @@ class BackupService
     public function run(): array
     {
         $tables = $this->dumpTables();
-        $files = $this->dumpFiles();
+        // Metadata only: hashes stream off disk, so this stays flat no matter
+        // how large the archive is. File CONTENT is never held here.
+        $fileMeta = $this->hashFiles();
 
         $manifest = [
             'createdAt' => now()->toIso8601String(),
@@ -85,41 +90,22 @@ class BackupService
                 'path' => $f['path'],
                 'sha256' => $f['sha256'],
                 'sizeBytes' => $f['sizeBytes'],
-            ], $files),
-            'totalSizeBytes' => array_sum(array_column($files, 'sizeBytes')),
-        ];
-
-        $payload = [
-            'manifest' => $manifest,
-            'tables' => $tables,
-            'files' => $files,
+            ], $fileMeta),
+            'totalSizeBytes' => array_sum(array_column($fileMeta, 'sizeBytes')),
         ];
 
         // Microsecond stamp keeps names unique without a counter file.
         $name = 'backup-'.now()->format('Y-m-d\TH-i-s-u').'.json.gz';
         $path = $this->directory().DIRECTORY_SEPARATOR.$name;
 
-        try {
-            $encoded = gzencode(json_encode($payload, JSON_THROW_ON_ERROR), 9);
-        } catch (JsonException $e) {
-            throw new BackupException('Failed to serialize backup snapshot: '.$e->getMessage(), 500);
-        }
+        // Crypt::encrypt needs the whole payload as a single string, so the
+        // encrypted path cannot stream and still buffers the archive in memory.
+        // Streaming encryption is a separate change (V1-X05 in TASKS.md); until
+        // then only the default, unencrypted path is memory-flat.
+        $checksum = (bool) config('archive.backups.encryption_enabled')
+            ? $this->writeBufferedArchive($path, $manifest, $tables)
+            : $this->writeStreamedArchive($path, $manifest, $tables, $fileMeta);
 
-        if ($encoded === false) {
-            throw new BackupException('Failed to compress backup.', 500);
-        }
-
-        // Optional encryption: wrap gzipped content
-        if ((bool) config('archive.backups.encryption_enabled')) {
-            $encoded = $this->encrypt($encoded);
-        }
-
-        if (file_put_contents($path, $encoded) === false) {
-            throw new BackupException('Failed to write backup file.', 500);
-        }
-
-        // Compute and store checksum
-        $checksum = hash('sha256', $encoded);
         file_put_contents($path.'.sha256', $checksum);
 
         return [
@@ -183,15 +169,22 @@ class BackupService
         // entry inside an otherwise-valid archive must not silently overwrite
         // the file it maps to. Legacy archives carry no file entries, so this
         // is a no-op for them.
-        foreach ($archive['files'] as $file) {
-            $content = base64_decode((string) ($file['contentBase64'] ?? ''), true);
-            $expected = (string) ($file['sha256'] ?? '');
+        // Line-delimited archives are walked twice on purpose: once to verify
+        // every entry before the database is touched, once to write. Holding all
+        // content between the two passes would recreate the memory blow-up this
+        // format exists to avoid, and verifying lazily during the write would
+        // lose the "nothing is touched unless everything checks out" guarantee.
+        $isStreamed = $this->isNdjsonArchive($path);
 
-            if ($content === false || $expected === '' || ! hash_equals($expected, hash('sha256', $content))) {
-                throw new BackupException(
-                    'Backup file entry "'.((string) ($file['path'] ?? '?')).'" failed checksum verification. Restore aborted; live data was not touched.',
-                    422
-                );
+        if ($isStreamed) {
+            foreach ($this->streamNdjsonRecords($path) as $record) {
+                if (($record['kind'] ?? null) === 'file') {
+                    $this->assertFileEntryIntact($record);
+                }
+            }
+        } else {
+            foreach ($archive['files'] as $file) {
+                $this->assertFileEntryIntact($file);
             }
         }
 
@@ -238,8 +231,16 @@ class BackupService
         // Filesystem writes aren't part of the DB transaction — the filesystem
         // isn't transactional — so they only run after the DB commit succeeds.
         // Checksums were already verified above, before the DB was touched.
-        foreach ($archive['files'] as $file) {
-            $this->writeRestoredFile($file);
+        if ($isStreamed) {
+            foreach ($this->streamNdjsonRecords($path) as $record) {
+                if (($record['kind'] ?? null) === 'file') {
+                    $this->writeRestoredFile($record);
+                }
+            }
+        } else {
+            foreach ($archive['files'] as $file) {
+                $this->writeRestoredFile($file);
+            }
         }
 
         return [
@@ -273,9 +274,15 @@ class BackupService
 
         $storedChecksum = trim((string) file_get_contents($checksumPath));
 
-        // Compute current checksum
-        $content = (string) file_get_contents($path);
-        $computedChecksum = hash('sha256', $content);
+        // hash_file streams the archive instead of loading it. Reading a
+        // multi-gigabyte backup into a string here defeated the whole point of
+        // writing it incrementally, and blew memory on the first archive large
+        // enough to matter.
+        $computedChecksum = hash_file('sha256', $path);
+
+        if ($computedChecksum === false) {
+            throw new BackupException('Failed to checksum backup file.', 500);
+        }
 
         $verified = hash_equals($storedChecksum, $computedChecksum);
 
@@ -325,6 +332,181 @@ class BackupService
      *
      * @return list<array{path: string, sha256: string, sizeBytes: int, contentBase64: string}>
      */
+    /**
+     * Pass one: walk the file root collecting metadata only. hash_file reads
+     * incrementally, so peak memory is one buffer regardless of file or archive
+     * size -- unlike dumpFiles(), which materializes every file at once.
+     *
+     * @return list<array{path: string, realPath: string, sha256: string, sizeBytes: int}>
+     */
+    private function hashFiles(): array
+    {
+        $root = (string) config('archive.file_root');
+
+        if (! is_dir($root)) {
+            return [];
+        }
+
+        $files = [];
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $fileInfo) {
+            if (! $fileInfo->isFile()) {
+                continue;
+            }
+
+            $realPath = $fileInfo->getPathname();
+            $hash = hash_file('sha256', $realPath);
+
+            if ($hash === false) {
+                throw new BackupException('Failed to hash backup source file.', 500);
+            }
+
+            $files[] = [
+                'path' => ltrim(str_replace('\\', '/', substr($realPath, strlen($root))), '/'),
+                'realPath' => $realPath,
+                'sha256' => $hash,
+                'sizeBytes' => (int) $fileInfo->getSize(),
+            ];
+        }
+
+        return $files;
+    }
+
+    /**
+     * Pass two: emit the archive straight into a gzip stream, one file at a
+     * time, so nothing larger than a single chunk is ever resident. The byte
+     * format is identical to the buffered writer, so restore/verify/preview and
+     * previously written backups are unaffected.
+     *
+     * @param  array<string, mixed>  $manifest
+     * @param  array<string, list<array<string, mixed>>>  $tables
+     * @param  list<array{path: string, realPath: string, sha256: string, sizeBytes: int}>  $fileMeta
+     */
+    private function writeStreamedArchive(string $path, array $manifest, array $tables, array $fileMeta): string
+    {
+        $handle = gzopen($path, 'wb9');
+
+        if ($handle === false) {
+            throw new BackupException('Failed to open backup file for writing.', 500);
+        }
+
+        try {
+            $write = static function (string $chunk) use ($handle): void {
+                if (gzwrite($handle, $chunk) === false) {
+                    throw new BackupException('Failed to write backup stream.', 500);
+                }
+            };
+
+            // One JSON document per line. A single-document archive can only be
+            // parsed by loading all of it, which is what made restore impossible
+            // on any real archive; line-delimited entries let the reader work
+            // one bounded record at a time.
+            $write(json_encode([
+                'format' => self::NDJSON_FORMAT,
+                'manifest' => $manifest,
+            ], JSON_THROW_ON_ERROR)."\n");
+
+            foreach ($tables as $table => $rows) {
+                $write(json_encode([
+                    'kind' => 'table',
+                    'name' => $table,
+                    'rows' => $rows,
+                ], JSON_THROW_ON_ERROR)."\n");
+            }
+
+            foreach ($fileMeta as $meta) {
+                $write('{"kind":"file","path":'.json_encode($meta['path'], JSON_THROW_ON_ERROR)
+                    .',"sha256":'.json_encode($meta['sha256'], JSON_THROW_ON_ERROR)
+                    .',"sizeBytes":'.$meta['sizeBytes']
+                    .',"contentBase64":"');
+
+                $source = fopen($meta['realPath'], 'rb');
+
+                if ($source === false) {
+                    throw new BackupException('Failed to read backup source file.', 500);
+                }
+
+                try {
+                    // Chunk size MUST stay a multiple of 3: base64 encodes in
+                    // 3-byte groups, and only aligned chunks concatenate into a
+                    // valid encoding. A ragged chunk would pad mid-stream and
+                    // silently corrupt the restored file.
+                    while (! feof($source)) {
+                        $chunk = fread($source, 3 * 1024 * 1024);
+
+                        if ($chunk === false) {
+                            throw new BackupException('Failed to read backup source file.', 500);
+                        }
+
+                        if ($chunk !== '') {
+                            $write(base64_encode($chunk));
+                        }
+                    }
+                } finally {
+                    fclose($source);
+                }
+
+                $write("\"}\n");
+            }
+        } catch (JsonException $e) {
+            gzclose($handle);
+            @unlink($path);
+
+            throw new BackupException('Failed to serialize backup snapshot: '.$e->getMessage(), 500);
+        } catch (\Throwable $e) {
+            gzclose($handle);
+            // Never leave a short archive behind that later reads would trust.
+            @unlink($path);
+
+            throw $e;
+        }
+
+        gzclose($handle);
+
+        $checksum = hash_file('sha256', $path);
+
+        if ($checksum === false) {
+            throw new BackupException('Failed to checksum backup file.', 500);
+        }
+
+        return $checksum;
+    }
+
+    /**
+     * Buffered writer, kept for the encrypted path only: Crypt::encrypt cannot
+     * accept a stream.
+     *
+     * @param  array<string, mixed>  $manifest
+     * @param  array<string, list<array<string, mixed>>>  $tables
+     */
+    private function writeBufferedArchive(string $path, array $manifest, array $tables): string
+    {
+        try {
+            $encoded = gzencode(json_encode([
+                'manifest' => $manifest,
+                'tables' => $tables,
+                'files' => $this->dumpFiles(),
+            ], JSON_THROW_ON_ERROR), 9);
+        } catch (JsonException $e) {
+            throw new BackupException('Failed to serialize backup snapshot: '.$e->getMessage(), 500);
+        }
+
+        if ($encoded === false) {
+            throw new BackupException('Failed to compress backup.', 500);
+        }
+
+        $encoded = $this->encrypt($encoded);
+
+        if (file_put_contents($path, $encoded) === false) {
+            throw new BackupException('Failed to write backup file.', 500);
+        }
+
+        return hash('sha256', $encoded);
+    }
+
     private function dumpFiles(): array
     {
         $root = (string) config('archive.file_root');
@@ -448,6 +630,25 @@ class BackupService
     /**
      * @param  array{path?: mixed, contentBase64?: mixed}  $file
      */
+    /**
+     * Single definition of "this entry is intact", shared by the streamed and
+     * buffered restore paths so the rule cannot drift between them.
+     *
+     * @param  array<string, mixed>  $file
+     */
+    private function assertFileEntryIntact(array $file): void
+    {
+        $content = base64_decode((string) ($file['contentBase64'] ?? ''), true);
+        $expected = (string) ($file['sha256'] ?? '');
+
+        if ($content === false || $expected === '' || ! hash_equals($expected, hash('sha256', $content))) {
+            throw new BackupException(
+                'Backup file entry "'.((string) ($file['path'] ?? '?')).'" failed checksum verification. Restore aborted; live data was not touched.',
+                422
+            );
+        }
+    }
+
     private function writeRestoredFile(array $file): void
     {
         $relative = (string) ($file['path'] ?? '');
@@ -478,6 +679,11 @@ class BackupService
     private function readArchive(string $name): array
     {
         $path = $this->resolvePath($name);
+
+        if ($this->isNdjsonArchive($path)) {
+            return $this->readNdjsonArchive($path);
+        }
+
         $content = (string) file_get_contents($path);
 
         // Optional decryption: reverse encryption applied during backup
@@ -506,6 +712,106 @@ class BackupService
         }
 
         return $this->readLegacyArchive($payload);
+    }
+
+    /**
+     * Peek at the first bytes only. Sniffing by reading the whole archive would
+     * reintroduce exactly the memory blow-up this format exists to avoid, and
+     * encrypted archives are never line-delimited because Crypt wraps the whole
+     * blob.
+     */
+    private function isNdjsonArchive(string $path): bool
+    {
+        if ((bool) config('archive.backups.encryption_enabled')) {
+            return false;
+        }
+
+        $handle = @gzopen($path, 'rb');
+
+        if ($handle === false) {
+            return false;
+        }
+
+        $head = (string) gzread($handle, 64);
+        gzclose($handle);
+
+        return str_starts_with($head, '{"format":"'.self::NDJSON_FORMAT.'"');
+    }
+
+    /**
+     * Yields one decoded record per line, so peak memory is a single record
+     * rather than the whole archive.
+     *
+     * @return \Generator<int, array<string, mixed>>
+     */
+    private function streamNdjsonRecords(string $path): \Generator
+    {
+        $handle = @gzopen($path, 'rb');
+
+        if ($handle === false) {
+            throw new BackupException('Backup file is corrupt or unreadable.', 422);
+        }
+
+        try {
+            while (($line = gzgets($handle)) !== false) {
+                $line = trim($line);
+
+                if ($line === '') {
+                    continue;
+                }
+
+                try {
+                    $record = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
+                } catch (JsonException) {
+                    throw new BackupException('Backup file does not contain valid JSON.', 422);
+                }
+
+                if (! is_array($record)) {
+                    throw new BackupException('Backup file does not contain a valid snapshot.', 422);
+                }
+
+                yield $record;
+            }
+        } finally {
+            gzclose($handle);
+        }
+    }
+
+    /**
+     * Structural read for preview/restore metadata. File CONTENT is deliberately
+     * dropped here -- only restore needs the bytes, and it streams them
+     * separately so nothing large is ever resident.
+     *
+     * @return array{tables: array<string, list<array<string, mixed>>>, files: list<array<string, mixed>>, manifest: array<string, mixed>|null}
+     */
+    private function readNdjsonArchive(string $path): array
+    {
+        $manifest = null;
+        $tables = [];
+        $files = [];
+
+        foreach ($this->streamNdjsonRecords($path) as $record) {
+            if (isset($record['format'])) {
+                $manifest = is_array($record['manifest'] ?? null) ? $record['manifest'] : null;
+
+                continue;
+            }
+
+            $kind = $record['kind'] ?? null;
+
+            if ($kind === 'table' && is_string($record['name'] ?? null) && is_array($record['rows'] ?? null)) {
+                $tables[$record['name']] = array_values(array_filter($record['rows'], 'is_array'));
+
+                continue;
+            }
+
+            if ($kind === 'file') {
+                unset($record['contentBase64']);
+                $files[] = $record;
+            }
+        }
+
+        return ['tables' => $tables, 'files' => $files, 'manifest' => $manifest];
     }
 
     /**
