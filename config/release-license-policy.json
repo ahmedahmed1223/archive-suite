@@ -5,5 +5,11 @@
     "CC-BY-3.0", "CC-BY-4.0", "CC0-1.0", "ISC", "LGPL-3.0-or-later", "MIT", "MPL-2.0", "Python-2.0", "Unlicense", "WTFPL", "Zlib"
   ],
   "forbidden": ["AGPL-1.0", "AGPL-3.0", "GPL-1.0", "GPL-2.0", "GPL-2.0-only", "GPL-3.0", "GPL-3.0-only", "SSPL-1.0"],
-  "exceptions": []
+  "exceptions": [
+    {
+      "package": "azure-oss/identity",
+      "license": "UNKNOWN",
+      "reason": "composer.json omits the license field, but the upstream repository (php-oss-for-azure/azure-identity-php) is MIT-licensed per its LICENSE file, verified via the GitHub API license endpoint on 2026-08-06."
+    }
+  ]
 }

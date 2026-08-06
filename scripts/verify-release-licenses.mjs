@@ -24,10 +24,12 @@ for (const [license, packages] of Object.entries(pnpm)) {
 }
 
 const composer = load(composerPath);
-for (const dependency of composer.dependencies ?? []) {
-  const licenses = dependency.license ?? [];
-  if (licenses.length === 0) check(dependency.name, "UNKNOWN");
-  else check(dependency.name, licenses.join(" OR "));
+// `composer licenses --format=json` emits "dependencies" as an object keyed
+// by package name (each value carrying its own "license" array), not a list.
+for (const [name, info] of Object.entries(composer.dependencies ?? {})) {
+  const licenses = info.license ?? [];
+  if (licenses.length === 0) check(name, "UNKNOWN");
+  else check(name, licenses.join(" OR "));
 }
 
 if (failures.length) throw new Error(`Release license policy failed:\n${failures.join("\n")}`);
