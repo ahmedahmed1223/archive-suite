@@ -12,8 +12,9 @@ test("stageNodeRuntime downloads the pinned zip, verifies checksum, extracts nod
     const fetch = async (url) => { fetchCalls.push(url); return Buffer.from("fake-node-zip"); };
     const extract = async (_bytes, targetDir) => {
       const { mkdirSync, writeFileSync } = await import("node:fs");
-      mkdirSync(targetDir, { recursive: true });
-      writeFileSync(join(targetDir, "node.exe"), "");
+      const nodeSubdir = join(targetDir, `node-v${NODE_VERSION}-win-x64`);
+      mkdirSync(nodeSubdir, { recursive: true });
+      writeFileSync(join(nodeSubdir, "node.exe"), "");
     };
     const result = await stageNodeRuntime({ destDir, fetch, extract, sha256: () => NODE_WINDOWS_SHA256 });
     assert.equal(result.ok, true);

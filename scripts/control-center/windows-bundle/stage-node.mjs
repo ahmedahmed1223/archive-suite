@@ -28,5 +28,5 @@ export async function stageNodeRuntime({ destDir, fetch = defaultFetch, extract 
   const actualHash = sha256(zipBytes);
   if (actualHash !== NODE_WINDOWS_SHA256) throw new Error(`Node runtime checksum mismatch: expected ${NODE_WINDOWS_SHA256}, got ${actualHash}`);
   await extract(zipBytes, destDir);
-  return { ok: true, nodeExePath: join(destDir, "node.exe") };
+  return { ok: true, nodeExePath: join(destDir, `node-v${NODE_VERSION}-win-x64`, "node.exe") };
 }
