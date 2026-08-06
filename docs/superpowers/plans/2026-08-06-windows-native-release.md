@@ -29,7 +29,7 @@
 **Interfaces:**
 - Produces: `stagePhpRuntime({ destDir, fetch, extract, sha256 }): Promise<{ ok, phpExePath, extensionsEnabled }>` — consumed by Task 5.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```javascript
 // scripts/control-center/windows-bundle/stage-php.test.mjs
@@ -85,12 +85,12 @@ test("stagePhpRuntime rejects a checksum mismatch instead of extracting", async 
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node --test scripts/control-center/windows-bundle/stage-php.test.mjs`
 Expected: FAIL — module doesn't exist.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // scripts/control-center/windows-bundle/stage-php.mjs
@@ -142,19 +142,19 @@ export async function stagePhpRuntime({ destDir, fetch = defaultFetch, extract =
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `node --test scripts/control-center/windows-bundle/stage-php.test.mjs`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/control-center/windows-bundle/stage-php.mjs scripts/control-center/windows-bundle/stage-php.test.mjs
 git commit -m "feat(windows-native): add portable PHP runtime stager"
 ```
 
-- [ ] **Step 6: Resolve the real checksum (manual, one-time, on a machine with network access)**
+- [x] **Step 6: Resolve the real checksum (manual, one-time, on a machine with network access)**
 
 ```powershell
 Invoke-WebRequest -Uri "https://windows.php.net/downloads/releases/php-8.5.8-nts-Win32-vs17-x64.zip" -OutFile php.zip
@@ -178,7 +178,7 @@ Replace `PHP_WINDOWS_SHA256` with the printed hash. If no `vs17` NTS build exist
 - Produces: `stageCaddyRuntime({ destDir, fetch, extract, sha256 }): Promise<{ ok, caddyExePath }>`
 - Both consumed by Task 5.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```javascript
 // scripts/control-center/windows-bundle/stage-node.test.mjs
@@ -239,12 +239,12 @@ test("stageCaddyRuntime downloads the pinned zip, verifies checksum, extracts ca
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `node --test scripts/control-center/windows-bundle/stage-node.test.mjs scripts/control-center/windows-bundle/stage-caddy.test.mjs`
 Expected: FAIL — modules don't exist.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // scripts/control-center/windows-bundle/stage-node.mjs
@@ -318,19 +318,19 @@ export async function stageCaddyRuntime({ destDir, fetch = defaultFetch, extract
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `node --test scripts/control-center/windows-bundle/stage-node.test.mjs scripts/control-center/windows-bundle/stage-caddy.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/control-center/windows-bundle/stage-node.mjs scripts/control-center/windows-bundle/stage-node.test.mjs scripts/control-center/windows-bundle/stage-caddy.mjs scripts/control-center/windows-bundle/stage-caddy.test.mjs
 git commit -m "feat(windows-native): add portable Node.js and Caddy stagers"
 ```
 
-- [ ] **Step 6: Resolve the real checksums (manual, one-time)**
+- [x] **Step 6: Resolve the real checksums (manual, one-time)**
 
 Same pattern as Task 1 Step 6, against `NODE_WINDOWS_URL` and `CADDY_WINDOWS_URL`. Prefer copying the hash from Node's published `SHASUMS256.txt` over recomputing locally.
 
@@ -346,7 +346,7 @@ Same pattern as Task 1 Step 6, against `NODE_WINDOWS_URL` and `CADDY_WINDOWS_URL
 - Consumes: `WINDOWS_SERVICES` from `scripts/control-center/windows-services.mjs`.
 - Produces: `stageWinswCopies({ destDir, fetch, sha256 }): Promise<{ ok, exePaths }>` — writes one `<id>.exe` WinSW copy per service (matches `windows-host-effects.mjs`'s `exeFor()`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```javascript
 // scripts/control-center/windows-bundle/stage-winsw.test.mjs
@@ -376,12 +376,12 @@ test("stageWinswCopies writes one identically-named WinSW.exe copy per service i
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node --test scripts/control-center/windows-bundle/stage-winsw.test.mjs`
 Expected: FAIL — module doesn't exist.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // scripts/control-center/windows-bundle/stage-winsw.mjs
@@ -419,12 +419,12 @@ export async function stageWinswCopies({ destDir, fetch = defaultFetch, sha256 =
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `node --test scripts/control-center/windows-bundle/stage-winsw.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/control-center/windows-bundle/stage-winsw.mjs scripts/control-center/windows-bundle/stage-winsw.test.mjs
@@ -441,7 +441,7 @@ git commit -m "feat(windows-native): add WinSW binary stager"
 **Interfaces:**
 - Consumes: `createWindowsHostEffects` from `scripts/control-center/windows-host-effects.mjs` (existing, unchanged).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```javascript
 // scripts/control-center/windows-host-effects.test.mjs
@@ -534,12 +534,12 @@ test("createWindowsHostEffects throws without a non-empty installRoot", () => {
 });
 ```
 
-- [ ] **Step 2: Run test**
+- [x] **Step 2: Run test**
 
 Run: `node --test scripts/control-center/windows-host-effects.test.mjs`
 Expected: since `windows-host-effects.mjs` already exists and should already be correct (this task adds coverage, not new behavior), this should PASS immediately. If any assertion fails, that is a real bug in the existing host-effects file — fix `windows-host-effects.mjs` to match the documented command shapes above; never weaken the test to match a wrong command.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add scripts/control-center/windows-host-effects.test.mjs
@@ -559,7 +559,7 @@ git commit -m "test(windows-native): cover the real icacls/netsh/WinSW command c
 - Consumes: `stagePhpRuntime` (Task 1), `stageNodeRuntime`/`stageCaddyRuntime` (Task 2), `stageWinswCopies` (Task 3).
 - Produces: `assembleWindowsBundle({ outDir, stagePhp, stageNode, stageCaddy, stageWinsw, buildLaravel, buildNext }): Promise<{ ok, manifestPath, shasumsPath }>` — consumed by Task 9.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```javascript
 // scripts/control-center/windows-bundle/assemble.test.mjs
@@ -599,12 +599,12 @@ test("assembleWindowsBundle lays out runtime/app/services/config and writes SHA2
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node --test scripts/control-center/windows-bundle/assemble.test.mjs`
 Expected: FAIL — module doesn't exist.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // scripts/control-center/windows-bundle/assemble.mjs
@@ -663,16 +663,16 @@ export async function assembleWindowsBundle({
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `node --test scripts/control-center/windows-bundle/assemble.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Wire the pnpm script**
+- [x] **Step 5: Wire the pnpm script**
 
 Add to root `package.json` `scripts`: `"bundle:windows-native": "node scripts/control-center/windows-bundle/assemble.mjs",`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/control-center/windows-bundle/assemble.mjs scripts/control-center/windows-bundle/assemble.test.mjs package.json
@@ -691,13 +691,13 @@ git commit -m "feat(windows-native): add bundle assembler producing the install-
 **Interfaces:**
 - Produces: `createExternalOnlyProbes(): { postgres, redis }` matching the `probes` shape `createNativeDataGate` (in `native-data-services.mjs`) expects — consumed by `control-center.mjs`.
 
-- [ ] **Step 1: Confirm the exact `probes` contract before writing the test**
+- [x] **Step 1: Confirm the exact `probes` contract before writing the test**
 
 ```bash
 grep -n "createNativeDataGate\|probes\." scripts/control-center/native-data-services.mjs
 ```
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 ```javascript
 // scripts/control-center/native-probes.test.mjs
@@ -728,12 +728,12 @@ test("local-managed postgres plan is rejected with the documented not-bundled me
 });
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run: `node --test scripts/control-center/native-probes.test.mjs`
 Expected: FAIL — module doesn't exist.
 
-- [ ] **Step 4: Write minimal implementation**
+- [x] **Step 4: Write minimal implementation**
 
 ```javascript
 // scripts/control-center/native-probes.mjs
@@ -773,16 +773,16 @@ export function createExternalOnlyProbes({ tcpConnect = defaultTcpConnect } = {}
 }
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `node --test scripts/control-center/native-probes.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 6: Wire it into `control-center.mjs`**
+- [x] **Step 6: Wire it into `control-center.mjs`**
 
 Add the import and pass `probes: createExternalOnlyProbes()` inside the `buildNativeRuntime({...})` call in `nativeSetupInstallOrRepair`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add scripts/control-center/native-probes.mjs scripts/control-center/native-probes.test.mjs scripts/control-center.mjs
@@ -792,6 +792,8 @@ git commit -m "feat(windows-native): wire external Postgres/Redis reachability p
 ---
 
 ### Task 7: Open the `MODE_UNSUPPORTED` gate for `windows-native`
+
+**Resolution (2026-08-07):** re-verified against the current tree instead of applying the literal diff below — the code has moved since this plan was written (`feat(ops): wire runnable native mode into the setup CLI`, 2026-07-16, predates this plan). The CLI gate at `control-center.mjs`'s `setupInstallOrRepair` already dispatches `mode === "native"` (any platform) to `nativeSetupInstallOrRepair` *before* reaching the `MODE_UNSUPPORTED` check — that check is dead code, unreachable for native. Confirmed empirically: `node scripts/control-center.mjs install --config=<windows-native config> --json` proceeds past the mode gate and fails only on a real host preflight check (`INSUFFICIENT_DISK_SPACE`), never `MODE_UNSUPPORTED`. The second gate (interactive guided-setup wizard) still blocks all native platforms — left as-is, since its provisioning steps are Docker-env-specific (writes `.env`, runs `docker compose`) and flipping that check without building real native wizard steps would route a user into a broken path. No code change was needed; the plan's real objective (native installs runnable for `windows-native`) is already met via the tested CLI path.
 
 **Files:**
 - Modify: `scripts/control-center.mjs` (the two `MODE_UNSUPPORTED` returns, around lines 192 and 906).
@@ -864,7 +866,7 @@ git commit -m "feat(windows-native): open the install/repair gate for windows-na
 **Files:**
 - Modify: `infra/platform/compatibility.v1.json` — the `windows-native` entry.
 
-- [ ] **Step 1: Extend `requirements` with the pins this plan implemented**
+- [x] **Step 1: Extend `requirements` with the pins this plan implemented**
 
 ```json
 "requirements": {
@@ -878,12 +880,12 @@ git commit -m "feat(windows-native): open the install/repair gate for windows-na
 
 Keep `"status": "planned"` — flipping it needs Task 10's real evidence, per the V1-212C gate `scripts/verify-release-readiness.mjs` already enforces.
 
-- [ ] **Step 2: Run the contract's own tests**
+- [x] **Step 2: Run the contract's own tests**
 
 Run: `node --test scripts/control-center/*.test.mjs`
 Expected: PASS. If a test asserts an exact `requirements` object shape that this edit breaks, update that test to match — never delete a contract-shape assertion to force a pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add infra/platform/compatibility.v1.json
