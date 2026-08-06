@@ -41,6 +41,7 @@ import { createReleaseRollback } from "./control-center/rollback-release.mjs";
 import { createReconnectData, createUninstall } from "./control-center/uninstall.mjs";
 import { createRoleSmoke } from "./control-center/role-smoke.mjs";
 import { buildNativeRuntime, nativeInstallRoot, nativeManifestInput, nativePlatformFamily, resolveNativeSetupDataPlan } from "./control-center/native-setup.mjs";
+import { createExternalOnlyProbes } from "./control-center/native-probes.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -265,6 +266,7 @@ async function nativeSetupInstallOrRepair(operation, configuration) {
     return renderSetupResult({ ok: false, code: planned.code, message: planned.message, details: planned.details, nextActions: planned.nextActions });
   }
   try {
+    const externalProbes = createExternalOnlyProbes();
     const { adapter } = buildNativeRuntime({
       configuration,
       installRoot: process.env.ARCHIVE_NATIVE_INSTALL_ROOT || nativeInstallRoot(configuration.platform),
@@ -273,6 +275,10 @@ async function nativeSetupInstallOrRepair(operation, configuration) {
       manifestRequest: request,
       preflight: nativeHostPreflightFor(configuration),
       dataPlan: planned.plan,
+      probes: {
+        postgres: () => externalProbes.postgres(planned.plan.postgres),
+        redis: () => externalProbes.redis(planned.plan.redis),
+      },
     });
     const result = operation === "install" ? await adapter.install(request) : await adapter.repair(request);
     if (!result.ok) {
