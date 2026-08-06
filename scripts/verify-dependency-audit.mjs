@@ -7,16 +7,12 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 // ponytail: the xlsx-specific allowlist was here for archive-app/archive-server,
 // which vendored an unpatched xlsx release. Both packages are gone (2026-07-12);
 // archive-next does not depend on xlsx, so there is nothing left to allow-list.
-const allowedAdvisories = new Map([
-  [
-    "GHSA-mh99-v99m-4gvg",
-    "brace-expansion DoS, transitive via openapi-typescript -> @redocly/openapi-core@1.x " +
-      "(hard-pinned minimatch@5.1.9) -- a devDependency used only by the local/CI OpenAPI " +
-      "codegen script (pnpm api:generate) against this repo's own contract file, never " +
-      "untrusted input. No published openapi-typescript release resolves past " +
-      "@redocly/openapi-core ^1.34.6 yet (2026-07-30); revisit when one does."
-  ]
-]);
+//
+// brace-expansion (via openapi-typescript -> @redocly/openapi-core -> minimatch) and
+// undici (via jsdom/vitest, test-only) are pinned to patched versions with
+// pnpm-workspace.yaml's overrides instead of allow-listed here -- an actual fix beats
+// an accepted risk when one is available.
+const allowedAdvisories = new Map([]);
 
 const result = spawnSync("pnpm", ["audit", "--audit-level", "moderate", "--json"], {
   cwd: ROOT,

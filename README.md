@@ -7,15 +7,18 @@
 
 ## Project status
 
-[`v1.0.0-rc.2`](docs/release-notes/v1.0.0-rc.2.md) is an experimental release
-candidate for evaluation and review. It passed the local project verification
-gate, but it is **not a General Availability release** and currently ships no
-installable artifacts or published Docker images. Do not use it in production
-until the remaining acceptance requirements are closed and a GA release is
-announced.
+[`v1.0.0`](docs/release-notes/v1.0.0.md) is the first General Availability
+release. It passed the full release gate (`pnpm release:verify`) and is covered
+by the support window in [docs/versioning.md](docs/versioning.md).
+
+Some capabilities ship disabled or conditional because they have not been
+verified against live environments: ODBC on Windows, Arabic GPU transcription,
+and live AI/vision/embedding providers. This release also ships without a
+formal multi-platform acceptance program, a pilot cohort, or a separate
+Go/No-Go record — see the known limits in the release notes before deploying.
 
 - [Features and usage guide](docs/features-guide.md)
-- [RC launch and support guide](docs/ops/rc-launch-and-support.md)
+- [Launch and support guide](docs/ops/rc-launch-and-support.md)
 - [Clean release rehearsal](docs/ops/v1-505-release-rehearsal.md)
 - [Release and GA operations](docs/release/v1-601-605-ga-operations.md)
 

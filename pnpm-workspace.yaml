@@ -16,7 +16,7 @@ minimumReleaseAgeExclude:
   - nodemailer@8.0.8
   - '@opentelemetry/core@2.8.0'
   - hono@4.12.25
-  - undici@7.28.0
+  - undici@7.29.0
   - nodemailer@9.0.1
 overrides:
   '@hono/node-server@<1.19.13': ^1.19.13
@@ -33,5 +33,5 @@ overrides:
   nodemailer@<=8.0.8: ^8.0.9
   nodemailer@<=9.0.0: ^9.0.1
   postcss@<8.5.10: ^8.5.10
-  undici@>=7.0.0 <7.28.0: ^7.28.0
-  undici@>=7.23.0 <7.28.0: ^7.28.0
+  undici@<7.29.0: ^7.29.0
+  brace-expansion@<2.1.4: ^2.1.4

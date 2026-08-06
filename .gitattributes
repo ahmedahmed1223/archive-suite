@@ -1,0 +1,9 @@
+# Normalize to LF in the repo and in every checkout. Without this, a Windows
+# clone with core.autocrlf=true rewrites tracked files to CRLF on checkout,
+# which fails byte-exact gates (pnpm verify:api-generated compares the
+# generated archive-api.ts against freshly generated LF output).
+* text=auto eol=lf
+
+# Windows batch files are run by cmd.exe and stay CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
