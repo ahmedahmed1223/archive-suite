@@ -130,7 +130,7 @@ jobs:
           tags: ${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v4
+        uses: sigstore/cosign-installer@v4.1.2
 
       - name: Sign immutable image digests (keyless OIDC)
         shell: bash
@@ -204,7 +204,7 @@ jobs:
         run: docker run --rm --env ARCHIVE_SECURE_COOKIES=true "${LARAVEL_IMAGE}:${{ steps.meta.outputs.version }}" php artisan --version
 
       - name: Scan Next image (fail on fixable critical vulnerabilities)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: "${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}"
           severity: "CRITICAL"
@@ -212,7 +212,7 @@ jobs:
           exit-code: "1"
 
       - name: Scan Laravel image (fail on fixable critical vulnerabilities)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           image-ref: "${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}"
           severity: "CRITICAL"
