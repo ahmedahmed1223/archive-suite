@@ -159,8 +159,12 @@ jobs:
           NEXT_IMAGE: "${{ env.NEXT_IMAGE }}@${{ steps.push_next.outputs.digest }}"
           LARAVEL_IMAGE: "${{ env.LARAVEL_IMAGE }}@${{ steps.push_laravel.outputs.digest }}"
         run: |
-          export POSTGRES_IMAGE="$(node -e "const r=require('./infra/platform/release.v1.json'); console.log(r.images.find(i=>i.id==='postgres').online)")"
-          export REDIS_IMAGE="$(node -e "const r=require('./infra/platform/release.v1.json'); console.log(r.images.find(i=>i.id==='redis').online)")"
+          # infra/docker-compose.yml is the source of truth for these pins (same
+          # digests reproducibility/Kubernetes checks already enforce) --
+          # infra/platform/release.v1.json is a different, Control-Center-only
+          # descriptor and was never wired to real published images.
+          export POSTGRES_IMAGE="$(grep -A1 '^  postgres:' infra/docker-compose.yml | grep 'image:' | awk '{print $2}')"
+          export REDIS_IMAGE="$(grep -A1 '^  redis:' infra/docker-compose.yml | grep 'image:' | awk '{print $2}')"
           node scripts/offline-bundle.mjs build "${{ steps.meta.outputs.version }}" release-offline
           node scripts/offline-bundle.mjs verify "release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}"
           node scripts/offline-bundle.mjs rehearse "release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}" release-offline/v1-206-rehearsal-evidence.json
