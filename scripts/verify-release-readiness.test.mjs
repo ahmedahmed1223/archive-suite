@@ -159,6 +159,44 @@ test("release mode ignores optional V1-X items and backlog B items", () => {
   }
 });
 
+test("release mode ignores the three deferred ranges but still fails on any other V1 item", () => {
+  const dir = baselineFixture();
+  try {
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "- [ ] **V1-806–V1-814** acceptance program\n" +
+        "- [ ] **V1-502–V1-505** pilot rehearsal\n" +
+        "- [ ] **V1-601–V1-605** go/no-go and release\n" +
+        "- [ ] **V1-999 open blocker** — pending\n"
+    );
+    const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /release-blocking V1 item/);
+    assert.match(r.stderr, /V1-999/);
+    assert.doesNotMatch(r.stderr, /V1-806/);
+    assert.doesNotMatch(r.stderr, /V1-502/);
+    assert.doesNotMatch(r.stderr, /V1-601/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("release mode passes when only the three deferred ranges remain open", () => {
+  const dir = baselineFixture();
+  try {
+    writeFileSync(
+      join(dir, "TASKS.md"),
+      "- [ ] **V1-806–V1-814** acceptance program\n" +
+        "- [ ] **V1-502–V1-505** pilot rehearsal\n" +
+        "- [ ] **V1-601–V1-605** go/no-go and release\n"
+    );
+    const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
+    assert.doesNotMatch(r.stderr, /release-blocking V1 item/, r.stderr);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("non-release mode only warns about open V1 blockers", () => {
   const dir = baselineFixture();
   try {

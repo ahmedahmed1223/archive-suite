@@ -186,12 +186,24 @@ function isReleaseMode() {
   }
 }
 
+// Product decision (2026-08-06): the multi-platform acceptance program
+// (V1-806..814), pilot operations/release rehearsal (V1-502..505), and
+// Go/No-Go + release/deploy/download/support (V1-601..605) are explicitly
+// descoped as blockers for this release -- shipping without a formal
+// multi-platform acceptance program, a pilot cohort, or a separately
+// documented go/no-go sign-off. TASKS.md keeps them open and externally
+// blocked; only their power to fail this gate is removed. Any other
+// V1-NNN item (not V1-X, not one of these three ranges) still blocks,
+// same as before this change.
+const DEFERRED_RELEASE_BLOCKER_PREFIXES = ["V1-806", "V1-502", "V1-601"];
+
 function checkTasksV1Blockers() {
   const file = "TASKS.md";
   if (!exists(file)) return;
   const offenders = read(file)
     .split("\n")
-    .filter((line) => /^- \[ \] \*\*V1-(?!X)/.test(line));
+    .filter((line) => /^- \[ \] \*\*V1-(?!X)/.test(line))
+    .filter((line) => !DEFERRED_RELEASE_BLOCKER_PREFIXES.some((prefix) => line.includes(`**${prefix}`)));
   if (offenders.length === 0) return;
   if (!isReleaseMode()) {
     console.warn(
