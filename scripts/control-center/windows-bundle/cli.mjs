@@ -21,6 +21,13 @@ function defaultRunCommand(command, args, options) {
 function defaultCopyTree(src, dest, excludeNames = []) {
   cpSync(src, dest, {
     recursive: true,
+    // pnpm's node_modules is symlinks into its content-addressable store;
+    // without dereference the bundle just copies those symlinks verbatim,
+    // so the "bundled" app still depends on the original dev repo path
+    // existing and being readable -- confirmed on a real Windows 11 host:
+    // archive-next crashed with EPERM stat'ing back into the dev checkout
+    // because the service account has no ACL grant there.
+    dereference: true,
     filter: (source) => !excludeNames.includes(source.split(sep).pop()),
   });
 }
