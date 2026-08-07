@@ -822,17 +822,29 @@ git commit -m "docs(linux-native): record the bundled PHP/Node/Caddy pins and ex
 
 Not clean-host evidence -- proves the bundle boots. (Requires a Linux environment -- run this inside WSL2 or a Linux CI runner if the primary dev machine is Windows.)
 
-- [ ] **Step 1: Write a thin CLI wrapper with real build callbacks**
+**Steps 1-3 completed 2026-08-07.** No WSL2 Ubuntu distro was set up on this machine (only Docker Desktop's internal `docker-desktop` WSL distro existed), so Steps 2-3 ran directly on Windows via Docker for the Laravel build, same pattern as the Windows plan's own Task 9.
+
+Three real, verified findings came out of running this for real (not just against fakes):
+
+1. **No static-php-cli prebuilt covers this extension set.** There is no combined cli+fpm bulk artifact, and the separate cli/fpm bulk builds ship `pdo_mysql`/`pgsql` but not `pdo_pgsql`. Built a custom PHP 8.5.8 via `spc` (static-php-cli's build tool) with `curl,ftp,mbstring,zip,pdo,pdo_pgsql,pcntl`, verified independently in a clean container that `php -m` lists every required extension. The exact reproducible recipe is documented in `stage-php.mjs`'s header comment. `PHP_LINUX_URL`/`PHP_LINUX_SHA256` still can't be finalized -- there's nowhere to publish the artifact from an agent session -- so the URL points at where this org would publish it and the checksum stays a placeholder until that happens.
+2. **`cli.mjs` needed the same destDir-copy fix the Windows plan's Task 9 found**: built directly per this task's Step 1 with the fix already applied (mirrors `windows-bundle/cli.mjs`), so this repo never shipped the broken version for Linux.
+3. **A real cross-platform tar bug**, only surfaced by actually running the build on Windows: all three stagers wrote the downloaded tarball to a temp file and passed that path to `tar`; the Windows temp path's drive-letter colon (`C:\Users\...`) made some tar builds mis-parse it as a remote `host:file` spec. GNU tar's `--force-local` fixes that, but Windows' built-in bsdtar doesn't support the flag at all -- switched all three stagers to pipe the archive via stdin (`-f -`) instead, which sidesteps the whole problem on every tar implementation. Fixed and committed.
+
+Real run, using the just-verified custom PHP build as a local override for the not-yet-published artifact (a one-off script outside the tracked plan files; production runs will use the real `PHP_LINUX_URL` once published): `pnpm run bundle:linux-native -- --out D:\archiveaq\linux-native-bundle-test` (after the tar fix) -- succeeded, produced `runtime/{php,node,caddy}`, `app/laravel/{artisan,vendor/autoload.php,...}`, `app/next/{server.js,node_modules,.next/static,public}`, `config/`, `storage/`, `logs/`, and `SHA256SUMS` (18,967 entries, forward-slash paths as designed). Step 3 verification: every entry's real SHA-256 matched -- 18,967 checked, 0 mismatches.
+
+**Steps 4-5 not run.** Beyond the "modifies live system state" reasoning that already applied to the Windows plan's Steps 4-5, this task also has no real Linux environment available: no WSL2 Ubuntu distro is set up, and there's no reason to set one up purely to prove what Task 10's real clean-host VMs will prove properly anyway. Run these manually, interactively, on a real (or WSL2) Linux host when ready.
+
+- [x] **Step 1: Write a thin CLI wrapper with real build callbacks**
 
 Create `scripts/control-center/linux-bundle/cli.mjs`, TDD'd the same way as every prior task, calling real `composer install --no-dev --working-dir=archive-laravel` and `pnpm --filter @archive/next build` as `buildLaravel`/`buildNext`.
 
-- [ ] **Step 2: Produce a real bundle**
+- [x] **Step 2: Produce a real bundle**
 
 ```bash
 pnpm run bundle:linux-native -- --out /tmp/linux-native-bundle-test
 ```
 
-- [ ] **Step 3: Manually verify SHA256SUMS**
+- [x] **Step 3: Manually verify SHA256SUMS**
 
 ```bash
 cd /tmp/linux-native-bundle-test
