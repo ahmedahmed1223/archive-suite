@@ -787,27 +787,29 @@ git commit -m "feat(linux-native): open the install/repair gate for linux-native
 **Files:**
 - Modify: `infra/platform/compatibility.v1.json` -- the `linux-native` entry.
 
-- [ ] **Step 1: Extend `requirements`**
+- [x] **Step 1: Extend `requirements`**
+
+Applied with two corrections found while running Step 2: the contract schema (`scripts/platform-contract.mjs`'s `REQUIREMENT_IDS`) requires a `composer` key on every platform, and this file's existing Linux entry used `postgresql` (not `postgres`) -- kept both to match the schema and the sibling `windows-native` entry's convention:
 
 ```json
 "requirements": {
   "node": ">=26.5.0 <27",
   "docker": "not required for the planned native path",
-  "php": "8.5.8 (bundled, static-php-cli, portable -- see docs/superpowers/plans/2026-08-06-linux-native-release.md)",
+  "php": "8.5.8 (bundled, static-php-cli, portable -- see docs/superpowers/plans/2026-08-06-linux-native-release.md); pcntl is available and required, unlike Windows",
+  "composer": "used only to build the bundle (composer install --no-dev); not required on the target host",
   "systemd": "required (service management)",
-  "postgres": "external endpoint only; local-managed is not bundled",
+  "postgresql": "external endpoint only; local-managed is not bundled",
   "redis": "external endpoint only; local-managed is not bundled"
 }
 ```
 
 Keep `"status": "planned"` -- flipping it needs Task 10's real evidence.
 
-- [ ] **Step 2: Run the contract's own tests**
+- [x] **Step 2: Run the contract's own tests**
 
-Run: `node --test scripts/control-center/*.test.mjs`
-Expected: PASS. Update any test asserting an exact `requirements` shape rather than deleting it.
+Run: `node --test scripts/control-center/*.test.mjs scripts/control-center/**/*.test.mjs scripts/platform-contract.test.mjs` -- 246/246 PASS (after adding the missing `composer` key -- omitting it initially failed `platform-contract.test.mjs` with "linux-native is missing a runtime requirement").
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add infra/platform/compatibility.v1.json
