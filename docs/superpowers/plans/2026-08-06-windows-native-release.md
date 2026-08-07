@@ -880,15 +880,19 @@ Not clean-host evidence — proves the bundle boots.
 
 Created `scripts/control-center/windows-bundle/cli.mjs` + `cli.test.mjs` (5 tests, TDD-first), wiring real `composer install --no-dev --working-dir=archive-laravel` and `pnpm --filter @archive/next build` as `buildLaravel`/`buildNext`. Also resolved this task's outstanding Step 6 checksum placeholders across Tasks 1-3 with real, network-verified SHA-256 hashes (PHP 8.5.8 moved from `releases/` to `releases/archives/` on windows.php.net since the plan was written — URL updated accordingly, version pin unchanged). Full `scripts/control-center/**/*.test.mjs` suite: 210/210 passing.
 
-**Steps 2-5 intentionally not run in this session:** Step 2 (produce a real bundle) needs a real `composer install`/`pnpm build` plus ~70MB of runtime downloads — high-cost for an unattended run and not yet requested. Steps 4-5 (register/uninstall real Windows services via WinSW) modify live system service state, which is out of scope for an unattended agent regardless of this plan's text — run those manually, interactively, when ready. Re-run Steps 2-3 with: `pnpm run bundle:windows-native -- --out D:\path\to\bundle` (or invoke `cli.mjs` directly once wired into the npm script).
+**Steps 2-3 completed 2026-08-07.** Running Step 2 first surfaced a real bug: `cli.mjs`'s default `buildLaravel`/`buildNext` ran `composer install`/`pnpm build` but never copied the resulting output into `destDir` — the assembled bundle's `app/` folder would have been empty regardless of Composer availability. Fixed in `scripts/control-center/windows-bundle/cli.mjs`: `buildLaravel` now builds the `Dockerfile.worker` runtime image and runs `composer install --no-dev` inside it (this dev machine has no local PHP/Composer, only Docker, per repo convention), then copies `archive-laravel` (minus `tests`/`docker`/Dockerfiles) into `destDir`; `buildNext` copies the Next.js `standalone` output, its hoisted `node_modules`, `.next/static`, and `public` into `destDir`. `cli.test.mjs` updated to cover the new copy behavior with injected fakes (still fast/mocked, no real fs or docker calls). Full `scripts/control-center/**/*.test.mjs` suite: 211/211 passing.
 
-- [ ] **Step 2: Produce a real bundle**
+Real run: `pnpm run bundle:windows-native -- --out D:\archiveaq\windows-native-bundle-test` — succeeded, produced `runtime/{php,node,caddy}`, `services/*.exe`, `app/laravel/{artisan,vendor/autoload.php,...}`, `app/next/{server.js,node_modules,.next/static,public}`, `config/`, `storage/`, `logs/`, and `SHA256SUMS` (16,323 entries). Step 3 verification: every entry's real SHA-256 matched `SHA256SUMS` — 16,323 checked, 0 mismatches.
+
+**Steps 4-5 intentionally not run:** they register/uninstall real Windows services via WinSW, which modifies live system service state — out of scope for an unattended agent regardless of this plan's text. Run those manually, interactively, when ready.
+
+- [x] **Step 2: Produce a real bundle**
 
 ```powershell
 pnpm run bundle:windows-native -- --out D:\archiveaq\windows-native-bundle-test
 ```
 
-- [ ] **Step 3: Manually verify SHA256SUMS**
+- [x] **Step 3: Manually verify SHA256SUMS**
 
 ```powershell
 cd D:\archiveaq\windows-native-bundle-test
