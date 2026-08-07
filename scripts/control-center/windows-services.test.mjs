@@ -36,6 +36,13 @@ test("service definition renders the pinned wrapper XML with restart and rolling
   // reference it; the virtual account is assigned afterward via
   // `sc config <id> obj=`, Microsoft's documented two-step pattern.
   assert.doesNotMatch(xml, /serviceaccount/);
+  // WinSW defaults the working directory to the folder holding the WinSW
+  // exe (installRoot\services), not the install root -- so every relative
+  // argument (config\Caddyfile, app\next\server.js, app\laravel\artisan)
+  // fails to resolve (confirmed against real WinSW: "reading config from
+  // file: open config\Caddyfile: The system cannot find the path
+  // specified."). %BASE% is the WinSW macro for the folder holding the XML.
+  assert.match(xml, /<workingdirectory>%BASE%\\\.\.<\/workingdirectory>/);
   assert.match(xml, /onfailure action="restart"/);
   assert.match(xml, /roll-by-size/);
   assert.throws(() => renderServiceDefinition({ id: "rogue-service" }), (error) => error.code === "WINDOWS_SERVICE_UNKNOWN");

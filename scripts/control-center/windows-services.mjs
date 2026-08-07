@@ -50,6 +50,11 @@ export function renderServiceDefinition(service) {
     `  <description>${escapeXml(service.description)}</description>`,
     `  <executable>%BASE%\\..\\${escapeXml(service.executable)}</executable>`,
     `  <arguments>${escapeXml(service.arguments)}</arguments>`,
+    // Without this, WinSW's default working directory (the folder holding
+    // its own exe, installRoot\services) breaks every relative-path argument
+    // above -- confirmed against real WinSW: "reading config from file: open
+    // config\Caddyfile: The system cannot find the path specified."
+    "  <workingdirectory>%BASE%\\..</workingdirectory>",
     "  <onfailure action=\"restart\" delay=\"10 sec\"/>",
     "  <log mode=\"roll-by-size\"><sizeThreshold>10240</sizeThreshold><keepFiles>8</keepFiles></log>",
     "</service>",
