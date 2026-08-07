@@ -40,7 +40,7 @@ import { createReleaseUpdate } from "./control-center/update-release.mjs";
 import { createReleaseRollback } from "./control-center/rollback-release.mjs";
 import { createReconnectData, createUninstall } from "./control-center/uninstall.mjs";
 import { createRoleSmoke } from "./control-center/role-smoke.mjs";
-import { buildNativeRuntime, nativeInstallRoot, nativeManifestInput, nativePlatformFamily, resolveNativeSetupDataPlan } from "./control-center/native-setup.mjs";
+import { buildNativeRuntime, nativeDataPlanOverrideFromEnv, nativeInstallRoot, nativeManifestInput, nativePlatformFamily, resolveNativeSetupDataPlan } from "./control-center/native-setup.mjs";
 import { createExternalOnlyProbes } from "./control-center/native-probes.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
@@ -261,7 +261,7 @@ async function nativeSetupInstallOrRepair(operation, configuration) {
   if (!hasFlag("json")) output.warn?.("Native mode is experimental (planned): it is not yet backed by clean-host acceptance evidence (V1-210D/V1-211D).");
   const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
   const request = { path: INSTALLATION_MANIFEST_PATH, input: nativeManifestInput(configuration, { version }) };
-  const planned = resolveNativeSetupDataPlan(configuration);
+  const planned = resolveNativeSetupDataPlan(configuration, nativeDataPlanOverrideFromEnv(process.env));
   if (!planned.ok) {
     return renderSetupResult({ ok: false, code: planned.code, message: planned.message, details: planned.details, nextActions: planned.nextActions });
   }

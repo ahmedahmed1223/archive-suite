@@ -441,6 +441,48 @@ test("wizard config mode keeps a planned native choice read-only before executio
   assert.equal(existsSync(envFile), false, "planned native selection must not write .env");
 });
 
+test("install --mode=native reads the external Postgres/Redis endpoint from the environment instead of always falling back to the unbundled local-managed plan", () => {
+  // Native install preflight requires 100 GiB free on the target disk
+  // regardless of profile; use a repo-relative scratch dir (gitignored
+  // .tmp/) rather than os.tmpdir() so this doesn't flake on a host whose
+  // system temp drive is nearly full.
+  const scratchRoot = join(ROOT, ".tmp");
+  mkdirSync(scratchRoot, { recursive: true });
+  const dir = mkdtempSync(join(scratchRoot, "cc-native-install-"));
+  const configFile = join(dir, "setup.json");
+  const manifestFile = join(dir, "manifest.json");
+  const storagePath = join(dir, "storage");
+  mkdirSync(storagePath, { recursive: true });
+  writeFileSync(configFile, JSON.stringify(validSetupConfig({
+    mode: "native",
+    platform: "windows-native",
+    source: "local",
+    storage: { driver: "local", path: storagePath },
+  })));
+
+  // No endpoint configured: the data gate blocks on the honest,
+  // already-existing code -- this is a regression guard, not new behavior.
+  const withoutEndpoint = run(["install", `--config=${configFile}`, "--json"], {
+    ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile,
+  });
+  assert.equal(JSON.parse(withoutEndpoint.stdout).code, "LOCAL_POSTGRES_UNAVAILABLE");
+
+  // An endpoint configured via ARCHIVE_NATIVE_POSTGRES_* env vars: the plan
+  // must switch to "external" and actually attempt a reachability probe
+  // (this is the wiring this fix adds). Port 1 on loopback is unreachable, so
+  // this stays entirely local and never touches any real service or ACL.
+  const withEndpoint = run(["install", `--config=${configFile}`, "--json"], {
+    ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile,
+    ARCHIVE_NATIVE_POSTGRES_HOST: "127.0.0.1",
+    ARCHIVE_NATIVE_POSTGRES_PORT: "1",
+    ARCHIVE_NATIVE_POSTGRES_DATABASE: "archive_test",
+  });
+  const result = JSON.parse(withEndpoint.stdout);
+  assert.notEqual(result.code, "LOCAL_POSTGRES_UNAVAILABLE", "an operator-supplied endpoint must not silently fall back to local-managed");
+  assert.equal(result.code, "DATA_ENDPOINT_UNHEALTHY");
+  assert.equal(result.details.backend, "postgres");
+});
+
 test("wizard answers use the declarative planner resolver rather than a second selection rule", () => {
   const setup = createSetupConfiguration({ loadPlatformContract });
   const answers = validSetupConfig({

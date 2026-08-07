@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { createLinuxHostEffects } from "./linux-host-effects.mjs";
 import { createWindowsHostEffects } from "./windows-host-effects.mjs";
-import { buildNativeRuntime, nativeManifestInput, nativeServiceIds } from "./native-setup.mjs";
+import { buildNativeRuntime, nativeDataPlanOverrideFromEnv, nativeManifestInput, nativeServiceIds } from "./native-setup.mjs";
 
 const recorder = () => {
   const commands = [];
@@ -93,4 +93,36 @@ test("the native manifest records native service ids and mode so uninstall remov
   const input = nativeManifestInput(linuxConfig, { version: "1.0.0" });
   assert.equal(input.mode, "native");
   assert.deepEqual(input.services, ["archive-http", "archive-next", "archive-php-fpm", "archive-worker", "archive-reverb", "archive-scheduler"]);
+});
+
+test("nativeDataPlanOverrideFromEnv returns undefined without an operator-supplied Postgres host, preserving the local-managed default", () => {
+  assert.equal(nativeDataPlanOverrideFromEnv({}), undefined);
+  assert.equal(nativeDataPlanOverrideFromEnv({ ARCHIVE_NATIVE_POSTGRES_PORT: "5432" }), undefined);
+});
+
+test("nativeDataPlanOverrideFromEnv builds an external plan from ARCHIVE_NATIVE_POSTGRES_* env vars", () => {
+  const override = nativeDataPlanOverrideFromEnv({
+    ARCHIVE_NATIVE_POSTGRES_HOST: "db.example.internal",
+    ARCHIVE_NATIVE_POSTGRES_PORT: "5544",
+    ARCHIVE_NATIVE_POSTGRES_DATABASE: "archive_prod",
+  });
+  assert.deepEqual(override, {
+    postgres: { kind: "external", host: "db.example.internal", port: 5544, database: "archive_prod" },
+    redis: { enabled: false },
+  });
+});
+
+test("nativeDataPlanOverrideFromEnv applies defaults for port and database when omitted", () => {
+  const override = nativeDataPlanOverrideFromEnv({ ARCHIVE_NATIVE_POSTGRES_HOST: "db.example.internal" });
+  assert.equal(override.postgres.port, 5432);
+  assert.equal(override.postgres.database, "archive");
+});
+
+test("nativeDataPlanOverrideFromEnv adds the optional Redis endpoint only when ARCHIVE_NATIVE_REDIS_HOST is set", () => {
+  const override = nativeDataPlanOverrideFromEnv({
+    ARCHIVE_NATIVE_POSTGRES_HOST: "db.example.internal",
+    ARCHIVE_NATIVE_REDIS_HOST: "cache.example.internal",
+    ARCHIVE_NATIVE_REDIS_PORT: "6390",
+  });
+  assert.deepEqual(override.redis, { enabled: true, host: "cache.example.internal", port: 6390 });
 });

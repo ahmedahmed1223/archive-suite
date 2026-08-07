@@ -57,6 +57,28 @@ export function resolveNativeSetupDataPlan(configuration, dataPlanOverride) {
   return resolveNativeDataPlan(dataPlanOverride || { postgres: { kind: "local-managed" } });
 }
 
+// This plan scopes Native installs to an external PostgreSQL/Redis endpoint
+// only (no bundled managed instance -- see the release plan's Global
+// Constraints), but nothing previously read the operator's endpoint from the
+// CLI environment. Every real `install --mode=native` fell back to the
+// unbundled local-managed plan and always failed with
+// LOCAL_POSTGRES_UNAVAILABLE. Returns undefined (preserving the local-managed
+// default) unless ARCHIVE_NATIVE_POSTGRES_HOST is set.
+export function nativeDataPlanOverrideFromEnv(env = {}) {
+  const host = env.ARCHIVE_NATIVE_POSTGRES_HOST;
+  if (!host) return undefined;
+  const redisHost = env.ARCHIVE_NATIVE_REDIS_HOST;
+  return {
+    postgres: {
+      kind: "external",
+      host,
+      port: Number(env.ARCHIVE_NATIVE_POSTGRES_PORT || 5432),
+      database: env.ARCHIVE_NATIVE_POSTGRES_DATABASE || "archive",
+    },
+    redis: redisHost ? { enabled: true, host: redisHost, port: Number(env.ARCHIVE_NATIVE_REDIS_PORT || 6379) } : { enabled: false },
+  };
+}
+
 // Build the live Native runtime + its manifest-owned service remover. Callers
 // inject the host seams (run/writeFile), the manifest store, preflight, the
 // resolved data plan, probes, and — when the build bundles it — the managed
