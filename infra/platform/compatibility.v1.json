@@ -194,10 +194,11 @@
       "requirements": {
         "node": ">=26.5.0 <27",
         "docker": "not required for the planned native path",
-        "php": "PHP 8.4.23 baseline; native support remains planned",
-        "composer": "Composer 2.9.5 baseline; native support remains planned",
-        "postgresql": "PostgreSQL service, version to be validated",
-        "redis": "Redis-compatible service, version to be validated"
+        "php": "8.5.8 (bundled, static-php-cli, portable -- see docs/superpowers/plans/2026-08-06-linux-native-release.md); pcntl is available and required, unlike Windows",
+        "composer": "used only to build the bundle (composer install --no-dev); not required on the target host",
+        "systemd": "required (service management)",
+        "postgresql": "external endpoint only; local-managed is not bundled",
+        "redis": "external endpoint only; local-managed is not bundled"
       },
       "profiles": ["core", "media", "edge"],
       "capabilities": ["ocr", "ai", "observability"],
