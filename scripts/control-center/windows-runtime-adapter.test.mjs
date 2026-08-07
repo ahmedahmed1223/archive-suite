@@ -43,6 +43,15 @@ test("install runs the full step sequence in order and records each step in the 
   assert.deepEqual(steps, WINDOWS_INSTALL_STEPS);
   assert.equal(calls.filter(([kind]) => kind === "install").length, WINDOWS_SERVICES.length);
   assert.ok(calls.findIndex(([kind]) => kind === "data-gate") < calls.findIndex(([kind]) => kind === "acl"));
+  // NT SERVICE\<id> is a virtual account tied to a real registered Windows
+  // service; icacls cannot resolve it (real error: 1332, ERROR_NONE_MAPPED)
+  // until the service has been installed with the SCM. ACLs must be applied
+  // after service install and before service start, not before either.
+  const installIdx = calls.findIndex(([kind]) => kind === "install");
+  const aclIdx = calls.findIndex(([kind]) => kind === "acl");
+  const firstStartIdx = calls.findIndex(([kind]) => kind === "start");
+  assert.ok(installIdx < aclIdx, "ACLs must be applied after services are installed, not before");
+  assert.ok(aclIdx < firstStartIdx, "ACLs must be applied before services start");
 });
 
 test("a failed host preflight blocks the install before any service is touched", async () => {

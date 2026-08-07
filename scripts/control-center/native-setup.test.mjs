@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { createLinuxHostEffects } from "./linux-host-effects.mjs";
 import { createWindowsHostEffects } from "./windows-host-effects.mjs";
+import { WINDOWS_INSTALL_STEPS } from "./windows-runtime-adapter.mjs";
 import { buildNativeRuntime, nativeDataPlanOverrideFromEnv, nativeManifestInput, nativeServiceIds } from "./native-setup.mjs";
 
 const recorder = () => {
@@ -69,7 +70,7 @@ test("a wired Native install runs the full step sequence through real host comma
 
   const result = await adapter.install({ path: "m.json", input: {} });
   assert.equal(result.ok, true);
-  assert.deepEqual(steps, ["data-services-ready", "acl-applied", "firewall-applied", "services-installed", "services-started"]);
+  assert.deepEqual(steps, WINDOWS_INSTALL_STEPS);
   assert.equal(rec.commands.filter((cmd) => cmd[1] === "install").length, 6);
 });
 
