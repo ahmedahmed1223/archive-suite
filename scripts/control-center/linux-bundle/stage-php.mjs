@@ -1,14 +1,29 @@
-// Stages a statically-linked, portable PHP 8.5.8 runtime (via static-php-cli
-// prebuilt releases) so the bundle needs no system PHP or shared libraries
-// on the target host. Pinned to the same PHP version
-// archive-laravel/Dockerfile.worker uses.
+// Stages a statically-linked, portable PHP 8.5.8 runtime so the bundle needs
+// no system PHP or shared libraries on the target host. Pinned to the same
+// PHP version archive-laravel/Dockerfile.worker uses.
+//
+// static-php-cli's public prebuilt "bulk" releases (dl.static-php.dev) do
+// NOT cover this combination: there is no combined cli+fpm artifact, and
+// the separate cli/fpm bulk builds ship pdo_mysql/pgsql but not pdo_pgsql
+// (verified 2026-08-07 via `php -m` against the real 8.5.8 bulk tarball).
+// A custom build is required. Verified reproducible recipe (built and its
+// `php -m` output checked for curl/ftp/mbstring/pcntl/pdo_pgsql/zip, 2026-08-07):
+//   spc download --with-php=8.5.8 -e "curl,ftp,mbstring,zip,pdo,pdo_pgsql,pcntl" --prefer-pre-built
+//   spc build "curl,ftp,mbstring,zip,pdo,pdo_pgsql,pcntl" --build-cli --build-fpm
+// (spc: https://github.com/crazywhalecc/static-php-cli, run on Debian bookworm
+// with build-essential/autoconf/bison/re2c/cmake/libtool/pkg-config installed)
+// Produces buildroot/bin/{php,php-fpm} -- package as bin/php + sbin/php-fpm
+// to match this stager's expected layout, then publish and pin below.
 import { createHash } from "node:crypto";
 import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const PHP_VERSION = "8.5.8";
-export const PHP_LINUX_URL = `https://dl.static-php.dev/static-php-cli/bulk/php-${PHP_VERSION}-cli-fpm-linux-x86_64.tar.gz`;
-export const PHP_LINUX_SHA256 = "REPLACE_WITH_REAL_SHA256_FROM_STATIC_PHP_DEV_RELEASE";
+// TODO: point at the published custom-build release once this org publishes
+// one (e.g. a GitHub Release on this repo) -- no artifact hosting is
+// available from an agent session, so this cannot be resolved unattended.
+export const PHP_LINUX_URL = "https://github.com/ahmedahmed1223/archive-suite/releases/download/php-linux-8.5.8-custom/php-8.5.8-linux-x86_64-custom.tar.gz";
+export const PHP_LINUX_SHA256 = "REPLACE_WITH_REAL_SHA256_ONCE_THE_CUSTOM_BUILD_IS_PUBLISHED";
 
 const REQUIRED_EXTENSIONS = ["curl", "ftp", "mbstring", "zip", "pdo", "pdo_pgsql", "pcntl"];
 
