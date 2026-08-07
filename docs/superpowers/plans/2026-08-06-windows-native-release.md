@@ -799,7 +799,7 @@ git commit -m "feat(windows-native): wire external Postgres/Redis reachability p
 - Modify: `scripts/control-center.mjs` (the two `MODE_UNSUPPORTED` returns, around lines 192 and 906).
 - Modify: `scripts/control-center/native-setup.test.mjs`.
 
-- [ ] **Step 1: Read the existing test harness first**
+- [x] **Step 1: Read the existing test harness first**
 
 ```bash
 grep -n "^test\|^async function\|^function" scripts/control-center/native-setup.test.mjs
@@ -807,22 +807,11 @@ grep -n "^test\|^async function\|^function" scripts/control-center/native-setup.
 
 Use the real, existing entry-point name from this output in Step 2 below — do not invent one.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test** — skipped; per this task's Resolution note, the empirical CLI probe (`node scripts/control-center.mjs install --config=<windows-native config> --json`) already showed `nativeSetupInstallOrRepair` is reached before the `MODE_UNSUPPORTED` check, so a "no longer returns MODE_UNSUPPORTED" test would pass without any code change — it would test dead-code avoidance that's already true, not a behavior this task introduces.
 
-```javascript
-// Add to scripts/control-center/native-setup.test.mjs
-test("setup install --mode=native --platform=windows-native no longer returns MODE_UNSUPPORTED", async () => {
-  const result = await runSetupInstall({ mode: "native", platform: "windows-native" /* ...fakes matching this file's existing pattern... */ });
-  assert.notEqual(result.code, "MODE_UNSUPPORTED");
-});
-```
+- [x] **Step 3: Run test to verify it fails** — n/a, no new test written (see Step 2).
 
-- [ ] **Step 3: Run test to verify it fails**
-
-Run: `node --test scripts/control-center/native-setup.test.mjs`
-Expected: FAIL — `result.code === "MODE_UNSUPPORTED"`.
-
-- [ ] **Step 4: Remove the gate for `windows-native` only**
+- [x] **Step 4: Remove the gate for `windows-native` only** — n/a. Re-confirmed 2026-08-07 by reading `scripts/control-center.mjs` lines 189-193: `mode === "native"` dispatches to `nativeSetupInstallOrRepair` at line 190, before the `mode !== "docker"` MODE_UNSUPPORTED check at line 192 — that check is unreachable for native mode already. The second gate (line 911-912, inside `runGuidedProvisioningFlow`'s `provision` callback in the interactive wizard) is confirmed to be the Docker-specific guided-setup path and intentionally stays blocked, per this task's Resolution note.
 
 In `scripts/control-center.mjs`, change:
 
@@ -840,24 +829,13 @@ if (configuration.mode !== "docker" && configuration.platform !== "windows-nativ
 }
 ```
 
-Apply the equivalent change to the second gate near line 906. **Do not** open the gate for `linux-native` here — that stays blocked until the sibling Linux plan's own Task 7 lands.
+Apply the equivalent change to the second gate near line 906. **Do not** open the gate for `linux-native` here — that stays blocked until the sibling Linux plan's own Task 7 lands. — n/a, see Step 4.
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes** — n/a, see Step 2.
 
-Run: `node --test scripts/control-center/native-setup.test.mjs`
-Expected: PASS.
+- [x] **Step 6: Run the full control-center suite** — re-run 2026-08-07: `node --test scripts/control-center/*.test.mjs scripts/control-center/**/*.test.mjs` → 210/210 passing (199 + 11 in `windows-bundle/`).
 
-- [ ] **Step 6: Run the full control-center suite**
-
-Run: `node --test scripts/control-center/*.test.mjs`
-Expected: all PASS.
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add scripts/control-center.mjs scripts/control-center/native-setup.test.mjs
-git commit -m "feat(windows-native): open the install/repair gate for windows-native"
-```
+- [x] **Step 7: Commit** — no code diff to commit; this task's outcome (native installs no longer blocked by `MODE_UNSUPPORTED`) was already true in the tree per the Resolution note. Only this plan document changes, committed below.
 
 ---
 
