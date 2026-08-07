@@ -1,6 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { sep } from "node:path";
 import { runBundleCli } from "./cli.mjs";
+
+function fakeRunCommand(status = 0) {
+  const calls = [];
+  const runCommand = (command, args, options) => { calls.push({ command, args, options }); return { status }; };
+  return { runCommand, calls };
+}
+
+function fakeCopyTree() {
+  const calls = [];
+  const copyTree = (src, dest, excludeNames) => { calls.push({ src, dest, excludeNames }); };
+  return { copyTree, calls };
+}
 
 test("runBundleCli requires --out and passes it through as outDir", async () => {
   const calls = [];
@@ -20,29 +33,62 @@ test("runBundleCli rejects when --out is missing", async () => {
   );
 });
 
-test("runBundleCli's default buildLaravel runs composer install against archive-laravel", async () => {
-  const calls = [];
+test("runBundleCli's default buildLaravel builds+runs composer via docker, then copies real output into destDir", async () => {
   const assembleWindowsBundle = async (options) => { await options.buildLaravel({ destDir: "D:\\out\\app\\laravel" }); return { ok: true }; };
-  const runCommand = (command, args, options) => { calls.push({ command, args, options }); return { status: 0 }; };
-  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], { assembleWindowsBundle, runCommand });
-  assert.equal(calls[0].command, "composer");
-  assert.deepEqual(calls[0].args, ["install", "--no-dev", "--working-dir=archive-laravel"]);
+  const { runCommand, calls } = fakeRunCommand();
+  const { copyTree, calls: copyCalls } = fakeCopyTree();
+  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], { assembleWindowsBundle, runCommand, copyTree });
+
+  assert.equal(calls[0].command, "docker");
+  assert.deepEqual(calls[0].args.slice(0, 2), ["build", "--quiet"]);
+  assert.equal(calls[1].command, "docker");
+  assert.deepEqual(calls[1].args.slice(0, 2), ["run", "--rm"]);
+  assert.ok(calls[1].args.includes("composer"));
+  assert.ok(calls[1].args.includes("--no-dev"));
+
+  assert.equal(copyCalls.length, 1);
+  assert.equal(copyCalls[0].dest, "D:\\out\\app\\laravel");
+  assert.ok(copyCalls[0].src.endsWith("archive-laravel"));
+  assert.ok(copyCalls[0].excludeNames.includes("tests"));
 });
 
-test("runBundleCli's default buildNext runs the pnpm workspace build", async () => {
-  const calls = [];
+test("runBundleCli's default buildNext builds the pnpm workspace and copies standalone output, static, and public into destDir", async () => {
   const assembleWindowsBundle = async (options) => { await options.buildNext({ destDir: "D:\\out\\app\\next" }); return { ok: true }; };
-  const runCommand = (command, args, options) => { calls.push({ command, args, options }); return { status: 0 }; };
-  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], { assembleWindowsBundle, runCommand });
+  const { runCommand, calls } = fakeRunCommand();
+  const { copyTree, calls: copyCalls } = fakeCopyTree();
+  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], {
+    assembleWindowsBundle, runCommand, copyTree, pathExists: () => true,
+  });
+
   assert.equal(calls[0].command, "pnpm");
   assert.deepEqual(calls[0].args, ["--filter", "@archive/next", "build"]);
+
+  assert.equal(copyCalls.length, 4);
+  assert.equal(copyCalls[0].dest, "D:\\out\\app\\next");
+  assert.ok(copyCalls[0].src.includes(`standalone${sep}archive-next`));
+  assert.equal(copyCalls[1].dest, "D:\\out\\app\\next\\node_modules");
+  assert.equal(copyCalls[2].dest, "D:\\out\\app\\next\\.next\\static");
+  assert.equal(copyCalls[3].dest, "D:\\out\\app\\next\\public");
+});
+
+test("runBundleCli's buildNext skips optional node_modules/public copies when they don't exist", async () => {
+  const assembleWindowsBundle = async (options) => { await options.buildNext({ destDir: "D:\\out\\app\\next" }); return { ok: true }; };
+  const { runCommand } = fakeRunCommand();
+  const { copyTree, calls: copyCalls } = fakeCopyTree();
+  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], {
+    assembleWindowsBundle, runCommand, copyTree, pathExists: () => false,
+  });
+
+  assert.equal(copyCalls.length, 2);
+  assert.equal(copyCalls[0].dest, "D:\\out\\app\\next");
+  assert.equal(copyCalls[1].dest, "D:\\out\\app\\next\\.next\\static");
 });
 
 test("runBundleCli surfaces a non-zero build exit code instead of continuing silently", async () => {
   const assembleWindowsBundle = async (options) => { await options.buildLaravel({ destDir: "D:\\out\\app\\laravel" }); return { ok: true }; };
-  const runCommand = () => ({ status: 1, stderr: "composer failed" });
+  const runCommand = () => ({ status: 1, stderr: "docker build failed" });
   await assert.rejects(
     () => runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], { assembleWindowsBundle, runCommand }),
-    /composer failed|exit code 1/i
+    /docker build failed|exit code 1/i
   );
 });
