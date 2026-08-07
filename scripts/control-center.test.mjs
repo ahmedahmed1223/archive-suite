@@ -476,11 +476,24 @@ test("install --mode=native reads the external Postgres/Redis endpoint from the 
     ARCHIVE_NATIVE_POSTGRES_HOST: "127.0.0.1",
     ARCHIVE_NATIVE_POSTGRES_PORT: "1",
     ARCHIVE_NATIVE_POSTGRES_DATABASE: "archive_test",
+    ARCHIVE_NATIVE_POSTGRES_USERNAME: "archive",
+    ARCHIVE_NATIVE_POSTGRES_PASSWORD: "test-only",
   });
   const result = JSON.parse(withEndpoint.stdout);
   assert.notEqual(result.code, "LOCAL_POSTGRES_UNAVAILABLE", "an operator-supplied endpoint must not silently fall back to local-managed");
   assert.equal(result.code, "DATA_ENDPOINT_UNHEALTHY");
   assert.equal(result.details.backend, "postgres");
+
+  // An external endpoint with no credentials must fail loudly before any
+  // probe or host effect runs -- otherwise the install would proceed to
+  // write a Laravel .env that can never actually connect.
+  const withoutCredentials = run(["install", `--config=${configFile}`, "--json"], {
+    ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile,
+    ARCHIVE_NATIVE_POSTGRES_HOST: "127.0.0.1",
+    ARCHIVE_NATIVE_POSTGRES_PORT: "1",
+    ARCHIVE_NATIVE_POSTGRES_DATABASE: "archive_test",
+  });
+  assert.equal(JSON.parse(withoutCredentials.stdout).code, "DATA_POSTGRES_CREDENTIALS_REQUIRED");
 });
 
 test("wizard answers use the declarative planner resolver rather than a second selection rule", () => {

@@ -95,6 +95,7 @@ export function buildNativeRuntime({
   dataPlan,
   probes,
   startLocalPostgres,
+  appConfig,
 } = {}) {
   const family = nativePlatformFamily(configuration?.platform);
   if (!family) throw new Error(`"${configuration?.platform}" is not a Native platform.`);
@@ -115,6 +116,12 @@ export function buildNativeRuntime({
       // Only public access opens the inbound firewall rule; local/intranet
       // installs stay loopback-only.
       applyFirewallRules: configuration.access === "public" ? effects.applyFirewallRules : undefined,
+      // appConfig is undefined in tests that don't supply it; writeAppConfig
+      // then no-ops (see createWindowsNativeRuntimeAdapter), same pattern as
+      // applyFirewallRules above.
+      writeAppConfig: appConfig
+        ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword })
+        : undefined,
       health,
       logs: effects.logs,
       exec: effects.exec,

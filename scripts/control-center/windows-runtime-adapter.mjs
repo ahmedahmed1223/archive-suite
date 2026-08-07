@@ -13,9 +13,9 @@ import { WINDOWS_SERVICES } from "./windows-services.mjs";
 // 1332, ERROR_NONE_MAPPED) until that registration exists. ACLs still apply
 // before services start, so the running process has its permissions already
 // granted.
-export const WINDOWS_INSTALL_STEPS = ["data-services-ready", "services-installed", "acl-applied", "firewall-applied", "services-started"];
+export const WINDOWS_INSTALL_STEPS = ["data-services-ready", "services-installed", "acl-applied", "app-configured", "firewall-applied", "services-started"];
 
-export function createWindowsNativeRuntimeAdapter({ services = WINDOWS_SERVICES, serviceControl, applyAcls, applyFirewallRules, ...rest } = {}) {
+export function createWindowsNativeRuntimeAdapter({ services = WINDOWS_SERVICES, serviceControl, applyAcls, applyFirewallRules, writeAppConfig, ...rest } = {}) {
   const [servicesInstalledStep, servicesStartedStep] = serviceInstallSteps({ services, serviceControl });
   return createNativeRuntimeAdapter({
     services,
@@ -23,6 +23,9 @@ export function createWindowsNativeRuntimeAdapter({ services = WINDOWS_SERVICES,
     installSteps: [
       servicesInstalledStep,
       { step: "acl-applied", run: () => (applyAcls ? applyAcls() : { status: 0 }) },
+      // Written after acl-applied so the new Caddyfile/.env inherit the
+      // install root's grant at creation time rather than racing it.
+      { step: "app-configured", run: () => (writeAppConfig ? writeAppConfig() : { status: 0 }) },
       { step: "firewall-applied", run: () => (applyFirewallRules ? applyFirewallRules() : { status: 0 }) },
       servicesStartedStep,
     ],

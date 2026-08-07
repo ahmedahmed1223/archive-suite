@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { WINDOWS_SERVICES, renderServiceDefinition } from "./windows-services.mjs";
+import { renderCaddyfile, renderLaravelEnv } from "./windows-app-config.mjs";
 
 const HTTP_RULE = "archive-http";
 
@@ -70,5 +71,14 @@ export function createWindowsHostEffects({ installRoot, services = WINDOWS_SERVI
 
   const exec = (args) => run([join(installRoot, "runtime", "php", "php.exe"), join(installRoot, "app", "laravel", "artisan"), ...args]);
 
-  return { serviceControl, applyAcls, applyFirewallRules, removeFirewallRules, logs, exec };
+  // assemble.mjs stages an empty config/ directory; the actual Caddyfile and
+  // Laravel .env can only be rendered here, at install time, once the
+  // resolved data plan and access mode are known.
+  const writeAppConfig = ({ access, domain, dataPlan, appKey, appUrl, dbUsername, dbPassword }) => {
+    writeFile(join(installRoot, "config", "Caddyfile"), renderCaddyfile({ installRoot, access, domain }));
+    writeFile(join(installRoot, "app", "laravel", ".env"), renderLaravelEnv({ appKey, appUrl, dataPlan, dbUsername, dbPassword }));
+    return { status: 0 };
+  };
+
+  return { serviceControl, applyAcls, applyFirewallRules, removeFirewallRules, writeAppConfig, logs, exec };
 }

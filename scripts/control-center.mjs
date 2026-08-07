@@ -42,6 +42,7 @@ import { createReconnectData, createUninstall } from "./control-center/uninstall
 import { createRoleSmoke } from "./control-center/role-smoke.mjs";
 import { buildNativeRuntime, nativeDataPlanOverrideFromEnv, nativeInstallRoot, nativeManifestInput, nativePlatformFamily, resolveNativeSetupDataPlan } from "./control-center/native-setup.mjs";
 import { createExternalOnlyProbes } from "./control-center/native-probes.mjs";
+import { generateAppKey, nativeDbCredentialsFromEnv } from "./control-center/windows-app-config.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
 const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
@@ -265,8 +266,18 @@ async function nativeSetupInstallOrRepair(operation, configuration) {
   if (!planned.ok) {
     return renderSetupResult({ ok: false, code: planned.code, message: planned.message, details: planned.details, nextActions: planned.nextActions });
   }
+  // The data plan intentionally excludes credentials (native-data-services.mjs
+  // rejects a host string carrying them); an external Postgres endpoint still
+  // needs a username/password to render a working Laravel .env, or the
+  // install would silently produce a config that can never connect.
+  const credentials = nativeDbCredentialsFromEnv(process.env);
+  if (planned.plan.postgres.kind === "external" && !credentials) {
+    return renderSetupResult({ ok: false, code: "DATA_POSTGRES_CREDENTIALS_REQUIRED", message: "An external PostgreSQL endpoint needs ARCHIVE_NATIVE_POSTGRES_USERNAME and ARCHIVE_NATIVE_POSTGRES_PASSWORD to configure the app.", details: {}, nextActions: ["Set ARCHIVE_NATIVE_POSTGRES_USERNAME and ARCHIVE_NATIVE_POSTGRES_PASSWORD and retry."] });
+  }
   try {
     const externalProbes = createExternalOnlyProbes();
+    const domain = process.env.ARCHIVE_NATIVE_DOMAIN;
+    const appUrl = configuration.access === "public" ? `https://${domain}` : "http://localhost:8443";
     const { adapter } = buildNativeRuntime({
       configuration,
       installRoot: process.env.ARCHIVE_NATIVE_INSTALL_ROOT || nativeInstallRoot(configuration.platform),
@@ -279,6 +290,7 @@ async function nativeSetupInstallOrRepair(operation, configuration) {
         postgres: () => externalProbes.postgres(planned.plan.postgres),
         redis: () => externalProbes.redis(planned.plan.redis),
       },
+      appConfig: { domain, appUrl, appKey: generateAppKey(), dbUsername: credentials?.username, dbPassword: credentials?.password },
     });
     const result = operation === "install" ? await adapter.install(request) : await adapter.repair(request);
     if (!result.ok) {
