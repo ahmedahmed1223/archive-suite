@@ -20,6 +20,13 @@ test("stageNodeRuntime downloads the pinned zip, verifies checksum, extracts nod
     assert.equal(result.ok, true);
     assert.equal(fetchCalls[0], NODE_WINDOWS_URL);
     assert.ok(existsSync(result.nodeExePath));
+    // The real zip extracts into a version-named subfolder; flatten it so
+    // node.exe lands at the same flat layout stage-php.mjs/stage-caddy.mjs
+    // use -- confirmed against a real Windows 11 host: windows-services.mjs
+    // assumes runtime\node\node.exe and WinSW failed with "The system cannot
+    // find the file specified" against the unflattened nested path.
+    assert.equal(result.nodeExePath, join(destDir, "node.exe"));
+    assert.equal(existsSync(join(destDir, `node-v${NODE_VERSION}-win-x64`)), false, "the version-named subfolder must not remain after flattening");
     assert.match(NODE_WINDOWS_URL, new RegExp(NODE_VERSION.replace(/\./g, "\\.")));
   } finally {
     rmSync(destDir, { recursive: true, force: true });

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { existsSync, readdirSync, renameSync, rmdirSync } from "node:fs";
 import { join } from "node:path";
 
 export const NODE_VERSION = "26.5.0";
@@ -29,5 +30,15 @@ export async function stageNodeRuntime({ destDir, fetch = defaultFetch, extract 
   const actualHash = sha256(zipBytes);
   if (actualHash !== NODE_WINDOWS_SHA256) throw new Error(`Node runtime checksum mismatch: expected ${NODE_WINDOWS_SHA256}, got ${actualHash}`);
   await extract(zipBytes, destDir);
-  return { ok: true, nodeExePath: join(destDir, `node-v${NODE_VERSION}-win-x64`, "node.exe") };
+  // The official zip extracts into a version-named subfolder
+  // (node-vX.Y.Z-win-x64\); flatten it into destDir so node.exe lands at the
+  // same flat layout stage-php.mjs/stage-caddy.mjs already use --
+  // windows-services.mjs assumes runtime\node\node.exe (confirmed against a
+  // real WinSW failure: "The system cannot find the file specified").
+  const nestedDir = join(destDir, `node-v${NODE_VERSION}-win-x64`);
+  if (existsSync(nestedDir)) {
+    for (const entry of readdirSync(nestedDir)) renameSync(join(nestedDir, entry), join(destDir, entry));
+    rmdirSync(nestedDir);
+  }
+  return { ok: true, nodeExePath: join(destDir, "node.exe") };
 }
