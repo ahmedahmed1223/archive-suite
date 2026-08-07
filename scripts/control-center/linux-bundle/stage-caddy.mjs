@@ -14,12 +14,14 @@ async function defaultFetch(url) {
 }
 async function defaultExtract(tarballBytes, targetDir) {
   const { spawnSync } = await import("node:child_process");
-  const { writeFileSync, mkdirSync } = await import("node:fs");
-  const os = await import("node:os");
+  const { mkdirSync } = await import("node:fs");
   mkdirSync(targetDir, { recursive: true });
-  const tmpTar = join(os.tmpdir(), `caddy-runtime-${Date.now()}.tar.gz`);
-  writeFileSync(tmpTar, tarballBytes);
-  const result = spawnSync("tar", ["-xzf", tmpTar, "-C", targetDir]);
+  // Pipe the archive via stdin ("-f -") instead of writing it to a temp file
+  // and passing that path as an argument: a Windows temp path's drive-letter
+  // colon (C:\Users\...) makes some tar builds mis-parse it as a remote
+  // host:file spec, and GNU tar's --force-local workaround for that isn't
+  // supported by Windows' built-in bsdtar. Stdin sidesteps both.
+  const result = spawnSync("tar", ["-xzf", "-", "-C", targetDir], { input: tarballBytes });
   if (result.status !== 0) throw new Error(`tar extraction failed: ${result.stderr}`);
 }
 
