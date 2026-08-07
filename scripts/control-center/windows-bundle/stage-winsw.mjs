@@ -8,7 +8,8 @@ import { WINDOWS_SERVICES } from "../windows-services.mjs";
 
 export const WINSW_VERSION = "3.0.0-alpha.11";
 export const WINSW_URL = `https://github.com/winsw/winsw/releases/download/v${WINSW_VERSION}/WinSW-x64.exe`;
-export const WINSW_SHA256 = "REPLACE_WITH_REAL_SHA256_FROM_WINSW_RELEASE_PAGE";
+// Verified against the downloaded artifact 2026-08-07.
+export const WINSW_SHA256 = "a2daa6a33a9c2b791ae31d9092e7935c339d1e03e89bfb747618ce2f4e819e20";
 
 function defaultSha256(bytes) { return createHash("sha256").update(bytes).digest("hex"); }
 async function defaultFetch(url) {

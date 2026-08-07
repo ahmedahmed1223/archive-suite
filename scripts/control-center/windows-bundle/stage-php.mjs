@@ -6,9 +6,11 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const PHP_VERSION = "8.5.8";
-export const PHP_WINDOWS_URL = `https://windows.php.net/downloads/releases/php-${PHP_VERSION}-nts-Win32-vs17-x64.zip`;
-// REPLACE with the real hash before use against the real network (Task 1 Step 6).
-export const PHP_WINDOWS_SHA256 = "REPLACE_WITH_REAL_SHA256_FROM_WINDOWS_PHP_NET";
+// 8.5.8 has rolled off the "releases" folder into "archives" now that 8.5.9
+// is current; pinned here to match archive-laravel/Dockerfile.worker's
+// php:8.5.8-fpm image exactly (verified reachable 2026-08-07).
+export const PHP_WINDOWS_URL = `https://windows.php.net/downloads/releases/archives/php-${PHP_VERSION}-nts-Win32-vs17-x64.zip`;
+export const PHP_WINDOWS_SHA256 = "63a3f6493f37c9ff3e288ec16621222a6cda5167dd1abffec0019e7f18c8e7e9";
 
 const REQUIRED_EXTENSIONS = ["curl", "ftp", "mbstring", "zip", "pdo", "pdo_pgsql"];
 

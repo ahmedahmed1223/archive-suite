@@ -3,7 +3,8 @@ import { join } from "node:path";
 
 export const NODE_VERSION = "26.5.0";
 export const NODE_WINDOWS_URL = `https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-win-x64.zip`;
-export const NODE_WINDOWS_SHA256 = "REPLACE_WITH_REAL_SHA256_FROM_NODEJS_ORG_SHASUMS256";
+// From https://nodejs.org/dist/v26.5.0/SHASUMS256.txt (verified 2026-08-07).
+export const NODE_WINDOWS_SHA256 = "d3b2277dbcccfdf24ef6302928f64f484cff1d77a6d3caa3a28f4d20ce9158f6";
 
 function defaultSha256(bytes) { return createHash("sha256").update(bytes).digest("hex"); }
 async function defaultFetch(url) {

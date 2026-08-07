@@ -3,7 +3,8 @@ import { join } from "node:path";
 
 export const CADDY_VERSION = "2.11.4";
 export const CADDY_WINDOWS_URL = `https://github.com/caddyserver/caddy/releases/download/v${CADDY_VERSION}/caddy_${CADDY_VERSION}_windows_amd64.zip`;
-export const CADDY_WINDOWS_SHA256 = "REPLACE_WITH_REAL_SHA256_FROM_CADDY_RELEASE_PAGE";
+// Verified against the downloaded artifact 2026-08-07.
+export const CADDY_WINDOWS_SHA256 = "1708333f79e274c7697285afe6d592ab39314e0b131e9ec6bea08ad27df62ebf";
 
 function defaultSha256(bytes) { return createHash("sha256").update(bytes).digest("hex"); }
 async function defaultFetch(url) {
