@@ -6,7 +6,10 @@
 // provided here — an operator opts in by injecting applyFirewallRules.
 import { spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+// These paths describe the Linux target host, not the machine running this
+// tool -- posix join/dirname keep them forward-slashed even when built/tested
+// on Windows (plain node:path would emit backslashes there).
+import { dirname, join } from "node:path/posix";
 import { LINUX_SERVICES, LINUX_SERVICE_USER, renderSystemdUnit } from "./linux-services.mjs";
 
 const UNIT_DIR = "/etc/systemd/system";
