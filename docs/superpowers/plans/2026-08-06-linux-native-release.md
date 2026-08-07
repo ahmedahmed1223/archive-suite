@@ -31,7 +31,7 @@
 **Interfaces:**
 - Produces: `stagePhpRuntime({ destDir, fetch, extract, sha256 }): Promise<{ ok, phpBinPath, extensionsEnabled }>` -- consumed by Task 5.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```javascript
 // scripts/control-center/linux-bundle/stage-php.test.mjs
@@ -90,12 +90,12 @@ test("stagePhpRuntime rejects a checksum mismatch instead of extracting", async 
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node --test scripts/control-center/linux-bundle/stage-php.test.mjs`
 Expected: FAIL -- module doesn't exist.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // scripts/control-center/linux-bundle/stage-php.mjs
@@ -152,19 +152,19 @@ export async function stagePhpRuntime({ destDir, fetch = defaultFetch, extract =
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `node --test scripts/control-center/linux-bundle/stage-php.test.mjs`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/control-center/linux-bundle/stage-php.mjs scripts/control-center/linux-bundle/stage-php.test.mjs
 git commit -m "feat(linux-native): add static-php-cli portable runtime stager"
 ```
 
-- [ ] **Step 6: Resolve the real checksum (manual, one-time, on a machine with network access)**
+- [x] **Step 6: Resolve the real checksum (manual, one-time, on a machine with network access)**
 
 ```bash
 curl -fsSL -o php.tar.gz "https://dl.static-php.dev/static-php-cli/bulk/php-8.5.8-cli-fpm-linux-x86_64.tar.gz"
@@ -188,7 +188,7 @@ Replace `PHP_LINUX_SHA256` with the printed hash. If `static-php-cli` has no pre
 - Produces: `stageCaddyRuntime({ destDir, fetch, extract, sha256 }): Promise<{ ok, caddyBinPath }>`
 - Both consumed by Task 5.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```javascript
 // scripts/control-center/linux-bundle/stage-node.test.mjs
@@ -249,12 +249,12 @@ test("stageCaddyRuntime downloads the pinned tarball, verifies checksum, extract
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `node --test scripts/control-center/linux-bundle/stage-node.test.mjs scripts/control-center/linux-bundle/stage-caddy.test.mjs`
 Expected: FAIL -- modules don't exist.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // scripts/control-center/linux-bundle/stage-node.mjs
@@ -334,19 +334,19 @@ export async function stageCaddyRuntime({ destDir, fetch = defaultFetch, extract
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `node --test scripts/control-center/linux-bundle/stage-node.test.mjs scripts/control-center/linux-bundle/stage-caddy.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/control-center/linux-bundle/stage-node.mjs scripts/control-center/linux-bundle/stage-node.test.mjs scripts/control-center/linux-bundle/stage-caddy.mjs scripts/control-center/linux-bundle/stage-caddy.test.mjs
 git commit -m "feat(linux-native): add portable Node.js and Caddy stagers"
 ```
 
-- [ ] **Step 6: Resolve the real checksums (manual, one-time)**
+- [x] **Step 6: Resolve the real checksums (manual, one-time)**
 
 Same pattern as Task 1 Step 6, against `NODE_LINUX_URL` and `CADDY_LINUX_URL`. Prefer copying the Node hash from the published `SHASUMS256.txt`.
 
@@ -360,7 +360,7 @@ Same pattern as Task 1 Step 6, against `NODE_LINUX_URL` and `CADDY_LINUX_URL`. P
 **Interfaces:**
 - Consumes: `createLinuxHostEffects` from `scripts/control-center/linux-host-effects.mjs` (existing, unchanged).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```javascript
 // scripts/control-center/linux-host-effects.test.mjs
@@ -455,12 +455,12 @@ test("exec invokes the staged php binary with artisan and the given arguments", 
 });
 ```
 
-- [ ] **Step 2: Run test**
+- [x] **Step 2: Run test**
 
 Run: `node --test scripts/control-center/linux-host-effects.test.mjs`
 Expected: since `linux-host-effects.mjs` already exists and should already be correct, this should PASS immediately. If any assertion fails, that is a real bug in the existing file -- fix `linux-host-effects.mjs` to match; never weaken the test to match a wrong command.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add scripts/control-center/linux-host-effects.test.mjs
@@ -479,7 +479,7 @@ git commit -m "test(linux-native): cover the real systemctl/chown/logrotate/jour
 - Consumes: `LINUX_SERVICE_USER` from `scripts/control-center/linux-services.mjs` (existing).
 - Produces: `ensureServiceUser({ run }): { ok, created }` -- creates the non-interactive `archive` system user/group if absent. Consumed by Task 9 (the dry run) before `serviceControl.install` runs, since `applyOwnership`/`serviceControl` assume the user already exists.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```javascript
 // scripts/control-center/linux-bundle/stage-service-user.test.mjs
@@ -517,12 +517,12 @@ test("ensureServiceUser is a no-op when the user already exists", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node --test scripts/control-center/linux-bundle/stage-service-user.test.mjs`
 Expected: FAIL -- module doesn't exist.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // scripts/control-center/linux-bundle/stage-service-user.mjs
@@ -550,12 +550,12 @@ export function ensureServiceUser({ run = defaultRun, user = LINUX_SERVICE_USER 
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `node --test scripts/control-center/linux-bundle/stage-service-user.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/control-center/linux-bundle/stage-service-user.mjs scripts/control-center/linux-bundle/stage-service-user.test.mjs
@@ -575,7 +575,7 @@ git commit -m "feat(linux-native): add idempotent service-user provisioning"
 - Consumes: `stagePhpRuntime` (Task 1), `stageNodeRuntime`/`stageCaddyRuntime` (Task 2).
 - Produces: `assembleLinuxBundle({ outDir, stagePhp, stageNode, stageCaddy, buildLaravel, buildNext }): Promise<{ ok, shasumsPath }>` -- consumed by Task 9.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```javascript
 // scripts/control-center/linux-bundle/assemble.test.mjs
@@ -613,12 +613,12 @@ test("assembleLinuxBundle lays out runtime/app/config and writes SHA256SUMS", as
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `node --test scripts/control-center/linux-bundle/assemble.test.mjs`
 Expected: FAIL -- module doesn't exist.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```javascript
 // scripts/control-center/linux-bundle/assemble.mjs
@@ -674,16 +674,16 @@ export async function assembleLinuxBundle({
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `node --test scripts/control-center/linux-bundle/assemble.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Wire the pnpm script**
+- [x] **Step 5: Wire the pnpm script**
 
 Add to root `package.json` `scripts`: `"bundle:linux-native": "node scripts/control-center/linux-bundle/assemble.mjs",`
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/control-center/linux-bundle/assemble.mjs scripts/control-center/linux-bundle/assemble.test.mjs package.json
@@ -700,17 +700,17 @@ git commit -m "feat(linux-native): add bundle assembler producing the install-ro
 **Interfaces:**
 - Consumes: `createExternalOnlyProbes` from `scripts/control-center/native-probes.mjs`.
 
-- [ ] **Step 1: Check whether `native-probes.mjs` already exists**
+- [x] **Step 1: Check whether `native-probes.mjs` already exists**
 
 ```bash
 test -f scripts/control-center/native-probes.mjs && echo "exists -- Windows plan Task 6 already landed" || echo "missing -- build it now"
 ```
 
-- [ ] **Step 2a: If it exists**, skip straight to wiring -- the `probes: createExternalOnlyProbes()` line in `buildNativeRuntime({...})` inside `nativeSetupInstallOrRepair` already applies to both platforms (the function has no platform-specific branching), so no Linux-specific code is needed here. Run `node --test scripts/control-center/native-probes.test.mjs` to confirm the existing tests still pass, then skip to Step 3.
+- [x] **Step 2a: If it exists**, skip straight to wiring -- the `probes: createExternalOnlyProbes()` line in `buildNativeRuntime({...})` inside `nativeSetupInstallOrRepair` already applies to both platforms (the function has no platform-specific branching), so no Linux-specific code is needed here. Run `node --test scripts/control-center/native-probes.test.mjs` to confirm the existing tests still pass, then skip to Step 3.
 
-- [ ] **Step 2b: If it does not exist**, build it exactly as specified in `docs/superpowers/plans/2026-08-06-windows-native-release.md` Task 6, Steps 1-6 (the module is platform-agnostic -- it operates on TCP host/port, nothing OS-specific) -- then continue here.
+- [x] **Step 2b: If it does not exist**, build it exactly as specified in `docs/superpowers/plans/2026-08-06-windows-native-release.md` Task 6, Steps 1-6 (the module is platform-agnostic -- it operates on TCP host/port, nothing OS-specific) -- then continue here.
 
-- [ ] **Step 3: Commit (only if Step 2b built something new; otherwise nothing to commit)**
+- [x] **Step 3: Commit (only if Step 2b built something new; otherwise nothing to commit)**
 
 ```bash
 git add scripts/control-center/native-probes.mjs scripts/control-center/native-probes.test.mjs scripts/control-center.mjs
@@ -721,9 +721,12 @@ git commit -m "feat(linux-native): wire external Postgres/Redis reachability pro
 
 ### Task 7: Open the `MODE_UNSUPPORTED` gate for `linux-native`
 
-**Files:**
-- Modify: `scripts/control-center.mjs` (the two `MODE_UNSUPPORTED` returns).
-- Modify: `scripts/control-center/native-setup.test.mjs`.
+**Resolution (2026-08-07):** same finding as the Windows plan's own Task 7 -- re-verified against the current tree rather than applying the literal diff below. `control-center.mjs`'s `setupInstallOrRepair` dispatches `mode === "native"` (any platform) to `nativeSetupInstallOrRepair` *before* reaching the `mode !== "docker"` `MODE_UNSUPPORTED` check (lines 190-194) -- that check is dead code for any native platform, `linux-native` included. Confirmed empirically: `node scripts/control-center.mjs install --config=<linux-native config> --json` proceeds past the mode gate and fails only on a real host dependency check (`DEPENDENCY_MISSING: systemctl`, expected on this Windows dev machine), never `MODE_UNSUPPORTED`. `native-probes.mjs`'s `createExternalOnlyProbes()` wiring and `nativePlatformFamily()` in `native-setup.mjs` (line 19: `if (platformId === "linux-native") return "linux";`) are likewise already platform-agnostic. The second gate (guided-setup wizard's `provision` callback, line ~923: `if (resolved.mode !== "docker")`) still unconditionally blocks all native platforms -- left as-is, matching the Windows plan's precedent, since its steps are Docker-specific (writes `.env`, runs `docker compose`). No code change was needed; this task's real objective (native installs runnable for `linux-native`) was already met before this plan started. Full `scripts/control-center/**/*.test.mjs` suite: 237/237 passing.
+
+- [x] **Step 1-7: n/a, see Resolution above** -- no code diff, no new test needed (would test dead-code avoidance already true, same reasoning as the Windows plan's Task 7).
+
+<details>
+<summary>Original plan text (superseded by the Resolution above)</summary>
 
 - [ ] **Step 1: Write the failing test**
 
@@ -774,6 +777,8 @@ Expected: all PASS.
 git add scripts/control-center.mjs scripts/control-center/native-setup.test.mjs
 git commit -m "feat(linux-native): open the install/repair gate for linux-native"
 ```
+
+</details>
 
 ---
 
