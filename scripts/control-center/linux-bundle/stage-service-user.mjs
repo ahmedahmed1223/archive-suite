@@ -3,6 +3,7 @@
 // creates it idempotently -- getent's exit code (2 = "not found") is the
 // standard POSIX way to check for an existing passwd/group entry.
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { LINUX_SERVICE_USER } from "../linux-services.mjs";
 
 function defaultRun(args) {
@@ -19,4 +20,10 @@ export function ensureServiceUser({ run = defaultRun, user = LINUX_SERVICE_USER 
 
   const userResult = run(["useradd", "--system", "--gid", user.name, "--home-dir", user.home, "--shell", user.shell, "--no-create-home", user.name]);
   return { ok: userResult.status === 0, created: userResult.status === 0 };
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const result = ensureServiceUser();
+  console.log(JSON.stringify(result));
+  if (!result.ok) process.exit(1);
 }
