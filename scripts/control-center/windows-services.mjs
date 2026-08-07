@@ -32,7 +32,15 @@ function fail(code, message, nextActions) { throw new WindowsPackageError(code, 
 const escapeXml = (value) => String(value).replace(/[<>&'"]/g, (char) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" }[char]));
 
 // WinSW definition for one service: auto-restart on failure, rolling logs
-// under the install root so log ACLs are owned by the installation.
+// under the install root so log ACLs are owned by the installation. No
+// <serviceaccount> here: WinSW validates that element against a real,
+// pre-existing account before it creates the service, so it cannot resolve
+// NT SERVICE\<id> -- that virtual account doesn't exist until the service
+// itself does (confirmed against real WinSW: "Failed to find the account. No
+// mapping between account names and security IDs was done."). The account is
+// assigned afterward via `sc config <id> obj=`, Microsoft's documented
+// two-step pattern for per-service virtual accounts (see
+// windows-host-effects.mjs's serviceControl.install).
 export function renderServiceDefinition(service) {
   if (!WINDOWS_SERVICES.some((known) => known.id === service?.id)) fail("WINDOWS_SERVICE_UNKNOWN", "Only the fixed Archive service topology can be rendered.");
   return [
@@ -42,7 +50,6 @@ export function renderServiceDefinition(service) {
     `  <description>${escapeXml(service.description)}</description>`,
     `  <executable>%BASE%\\..\\${escapeXml(service.executable)}</executable>`,
     `  <arguments>${escapeXml(service.arguments)}</arguments>`,
-    `  <serviceaccount><username>${escapeXml(service.account)}</username><allowservicelogon>true</allowservicelogon></serviceaccount>`,
     "  <onfailure action=\"restart\" delay=\"10 sec\"/>",
     "  <log mode=\"roll-by-size\"><sizeThreshold>10240</sizeThreshold><keepFiles>8</keepFiles></log>",
     "</service>",

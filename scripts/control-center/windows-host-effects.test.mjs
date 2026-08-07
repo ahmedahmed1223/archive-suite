@@ -10,7 +10,7 @@ function fakeRun() {
   return { run, calls };
 }
 
-test("serviceControl.install writes the service XML and calls <id>.exe install", () => {
+test("serviceControl.install writes the service XML, calls <id>.exe install, then assigns the virtual account via sc config", () => {
   const { run, calls } = fakeRun();
   const written = [];
   const writeFile = (path, content) => written.push({ path, content });
@@ -19,6 +19,21 @@ test("serviceControl.install writes the service XML and calls <id>.exe install",
   assert.equal(result.status, 0);
   assert.equal(written[0].path, "C:\\Program Files\\ArchiveSuite\\services\\archive-http.xml");
   assert.deepEqual(calls[0], ["C:\\Program Files\\ArchiveSuite\\services\\archive-http.exe", "install"]);
+  // WinSW's own account validation cannot resolve NT SERVICE\<id> before the
+  // service exists (real error confirmed: "Failed to find the account. No
+  // mapping between account names and security IDs was done."), so the
+  // virtual account is assigned as a separate step after the service is
+  // created -- Microsoft's documented two-step pattern.
+  assert.deepEqual(calls[1], ["sc", "config", "archive-http", "obj=", "NT SERVICE\\archive-http"]);
+});
+
+test("serviceControl.install does not attempt sc config when the WinSW install itself fails", () => {
+  const calls = [];
+  const run = (args) => { calls.push(args); return args[1] === "install" ? { status: 1 } : { status: 0 }; };
+  const effects = createWindowsHostEffects({ installRoot: INSTALL_ROOT, run, writeFile: () => {} });
+  const result = effects.serviceControl.install({ id: "archive-http", description: "d", executable: "runtime\\caddy\\caddy.exe", arguments: "run" });
+  assert.equal(result.status, 1);
+  assert.equal(calls.length, 1, "a failed WinSW install must not attempt to configure the account");
 });
 
 test("serviceControl start/stop/restart/remove/query call the right WinSW verb", () => {

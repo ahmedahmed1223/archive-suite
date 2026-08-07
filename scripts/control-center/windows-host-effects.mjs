@@ -29,7 +29,14 @@ export function createWindowsHostEffects({ installRoot, services = WINDOWS_SERVI
   const serviceControl = {
     install(service) {
       writeFile(join(servicesDir, `${service.id}.xml`), renderServiceDefinition(service));
-      return run([exeFor(service.id), "install"]);
+      const installed = run([exeFor(service.id), "install"]);
+      if (installed.status !== 0) return installed;
+      // WinSW's own account validation can't resolve NT SERVICE\<id> before
+      // the service exists, so assign the virtual account as a separate step
+      // now that the service is registered -- Microsoft's documented
+      // two-step pattern (see windows-services.mjs's renderServiceDefinition
+      // for the real WinSW error this avoids).
+      return run(["sc", "config", service.id, "obj=", `NT SERVICE\\${service.id}`]);
     },
     remove: (id) => run([exeFor(id), "uninstall"]),
     start: (id) => run([exeFor(id), "start"]),

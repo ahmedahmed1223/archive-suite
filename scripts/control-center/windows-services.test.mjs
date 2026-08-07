@@ -25,10 +25,17 @@ test("Windows topology runs every required component under its own limited virtu
   }
 });
 
-test("service definition renders the pinned wrapper XML with restart and rolling logs", () => {
+test("service definition renders the pinned wrapper XML with restart and rolling logs, without an inline serviceaccount", () => {
   const xml = renderServiceDefinition(WINDOWS_SERVICES[1]);
   assert.match(xml, /<id>archive-next<\/id>/);
-  assert.match(xml, /NT SERVICE\\archive-next/);
+  // WinSW validates <serviceaccount> against a real, pre-existing account
+  // before it creates the service -- it cannot resolve NT SERVICE\<id> since
+  // that virtual account doesn't exist until the service itself does
+  // (confirmed against real WinSW: "Failed to find the account. No mapping
+  // between account names and security IDs was done."). The XML must not
+  // reference it; the virtual account is assigned afterward via
+  // `sc config <id> obj=`, Microsoft's documented two-step pattern.
+  assert.doesNotMatch(xml, /serviceaccount/);
   assert.match(xml, /onfailure action="restart"/);
   assert.match(xml, /roll-by-size/);
   assert.throws(() => renderServiceDefinition({ id: "rogue-service" }), (error) => error.code === "WINDOWS_SERVICE_UNKNOWN");
