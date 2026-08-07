@@ -2,6 +2,7 @@
 // bundle:windows-native -- --out <dir>`. Wires the real archive-laravel
 // composer install and @archive/next pnpm build as buildLaravel/buildNext.
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { createCli } from "../cli.mjs";
 import { assembleWindowsBundle as defaultAssembleWindowsBundle } from "./assemble.mjs";
 
@@ -35,7 +36,11 @@ export async function runBundleCli(argv, {
   return assembleWindowsBundle({ outDir, buildLaravel, buildNext });
 }
 
-if (import.meta.url === `file://${process.argv[1]?.replace(/\\/g, "/")}`) {
+// pathToFileURL handles platform URL rules correctly (Windows needs
+// file:///D:/... -- three slashes before the drive letter -- which a
+// hand-rolled `file://${path}` string does not produce, so this guard
+// never fired on Windows before).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   runBundleCli(process.argv).then(
     (result) => { console.log(`Bundle assembled: ${result.shasumsPath}`); },
     (error) => { console.error(error.message); process.exit(1); }

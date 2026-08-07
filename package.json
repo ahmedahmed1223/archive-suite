@@ -69,7 +69,7 @@
     "deploy": "node scripts/control-center.mjs deploy --local",
     "control": "node scripts/control-center.mjs",
     "acceptance:report": "node scripts/acceptance-report.mjs",
-    "bundle:windows-native": "node scripts/control-center/windows-bundle/assemble.mjs"
+    "bundle:windows-native": "node scripts/control-center/windows-bundle/cli.mjs"
   },
   "devDependencies": {
     "node": "26.5.0",
