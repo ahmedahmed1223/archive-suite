@@ -851,7 +851,19 @@ cd /tmp/linux-native-bundle-test
 sha256sum --check SHA256SUMS
 ```
 
-- [ ] **Step 4: Provision the service user, point at a real Postgres/Redis, and attempt install**
+**Steps 4-5 completed (with real findings) 2026-08-07.** No WSL2 Ubuntu distro exists on this machine, so this ran in a real systemd container instead: built a `debian:bookworm-slim` + `systemd`/`systemd-sysv` image, started it `--privileged --cgroupns=host` with `/sys/fs/cgroup` bind-mounted (confirmed `systemctl is-system-running` → `running`, i.e. genuine PID-1 systemd, not a simulation), plus sibling `pgvector/pgvector:0.8.5-pg18` and `redis:8.8.0-alpine` containers on the same Docker network as the real external Postgres/Redis endpoint (same image pins `infra/docker-compose.yml` uses). Copied the Task 9 Step 2 bundle into the container's own filesystem at `/opt/archive-suite` via `docker cp` (not a Windows bind mount, so `chown`/permissions are genuinely native) and ran the real CLI with `ARCHIVE_NATIVE_POSTGRES_*`/`ARCHIVE_NATIVE_REDIS_*` env vars pointing at the sibling containers.
+
+Two more real bugs surfaced, fixed and committed:
+- **`stage-service-user.mjs` had no CLI entry point.** This task's own Step 4 documents running it directly (`node .../stage-service-user.mjs`) but the file only ever exported `ensureServiceUser` -- running it as literally documented was a silent no-op. Added a `pathToFileURL`-guarded runner, same pattern as `windows-bundle/cli.mjs`.
+- **The official Node.js Linux binary needs `libatomic.so.1`**, absent on a minimal `debian:bookworm-slim`. Not a bug in this repo's code, but a real target-host dependency worth carrying into Task 10's clean-host distro image choice or base-image `apt-get install` list if it recurs on Ubuntu 22.04/24.04 minimal cloud images.
+
+With those fixed, **Step 4 (install) genuinely succeeded**: `{"ok":true,"code":"INSTALL_RECORDED",...,"lastSuccessfulStep":"services-started"}`. `systemctl list-units archive-*` showed all 6 real systemd units loaded and enabled; `archive-reverb` reached `active/running` (it needs no config file beyond env vars). The other five (`archive-http`, `archive-next`, `archive-php-fpm`, `archive-worker`, `archive-scheduler`) crash-looped (`activating (auto-restart)`) -- `caddy run --config /opt/archive-suite/config/Caddyfile` failed because no Caddyfile exists.
+
+Root cause, confirmed by reading the code: **`linux-runtime-adapter.mjs`'s `LINUX_INSTALL_STEPS` has no `app-configured` step at all.** `windows-runtime-adapter.mjs` has one (`{ step: "app-configured", run: () => (writeAppConfig ? writeAppConfig() : ...) }`, backed by `windows-app-config.mjs`, which writes the Caddyfile/php-fpm.conf/.env with the app key and DB credentials) -- Linux never got the equivalent `linux-app-config.mjs` + adapter wiring. This predates this plan (part of the original V1-211B scaffolding, same shared-engine gap the Windows plan's `windows-app-config.mjs` already covers for its own platform) and is real, substantial follow-up work outside Tasks 1-9's stated scope (bundler + host-effects tests + gate + probes) -- **not attempted here.**
+
+**Step 5 (uninstall) could not run at all**: `node scripts/control-center.mjs uninstall --config=... --json` returned `{"ok":false,"code":"MODE_UNSUPPORTED","message":"Uninstall is not wired for the \"native\" installation mode in this build."}`. Confirmed by reading the code: `releaseUninstall()` is hardcoded to the Docker `updateRuntime` adapter (`createDockerRuntimeAdapter`) with no native-mode branch anywhere -- unlike `install`/`repair`, which do have `nativeSetupInstallOrRepair`, **no native uninstall adapter exists at all**, for either platform. This is a shared-engine gap, not Linux-specific, and is likewise real substantial follow-up work outside this plan's scope -- **not attempted here.** (Cleaned up by simply tearing down the disposable dry-run container/network instead of exercising a product uninstall path.)
+
+- [x] **Step 4: Provision the service user, point at a real Postgres/Redis, and attempt install**
 
 ```bash
 sudo node scripts/control-center/linux-bundle/stage-service-user.mjs
@@ -859,9 +871,9 @@ export ARCHIVE_NATIVE_INSTALL_ROOT=/opt/archive-suite
 sudo node scripts/control-center.mjs setup install --mode=native --platform=linux-native --yes
 ```
 
-Expected: units register (`systemctl status archive-*`), `archive-http` responds with the app's normal login page. This machine is **not** a clean host -- a pass here is not V1-211D-native acceptance evidence.
+Expected: units register (`systemctl status archive-*`), `archive-http` responds with the app's normal login page. This machine is **not** a clean host -- a pass here is not V1-211D-native acceptance evidence. (Units registered and started as expected; `archive-http` itself doesn't respond yet -- see the `app-configured` gap above.)
 
-- [ ] **Step 5: Uninstall cleanly and confirm no residue**
+- [x] **Step 5: Uninstall cleanly and confirm no residue** -- blocked, see Resolution above. `MODE_UNSUPPORTED`: native uninstall isn't implemented in the engine at all.
 
 ```bash
 sudo node scripts/control-center.mjs setup uninstall --mode=native --platform=linux-native --yes
@@ -880,3 +892,14 @@ Cannot be executed on a desk machine with the dev toolchain installed -- require
 - [ ] Record a manifest matching the shape of `docs/evidence/v1-210d/final-manifest.json`, saved to `docs/evidence/v1-211d-native/`.
 - [ ] Only then flip `infra/platform/compatibility.v1.json`'s `linux-native.status` from `"planned"` to `"supported"` -- the existing V1-212C evidence check in `scripts/verify-release-readiness.mjs` will fail the release gate without a matching evidence file.
 - [ ] Update `TASKS.md`: close the corresponding V1 item with a link to the new evidence directory.
+
+---
+
+### Follow-up work discovered running Task 9 for real (not in this plan's scope)
+
+Two engine-level gaps, found by actually installing on a real systemd host rather than testing against fakes. Both block Task 10 from passing regardless of anything in Tasks 1-9, and both are shared-engine gaps (not Linux-specific):
+
+1. **No `app-configured` step in `linux-runtime-adapter.mjs`.** `windows-runtime-adapter.mjs` has one, backed by `windows-app-config.mjs` (writes Caddyfile/php-fpm.conf/.env with the app key and DB credentials). Linux has no equivalent -- confirmed by a real install where every service except `archive-reverb` (needs no config file) crash-loops because `/opt/archive-suite/config/Caddyfile` etc. are never written. Needs a `linux-app-config.mjs` mirroring the Windows one, plus a `{ step: "app-configured", run: () => writeAppConfig?.() }` entry in `LINUX_INSTALL_STEPS`, plus wiring `writeAppConfig` into `nativeSetupInstallOrRepair`'s `buildNativeRuntime({...})` call the same way `appConfig` already flows through for Windows.
+2. **No native uninstall adapter exists at all**, for either platform. `releaseUninstall()` in `control-center.mjs` is hardcoded to the Docker `updateRuntime` adapter; there is no native-mode branch the way `install`/`repair` have `nativeSetupInstallOrRepair`. Confirmed empirically: `node scripts/control-center.mjs uninstall --config=<native config> --json` returns `MODE_UNSUPPORTED` even after a successful native install. Needs a `nativeUninstall(configuration)` function mirroring `nativeSetupInstallOrRepair`'s dispatch, using each platform's `serviceControl.remove`/host-effects to stop and unregister services and clear the install root.
+
+Both are real, substantial features -- not quick fixes -- and out of scope for a plan whose stated goal was the bundler, host-effects tests, the install/repair gate, and the platform contract. File as their own plan(s) before attempting Task 10's clean-host acceptance, since a clean-host run will hit both.
