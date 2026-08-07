@@ -898,9 +898,11 @@ git commit -m "docs(windows-native): record the bundled PHP/Node/Caddy pins and 
 
 Not clean-host evidence — proves the bundle boots.
 
-- [ ] **Step 1: Write a thin CLI wrapper with real build callbacks**
+- [x] **Step 1: Write a thin CLI wrapper with real build callbacks**
 
-Create `scripts/control-center/windows-bundle/cli.mjs`, following the same TDD shape as every prior task (write `cli.test.mjs` first, asserting on argument parsing with fake `assembleWindowsBundle`), then implement it calling real `composer install --no-dev --working-dir=archive-laravel` and `pnpm --filter @archive/next build` as `buildLaravel`/`buildNext`.
+Created `scripts/control-center/windows-bundle/cli.mjs` + `cli.test.mjs` (5 tests, TDD-first), wiring real `composer install --no-dev --working-dir=archive-laravel` and `pnpm --filter @archive/next build` as `buildLaravel`/`buildNext`. Also resolved this task's outstanding Step 6 checksum placeholders across Tasks 1-3 with real, network-verified SHA-256 hashes (PHP 8.5.8 moved from `releases/` to `releases/archives/` on windows.php.net since the plan was written — URL updated accordingly, version pin unchanged). Full `scripts/control-center/**/*.test.mjs` suite: 210/210 passing.
+
+**Steps 2-5 intentionally not run in this session:** Step 2 (produce a real bundle) needs a real `composer install`/`pnpm build` plus ~70MB of runtime downloads — high-cost for an unattended run and not yet requested. Steps 4-5 (register/uninstall real Windows services via WinSW) modify live system service state, which is out of scope for an unattended agent regardless of this plan's text — run those manually, interactively, when ready. Re-run Steps 2-3 with: `pnpm run bundle:windows-native -- --out D:\path\to\bundle` (or invoke `cli.mjs` directly once wired into the npm script).
 
 - [ ] **Step 2: Produce a real bundle**
 
