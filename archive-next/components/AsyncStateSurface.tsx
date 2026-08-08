@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import EmptyState from "@/components/EmptyState";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export interface AsyncStateAction {
   label: string;
@@ -23,18 +24,21 @@ export default function AsyncStateSurface({
   retryLabel?: string;
   children?: ReactNode;
 }>) {
+  const { locale } = useLocale();
   if (status === "success") {
     return <>{children}</>;
   }
 
-  const defaultTitle = status === "loading" ? "جار التحميل..." : status === "error" ? "تعذر إكمال الطلب" : "لا توجد نتائج";
+  const defaultTitle = locale === "en"
+    ? (status === "loading" ? "Loading…" : status === "error" ? "The request could not be completed" : "No results")
+    : (status === "loading" ? "جارٍ التحميل…" : status === "error" ? "تعذر إكمال الطلب" : "لا توجد نتائج");
   const primaryAction = action ? (
     <button type="button" className="button primary" onClick={action.onClick}>
       {action.label}
     </button>
   ) : onRetry ? (
     <button type="button" className="button primary" onClick={onRetry}>
-      {retryLabel}
+      {retryLabel === "إعادة المحاولة" && locale === "en" ? "Try again" : retryLabel}
     </button>
   ) : undefined;
 
