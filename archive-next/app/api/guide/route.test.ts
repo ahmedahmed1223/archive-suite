@@ -29,9 +29,18 @@ describe("GET /api/guide", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(payload.ok).toBe(true);
     expect(payload.locale).toBe("en");
-    expect(payload.chapters.map((chapter) => chapter.id)).toEqual(["viewer-search", "editor-upload", "whats-new"]);
-    expect(payload.chapters[0]?.title).toBe("Search and access records");
-    expect(payload.chapters.some((chapter) => chapter.title === "System administration and operations")).toBe(false);
+    expect(payload.chapters.map((chapter) => chapter.id)).toEqual([
+      "getting-started",
+      "viewer-search",
+      "files-previews",
+      "rights-sharing",
+      "editor-upload",
+      "collaboration-projects",
+      "media-review",
+      "whats-new",
+    ]);
+    expect(payload.chapters[0]?.title).toBe("Getting started and navigation");
+    expect(payload.chapters.some((chapter) => chapter.title === "Users, roles, and permissions")).toBe(false);
   });
 
   test("keeps the account locale authoritative over the requested locale", async () => {
@@ -43,7 +52,7 @@ describe("GET /api/guide", () => {
     const payload = await response.json() as { locale: string; chapters: Array<{ title: string }> };
 
     expect(payload.locale).toBe("ar");
-    expect(payload.chapters[0]?.title).toBe("البحث والوصول إلى السجلات");
+    expect(payload.chapters[0]?.title).toBe("البدء والتنقل");
   });
 
   test("uses a validated requested locale only when the account preference is null", async () => {

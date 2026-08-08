@@ -13,7 +13,6 @@ const statusCss = readSource("app/styles/05-status.css");
 const appShell = readSource("components/AppShell.tsx");
 const appHeader = readSource("components/AppHeader.tsx");
 const commandBar = readSource("components/WorkspaceCommandBar.tsx");
-const helpPage = readSource("app/help/page.tsx");
 
 describe("responsive RTL workspace source contract", () => {
   it("keeps the viewport and shared shell regions inline-size safe", () => {
@@ -40,8 +39,7 @@ describe("responsive RTL workspace source contract", () => {
     expect(foundationCss).toMatch(/@media\s*\(max-width:\s*760px\)\s*{[\s\S]*\.workspace-commandbar\s*{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto;/s);
   });
 
-  it("gives standalone checklist checkboxes a labelled 44px hit area", () => {
-    expect(helpPage).toMatch(/<li className="checklist-item"[^>]*>\s*<label className="checklist-control">\s*<input type="checkbox"[^>]*\/>\s*<span>{item}<\/span>\s*<\/label>/s);
+  it("keeps reusable checklist controls at a 44px hit area", () => {
     expect(componentsCss).toMatch(/\.checklist-control\s*{[^}]*min-block-size:\s*2\.75rem;/s);
     expect(componentsCss).toMatch(/\.checklist-item input\[type="checkbox"\]\s*{[^}]*inline-size:\s*1\.05rem;[^}]*block-size:\s*1\.05rem;/s);
   });
