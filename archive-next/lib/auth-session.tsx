@@ -1,10 +1,11 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ARCHIVE_UNAUTHORIZED_EVENT, createArchiveApiClient, type ArchiveUser } from "@/lib/archive-api";
 import { isPublicPath } from "@/lib/public-paths";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type AuthStatus = "loading" | "authenticated" | "guest";
 
@@ -53,6 +54,9 @@ export function safeNextPath(value: string | null) {
 }
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const { t } = useLocale();
+  const authCopyRef = useRef(t.auth);
+  authCopyRef.current = t.auth;
   const [session, setSession] = useState<AuthSessionState>({
     status: "loading",
     user: null
@@ -61,7 +65,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     () =>
       createArchiveApiClient({
         onUnauthorized: () => {
-          setSession({ status: "guest", user: null, error: "انتهت الجلسة. سجّل الدخول مرة أخرى." });
+          setSession({ status: "guest", user: null, error: authCopyRef.current.errors.sessionExpired });
         }
       }),
     []
@@ -124,7 +128,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   useEffect(() => {
     function handleUnauthorized() {
-      setSession({ status: "guest", user: null, error: "انتهت الجلسة. سجّل الدخول مرة أخرى." });
+      setSession({ status: "guest", user: null, error: authCopyRef.current.errors.sessionExpired });
     }
 
     window.addEventListener(ARCHIVE_UNAUTHORIZED_EVENT, handleUnauthorized);
@@ -177,6 +181,7 @@ export function AuthGate({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname() || "/";
   const router = useRouter();
   const session = useAuthSession();
+  const { t } = useLocale();
   const isPublic = isPublicPath(pathname);
 
   useEffect(() => {
@@ -193,7 +198,7 @@ export function AuthGate({ children }: Readonly<{ children: ReactNode }>) {
     return (
       <main className="session-loading" aria-busy="true">
         <span className="status-refresh-icon is-spinning" aria-hidden="true" />
-        <span>جار التحقق من الجلسة...</span>
+        <span>{t.auth.status.verifyingSession}</span>
       </main>
     );
   }
@@ -201,7 +206,7 @@ export function AuthGate({ children }: Readonly<{ children: ReactNode }>) {
   if (session.status === "guest") {
     return (
       <main className="session-loading" aria-live="polite">
-        <span>يتم تحويلك إلى تسجيل الدخول...</span>
+        <span>{t.auth.status.redirectingToLogin}</span>
       </main>
     );
   }

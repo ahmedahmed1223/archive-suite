@@ -1,4 +1,6 @@
 export const SUPPORTED_LOCALES = ["ar", "en"] as const;
+export const LOCALE_COOKIE_NAME = "archive_locale";
+export const LOCALE_STORAGE_KEY = "archive.locale";
 
 export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
 

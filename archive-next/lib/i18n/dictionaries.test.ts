@@ -12,6 +12,9 @@ function leafPaths(value: object, prefix = ""): string[] {
 describe("localized dictionaries", () => {
   it("keeps Arabic and English feature keys in parity", () => {
     expect(leafPaths(dictionaries.ar).sort()).toEqual([
+      "auth.errors.sessionExpired",
+      "auth.status.redirectingToLogin",
+      "auth.status.verifyingSession",
       "shared.actions.cancel",
       "shared.actions.retry",
       "shared.actions.save",
@@ -28,5 +31,7 @@ describe("localized dictionaries", () => {
     expect(getDictionary("ar").shared.feedback.loading).toBe("جارٍ التحميل…");
     expect(getDictionary("en").shared.feedback.loading).toBe("Loading…");
     expect(getDictionary("ar").shared.languages.en).toBe("الإنجليزية");
+    expect(getDictionary("ar").auth.errors.sessionExpired).toBe("انتهت جلستك. سجّل الدخول مرة أخرى.");
+    expect(getDictionary("en").auth.status.redirectingToLogin).toBe("Taking you to sign in…");
   });
 });

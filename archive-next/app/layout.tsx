@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
+import { headers } from "next/headers";
 import AppProviders from "@/components/AppProviders";
 import ClientErrorReporter from "@/components/ClientErrorReporter";
 import { BRAND } from "@/lib/brand";
+import { directionFor } from "@/lib/i18n/resolve-locale";
+import { isAppLocale } from "@/lib/i18n/types";
 import "./styles/01-base.css";
 import "./styles/02-layout.css";
 import "./styles/03-components.css";
@@ -39,11 +42,16 @@ export const metadata: Metadata = {
   }
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const requestHeaders = await headers();
+  const forwardedLocale = requestHeaders.get("x-archive-locale");
+  const locale = isAppLocale(forwardedLocale) ? forwardedLocale : "ar";
+  const hasLocaleCookie = requestHeaders.get("x-archive-locale-cookie") === "1";
+
   return (
-    <html lang="ar" dir="rtl" data-theme="dark" className={plexArabic.variable} suppressHydrationWarning>
+    <html lang={locale} dir={directionFor(locale)} data-theme="dark" className={plexArabic.variable} suppressHydrationWarning>
       <body>
-        <AppProviders>
+        <AppProviders initialLocale={locale} hasLocaleCookie={hasLocaleCookie}>
           <ClientErrorReporter />
           {children}
         </AppProviders>

@@ -12,9 +12,18 @@ import OfflineStatusBanner from "@/components/OfflineStatusBanner";
 import RouteProgress from "@/components/ui/RouteProgress";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthGate, AuthProvider } from "@/lib/auth-session";
+import { LocaleAccountSync } from "@/lib/i18n/LocaleAccountSync";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+import type { AppLocale } from "@/lib/i18n/types";
 import { initializeOfflineManager, shutdownOfflineManager } from "@/lib/offline-manager";
 
-export default function AppProviders({ children }: Readonly<{ children: ReactNode }>) {
+interface AppProvidersProps {
+  children: ReactNode;
+  initialLocale: AppLocale;
+  hasLocaleCookie: boolean;
+}
+
+export default function AppProviders({ children, initialLocale, hasLocaleCookie }: Readonly<AppProvidersProps>) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -40,20 +49,23 @@ export default function AppProviders({ children }: Readonly<{ children: ReactNod
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <AuthProvider>
-          <TooltipProvider delayDuration={180}>
-            <ToastProvider swipeDirection="right">
-              <ConfirmDialogProvider>
-                <RouteProgress />
-                <OfflineStatusBanner />
-                <AuthGate>{children}</AuthGate>
-                <CommandPalette />
-                <ToastHub />
-                <ToastViewport />
-              </ConfirmDialogProvider>
-            </ToastProvider>
-          </TooltipProvider>
-        </AuthProvider>
+        <LocaleProvider initialLocale={initialLocale} hasLocaleCookie={hasLocaleCookie}>
+          <AuthProvider>
+            <LocaleAccountSync />
+            <TooltipProvider delayDuration={180}>
+              <ToastProvider swipeDirection="right">
+                <ConfirmDialogProvider>
+                  <RouteProgress />
+                  <OfflineStatusBanner />
+                  <AuthGate>{children}</AuthGate>
+                  <CommandPalette />
+                  <ToastHub />
+                  <ToastViewport />
+                </ConfirmDialogProvider>
+              </ToastProvider>
+            </TooltipProvider>
+          </AuthProvider>
+        </LocaleProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

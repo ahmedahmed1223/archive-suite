@@ -1,12 +1,31 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { describe, expect, test } from "vitest";
-import { RTL_DOCUMENT_CONTRACT, isRtlLtrException } from "@/lib/rtl-contract";
+import type { ReactElement } from "react";
+import { describe, expect, test, vi } from "vitest";
+import RootLayout from "@/app/layout";
+import { isRtlLtrException } from "@/lib/rtl-contract";
+
+const requestLocale = vi.hoisted(() => ({ locale: "ar" }));
+
+vi.mock("next/headers", () => ({
+  headers: async () => new Headers({
+    "x-archive-locale": requestLocale.locale,
+    "x-archive-locale-cookie": "1",
+  }),
+}));
+
+vi.mock("next/font/google", () => ({
+  IBM_Plex_Sans_Arabic: () => ({ variable: "font-arabic" }),
+}));
 
 describe("RTL operational contract (V1-306B)", () => {
-  test("declares Arabic RTL at the document root", () => {
-    const layout = readFileSync(fileURLToPath(new URL("../app/layout.tsx", import.meta.url)), "utf8");
-    expect(layout).toContain(`<html lang="${RTL_DOCUMENT_CONTRACT.language}" dir="${RTL_DOCUMENT_CONTRACT.direction}"`);
+  test.each([
+    ["ar", "rtl"],
+    ["en", "ltr"],
+  ])("renders the %s document root with %s direction", async (locale, direction) => {
+    requestLocale.locale = locale;
+    const layout = await RootLayout({ children: null }) as ReactElement<{ lang: string; dir: string }>;
+
+    expect(layout.props.lang).toBe(locale);
+    expect(layout.props.dir).toBe(direction);
   });
 
   test("limits LTR overrides to machine-readable exception kinds", () => {
