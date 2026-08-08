@@ -48,6 +48,15 @@ function setupConfiguration() {
   };
 }
 
+function safeServiceDiagnostic(value, secret) {
+  return String(value || "")
+    .replaceAll(secret, "[redacted]")
+    .replace(/([a-z][a-z\d+.-]*:\/\/)[^/\s:@]+:[^/\s@]+@/gi, "$1[redacted]@")
+    .replace(/(password\s*[=:]\s*)\S+/gi, "$1[redacted]")
+    .slice(-2_000)
+    .trim();
+}
+
 export async function runLinuxNativeAcceptance({
   bundlePath,
   bundleDigest = "0".repeat(64),
@@ -62,6 +71,7 @@ export async function runLinuxNativeAcceptance({
   systemdImage = "archive-native-systemd-acceptance:bookworm",
   postgresImage = "archive-suite/postgres:1.0.0-bundletest",
   redisImage = "archive-suite/redis:1.0.0-bundletest",
+  serviceAttempts = 90,
   progress = () => {},
 } = {}) {
   if (!bundlePath || !runId || !repoRoot) throw new Error("Linux Native acceptance requires bundlePath, runId, and repoRoot.");
@@ -119,7 +129,14 @@ export async function runLinuxNativeAcceptance({
     if (systemdState.status !== 0 && !["running", "degraded"].includes(systemdState.stdout.trim())) throw new Error("Linux Native acceptance did not reach a stable systemd state.");
     scenarios.push({ name: "systemd-pid1", ok: true });
     for (const service of SERVICES) {
-      await waitFor(() => docker(["exec", names.systemd, "systemctl", "is-active", service]), `${service} health`, { attempts: 90 });
+      try {
+        await waitFor(() => docker(["exec", names.systemd, "systemctl", "is-active", service]), `${service} health`, { attempts: serviceAttempts });
+      } catch {
+        const state = docker(["exec", names.systemd, "systemctl", "show", service, "--property=Result,ExecMainStatus,ExecMainCode,ActiveState,SubState", "--no-pager"]);
+        const journal = docker(["exec", names.systemd, "journalctl", "-u", service, "-n", "30", "--no-pager", "--output=cat"]);
+        const diagnostic = safeServiceDiagnostic(`${state.stdout}\n${journal.stdout}`, dbPassword);
+        throw new Error(`Linux Native acceptance timed out during ${service} health.${diagnostic ? ` ${diagnostic}` : ""}`);
+      }
     }
     scenarios.push({ name: "six-services-active", ok: true });
     await waitFor(() => docker(["exec", names.systemd, "curl", "-fsS", "http://127.0.0.1:8443/"]), "HTTP health", { attempts: 90 });
