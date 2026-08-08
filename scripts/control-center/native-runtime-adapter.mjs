@@ -53,15 +53,20 @@ export function createNativeRuntimeAdapter({
         return { ok: false, supported: true, ...verdict };
       }
     }
-    const session = manifestStore && request ? manifestStore.beginInstallationOperation({ ...request, operation }) : null;
+    const installationSteps = ["data-services-ready", ...installSteps.map(({ step }) => step)];
+    const session = manifestStore && request ? manifestStore.beginInstallationOperation({ ...request, operation, installationSteps }) : null;
     const decision = session?.decision;
     if (decision?.action === "resume" && decision.nextStep === null) {
       manifestStore.updateLastSuccessfulStep({ ...request, step: decision.after });
       return completed({ status: 0 });
     }
-    // Data services are verified before any host resource is created, so a
-    // bad endpoint blocks the install with a stable code (V1-210C/V1-211C).
-    if (dataGate) {
+    const resumeIndex = decision?.action === "resume"
+      ? installationSteps.indexOf(decision.after) + 1
+      : 0;
+    // Data services are verified before any host resource is created. A
+    // repair that already recorded this step resumes after it rather than
+    // repeating an external probe that may no longer be reachable.
+    if (resumeIndex === 0 && dataGate) {
       const gate = await dataGate(dataPlan);
       if (!gate.ok) {
         if (manifestStore && request) {
@@ -71,8 +76,9 @@ export function createNativeRuntimeAdapter({
         return { ok: false, supported: true, ...gate };
       }
     }
-    if (manifestStore && request) manifestStore.updateLastSuccessfulStep({ ...request, step: "data-services-ready" });
-    for (const { step, run } of installSteps) {
+    if (resumeIndex === 0 && manifestStore && request) manifestStore.updateLastSuccessfulStep({ ...request, step: "data-services-ready" });
+    const firstInstallStep = Math.max(0, resumeIndex - 1);
+    for (const { step, run } of installSteps.slice(firstInstallStep)) {
       let result;
       try { result = run(); }
       catch (error) {

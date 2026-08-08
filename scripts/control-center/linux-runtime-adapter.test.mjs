@@ -114,6 +114,43 @@ test("a failing unit start marks exactly that step failed for resumable repair",
   assert.deepEqual(calls.at(-1), ["failed", "services-started"]);
 });
 
+test("repair resumes at app configuration without repeating completed data or filesystem steps", async () => {
+  const calls = [];
+  const adapter = createLinuxNativeRuntimeAdapter({
+    serviceControl: okControl(calls),
+    dataGate: async () => { calls.push(["data-gate"]); return { ok: true }; },
+    applyOwnership: () => { calls.push(["ownership"]); return { status: 0 }; },
+    applyLogrotate: () => { calls.push(["logrotate"]); return { status: 0 }; },
+    writeAppConfig: () => { calls.push(["app-config"]); return { status: 0 }; },
+    manifestStore: {
+      beginInstallationOperation: (request) => {
+        assert.deepEqual(request.installationSteps, [
+          "data-services-ready",
+          "ownership-applied",
+          "logrotate-applied",
+          "app-configured",
+          "firewall-applied",
+          "services-installed",
+          "services-started",
+        ]);
+        return { decision: { action: "resume", after: "logrotate-applied", nextStep: "app-configured" } };
+      },
+      updateLastSuccessfulStep: ({ step }) => calls.push(["success", step]),
+      markInstallationFailed: ({ failedStep }) => calls.push(["failed", failedStep]),
+    },
+    manifestRequest,
+  });
+
+  const result = await adapter.repair();
+
+  assert.equal(result.ok, true);
+  assert.equal(calls.some(([kind]) => kind === "data-gate"), false);
+  assert.equal(calls.some(([kind]) => kind === "ownership"), false);
+  assert.equal(calls.some(([kind]) => kind === "logrotate"), false);
+  assert.equal(calls.some(([kind]) => kind === "app-config"), true);
+  assert.equal(calls.filter(([kind]) => kind === "install").length, LINUX_SERVICES.length);
+});
+
 test("service remover removes only manifest-owned units and their firewall rules", async () => {
   const calls = [];
   const remover = createLinuxServiceRemover({

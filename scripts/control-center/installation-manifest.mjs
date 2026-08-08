@@ -242,26 +242,26 @@ export function markInstallationFailed({ path, failedStep, nextActions, fs = nod
   return next;
 }
 
-export function decideInstallationResume({ path, input, fs = nodeFs }) {
+export function decideInstallationResume({ path, input, installationSteps = INSTALLATION_STEPS, fs = nodeFs }) {
   const manifest = readInstallationManifest(path, { fs });
   if (!manifest) return { action: "install" };
   const requested = normalizeInput(input);
   for (const field of ["version", "source", "mode", "platform"]) if (manifest[field] !== requested[field]) return { action: "repair", reason: "configuration-changed" };
   if (manifest.operation.status === "failed") {
-    const stepIndex = manifest.lastSuccessfulStep === null ? -1 : INSTALLATION_STEPS.indexOf(manifest.lastSuccessfulStep);
+    const stepIndex = manifest.lastSuccessfulStep === null ? -1 : installationSteps.indexOf(manifest.lastSuccessfulStep);
     // A step name outside INSTALLATION_STEPS (e.g. left behind by a failed
     // "update" operation, which uses its own step vocabulary) must never be
     // silently treated as "no step yet" and resumed from the top of the
     // install sequence — fall back to a full repair instead.
     if (stepIndex === -1 && manifest.lastSuccessfulStep !== null) return { action: "repair", reason: "unknown-successful-step" };
-    return { action: "resume", after: manifest.lastSuccessfulStep, nextStep: INSTALLATION_STEPS[stepIndex + 1] ?? null };
+    return { action: "resume", after: manifest.lastSuccessfulStep, nextStep: installationSteps[stepIndex + 1] ?? null };
   }
   return { action: "repair", reason: "existing-installation" };
 }
 
-export function beginInstallationOperation({ path, input, operation, fs = nodeFs }) {
+export function beginInstallationOperation({ path, input, operation, installationSteps = INSTALLATION_STEPS, fs = nodeFs }) {
   if (!["install", "repair"].includes(operation)) fail("operation must be install or repair.");
-  const decision = decideInstallationResume({ path, input, fs });
+  const decision = decideInstallationResume({ path, input, installationSteps, fs });
   const created = createInstallationManifest({ path, input, fs });
   const manifest = created.manifest;
   const next = { ...manifest, operation: { type: operation, status: "in-progress", failedStep: null, nextActions: [] } };

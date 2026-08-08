@@ -153,6 +153,31 @@ test("installation manifest resumes after failure and repair is idempotent", asy
   assert.equal(existsSync(path), true);
 });
 
+test("installation manifest computes the next step from an injected Native lifecycle", async () => {
+  const manifest = await loadManifest();
+  assert.ok(manifest, "installation manifest module must exist");
+  const dir = mkdtempSync(join(tmpdir(), "archive-manifest-native-resume-"));
+  const path = join(dir, "installation-manifest.json");
+  const installationSteps = [
+    "data-services-ready",
+    "ownership-applied",
+    "logrotate-applied",
+    "app-configured",
+    "services-installed",
+    "services-started",
+  ];
+  manifest.createInstallationManifest({ path, input: safeInput({ mode: "native", platform: "linux-native" }) });
+  manifest.updateLastSuccessfulStep({ path, step: "logrotate-applied" });
+  manifest.markInstallationFailed({ path, failedStep: "app-configured", nextActions: ["Run repair."] });
+
+  assert.deepEqual(
+    manifest.decideInstallationResume({ path, input: safeInput({ mode: "native", platform: "linux-native" }), installationSteps }),
+    { action: "resume", after: "logrotate-applied", nextStep: "app-configured" },
+  );
+  const begun = manifest.beginInstallationOperation({ path, input: safeInput({ mode: "native", platform: "linux-native" }), operation: "repair", installationSteps });
+  assert.deepEqual(begun.decision, { action: "resume", after: "logrotate-applied", nextStep: "app-configured" });
+});
+
 test("installation manifest schema matches required safe runtime constraints", () => {
   const schema = JSON.parse(readFileSync(new URL("../../infra/setup/installation-manifest.v1.schema.json", import.meta.url), "utf8"));
   const { artifacts, dataPaths, ownedPaths, lastSuccessfulStep, previousVersion, operation } = schema.properties;
