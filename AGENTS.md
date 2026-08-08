@@ -33,7 +33,7 @@
 - `pnpm dev:laravel` — run Laravel API via Docker
 - `pnpm server` — same as `pnpm dev:laravel`
 - `pnpm build` / `pnpm build:next` — build canonical Next.js app
-- `pnpm verify` — canonical cutover gate: API contract + Next typecheck/build/tests + repo hygiene + Laravel tests
+- `pnpm verify` — project gate: API contract + Next typecheck/build/tests + repo hygiene + Laravel tests
 - `pnpm verify:laravel-next:live` — full live Playwright integration for Laravel+Next
 - `pnpm typecheck` — typecheck the canonical Next.js frontend
 - `pnpm security:baseline` — run repo security baseline checks

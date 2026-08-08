@@ -12,7 +12,7 @@ import { expect, test } from './fixtures/auth';
  * docs/performance/baseline.v1.json. This file only measures; every budget
  * and threshold stays in the contract.
  *
- * Must run on the declared resource profile (rc-baseline-linux-x64) for its
+ * Must run on the declared resource profile (release-baseline-linux-x64) for its
  * output to be attributable — see docs/performance/README.md.
  */
 

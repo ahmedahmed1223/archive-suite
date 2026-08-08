@@ -1,6 +1,6 @@
-# Deploy Masar with Docker
+# Deploy Archive Suite with Docker
 
-[العربية](DEPLOYMENT.md) · [Documentation](docs/README.md)
+[العربية](DEPLOYMENT.ar.md) · [Documentation](docs/README.md)
 
 Deploy the Laravel + Next.js stack through Control Center and
 `infra/docker-compose.yml`.
@@ -40,4 +40,4 @@ Use Control Center for status, logs, backup, update, and restore. Verify a
 backup before restoring it; `restore` rejects a checksum-mismatched archive.
 Public deployment requires the appropriate `.env` values, including a real
 domain and `ARCHIVE_PUBLIC_DEPLOY=1`. See the [Control Center reference](docs/control-center.md)
-and [operations guide](docs/ops/rc-launch-and-support.en.md).
+and [operations guide](docs/ops/support.md).

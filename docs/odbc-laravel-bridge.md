@@ -1,39 +1,40 @@
 # Laravel ODBC bridge
 
-[English](odbc-laravel-bridge.en.md) · [فهرس التوثيق](README.ar.md)
+[العربية](odbc-laravel-bridge.ar.md) · [Documentation](README.md)
 
-هذه الشريحة تضيف فحص جاهزية آمن لقواعد Windows القديمة عبر ODBC داخل المسار القانوني الجديد Laravel + Next.js.
+The ODBC bridge provides an authenticated, read-only readiness check for a
+configured Windows data source. It reports connection state and a limited list
+of table names; it never returns credentials or table contents.
 
-## المتطلبات
+## Requirements
 
-- PHP ODBC extension محملة في بيئة Laravel runtime.
-- ODBC driver مناسب للقاعدة القديمة.
-- DSN معرف مسبقاً في ODBC Data Source Administrator على Windows، أو DSN connection string صالح للبيئة.
+- The PHP ODBC extension in the Laravel runtime.
+- A driver that supports the target database.
+- A configured DSN or a valid DSN connection string.
 
-## إعداد البيئة
+## Configuration
 
 ```env
 ODBC_ENABLED=true
-ODBC_DSN=LegacyArchive
-ODBC_USERNAME=legacy_user
-ODBC_PASSWORD=change-me
+ODBC_DSN=ArchiveSource
+ODBC_USERNAME=archive_reader
+ODBC_PASSWORD=replace-in-secret-store
 ODBC_TABLE_LIMIT=25
 ```
 
-يمكن تمرير secrets داخل DSN مثل `PWD=` أو `Password=`، لكن API readiness يخفيها دائماً في الاستجابة.
+Keep credentials in a secret store. The API redacts password fields embedded
+in a DSN before returning an error.
 
-## نقطة الفحص
+## Readiness endpoint
 
-`GET /api/v1/system/odbc`
+`GET /api/v1/system/odbc` requires Archive Suite authentication and returns one
+of these states:
 
-النقطة خلف مصادقة Archive API، وتعيد ملخصاً فقط:
+- `disabled`: ODBC is disabled.
+- `missing-dsn`: `ODBC_DSN` is empty.
+- `driver-unavailable`: the PHP extension or driver is unavailable.
+- `connected`: the connection succeeded, with table names up to the configured limit.
+- `failed`: the connection failed, with a redacted error message.
 
-- `disabled`: الجسر غير مفعل.
-- `missing-dsn`: الجسر مفعل لكن `ODBC_DSN` فارغ.
-- `driver-unavailable`: PHP ODBC أو drivers غير متاحة في runtime.
-- `connected`: الاتصال نجح، مع أول أسماء الجداول حسب `ODBC_TABLE_LIMIT`.
-- `failed`: محاولة الاتصال فشلت، مع رسالة خطأ منقحة بلا كلمات مرور.
-
-## الحدود الحالية
-
-هذه ليست طبقة repository كاملة بعد. لا توجد migrations ولا mapping لعمليات read/write على `items/users/settings/audit` في هذه الشريحة. المرحلة التالية يجب أن تضيف adapter محدوداً فوق نفس واجهة ODBC بعد تحديد mapping جداول القاعدة القديمة.
+The supported scope of this endpoint is readiness and schema discovery. It does
+not read or write archive records.

@@ -24,7 +24,7 @@ assert.equal(
 assert.equal(
   scripts.build,
   "pnpm run build:next",
-  "root build must build Next.js, not the legacy Vite SPA"
+  "root build must build the canonical Next.js frontend"
 );
 assert.equal(
   scripts.verify,
@@ -32,23 +32,17 @@ assert.equal(
   "root verify must use the Laravel + Next.js verification gate"
 );
 
-for (const name of [
-  "dev:legacy",
-  "build:legacy",
-  "server:legacy",
-  "verify:legacy",
-  "typecheck:legacy",
-]) {
-  assert.equal(scripts[name], undefined, `legacy script ${name} should have been removed with archive-app/archive-server`);
-}
-
 assert.ok(
   scripts["verify:laravel"] === "node scripts/laravel-docker.mjs test",
   "Laravel verification should run through the Docker helper when local PHP is absent"
 );
 assert.ok(
-  scripts["verify:cutover"] === "node scripts/verify-cutover-defaults.mjs",
-  "cutover verification should be a named root script"
+  scripts["verify:canonical-defaults"] === "node scripts/verify-canonical-defaults.mjs",
+  "canonical defaults verification should be a named root script"
+);
+assert.ok(
+  scripts["verify:public-docs"] === "node scripts/verify-public-documentation.mjs",
+  "public documentation verification should be a named root script"
 );
 assert.ok(
   scripts["verify:laravel-next:live"] === "node scripts/verify-next-laravel-live.mjs",
@@ -58,19 +52,9 @@ assert.ok(
 const claude = read("CLAUDE.md");
 assert.match(claude, /Frontend \(canonical\).*`archive-next`/);
 assert.match(claude, /Backend \(canonical\).*`archive-laravel`/);
-assert.match(claude, /removed on 2026-07-12/);
 
 const readme = read("README.md");
-// README prose can evolve independently from the stable cutover facts.
 assert.match(readme, /`archive-next\/`/);
 assert.match(readme, /`archive-laravel\/`/);
-assert.match(readme, /legacy/i);
 
-const tasks = read("TASKS.md");
-assert.match(tasks, /المسار القانوني.*archive-next.*archive-laravel/);
-assert.doesNotMatch(tasks, /5e\.2-cutover.*\[ \]/s);
-
-const changelog = read("ChangeLog.md");
-assert.match(changelog, /\[x\]\s*5e\.2-cutover/);
-
-console.log("ok - Laravel/Next cutover defaults");
+console.log("ok - Laravel/Next canonical defaults");

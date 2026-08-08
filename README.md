@@ -1,4 +1,4 @@
-# Masar / مسار
+# Archive Suite / مسار
 
 [العربية](README.ar.md) · [Documentation](docs/README.md)
 
@@ -9,17 +9,14 @@
 
 ## Release status
 
-[`v1.0.0`](docs/release-notes/v1.0.0.md) is the first General Availability
-release. It passed the full release gate (`pnpm release:verify`) and is covered
-by the support window in [docs/versioning.md](docs/versioning.md).
+[`v1.0.0`](docs/release-notes/v1.0.0.md) is the current General Availability
+release and is covered by the support window in [docs/versioning.md](docs/versioning.md).
 
-Masar v1.0.0 is generally available. The release notes describe the changes,
+Archive Suite v1.0.0 is generally available. The release notes describe the changes,
 operator guidance, and support policy for this version.
 
 - [Features and usage guide](docs/features-guide.md)
-- [Launch and support guide](docs/ops/rc-launch-and-support.md)
-- [Clean release rehearsal](docs/ops/v1-505-release-rehearsal.md)
-- [Release and GA operations](docs/release/v1-601-605-ga-operations.md)
+- [Operations and support guide](docs/ops/support.md)
 
 ## System overview
 
@@ -36,14 +33,14 @@ operator guidance, and support policy for this version.
 - Role-based access, audit trails, operational reporting, and extensible
   storage configuration.
 
-## Canonical architecture
+## Supported architecture
 
-This repository is a monorepo. The canonical development path is **Next.js +
+This repository is a monorepo. The supported development path is **Next.js +
 Laravel**:
 
-- `archive-next/` — canonical `Next.js` and `TypeScript` frontend.
-- `archive-laravel/` — canonical `Laravel` backend and API.
-- `docs/api/archive-contract.openapi.json` — canonical `OpenAPI` contract
+- `archive-next/` — supported `Next.js` and `TypeScript` frontend.
+- `archive-laravel/` — supported `Laravel` backend and API.
+- `docs/api/archive-contract.openapi.json` — shared `OpenAPI` contract
   shared by the frontend and backend.
 
 See [CLAUDE.md](CLAUDE.md) for workspace architecture and development workflows.
@@ -84,13 +81,13 @@ pnpm verify
 pnpm verify:laravel-next:live
 ```
 
-`pnpm verify` is the canonical project gate for API contracts, types, builds,
+`pnpm verify` is the project gate for API contracts, types, builds,
 tests, and repository hygiene. `pnpm verify:laravel-next:live` runs the live
 Laravel and Next.js integration check.
 
 ## Deployment and configuration
 
-`Control Center` provides local Docker-based setup and deployment:
+`Control Center` provides guided setup and operation. Docker deployment uses:
 
 ```powershell
 pnpm setup
@@ -102,6 +99,10 @@ not a substitute for a downloadable release artifact. See
 [DEPLOYMENT.md](DEPLOYMENT.md) and [Control Center](docs/control-center.md)
 for Docker deployment, environment variables, administrator credentials, and
 cloud-storage configuration.
+
+Direct-host operation (Native) is supported on Windows and Linux through
+platform bundles. See [Native installation](docs/native-installation.md) for
+build, transfer, service, and verification guidance.
 
 Supported storage includes local disk, `Dropbox`, `S3`, `Azure Blob`,
 `Google Drive`, `FTP/FTPS`, `SMB/CIFS`, `SFTP/SSH`, and `WebDAV`.
@@ -120,5 +121,5 @@ workflows.
 ## Support
 
 For operational support or incident reporting, start with the
-[support guide](docs/ops/rc-launch-and-support.md). Include
+[support guide](docs/ops/support.md). Include
 reproduction steps, an approximate timestamp, and redacted logs only.

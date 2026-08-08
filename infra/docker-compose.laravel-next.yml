@@ -1,5 +1,5 @@
 # Canonical Laravel + Next.js stack.
-# This is the target deployment shape after the Laravel/Next cutover. The
+# Supported Laravel and Next.js deployment shape. The
 # older Node/SPA/PocketBase stack (archive-app/archive-server) was removed
 # from the repo on 2026-07-12 and is recoverable from git history only.
 

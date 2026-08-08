@@ -1,25 +1,15 @@
-# Archive Suite — Kubernetes data services reference
+# Kubernetes data-services reference
 
 [العربية](README.ar.md) · [Documentation](../../docs/README.md)
 
-The canonical production application path is Laravel + Next through
-`infra/docker-compose.yml`. Kubernetes application deployment is not supported
-for V1 because no published canonical Laravel/Next image digests are available
-to check into this repository safely.
+This directory provisions PostgreSQL and Redis as Kubernetes data services.
+The supported application runtime is deployed with Docker or direct-host
+operation (Native) on Windows and Linux; these manifests do not deploy the
+Laravel or Next.js application services.
 
-`kubectl apply -k infra/k8s/` therefore provisions only the reference data
-services:
-
-- PostgreSQL 17, pinned as `postgres:17-alpine@sha256:...`.
-- Redis 7, pinned as `redis:7-alpine@sha256:...`.
-
-Legacy application Deployments were removed from the deployable set because
-their placeholder images had no published digest to verify. Kubernetes cannot
-become a supported application deployment path until a future release workflow
-supplies verified canonical `version@digest` image references.
-
-Before applying the data-services reference, replace every `CHANGE_ME` value in
-`secret.yaml`. Then run:
+The kustomization contains pinned PostgreSQL 17 and Redis 7 images. Before
+applying it, replace every `CHANGE_ME` value in `secret.yaml` with a value from
+your secret store.
 
 ```bash
 kubectl apply -k infra/k8s/
@@ -27,10 +17,11 @@ kubectl -n archive rollout status deployment/redis
 kubectl -n archive rollout status statefulset/postgres
 ```
 
-To remove these resources:
+To remove the workloads:
 
 ```bash
 kubectl delete -k infra/k8s/
 ```
 
-PersistentVolumeClaims may require separate, intentional deletion.
+Persistent volume claims retain data and may require a separate, intentional
+deletion. Confirm backups before deleting any claim.

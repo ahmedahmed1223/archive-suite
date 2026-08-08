@@ -1,5 +1,5 @@
 # Default stack: Masar / مسار on Laravel + Next.js.
-# This is the canonical Laravel + Next.js deployment path after the cutover.
+# Supported Laravel + Next.js deployment path.
 #
 # Deploy through Control Center from the repository root:
 #   pnpm setup

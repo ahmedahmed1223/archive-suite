@@ -50,9 +50,9 @@ unchanged rows on repeat runs). Prints a `processed / embedded /
 skipped-unchanged` summary and exits `0` even when embeddings are disabled,
 so it's safe to run in any environment/cron.
 
-## Known ceiling
+## Result behavior
 
-Semantic search runs a single ANN pass (cosine distance via HNSW) with no
-hybrid/re-ranking against keyword relevance. Pagination beyond the top
-ranked pool (`limit * 5`, minimum 100) falls off — acceptable for a search
-UI; revisit if deep pagination through semantic results becomes a real need.
+Semantic search runs one approximate nearest-neighbor pass using cosine
+distance and an HNSW index. It ranks the candidate pool by vector similarity;
+it does not combine that score with keyword relevance. Use `facets.mode` in
+the response to show users which search mode produced the results.

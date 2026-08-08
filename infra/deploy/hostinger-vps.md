@@ -1,20 +1,19 @@
-# النشر على Hostinger VPS
+# Deploy Archive Suite on a Hostinger VPS
 
-[English](hostinger-vps.en.md) · [فهرس التوثيق](../../docs/README.ar.md)
+[العربية](hostinger-vps.ar.md) · [Documentation](../../docs/README.md)
 
-هذا الدليل ينشر الحزمة القانونية **Laravel + Next.js** من
-`infra/docker-compose.yml` عبر **Control Center**. لا تستخدم ملفات Compose
-إضافية أو معالجات نشر أخرى.
+This guide deploys the supported Laravel and Next.js stack from
+`infra/docker-compose.yml` through Control Center.
 
-## المتطلبات
+## Requirements
 
-- Ubuntu 24.04 LTS أو توزيعة Linux مدعومة.
-- Docker Engine مع Compose v2 وNode.js 22.13+.
-- نطاق يشير سجل DNS الخاص به إلى عنوان VPS عند النشر العام.
+- Ubuntu 24.04 LTS or another supported Linux distribution.
+- Docker Engine with Compose v2, Node.js 22.13 or newer, and pnpm.
+- A domain whose DNS record points to the VPS for public deployment.
 
-## 1. إعداد المضيف
+## 1. Prepare the host
 
-أنشئ مستخدماً غير root، وافتح منافذ SSH وHTTP وHTTPS فقط:
+Create a non-root operator account and expose only SSH, HTTP, and HTTPS:
 
 ```bash
 sudo adduser archive
@@ -25,10 +24,10 @@ sudo ufw allow 443/tcp
 sudo ufw --force enable
 ```
 
-ثبّت Docker Engine الرسمي ثم أضف مستخدم التشغيل إلى مجموعة Docker. بعد تسجيل
-الدخول من جديد، تحقّق من `docker compose version` قبل المتابعة.
+Install Docker Engine from its official repository, add the operator to the
+Docker group, sign in again, and confirm that `docker compose version` works.
 
-## 2. تنزيل ونشر Archive Suite
+## 2. Install and deploy
 
 ```bash
 git clone https://github.com/ahmedahmed1223/archive-suite.git
@@ -37,19 +36,17 @@ pnpm install --frozen-lockfile
 pnpm setup
 ```
 
-ينشئ Control Center `infra/.env` من النموذج القانوني، ويستبدل الأسرار الافتراضية
-بقيم قوية، ثم يبني ويشغّل `infra/docker-compose.yml`. احتفظ بكلمة مرور المدير
-التي يعرضها في أول تشغيل.
+Control Center creates `infra/.env`, replaces default secrets with strong
+values, and starts the supported Compose stack. Store the administrator
+password shown during the first run in a password manager.
 
-للنشر غير التفاعلي أو لإعادة provisioning:
+For non-interactive provisioning:
 
 ```bash
 node scripts/control-center.mjs deploy
 ```
 
-## 3. ضبط النطاق والتحقق
-
-استخدم Control Center لتحديث عنوان التطبيق، ثم أعد النشر:
+## 3. Configure the domain and verify
 
 ```bash
 node scripts/control-center.mjs set-url
@@ -57,12 +54,12 @@ node scripts/control-center.mjs deploy
 node scripts/control-center.mjs health
 ```
 
-اضبط سجل DNS قبل النشر العام. يدير Caddy الشهادة من الحزمة القانونية تلقائياً
-عندما يكون النطاق قابلاً للوصول على المنفذين 80 و443.
+Set DNS before making the service public. Caddy obtains and renews TLS
+certificates when the domain reaches ports 80 and 443 on this host.
 
-## التشغيل والصيانة
+## Operate and maintain
 
-استخدم أوامر Control Center بدلاً من تشغيل Docker مباشرة:
+Use Control Center for routine operations:
 
 ```bash
 node scripts/control-center.mjs status
@@ -71,5 +68,6 @@ node scripts/control-center.mjs backup
 node scripts/control-center.mjs update
 ```
 
-راجع [دليل النشر الرئيسي](../../DEPLOYMENT.md) و[مرجع Control Center](../../docs/control-center.md)
-للتشغيل والاستعادة والترقية.
+See the [deployment guide](../../DEPLOYMENT.md) and
+[Control Center reference](../../docs/control-center.md) for restoration,
+configuration, and update procedures.

@@ -1,28 +1,31 @@
-# مسرد واجهة مسار العربية
+# Archive Suite Arabic interface glossary
 
-[English](arabic-ui-glossary.en.md) · [فهرس التوثيق](README.ar.md)
+[العربية](arabic-ui-glossary.ar.md) · [Documentation](README.md)
 
-| المفهوم | المصطلح المعتمد | الاستخدام |
+Use this glossary when writing Arabic interface copy and documentation. Keep
+the approved Arabic term consistent within the same workflow.
+
+| Concept | Approved Arabic | Guidance |
 | --- | --- | --- |
-| Archive database record | سجل | الكيان الذي يحمل المعرّف والحقول والعلاقات. |
-| Media or content item | مادة | المحتوى المرئي أو المسموع أو الملف المرتبط بسجل. |
-| Storage backend | مخزن | وجهة التخزين المحلية أو الخارجية؛ لا تستخدم «متجر». |
-| Metadata | بيانات وصفية | الاسم الكامل في الشرح؛ يجوز «التوصيف» للعملية التي يعدّل بها المستخدم البيانات الوصفية. |
-| Server | خادم | لا تستخدم «سيرفر» في النص التشغيلي. |
-| Log | سجل أحداث أو سجل أخطاء | اختر الوصف المحدد؛ لا تستخدم «لوج». |
-| Audit enforced | التدقيق مفروض | شارة تؤكد إلزام تسجيل إجراءات التشغيل في سجل التدقيق. |
-| Catalog only | كتالوج للقراءة فقط | حالة كتالوج الإضافات الذي لا يسمح بالتثبيت أو التنفيذ. |
-| Permission scopes | نطاقات الصلاحيات | وصف نطاق الصلاحية، مع إبقاء قيمة النطاق التقنية باتجاه LTR. |
-| Intake | الاستقبال | شارة لمسار رفع أو استقبال المواد. |
-| Pipelines | مسارات المعالجة | شارة لمسارات الاستيراد والمعالجة الآلية. |
-| Disaster recovery (DR) | التعافي من الكوارث | شارة لمسار النسخ الاحتياطي والاستعادة. |
-| Health | الصحة | شارة لحالة النظام أو مكوّناته. |
-| Policy | السياسات | شارة لسياسات الوصول أو التشغيل. |
-| Admin | الإدارة | شارة لمسارات الإدارة. |
-| Local semantic fallback | بديل دلالي محلي | يوضح أن الإثراء الدلالي محلي وليس خدمة خارجية. |
-| Object storage | تخزين كائني | وصف لخيار تخزين البيانات. |
-| Collections | المجموعات | الاسم العربي للكيانات المستخدمة في التصنيف الرسمي. |
+| Archive database record | سجل | Entity with an identifier, fields, and relationships |
+| Media or content item | مادة | Visual, audio, or attached file content |
+| Storage backend | مخزن | Storage destination; avoid the retail sense of «متجر» |
+| Metadata | بيانات وصفية | Use «التوصيف» only for the editing activity |
+| Server | خادم | Avoid the transliteration «سيرفر» in operator copy |
+| Log | سجل أحداث / سجل أخطاء | Name the type of log |
+| Audit log | سجل تدقيق | Record of accountable actions |
+| Permission scopes | نطاقات الصلاحيات | Keep exact scope values left-to-right |
+| Intake | الاستقبال | Upload and material intake workflow |
+| Pipelines | مسارات المعالجة | Automated import and processing paths |
+| Disaster recovery | التعافي من الكوارث | Backup and restoration path |
+| Object storage | تخزين كائني | Object-based data storage |
+| Collections | المجموعات | Curated grouping entity |
+| Direct-host operation (Native) | التشغيل المباشر دون حاويات (Native) | Use «التشغيل المباشر» after the first mention |
+| Access token | رمز وصول | Never use a raw token in examples |
+| Secret store | مخزن أسرار | Protected credential storage |
 
-## استثناءات الاتجاه LTR
+## Left-to-right exceptions
 
-يبقى اتجاه الصفحة `rtl`. تُوسم المعرّفات والأوامر التقنية داخلها بـ`dir="ltr"` بدل تعريبها: صيغ البحث مثل `type:video`، نطاقات صلاحيات الإضافات، ومسارات الوسائط مثل `media/file.mp4`. لا تعدّ هذه القيم نسخة تشغيلية إنجليزية قابلة للترجمة.
+Arabic pages remain right-to-left. Render exact commands, identifiers, paths,
+search expressions such as `type:video`, permission scopes, and media paths such
+as `media/file.mp4` left-to-right. Do not translate copy-and-paste values.

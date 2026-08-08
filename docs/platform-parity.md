@@ -2,7 +2,7 @@
 
 [العربية](platform-parity.ar.md) · [Documentation](README.md)
 
-Masar supports Docker and native deployment on Windows and Linux. The platform
+Archive Suite supports Docker and native deployment on Windows and Linux. The platform
 contract in `infra/platform/compatibility.v1.json` records the required runtime,
 service, data-path, and port information.
 
@@ -19,4 +19,4 @@ services directly. Both paths use the same product API, permissions, audit
 trail, and backup workflow.
 
 Read [Native installation](native-installation.md) for package requirements and
-[Docker deployment](../DEPLOYMENT.en.md) for the Compose path.
+[Docker deployment](../DEPLOYMENT.md) for the Compose path.

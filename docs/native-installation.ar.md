@@ -1,8 +1,8 @@
-# التثبيت الأصلي
+# التثبيت للتشغيل المباشر دون حاويات (Native)
 
 [English](native-installation.md) · [فهرس التوثيق](README.ar.md)
 
-يدعم مسار التشغيل الأصلي على Windows وLinux إلى جانب Docker. تشغّل الحزمة
+يدعم مسار التشغيل المباشر على Windows وLinux إلى جانب Docker. تشغّل الحزمة
 الخدمات المعتمدة نفسها، Laravel وNext.js، من دون Docker على جهاز التشغيل.
 
 ## بناء الحزمة
@@ -28,4 +28,4 @@ pnpm bundle:linux-native -- --out=/srv/masar-native
 - إعدادات محمية لبيانات اعتماد الخدمات وعنوان التطبيق العام.
 
 تدير الحزمة خدمات التطبيق. خذ نسخة احتياطية قبل الصيانة واتبع إجراءات الاستعادة
-المعتمدة. راجع [دعم المنصات](platform-parity.ar.md) و[دليل التشغيل](ops/rc-launch-and-support.md).
+المعتمدة. راجع [دعم المنصات](platform-parity.ar.md) و[دليل التشغيل](ops/support.ar.md).

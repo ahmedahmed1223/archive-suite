@@ -1,22 +1,34 @@
-# عتبات استخراج الخدمات والأحداث الموثوقة
+# Service extraction thresholds
 
-[English](service-extraction-thresholds.en.md) · [Documentation](../README.md)
+[العربية](service-extraction-thresholds.ar.md) · [Documentation](../README.md)
 
-العقد القابل للفحص هو [`service-extraction-thresholds.v1.json`](service-extraction-thresholds.v1.json). وظيفته تحديد متى يستحق فصل عامل الوسائط أو اعتماد transactional outbox الدراسة؛ تجاوز العتبات لا ينفذ ترحيلاً تلقائياً.
+[`service-extraction-thresholds.v1.json`](service-extraction-thresholds.v1.json)
+defines the evidence required before separating media work or adopting a
+transactional outbox. Crossing a threshold triggers a review; it does not
+change the architecture automatically.
 
-## جمع الأدلة
+## Evidence collection
 
-- استخدم نافذة لا تقل عن 14 يوماً وعينة لا تقل عن 1,000 وظيفة أو حدث.
-- تقبل قياسات production أو benchmark production-like ثابت البيانات والموارد والبذرة. سجّل commit وإعداد الموارد وحجم البيانات وبداية ونهاية النافذة.
-- استبعد أخطاء الإدخال الدائمة من معدل retryable failures، ولا تخلط زمن نقل الملف بزمن انتظار الطابور.
-- احتفظ بالنتائج الخام والملخص مع قرار المراجعة، ولا تغير العتبات لتلائم نتيجة تجربة واحدة.
+- Use at least 14 days and 1,000 jobs or events.
+- Record the source commit, resource profile, dataset size, and measurement window.
+- Use production measurements or a reproducible production-like benchmark.
+- Exclude permanent input errors from retryable-failure rates.
+- Keep raw results and the reviewed summary together.
 
-## القرارات
+## Decisions
 
-يلزم تجاوز مؤشرين على الأقل لفصل عامل الوسائط. تبقى Laravel مالكة الجدولة و`media_jobs` والحالة والتدقيق والـAPI العامة؛ العامل يستهلك عقداً versioned ويعيد نتائج idempotent ولا يصل مباشرة إلى قاعدة المنتج.
+A media worker requires at least two threshold signals. Laravel retains
+scheduling, public API behavior, job state, and audit ownership. Any worker must
+consume a versioned contract and return idempotent results.
 
-تحتاج outbox إلى trigger واحد على الأقل: فجوة تسليم مثبتة في game-day، أو أكثر من 100 ألف حدث يومياً مع عدة مستهلكين، أو التزام تعاقدي at-least-once. يتطلب التنفيذ idempotency وretention وbounded replay وdead-letter ومقاييس age/attempt/failure، ولا يجعل event bus افتراضياً.
+An outbox decision requires a qualifying delivery, volume, or contractual
+signal from the JSON contract. The design must include idempotency, bounded
+replay, retention, dead-letter handling, and age/attempt/failure measurements.
 
-## المراجعة والتراجع
+## Review and reversal
 
-يوقع Architecture وOperations وProduct قرار `remain-modular` أو `extract-worker` أو `adopt-outbox` مع الأدلة والكلفة ومقياس النجاح. بعد الفصل تجرى مراجعة خلال 14 يوماً؛ إذا لم يتحسن SLO أو ارتفعت الكلفة والفشل دون فائدة، يعاد التوجيه إلى التنفيذ المعياري داخل Laravel مع الحفاظ على العقد versioned وسجل التدقيق.
+Architecture, Operations, and Product record the evidence, cost, success
+measure, and one decision: `remain-modular`, `extract-worker`, or
+`adopt-outbox`. Review the result after 14 days. If reliability or service-level
+objectives do not improve, route the work back through the modular Laravel
+implementation while preserving the versioned contract and audit log.

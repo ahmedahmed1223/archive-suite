@@ -61,4 +61,4 @@ pnpm release:verify         # full verify + build + security check
 - AI SDK integrates Anthropic, OpenAI, Google, Groq, Mistral, OpenRouter
 - The Laravel API uses short-lived bearer access tokens plus a `va_refresh` HttpOnly refresh cookie.
 - Shared API contract source: `docs/api/archive-contract.openapi.json`
-- Backend reference: `archive-laravel/ARCHIVE_MIGRATION.md`
+- Backend reference: `archive-laravel/BACKEND.md`

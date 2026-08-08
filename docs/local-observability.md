@@ -2,7 +2,7 @@
 
 [العربية](local-observability.ar.md) · [Documentation](README.md)
 
-The canonical Docker stack uses Docker's `local` logging driver for every
+The supported Docker stack uses Docker's `local` logging driver for every
 service. Each container log rotates at **10 MB** and retains **5 files**. Caddy
 access logs, Next request events, Laravel nginx access logs, and Laravel
 web/worker/Reverb application logs are JSON. `X-Request-ID` is propagated by
@@ -22,7 +22,7 @@ events; configure `OBS_*` keys in `infra/.env`. It does not send telemetry anywh
 Run `setup support-bundle` or `./setup.sh support-bundle` to write a local JSON
 bundle under `support-bundles/`. Recent logs are bounded to **200 lines** and
 the complete bundle to **1 MB**. It includes versions, a redacted configuration
-summary, health output, recent logs and the canonical Compose manifest. Secret,
+summary, health output, recent logs and the supported Compose manifest. Secret,
 password, token, credential and host-path values are redacted. Archive content,
 uploaded media and user files are never collected. Review the file before
 sharing it and delete it when the support case closes.

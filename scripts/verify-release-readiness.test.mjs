@@ -30,6 +30,7 @@ function baselineFixture(version = "1.2.3") {
     "# Versioning\n\n| Line | Support |\n|------|---------|\n| latest | full support |\n"
   );
   writeFileSync(join(dir, "docs", "release-notes", `v${version}.md`), `# ${version}\n`);
+  writeFileSync(join(dir, "docs", "release-notes", `v${version}.ar.md`), `# ${version}\n`);
   writeFileSync(
     join(dir, "docs", "api", "archive-contract.openapi.json"),
     JSON.stringify({ info: { version: "1.0.0" }, paths: { "/x": {} } })

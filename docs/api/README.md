@@ -2,9 +2,9 @@
 
 [العربية](README.ar.md) · [Documentation](../README.md)
 
-This directory holds the framework-neutral API contract for the canonical
+This directory holds the framework-neutral API contract for the supported
 Laravel + Next.js architecture. Laravel owns API behavior and persistence;
-Next.js consumes the versioned contract. Legacy Node packages are reference-only.
+Next.js consumes the versioned contract.
 
 ## Files
 
@@ -21,9 +21,9 @@ Next.js consumes the versioned contract. Legacy Node packages are reference-only
   - failure: `{ "ok": false, "error": "..." }`
 - Auth must use HttpOnly cookies for refresh/session state. Bearer access tokens
   may exist for API clients, but browser persistence must not use localStorage.
-- New product routes are implemented only in the canonical Laravel API.
+- New product routes are implemented only in the Laravel API.
 
-## First Route Groups
+## Route groups
 
 1. `auth` — login, refresh, logout, current user.
 2. `records` — generic record listing and bulk write compatibility.

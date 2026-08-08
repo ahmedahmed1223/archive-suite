@@ -1,6 +1,6 @@
-# Install Masar for development
+# Install Archive Suite for development
 
-[العربية](INSTALL.md) · [Documentation](docs/README.md)
+[العربية](INSTALL.ar.md) · [Documentation](docs/README.md)
 
 Use this path when working from a clone of the repository. The supported
 development stack is Next.js on the host and Laravel in Docker; local PHP and
@@ -33,5 +33,5 @@ pnpm verify:laravel-next:live
 For a managed local Docker installation, open `Setup-Archive.bat` on Windows
 or run `bash setup.sh` on Linux. The guided `wizard` is the recommended first
 run; it can prepare secrets, start the supported Compose stack, and report its
-health. See the [deployment guide](DEPLOYMENT.en.md) before exposing a public
+health. See the [deployment guide](DEPLOYMENT.md) before exposing a public
 endpoint.

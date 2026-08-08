@@ -45,8 +45,11 @@ jobs:
       - name: Verify reproducibility pins
         run: pnpm run verify:reproducibility
 
-      - name: Verify cutover defaults
-        run: pnpm run verify:cutover
+      - name: Verify canonical defaults
+        run: pnpm run verify:canonical-defaults
+
+      - name: Verify public documentation
+        run: pnpm run verify:public-docs
 
       - name: Verify API contracts
         run: pnpm run verify:api-contracts

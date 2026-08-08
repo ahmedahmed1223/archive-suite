@@ -2,7 +2,7 @@
 
 [العربية](native-installation.ar.md) · [Documentation](README.md)
 
-Masar supports native deployment on Windows and Linux in addition to Docker.
+Archive Suite supports native deployment on Windows and Linux in addition to Docker.
 Native packages run the same Laravel and Next.js services without a container
 runtime on the target host.
 
@@ -30,4 +30,4 @@ transferring the package to an installation host.
 
 The package manages its application services. Use the supported backup and
 restore workflow before maintenance. See [platform support](platform-parity.md)
-and [operations](ops/rc-launch-and-support.en.md).
+and [operations](ops/support.md).

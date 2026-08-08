@@ -13,7 +13,7 @@
 - لا تضف ميزات جديدة إلى `archive-app/` أو `archive-server/`؛ هما مرجعان قديمان فقط.
 - لا يعدل أي عقد عام إلا مع OpenAPI وLaravel وNext.js والتحقق من bindings في التغيير نفسه.
 - لا تحفظ أسرارًا أو سجلات إنتاج خام أو ملفات بيانات 1GB في المستودع أو أدلة القبول العامة.
-- لا تنجح RC أو GA بقدرة محجوبة، أو بقياس من جهاز لا يطابق `rc-baseline-linux-x64`.
+- لا ينجح الإصدار بقدرة محجوبة، أو بقياس من جهاز لا يطابق `release-baseline-linux-x64`.
 - لا تنشر أو تنشئ tag أو تفعّل credential إلا بموافقة Release Manager الصريحة.
 
 ---
@@ -61,7 +61,7 @@
 - Verify: `docs/performance/baseline.v1.json`, `docs/acceptance/datasets/v1-307a.manifest.json`, `scripts/performance-collect.mjs`, `scripts/performance-regression.mjs`
 - Evidence: restricted `performance/<candidate>/docker-run.json`, `native-run.json`, `dataset-manifest.json`
 
-- [ ] Provision the declared `rc-baseline-linux-x64`: Ubuntu 24.04 x64, 4 vCPU, 8 GiB RAM, wired 100 Mbps/20 ms RTT, stable Chromium; record OS/browser/tool versions.
+- [ ] Provision the declared `release-baseline-linux-x64`: Ubuntu 24.04 x64, 4 vCPU, 8 GiB RAM, wired 100 Mbps/20 ms RTT, stable Chromium; record OS/browser/tool versions.
 - [ ] Generate the dataset using `php artisan archive:generate-benchmark-dataset --seed=42 --records=100000 --files=10000 --files-total-size=1073741824 --json`; save the resulting runtime manifest, checksums, commit, and image digests outside Git.
 - [ ] Run 20 or more samples at 375, 768, and 1280 for `/`, `/archive`, one record route, `/search`, and `/uploads`; capture LCP p75, CLS p75, and INP p75 as sanitized JSON.
 - [ ] Run 20 or more authenticated samples for search, record-open, and upload-session-init in Docker and Native; exclude file-transfer time from the upload metric.

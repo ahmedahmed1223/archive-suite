@@ -1,27 +1,32 @@
-# Versioning & Support Policy (V1-002)
+# Versioning and support policy
 
 [العربية](versioning.ar.md) · [Documentation](README.md)
 
-**Product:** Masar (archive-suite) · **License:** MIT (root `LICENSE`)
+Archive Suite follows Semantic Versioning: `MAJOR.MINOR.PATCH`.
 
-## SemVer
+- `MAJOR` changes may break the public API contract, data format, or backup format.
+- `MINOR` releases add backward-compatible capabilities.
+- `PATCH` releases contain backward-compatible fixes.
+- Prerelease identifiers are published under their exact tag and do not move `latest`.
 
-الإصدارات تتبع [SemVer 2.0.0](https://semver.org): `MAJOR.MINOR.PATCH`
+The `version` in `package.json` is the software version source of truth. A
+release is published from a matching `v<version>` Git tag after the release
+verification gate succeeds.
 
-- **MAJOR** — كسر في عقد الـ API (`docs/api/archive-contract.openapi.json`) أو صيغة البيانات/النسخ الاحتياطي دون مسار ترقية تلقائي.
-- **MINOR** — ميزات جديدة متوافقة رجعيًا.
-- **PATCH** — إصلاحات فقط.
-- ما قبل الإصدار: `-rc.N` / `-beta.N` — تُنشر تحت وسمها فقط ولا تحرّك `latest` (انظر `release.yml`).
+## Support window
 
-الإصدار الحالي في `package.json` (`version`) هو مصدر الحقيقة، ويُطلق رسميًا بدفع tag مطابق `v<version>` — البوابة الكاملة تعمل قبل أي نشر.
+| Release line | Support |
+| --- | --- |
+| Latest minor in the latest major | Full fixes and security updates |
+| Immediately previous minor | Security fixes for six months after the next minor ships |
+| Older lines | Upgrade required |
+| Prerelease builds | No support commitment |
 
-## نافذة الدعم
+Schema and backup formats remain compatible within a major version unless the
+release notes provide an explicit upgrade procedure.
 
-| السلسلة | الدعم |
-|---------|-------|
-| أحدث MINOR في أحدث MAJOR | إصلاحات وأمان — كامل |
-| الـ MINOR السابق مباشرة | إصلاحات أمنية فقط، 6 أشهر من صدور اللاحق |
-| ما قبل ذلك | لا دعم — الترقية مطلوبة |
+## Operator policy
 
-- إصدارات `-rc`/`-beta` لا تحمل أي التزام دعم.
-- الترحيلات (schema/backup format) تحافظ على التوافق ضمن نفس الـ MAJOR؛ أي استثناء يوثق في ملاحظات الإصدار وخطة ترقية.
+Read the release notes before updating, create and verify a backup, and retain
+the previous version's compatible backup until health checks pass. Use Control
+Center for updates and recovery.

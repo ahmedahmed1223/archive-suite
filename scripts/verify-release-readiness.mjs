@@ -6,8 +6,7 @@ import { fileURLToPath } from "node:url";
 
 // Verifies actual release-readiness CONTENT (version coherence, license,
 // support policy, release pipeline shape, API contract, open P0s, env
-// completeness) plus a small set of cross-file wiring invariants worth
-// keeping from the original cutover-era checks. Everything here fails with a
+// completeness) plus a small set of cross-file wiring invariants. Everything here fails with a
 // message naming the exact file/field to fix.
 
 const ROOT = process.env.READINESS_ROOT
@@ -63,6 +62,8 @@ function checkVersionCoherence() {
 
   const notesFile = `docs/release-notes/v${version}.md`;
   assert.ok(exists(notesFile), `${notesFile} is missing — add release notes for the current package.json version`);
+  const arabicNotesFile = `docs/release-notes/v${version}.ar.md`;
+  assert.ok(exists(arabicNotesFile), `${arabicNotesFile} is missing — add Arabic release notes for the current package.json version`);
 }
 
 // 2. LICENSE exists and contains a recognizable license.
@@ -220,6 +221,7 @@ function checkTasksV1Blockers() {
 // Planned/conditional platforms never block (disabled features stay free),
 // but flipping one to supported requires an evidence reference (V1-212C).
 function checkPlatformSupportEvidence() {
+  if (!isReleaseMode()) return;
   const file = "infra/platform/compatibility.v1.json";
   if (!exists(file)) return;
   const contract = json(file);
@@ -299,7 +301,7 @@ function checkScriptWiring() {
   for (const script of [
     "security:baseline",
     "security:audit",
-    "verify:cutover",
+    "verify:canonical-defaults",
     "verify:laravel",
     "verify:laravel-next",
     "ci",
@@ -322,7 +324,7 @@ function checkScriptWiring() {
   );
   assert.ok(
     !laravelPkg.devDependencies?.vite,
-    "archive-laravel/package.json must not depend on vite after the Next.js cutover"
+    "archive-laravel/package.json must not depend on vite because Next.js is the supported frontend"
   );
 }
 

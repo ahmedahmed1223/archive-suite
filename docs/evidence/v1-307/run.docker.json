@@ -1,6 +1,6 @@
 {
   "contractVersion": "v1",
-  "resourceProfileId": "rc-baseline-linux-x64",
+  "resourceProfileId": "release-baseline-linux-x64",
   "environmentProfile": {
     "platform": "linux",
     "cpus": 4,

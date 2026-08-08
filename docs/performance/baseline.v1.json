@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "contractVersion": "v1",
   "resourceProfile": {
-    "id": "rc-baseline-linux-x64",
+    "id": "release-baseline-linux-x64",
     "os": "Ubuntu 24.04 LTS x64",
     "cpu": "4 vCPU",
     "memoryGiB": 8,

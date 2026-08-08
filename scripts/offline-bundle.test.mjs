@@ -22,10 +22,11 @@ const required = [
   "scripts/offline-bundle.mjs",
 ];
 
-test("offline payload contains Docker-only Windows and Linux entry points", () => {
+test("offline payload separates Docker entry points from Native platform bundles", () => {
   for (const path of required) assert.equal(existsSync(new URL(path, root)), true, path);
-  assert.match(read("infra/offline/README.ar.md"), /Docker/);
-  assert.match(read("infra/offline/README.ar.md"), /لا[^\n]*(?:native|أصلي)/i);
+  const guide = read("infra/offline/README.ar.md");
+  assert.match(guide, /صيغة حزمة Docker دون اتصال/);
+  assert.match(guide, /حزم التشغيل[\s\S]{0,80}دليل Native/);
 });
 
 test("offline compose covers core images without builds, pulls, or floating tags", () => {
@@ -191,9 +192,9 @@ test("builder path writes workflow-shaped digest-only application refs into a co
 
 test("operator guide verifies top-level checksum before extraction and uses schema-compatible restore", () => {
   const guide = read("infra/offline/README.ar.md");
-  assert.match(guide, /SHA256SUMS[^\n]+قبل[^\n]+فك/);
+  assert.match(guide, /SHA256SUMS[\s\S]{0,160}قبل فك/);
   assert.match(guide, /archive:migrate-safe/);
-  assert.match(guide, /schema[^\n]+متوافق/i);
+  assert.match(guide, /بنية قاعدة بيانات[\s\S]{0,100}متوافق/);
   assert.match(guide, /استعاد/);
 });
 

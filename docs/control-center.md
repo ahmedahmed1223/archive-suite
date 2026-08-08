@@ -1,11 +1,11 @@
-# Masar Control Center
+# Archive Suite Control Center
 
 [العربية](control-center.ar.md) · [Documentation](README.md)
 
 A single English-first console to **install, operate, configure, and maintain** the
-canonical Masar stack (**Laravel API + Next.js**, `infra/docker-compose.yml`).
+supported Archive Suite stack (**Laravel API + Next.js**, `infra/docker-compose.yml`).
 The **Deploy** action provisions `.env` secrets and runs `docker compose up -d --build`
-against that canonical Compose file.
+against that supported Compose file.
 
 ## Launch
 
@@ -87,7 +87,7 @@ ARCHIVE_COMPOSE_PROFILES=media node scripts/control-center.mjs start  # core + O
 ## Requirements
 
 - Node 22+ and Docker with Compose v2 (`docker compose`).
-- Reads `infra/.env`; controls `infra/docker-compose.yml` (the canonical
+- Reads `infra/.env`; controls `infra/docker-compose.yml` (the supported
   Laravel + Next.js stack).
 - Backups live in `infra/backups/archive-<timestamp>.sql`.
 
