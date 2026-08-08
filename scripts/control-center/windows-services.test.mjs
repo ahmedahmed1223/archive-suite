@@ -48,6 +48,13 @@ test("service definition renders the pinned wrapper XML with restart and rolling
   assert.throws(() => renderServiceDefinition({ id: "rogue-service" }), (error) => error.code === "WINDOWS_SERVICE_UNKNOWN");
 });
 
+test("Next WinSW definition pins the local Caddy upstream host and port", () => {
+  const nextXml = renderServiceDefinition(WINDOWS_SERVICES.find(({ id }) => id === "archive-next"));
+  assert.match(nextXml, /<env name="HOSTNAME" value="127\.0\.0\.1"\/>/);
+  assert.match(nextXml, /<env name="PORT" value="3000"\/>/);
+  assert.doesNotMatch(renderServiceDefinition(WINDOWS_SERVICES.find(({ id }) => id === "archive-worker")), /name="HOSTNAME"/);
+});
+
 test("package manifest binds version and commit, lists the pinned wrapper in the SBOM, and checksums every file", () => {
   const manifest = buildWindowsPackageManifest(baseInput());
   assert.equal(manifest.platform, "windows-10-11-native");

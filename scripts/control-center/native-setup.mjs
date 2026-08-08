@@ -110,7 +110,7 @@ export function buildNativeRuntime({
       : { ok: false, code: "DATA_PROBES_UNAVAILABLE", message: "External data endpoints cannot be verified without probes wired into this build.", details: {}, nextActions: ["Use a build with data probes wired, or run a Docker install."] });
 
   if (family === "windows") {
-    const effects = createWindowsHostEffects({ installRoot: root, run, writeFile });
+    const effects = createWindowsHostEffects({ installRoot: root, storagePath: configuration.storage.path, run, writeFile });
     const adapter = createWindowsNativeRuntimeAdapter({
       serviceControl: effects.serviceControl,
       applyAcls: effects.applyAcls,

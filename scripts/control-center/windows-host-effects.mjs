@@ -21,9 +21,16 @@ function defaultWriteFile(path, content) {
   writeFileSync(path, content, "utf8");
 }
 
-export function createWindowsHostEffects({ installRoot, services = WINDOWS_SERVICES, run = defaultRun, writeFile = defaultWriteFile, readLogTail } = {}) {
+export function createWindowsHostEffects({ installRoot, storagePath, services = WINDOWS_SERVICES, run = defaultRun, writeFile = defaultWriteFile, readLogTail } = {}) {
   if (typeof installRoot !== "string" || !installRoot.trim()) throw new Error("Windows host effects require an install root.");
   const servicesDir = join(installRoot, "services");
+  const writablePaths = [...new Set([
+    join(installRoot, "storage"),
+    join(installRoot, "logs"),
+    join(installRoot, "app", "laravel", "storage"),
+    join(installRoot, "app", "laravel", "bootstrap", "cache"),
+    storagePath || join(installRoot, "storage"),
+  ])];
   const exeFor = (id) => join(servicesDir, `${id}.exe`);
   const firstFailure = (results) => results.find((result) => (result?.status ?? 1) !== 0) ?? { status: 0 };
 
@@ -50,8 +57,7 @@ export function createWindowsHostEffects({ installRoot, services = WINDOWS_SERVI
   // the tree, modify only on storage and logs.
   const applyAcls = () => firstFailure(services.flatMap((service) => [
     run(["icacls", installRoot, "/grant", `NT SERVICE\\${service.id}:(OI)(CI)RX`]),
-    run(["icacls", join(installRoot, "storage"), "/grant", `NT SERVICE\\${service.id}:(OI)(CI)M`]),
-    run(["icacls", join(installRoot, "logs"), "/grant", `NT SERVICE\\${service.id}:(OI)(CI)M`]),
+    ...writablePaths.map((path) => run(["icacls", path, "/grant", `NT SERVICE\\${service.id}:(OI)(CI)M`])),
   ]));
 
   // Only archive-http accepts inbound traffic; every other service is

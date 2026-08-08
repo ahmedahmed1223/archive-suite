@@ -50,16 +50,19 @@ test("serviceControl start/stop/restart/remove/query call the right WinSW verb",
   ]);
 });
 
-test("applyAcls grants read/execute on the tree and modify on storage/logs, per service", () => {
+test("applyAcls grants read/execute on the tree and modify on every runtime and external storage path", () => {
   const { run, calls } = fakeRun();
   const services = [{ id: "svc-a" }, { id: "svc-b" }];
-  const effects = createWindowsHostEffects({ installRoot: INSTALL_ROOT, run, writeFile: () => {}, services });
+  const effects = createWindowsHostEffects({ installRoot: INSTALL_ROOT, storagePath: "D:\\ArchiveData", run, writeFile: () => {}, services });
   const result = effects.applyAcls();
   assert.equal(result.status, 0);
-  assert.equal(calls.length, 6);
+  assert.equal(calls.length, 12);
   assert.deepEqual(calls[0], ["icacls", INSTALL_ROOT, "/grant", "NT SERVICE\\svc-a:(OI)(CI)RX"]);
   assert.deepEqual(calls[1], ["icacls", "C:\\Program Files\\ArchiveSuite\\storage", "/grant", "NT SERVICE\\svc-a:(OI)(CI)M"]);
   assert.deepEqual(calls[2], ["icacls", "C:\\Program Files\\ArchiveSuite\\logs", "/grant", "NT SERVICE\\svc-a:(OI)(CI)M"]);
+  assert.deepEqual(calls[3], ["icacls", "C:\\Program Files\\ArchiveSuite\\app\\laravel\\storage", "/grant", "NT SERVICE\\svc-a:(OI)(CI)M"]);
+  assert.deepEqual(calls[4], ["icacls", "C:\\Program Files\\ArchiveSuite\\app\\laravel\\bootstrap\\cache", "/grant", "NT SERVICE\\svc-a:(OI)(CI)M"]);
+  assert.deepEqual(calls[5], ["icacls", "D:\\ArchiveData", "/grant", "NT SERVICE\\svc-a:(OI)(CI)M"]);
 });
 
 test("applyAcls surfaces the first failing icacls call, not the last", () => {
