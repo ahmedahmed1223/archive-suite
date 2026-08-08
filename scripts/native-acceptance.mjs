@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const CHECKSUM_LINE = /^([a-f0-9]{64})  (.+)$/i;
 
@@ -141,10 +142,45 @@ async function main() {
     return 2;
   }
   const verified = verifyNativeBundle(bundle);
-  console.log(JSON.stringify({ ok: true, code: "BUNDLE_VERIFIED", platform, ...verified }));
+  if (args.includes("--verify-only")) {
+    console.log(JSON.stringify({ ok: true, code: "BUNDLE_VERIFIED", platform, ...verified }));
+    return 0;
+  }
+  if (platform === "windows") {
+    console.error("WINDOWS_HOST_RUNNER_NOT_READY");
+    return 2;
+  }
+
+  const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  const runIdIndex = args.indexOf("--run-id");
+  const runId = runIdIndex >= 0 ? args[runIdIndex + 1] : `${Date.now().toString(36)}`;
+  if (!runId || !/^[a-z0-9-]{4,32}$/i.test(runId)) throw new Error("INVALID_RUN_ID");
+  const outputIndex = args.indexOf("--evidence-out");
+  if (outputIndex >= 0 && !args[outputIndex + 1]) throw new Error("EVIDENCE_OUTPUT_REQUIRED");
+  const evidenceOutputDir = outputIndex >= 0 ? resolve(args[outputIndex + 1]) : join(repoRoot, "docs", "evidence", "v1-211d-native");
+  const commitResult = spawnSync("git", ["-c", `safe.directory=${repoRoot.replaceAll("\\", "/")}`, "rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8", stdio: "pipe" });
+  const commit = commitResult.status === 0 ? commitResult.stdout.trim() : "unknown";
+  const version = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")).version;
+  const { runLinuxNativeAcceptance } = await import("./native-acceptance/linux-runner.mjs");
+  const result = await runLinuxNativeAcceptance({
+    bundlePath: resolve(bundle),
+    bundleDigest: verified.bundleDigest,
+    runId,
+    evidenceOutputDir,
+    repoRoot,
+    commit,
+    version,
+    progress: (message) => console.error(`[native-acceptance] ${message}`),
+  });
+  console.log(JSON.stringify({ ok: true, code: "NATIVE_ACCEPTANCE_PASSED", platform, bundleDigest: verified.bundleDigest, evidencePath: result.evidencePath }));
   return 0;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
-  process.exitCode = await main();
+  try {
+    process.exitCode = await main();
+  } catch (error) {
+    console.error(error?.message || "NATIVE_ACCEPTANCE_FAILED");
+    process.exitCode = 1;
+  }
 }
