@@ -7,6 +7,7 @@ import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type DrProbe, type SystemMetrics } from "@/lib/archive-api";
 import { assessQueues, type QueueStatus } from "@/lib/queue-health";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type SummaryState =
   | { status: "loading" }
@@ -75,6 +76,8 @@ const HUB_LINKS = [
 ] as const;
 
 export default function DataCenterPage() {
+  const { locale } = useLocale();
+  const copy = locale === "en" ? { hub: "Data center", description: "A single place for uploads, ingest, backups, status, and settings, with the key links and summaries together.", connected: "Metrics connected", checking: "Checking", review: "Needs review", refresh: "Refresh summary", forbidden: "Metrics are available to administrators only", forbiddenDescription: "You can still use the links below to open each section directly.", error: "Could not load the summary", summary: "Data-center summary", memory: "Memory", disk: "Disk", queues: "Background queues", backup: "Latest backup", available: "Available", none: "None", queuesHealth: "Background queue health", paths: "Operational paths", pathsDescription: "Each card opens a workspace for a specific data operation.", pathsCount: "paths" } : { hub: "مركز البيانات", description: "نقطة تجميع لعمليات الرفع، الاستيراد، النسخ الاحتياطي، الحالة، والإعدادات — كل الروابط والملخصات المهمة في مكان واحد.", connected: "المقاييس متصلة", checking: "جارٍ الفحص", review: "يتطلب مراجعة", refresh: "تحديث الملخص", forbidden: "ملخص المقاييس متاح للمشرفين فقط", forbiddenDescription: "يمكنك مع ذلك استخدام الروابط أدناه للانتقال إلى كل قسم مباشرة.", error: "تعذر تحميل الملخص", summary: "ملخص مركز البيانات", memory: "الذاكرة", disk: "القرص", queues: "الطوابير الخلفية", backup: "آخر نسخة", available: "موجودة", none: "لا توجد", queuesHealth: "صحة الطوابير الخلفية", paths: "مسارات التشغيل", pathsDescription: "كل بطاقة تفتح مساحة عمل مرتبطة بعملية بيانات محددة.", pathsCount: "مسارات" };
   const [summary, setSummary] = useState<SummaryState>({ status: "loading" });
   const apiRef = useRef(createArchiveApiClient());
 
@@ -116,63 +119,62 @@ export default function DataCenterPage() {
     <AppShell subtitle="مركز البيانات" navLabel="مركز البيانات" contentClassName="observability-content" tipsPage="data-center">
       <PageToolbar
         icon={<Database size={24} />}
-        eyebrow={<span className="badge">مركز البيانات</span>}
-        title="مركز البيانات"
-        description="نقطة تجميع لعمليات الرفع، الاستيراد، النسخ الاحتياطي، الحالة، والإعدادات — كل الروابط والملخصات المهمة في مكان واحد."
+        eyebrow={<span className="badge">{copy.hub}</span>}
+        title={copy.hub}
+        description={copy.description}
         meta={
           <span className={summary.status === "ready" ? "badge badge-success" : "badge"}>
-            {summary.status === "ready" ? "المقاييس متصلة" : summary.status === "loading" ? "جار الفحص" : "يتطلب مراجعة"}
+            {summary.status === "ready" ? copy.connected : summary.status === "loading" ? copy.checking : copy.review}
           </span>
         }
         actions={
           <button type="button" className="button button-secondary" onClick={() => void loadSummary()} disabled={summary.status === "loading"}>
-            تحديث الملخص
+            {copy.refresh}
           </button>
         }
       />
 
       {summary.status === "forbidden" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>ملخص المقاييس متاح للمشرفين فقط</strong>
-          <p>يمكنك مع ذلك استخدام الروابط أدناه للانتقال إلى كل قسم مباشرة.</p>
+          <strong>{copy.forbidden}</strong><p>{copy.forbiddenDescription}</p>
         </div>
       ) : null}
 
       {summary.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل الملخص</strong>
+          <strong>{copy.error}</strong>
           <p>{summary.message}</p>
         </div>
       ) : null}
 
       {summary.status === "ready" ? (
         <MetricStrip
-          ariaLabel="ملخص مركز البيانات"
+          ariaLabel={copy.summary}
           items={[
             {
-              label: "الذاكرة",
+              label: copy.memory,
               value: `${memoryPercent}%`,
               description: `${formatBytes(summary.metrics.memory.usedBytes)} / ${formatBytes(summary.metrics.memory.totalBytes)}`,
               icon: <Gauge size={20} />,
               tone: memoryPercent > 85 ? "warning" : "success"
             },
             {
-              label: "القرص",
+              label: copy.disk,
               value: `${diskPercent}%`,
               description: `${formatBytes(summary.metrics.disk.usedBytes)} / ${formatBytes(summary.metrics.disk.totalBytes)}`,
               icon: <Archive size={20} />,
               tone: diskPercent > 85 ? "warning" : "info"
             },
             {
-              label: "الطوابير الخلفية",
+              label: copy.queues,
               value: summary.metrics.queueDepth,
               description: `${QUEUE_STATUS_LABEL[queueHealth.status]} — ${summary.metrics.queues.length} طابور نشط`,
               icon: <Workflow size={20} />,
               tone: QUEUE_TONE[queueHealth.status]
             },
             {
-              label: "آخر نسخة",
-              value: summary.dr.lastBackupName ? "موجودة" : "لا توجد",
+              label: copy.backup,
+              value: summary.dr.lastBackupName ? copy.available : copy.none,
               description: summary.dr.lastBackupName ? formatDate(summary.dr.lastBackupAt) : "ابدأ من مركز النسخ",
               icon: <ShieldCheck size={20} />,
               tone: summary.dr.lastBackupName ? "success" : "warning"
@@ -182,10 +184,10 @@ export default function DataCenterPage() {
       ) : null}
 
       {summary.status === "ready" && summary.metrics.queues.length > 0 ? (
-        <section className="workspace-panel" aria-label="صحة الطوابير الخلفية">
+        <section className="workspace-panel" aria-label={copy.queuesHealth}>
           <div className="panel-title-row">
             <div>
-              <h2>صحة الطوابير الخلفية</h2>
+              <h2>{copy.queuesHealth}</h2>
               <p>الاستيراد والوسائط والنسخ الاحتياطي. عمر أقدم مهمة يميّز الطابور المتوقف عن المزدحم.</p>
             </div>
             <span className="badge">{QUEUE_STATUS_LABEL[queueHealth.status]}</span>
@@ -225,13 +227,12 @@ export default function DataCenterPage() {
         </section>
       ) : null}
 
-      <section className="workspace-panel data-center-hub" aria-label="أقسام مركز البيانات">
+      <section className="workspace-panel data-center-hub" aria-label={copy.hub}>
         <div className="panel-title-row">
           <div>
-            <h2>مسارات التشغيل</h2>
-            <p>كل بطاقة تفتح مساحة عمل مرتبطة بعملية بيانات محددة.</p>
+            <h2>{copy.paths}</h2><p>{copy.pathsDescription}</p>
           </div>
-          <span className="badge">{HUB_LINKS.length} مسارات</span>
+          <span className="badge">{HUB_LINKS.length} {copy.pathsCount}</span>
         </div>
         <div className="data-center-link-grid">
           {HUB_LINKS.map((link) => (
