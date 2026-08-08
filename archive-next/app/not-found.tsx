@@ -1,18 +1,22 @@
+"use client";
+
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export default function NotFound() {
+  const { t } = useLocale();
   return (
     <main className="content">
       <section className="panel">
         <span className="badge">404</span>
-        <h1>الصفحة غير موجودة.</h1>
-        <p>الرابط الذي فتحته غير صحيح أو أُزيلت صفحته.</p>
+        <h1>{t.shared.pages.notFoundTitle}</h1>
+        <p>{t.shared.pages.notFoundDescription}</p>
         <div className="button-row">
           <Link className="button button-primary" href="/">
-            العودة إلى الرئيسية
+            {t.shared.pages.backHome}
           </Link>
           <Link className="button" href="/archive">
-            فتح الأرشيف
+            {t.shared.pages.openArchive}
           </Link>
         </div>
       </section>

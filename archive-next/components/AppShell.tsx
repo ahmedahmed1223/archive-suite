@@ -15,6 +15,8 @@ import GlobalShortcuts from "@/components/GlobalShortcuts";
 import type { BreadcrumbItem } from "@/components/Breadcrumb";
 import WhatsNewDialog from "@/components/WhatsNewDialog";
 import RouteAnnouncer from "@/components/RouteAnnouncer";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { localizePageLabel } from "@/lib/i18n/page-labels";
 
 export default function AppShell({
   subtitle,
@@ -32,6 +34,8 @@ export default function AppShell({
   /** عناصر إضافية تُلحق بمسار التنقل الأساسي (مثل اسم العنصر المفتوح حاليًا). */
   breadcrumbExtra?: BreadcrumbItem[];
 }>) {
+  const { locale, t } = useLocale();
+  const localizedSubtitle = localizePageLabel(subtitle, locale);
   const [isFocus, setIsFocus] = useState(false);
   const [density, setDensityState] = useState(getDensity());
 
@@ -56,9 +60,9 @@ export default function AppShell({
       data-density={density}
     >
       <a className="skip-link" href="#main-content">
-        الانتقال إلى المحتوى الرئيسي
+        {t.shell.skipToContent}
       </a>
-      <AppHeader subtitle={subtitle} navLabel={navLabel} breadcrumbExtra={breadcrumbExtra} />
+      <AppHeader subtitle={localizedSubtitle} navLabel={navLabel ? localizePageLabel(navLabel, locale) : undefined} breadcrumbExtra={breadcrumbExtra} />
       <RouteAnnouncer />
       <WorkspacePositionRestorer />
       <ShortcutsOverlay />

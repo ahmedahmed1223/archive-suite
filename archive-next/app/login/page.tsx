@@ -7,6 +7,7 @@ import PublicFooter from "@/components/PublicFooter";
 import PublicHeader from "@/components/PublicHeader";
 import { BRAND } from "@/lib/brand";
 import { safeNextPath, useAuthSession } from "@/lib/auth-session";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useRouter, useSearchParams } from "next/navigation";
 import "./login.css";
 
@@ -16,20 +17,15 @@ type LoginState =
   | { status: "success" }
   | { status: "error"; message: string };
 
-const loginHighlights = [
-  "جلسات آمنة",
-  "اتصال مشفَّر",
-  "حماية موثوقة"
-] as const;
-
 function LoginFallback() {
+  const { t } = useLocale();
   return (
     <main className="shell login-shell">
-      <PublicHeader subtitle="تسجيل الدخول" />
-      <section className="content login-content" aria-label="تجهيز تسجيل الدخول">
+      <PublicHeader subtitle={t.auth.login.title} />
+      <section className="content login-content" aria-label={t.auth.login.loading}>
         <div className="session-loading" aria-busy="true">
           <span className="status-refresh-icon is-spinning" aria-hidden="true" />
-          <span>جار تجهيز بوابة الدخول...</span>
+          <span>{t.auth.login.loading}</span>
         </div>
       </section>
       <PublicFooter />
@@ -38,6 +34,7 @@ function LoginFallback() {
 }
 
 function LoginPageContent() {
+  const { t } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = useAuthSession();
@@ -72,24 +69,21 @@ function LoginPageContent() {
 
   return (
     <main className="shell login-shell">
-      <PublicHeader subtitle="تسجيل الدخول" />
+      <PublicHeader subtitle={t.auth.login.title} />
 
-      <section className="content login-content" aria-label="تسجيل الدخول">
-        <div className="login-portal" aria-label="بوابة تسجيل الدخول">
+      <section className="content login-content" aria-label={t.auth.login.title}>
+        <div className="login-portal" aria-label={t.auth.login.portal}>
           <section className="login-hero" aria-labelledby="login-title">
             <div className="login-hero__mark">
               <img src={BRAND.markPath} alt="" width={64} height={64} />
             </div>
             <span className="badge">{BRAND.descriptor}</span>
             <div className="login-hero__copy">
-              <h1 id="login-title">تسجيل الدخول إلى {BRAND.arabicName}</h1>
-              <p>
-                بوابة آمنة ومختصرة للوصول إلى مساحة إدارة السجلات والوسائط. بعد الدخول فقط تظهر أدوات التشغيل
-                والتنقل الداخلي.
-              </p>
+              <h1 id="login-title">{t.auth.login.heading}</h1>
+              <p>{t.auth.login.description}</p>
             </div>
-            <div className="login-trust-grid" aria-label="خصائص الدخول">
-              {loginHighlights.map((item) => (
+            <div className="login-trust-grid" aria-label={t.auth.login.portal}>
+              {t.auth.login.highlights.map((item) => (
                 <span key={item}>
                   <ShieldCheck size={16} />
                   {item}
@@ -98,19 +92,19 @@ function LoginPageContent() {
             </div>
           </section>
 
-          <section className="login-card" aria-label="نموذج تسجيل الدخول">
-            <form className="auth-form login-card__form" onSubmit={handleSubmit} method="post" aria-label="نموذج تسجيل الدخول">
+          <section className="login-card" aria-label={t.auth.login.form}>
+            <form className="auth-form login-card__form" onSubmit={handleSubmit} method="post" aria-label={t.auth.login.form}>
               <div className="login-card__header">
                 <span className="login-card__icon" aria-hidden="true">
                   <KeyRound size={20} />
                 </span>
                 <div>
-                  <h2>بيانات الدخول</h2>
-                  <p>استخدم حسابك للمتابعة إلى لوحة التحكم.</p>
+                  <h2>{t.auth.login.credentials}</h2>
+                  <p>{t.auth.login.credentialsDescription}</p>
                 </div>
               </div>
 
-              <label htmlFor="email">البريد الإلكتروني</label>
+              <label htmlFor="email">{t.auth.login.email}</label>
               <div className="login-field">
                 <Mail size={18} aria-hidden="true" />
                 <input
@@ -125,7 +119,7 @@ function LoginPageContent() {
                 />
               </div>
 
-              <label htmlFor="password">كلمة المرور</label>
+              <label htmlFor="password">{t.auth.login.password}</label>
               <div className="login-field">
                 <KeyRound size={18} aria-hidden="true" />
                 <input
@@ -143,7 +137,7 @@ function LoginPageContent() {
                   className="login-field__toggle"
                   onClick={() => setShowPassword((current) => !current)}
                   disabled={state.status === "loading"}
-                  aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                  aria-label={showPassword ? t.auth.login.hidePassword : t.auth.login.showPassword}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -152,16 +146,16 @@ function LoginPageContent() {
               <label className="login-remember">
                 <input name="rememberMe" type="checkbox" disabled={state.status === "loading"} />
                 <span>
-                  <strong>تذكّرني على هذا الجهاز</strong>
-                  <small>لا تفعّله على جهاز مشترك.</small>
+                  <strong>{t.auth.login.remember}</strong>
+                  <small>{t.auth.login.rememberHint}</small>
                 </span>
               </label>
 
               <div className="login-card__actions">
                 <button type="submit" className="button button-primary" disabled={state.status === "loading"}>
-                  {state.status === "loading" ? "جار التحقق..." : "تسجيل الدخول"}
+                  {state.status === "loading" ? t.auth.login.submitting : t.auth.login.submit}
                 </button>
-                <a className="badge" href="/first-run">أول تشغيل</a>
+                <a className="badge" href="/first-run">{t.auth.login.gettingStarted}</a>
               </div>
 
               {(state.status === "error" || state.status === "success") && (
@@ -189,7 +183,7 @@ function LoginPageContent() {
             <div className="login-card__note">
               <ShieldCheck size={18} aria-hidden="true" />
               <span>
-                يتم حفظ الجلسة عبر cookie آمن، ولا تُعرض مساحة العمل قبل المصادقة.
+                {t.auth.login.secureSession}
               </span>
             </div>
           </section>

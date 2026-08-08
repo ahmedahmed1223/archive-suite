@@ -16,4 +16,14 @@ export const shared = {
     ar: "Arabic",
     en: "English",
   },
+  pages: {
+    notFoundTitle: "Page not found.",
+    notFoundDescription: "The link you opened is invalid or its page has been removed.",
+    backHome: "Back to home",
+    openArchive: "Open archive",
+    pageError: "Page unavailable",
+    pageErrorTitle: "An error occurred while loading this screen.",
+    pageErrorDescription: "Try again, or return home if the error continues.",
+    errorReference: "Error reference",
+  },
 } as const satisfies DictionaryShape<typeof arabicShared>;

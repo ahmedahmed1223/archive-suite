@@ -3,7 +3,7 @@
 import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BRAND } from "@/lib/brand";
-import { isActivePath, navSectionLabels, primaryNav } from "@/lib/navigation";
+import { getLocalizedNavigation, isActivePath } from "@/lib/navigation";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -17,6 +17,7 @@ import RecentFavoritesMenu from "@/components/RecentFavoritesMenu";
 import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
 import { useTheme } from "@/components/ThemeProvider";
 import { filterGuideChapters, getGuideChapterForPath } from "@/lib/in-app-guide";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
@@ -26,7 +27,7 @@ const DARK_PRESET = "cinematic-dark";
 
 export default function AppHeader({
   subtitle,
-  navLabel = "المسارات الرئيسية",
+  navLabel,
   breadcrumbExtra = []
 }: Readonly<{
   subtitle: string;
@@ -34,6 +35,7 @@ export default function AppHeader({
   /** عناصر إضافية تُلحق بمسار التنقل الأساسي (مثل اسم العنصر المفتوح حاليًا). */
   breadcrumbExtra?: BreadcrumbItem[];
 }>) {
+  const { locale, t } = useLocale();
   const pathname = usePathname() || "/";
   const router = useRouter();
   const auth = useAuthSession();
@@ -90,21 +92,22 @@ export default function AppHeader({
   }
 
   const userLabel = auth.user?.name ?? auth.user?.email ?? auth.user?.id;
-  const activeLink = primaryNav.find((link) => isActivePath(pathname, link.href));
+  const { items, sections } = getLocalizedNavigation(locale);
+  const activeLink = items.find((link) => isActivePath(pathname, link.href));
   const activeSection = activeLink?.section;
   const role = auth.user?.role ?? "viewer";
-  const navigationGroups = Object.entries(navSectionLabels).map(([section, label]) => ({
+  const navigationGroups = Object.entries(sections).map(([section, label]) => ({
     section,
     label,
-    items: primaryNav.filter((item) => item.section === section)
+    items: items.filter((item) => item.section === section)
   }));
-  const breadcrumbItems: BreadcrumbItem[] = [{ label: "الرئيسية", href: "/" }];
+  const breadcrumbItems: BreadcrumbItem[] = [{ label: t.shell.home, href: "/" }];
   const contextualGuide = getGuideChapterForPath(pathname, filterGuideChapters([
     { id: "viewer-search", title: "", audience: ["viewer", "editor", "admin"] as const, body: "", href: "/search" },
     { id: "editor-upload", title: "", audience: ["editor", "admin"] as const, body: "", href: "/uploads" },
     { id: "admin-operations", title: "", audience: ["admin"] as const, body: "", href: "/settings/users" },
   ], role, ""));
-  if (activeSection) breadcrumbItems.push({ label: navSectionLabels[activeSection] });
+  if (activeSection) breadcrumbItems.push({ label: sections[activeSection] });
   if (activeLink && activeLink.href !== "/") breadcrumbItems.push({ label: activeLink.label, href: activeLink.href });
   breadcrumbItems.push(...breadcrumbExtra);
 
@@ -143,7 +146,7 @@ export default function AppHeader({
 
   return (
     <header className="topbar" data-layout="app-header" data-nav-open={isMenuOpen ? "true" : "false"}>
-      <Link className="brand" href="/" aria-label={`${BRAND.arabicName} - الرئيسية`}>
+      <Link className="brand" href="/" aria-label={`${BRAND.arabicName} - ${t.shell.home}`}>
         <img className="brand-mark" src={BRAND.markPath} alt="" width={44} height={44} />
         <span className="brand-name">
           <strong>{BRAND.arabicName}</strong>
@@ -156,23 +159,23 @@ export default function AppHeader({
         className="nav-toggle"
         aria-controls="app-primary-nav"
         aria-expanded={isMenuOpen}
-        aria-label={isMenuOpen ? "إغلاق التنقل" : "فتح التنقل"}
+        aria-label={isMenuOpen ? t.shell.closeNavigation : t.shell.openNavigation}
         ref={navigationTriggerRef}
         onClick={() => isMenuOpen ? closeNavigation({ restoreFocus: false }) : setIsMenuOpen(true)}
       >
         {isMenuOpen ? <Icons.X aria-hidden="true" size={18} /> : <Icons.Menu aria-hidden="true" size={18} />}
-        <span>المسارات</span>
+        <span>{t.shell.routes}</span>
       </button>
-      <div className="topbar-actions" aria-label="أدوات الواجهة">
+      <div className="topbar-actions" aria-label={t.shell.interfaceTools}>
         {contextualGuide ? (
-          <Link className="icon-action" href={`/help?chapter=${contextualGuide.id}`} title="كيف تعمل هذه الصفحة؟">
+          <Link className="icon-action" href={`/help?chapter=${contextualGuide.id}`} title={t.shell.pageHelp}>
             <Icons.CircleHelp aria-hidden="true" size={18} strokeWidth={2} />
-            <span>كيف تعمل هذه الصفحة؟</span>
+            <span>{t.shell.pageHelp}</span>
           </Link>
         ) : null}
-        <Link className="icon-action primary-action-link" href="/uploads" title="إضافة مادة">
+        <Link className="icon-action primary-action-link" href="/uploads" title={t.shell.addMaterial}>
           <Icons.UploadCloud aria-hidden="true" size={18} strokeWidth={2} />
-          <span>إضافة مادة</span>
+          <span>{t.shell.addMaterial}</span>
         </Link>
         {auth.status === "authenticated" && (
           <>
@@ -184,14 +187,14 @@ export default function AppHeader({
           <div className="session-chip" title={userLabel}>
             <Icons.UserCircle aria-hidden="true" size={18} strokeWidth={2} />
             <span>{userLabel}</span>
-            <button type="button" onClick={handleLogout} aria-label="تسجيل الخروج">
+            <button type="button" onClick={handleLogout} aria-label={t.shell.signOut}>
               <Icons.LogOut aria-hidden="true" size={16} strokeWidth={2} />
             </button>
           </div>
         ) : (
           <Link className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
             <Icons.LogIn aria-hidden="true" size={18} strokeWidth={2} />
-            <span>الدخول</span>
+            <span>{t.shell.signIn}</span>
           </Link>
         )}
         <DensityToggle />
@@ -201,35 +204,35 @@ export default function AppHeader({
           className="icon-action command-trigger"
           data-command-trigger
           onClick={openCommandPalette}
-          aria-label="فتح لوحة الأوامر"
+          aria-label={t.shell.openCommandPalette}
           aria-keyshortcuts="Control+K Meta+K"
-          title="بحث سريع"
+          title={t.shell.quickSearch}
         >
           <Icons.Search aria-hidden="true" size={18} strokeWidth={2} />
           <kbd>{shortcutDisplay}</kbd>
         </button>
       </div>
-      {isMenuOpen ? <button type="button" className="navigation-backdrop" aria-label="إغلاق التنقل" onClick={() => closeNavigation()} /> : null}
+      {isMenuOpen ? <button type="button" className="navigation-backdrop" aria-label={t.shell.closeNavigation} onClick={() => closeNavigation()} /> : null}
       <div className="shell-controls">
         <button
           type="button"
           className="shell-theme-toggle"
           onClick={() => theme.setPreset(isLightTheme ? DARK_PRESET : LIGHT_PRESET)}
           aria-pressed={isLightTheme}
-          title={isLightTheme ? "التبديل إلى الوضع الداكن" : "التبديل إلى الوضع الفاتح"}
+          title={isLightTheme ? t.shell.switchToDarkMode : t.shell.switchToLightMode}
         >
           {isLightTheme ? <Icons.Moon aria-hidden="true" size={16} strokeWidth={2} /> : <Icons.Sun aria-hidden="true" size={16} strokeWidth={2} />}
-          <span>{isLightTheme ? "الوضع الداكن" : "الوضع الفاتح"}</span>
+          <span>{isLightTheme ? t.shell.darkMode : t.shell.lightMode}</span>
         </button>
       </div>
       <div className="sidebar-navigation">
-        <button type="button" className="sidebar-scroll-control" aria-label="تمرير القائمة لأعلى" title="تمرير القائمة لأعلى" disabled={!navigationScroll.up} onClick={() => scrollNavigation(-1)}>
+        <button type="button" className="sidebar-scroll-control" aria-label={t.shell.scrollNavigationUp} title={t.shell.scrollNavigationUp} disabled={!navigationScroll.up} onClick={() => scrollNavigation(-1)}>
           <Icons.ChevronUp aria-hidden="true" size={18} strokeWidth={2} />
         </button>
-        <nav id="app-primary-nav" className="route-links" aria-label={navLabel} ref={routeLinksRef} onScroll={updateNavigationScroll}>
-          <div className="nav-group-actions" aria-label="أدوات مجموعات التنقل">
-            <button type="button" className="button button-ghost button-sm" onClick={expandNavigationGroups}>فتح كل المجموعات</button>
-            <button type="button" className="button button-ghost button-sm" onClick={collapseNavigationGroups}>طي كل المجموعات</button>
+        <nav id="app-primary-nav" className="route-links" aria-label={navLabel ?? t.shell.routes} ref={routeLinksRef} onScroll={updateNavigationScroll}>
+          <div className="nav-group-actions" aria-label={t.shell.navigationGroupTools}>
+            <button type="button" className="button button-ghost button-sm" onClick={expandNavigationGroups}>{t.shell.expandAllGroups}</button>
+            <button type="button" className="button button-ghost button-sm" onClick={collapseNavigationGroups}>{t.shell.collapseAllGroups}</button>
           </div>
           {navigationGroups.map((group, index) => (
             <details
@@ -255,7 +258,7 @@ export default function AppHeader({
             </details>
           ))}
         </nav>
-        <button type="button" className="sidebar-scroll-control" aria-label="تمرير القائمة لأسفل" title="تمرير القائمة لأسفل" disabled={!navigationScroll.down} onClick={() => scrollNavigation(1)}>
+        <button type="button" className="sidebar-scroll-control" aria-label={t.shell.scrollNavigationDown} title={t.shell.scrollNavigationDown} disabled={!navigationScroll.down} onClick={() => scrollNavigation(1)}>
           <Icons.ChevronDown aria-hidden="true" size={18} strokeWidth={2} />
         </button>
       </div>

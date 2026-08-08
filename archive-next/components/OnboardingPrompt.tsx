@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ONBOARDING_PROMPT_DISMISSED_KEY, ONBOARDING_STORAGE_KEY } from "@/lib/onboarding";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const hiddenPathPrefixes = ["/first-run", "/login", "/share/", "/review/"];
 
@@ -11,6 +12,7 @@ function shouldHidePrompt(pathname: string) {
 }
 
 export default function OnboardingPrompt() {
+  const { t } = useLocale();
   const pathname = usePathname() || "/";
   const [isVisible, setIsVisible] = useState(false);
 
@@ -29,14 +31,14 @@ export default function OnboardingPrompt() {
   if (!isVisible) return null;
 
   return (
-    <section className="onboarding-prompt" aria-label="مسار أول تشغيل">
+    <section className="onboarding-prompt" aria-label={t.shell.onboardingAria}>
       <div>
-        <strong>هل هذا أول تشغيل؟</strong>
-        <p>راجع مسار التهيئة السريع أو المتقدم قبل بدء العمل اليومي.</p>
+        <strong>{t.shell.onboardingTitle}</strong>
+        <p>{t.shell.onboardingDescription}</p>
       </div>
       <div className="button-row">
         <a className="button button-primary button-sm" href="/first-run">
-          فتح الجولة
+          {t.shell.openTour}
         </a>
         <button
           type="button"
@@ -46,7 +48,7 @@ export default function OnboardingPrompt() {
             setIsVisible(false);
           }}
         >
-          إخفاء التذكير
+          {t.shell.dismissReminder}
         </button>
       </div>
     </section>

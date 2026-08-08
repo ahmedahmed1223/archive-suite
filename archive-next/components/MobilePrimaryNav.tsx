@@ -5,23 +5,27 @@ import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { openCommandPalette } from "@/components/CommandPalette";
-import { getDailyNavigation, isActivePath, primaryNav } from "@/lib/navigation";
+import { getDailyNavigation, getLocalizedNavigation, isActivePath } from "@/lib/navigation";
 import { useAuthSession } from "@/lib/auth-session";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 
 export default function MobilePrimaryNav() {
+  const { locale, t } = useLocale();
   const pathname = usePathname() || "/";
   const auth = useAuthSession();
-  const activeSection = primaryNav.find((link) => isActivePath(pathname, link.href))?.section;
-  const mobileItems = getDailyNavigation(activeSection, auth.user?.role ?? "viewer").daily;
+  const { items } = getLocalizedNavigation(locale);
+  const activeSection = items.find((link) => isActivePath(pathname, link.href))?.section;
+  const mobileItems = getDailyNavigation(activeSection, auth.user?.role ?? "viewer").daily
+    .map((item) => items.find((localized) => localized.href === item.href) ?? item);
 
   function openAllRoutes() {
     window.dispatchEvent(new Event("archive:toggle-navigation"));
   }
 
   return (
-    <nav className="mobile-primary-nav" aria-label="التنقل اليومي">
+    <nav className="mobile-primary-nav" aria-label={t.shell.dailyNavigation}>
       {mobileItems.map((item) => {
         const Icon = iconRegistry[item.icon] || Icons.Circle;
         const active = isActivePath(pathname, item.href);
@@ -33,13 +37,13 @@ export default function MobilePrimaryNav() {
           </Link>
         );
       })}
-      <button type="button" className="mobile-primary-nav__command" onClick={openCommandPalette} aria-label="فتح الأوامر">
+      <button type="button" className="mobile-primary-nav__command" onClick={openCommandPalette} aria-label={t.shell.openCommands}>
         <Icons.Search aria-hidden="true" size={20} strokeWidth={2} />
-        <span>الأوامر</span>
+        <span>{t.shell.commands}</span>
       </button>
       <button type="button" onClick={openAllRoutes} aria-controls="app-primary-nav">
         <Icons.Menu aria-hidden="true" size={20} strokeWidth={2} />
-        <span>المزيد</span>
+        <span>{t.shell.more}</span>
       </button>
     </nav>
   );

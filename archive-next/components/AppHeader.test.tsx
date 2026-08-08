@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import AppHeader from "./AppHeader";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 const mockUseAuthSession = vi.fn();
 const mockUsePathname = vi.fn();
@@ -42,21 +43,41 @@ function mockSession(role: "admin" | "editor" | "viewer" = "viewer") {
   mockUseAuthSession.mockReturnValue({ status: "authenticated", user: { role }, logout: vi.fn() });
 }
 
+function renderHeader(subtitle: string, locale: "ar" | "en" = "ar") {
+  return render(<LocaleProvider initialLocale={locale} hasLocaleCookie><AppHeader subtitle={subtitle} /></LocaleProvider>);
+}
+
 describe("AppHeader navigation", () => {
+  test("renders the shared navigation controls in English when English is selected", () => {
+    mockSession();
+    mockMatchMedia("");
+
+    render(
+      <LocaleProvider initialLocale="en" hasLocaleCookie>
+        <AppHeader subtitle="Help center" />
+      </LocaleProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "Open command palette" })).toBeVisible();
+    expect(screen.getByRole("navigation", { name: "Navigation" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Open navigation" })).toBeVisible();
+    expect(screen.getAllByRole("link", { name: "Add material" }).length).toBeGreaterThan(0);
+  });
+
   test("keeps command palette and navigation controls discoverable", () => {
     mockSession();
     mockMatchMedia("");
 
-    render(<AppHeader subtitle="مساحة العمل" />);
+    renderHeader("مساحة العمل");
 
     expect(screen.getByRole("button", { name: "فتح لوحة الأوامر" })).toBeVisible();
-    expect(screen.getByRole("navigation", { name: "المسارات الرئيسية" })).toBeVisible();
+    expect(screen.getByRole("navigation", { name: "المسارات" })).toBeVisible();
   });
 
   test("opens navigation and returns focus to its trigger on Escape", () => {
     mockSession();
     mockMatchMedia("");
-    render(<AppHeader subtitle="الرئيسية" />);
+    renderHeader("الرئيسية");
 
     const trigger = screen.getByRole("button", { name: "فتح التنقل" });
     trigger.focus();
@@ -73,7 +94,7 @@ describe("AppHeader grouped navigation", () => {
   test("groups routes by function and can expand every group", () => {
     mockSession();
     mockMatchMedia("");
-    render(<AppHeader subtitle="الرئيسية" />);
+    renderHeader("الرئيسية");
 
     const groups = Array.from(document.querySelectorAll(".nav-group")) as HTMLDetailsElement[];
     expect(groups.length).toBeGreaterThan(2);
@@ -86,7 +107,7 @@ describe("AppHeader grouped navigation", () => {
   test("scrolls the desktop navigation from its explicit controls", () => {
     mockSession();
     mockMatchMedia("");
-    render(<AppHeader subtitle="الرئيسية" />);
+    renderHeader("الرئيسية");
 
     const navigation = screen.getByRole("navigation");
     Object.defineProperties(navigation, {
@@ -109,7 +130,7 @@ describe("AppHeader contextual guide", () => {
     mockUsePathname.mockReturnValue("/settings/users");
     mockMatchMedia("");
 
-    render(<AppHeader subtitle="الإعدادات" />);
+    renderHeader("الإعدادات");
 
     expect(screen.queryByRole("link", { name: "كيف تعمل هذه الصفحة؟" })).toBeNull();
   });

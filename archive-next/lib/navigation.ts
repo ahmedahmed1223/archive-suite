@@ -58,6 +58,12 @@ export type NavSection = (typeof primaryNav)[number]["section"];
 export type NavigationRole = "admin" | "editor" | "viewer";
 export type NavigationItem = (typeof primaryNav)[number];
 
+const englishNavigationLabels: Record<NavigationItem["href"], string> = {
+  "/uploads": "Add material", "/uploads/scheduled": "Scheduled uploads", "/inbox": "Inbox", "/ingest": "Import", "/media/jobs": "Media", "/transcriber": "Transcription", "/": "Dashboard", "/daily": "Daily", "/archive": "Archive", "/search": "Search", "/discover": "Discover", "/favorites": "Favorites", "/reading-lists": "Reading lists", "/timeline": "Timeline", "/graph": "Relationships", "/map": "Map", "/files": "Files", "/collections": "Collections", "/types": "Types", "/vocabulary": "Vocabulary", "/tags": "Tags", "/duplicates": "Duplicates", "/trash": "Trash", "/kanban": "Kanban", "/projects": "Projects", "/shares": "Shares", "/shares/with-me": "Shared with me", "/collaboration": "Collaboration", "/broadcast": "Broadcast", "/automation": "Automation", "/copilot": "Archive assistant", "/rights": "Rights", "/safety-preview": "Safety preview", "/activity": "Activity", "/analytics": "Analytics", "/reports": "Reports", "/status": "Status", "/sync": "Sync", "/errors": "Errors", "/search/saved": "Saved searches", "/plugins": "Plugins", "/backup": "Backups", "/data-center": "Data center", "/system/control": "System control", "/first-run": "Getting started", "/settings": "Settings", "/help": "Help",
+};
+
+const englishSectionLabels: Record<NavSection, string> = { capture: "Capture", library: "Library", organize: "Organize", collaborate: "Collaborate", insights: "Insights", system: "System" };
+
 export const navSectionLabels: Record<NavSection, string> = {
   capture: "الإدخال",
   library: "المكتبة",
@@ -66,6 +72,11 @@ export const navSectionLabels: Record<NavSection, string> = {
   insights: "المؤشرات",
   system: "النظام"
 };
+
+export function getLocalizedNavigation(locale: "ar" | "en") {
+  if (locale === "ar") return { items: primaryNav, sections: navSectionLabels };
+  return { items: primaryNav.map((item) => ({ ...item, label: englishNavigationLabels[item.href] })), sections: englishSectionLabels };
+}
 
 const dailyRoutes: Record<NavSection, readonly string[]> = {
   capture: ["/uploads", "/inbox", "/ingest", "/media/jobs"],
