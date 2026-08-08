@@ -9,6 +9,7 @@ import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
 import ShortcutsSettings from "@/components/ShortcutsSettings";
 import AppearanceSettings from "@/components/AppearanceSettings";
+import LanguageSettings from "@/components/LanguageSettings";
 import { BRAND } from "@/lib/brand";
 import { isTipsEnabledGlobally, setTipsEnabledGlobally } from "@/lib/contextual-tips";
 import {
@@ -25,8 +26,8 @@ import {
 const categoryCards = [
   {
     title: "النظام",
-    summary: "تجميع إعدادات البيئة العامة، اللغة، والاحتفاظ التشغيلي في وضع قراءة فقط.",
-    items: ["اللغة: العربية", "المنطقة الزمنية: Europe/Istanbul", "الاحتفاظ: وفق السياسة"]
+    summary: "تجميع إعدادات البيئة العامة والاحتفاظ التشغيلي في وضع قراءة فقط.",
+    items: ["المنطقة الزمنية: Europe/Istanbul", "الاحتفاظ: وفق السياسة"]
   },
   {
     title: "التخزين",
@@ -42,19 +43,6 @@ const categoryCards = [
     title: "المظهر",
     summary: "هوية العرض والنسق المرئي الحاليان موثقان هنا للرجوع السريع.",
     items: ["النسق: فاتح", "الكثافة: مدمجة", `الهوية: ${BRAND.lockupName}`]
-  }
-];
-
-const roadmapItems = [
-  {
-    title: "المصادقة الثنائية",
-    status: "مخطط",
-    note: "مؤجلة حتى يكتمل سطح المصادقة والجلسات."
-  },
-  {
-    title: "تحديث إعدادات الأمان",
-    status: "مخطط",
-    note: "تحكم الكتابة في إعدادات معدل الحد والعناوين المسموحة مؤجل."
   }
 ];
 
@@ -539,7 +527,7 @@ export default function SettingsPage() {
           <div className="workspace-panel__header">
             <div>
               <h2>وضع الأمان</h2>
-              <p>ملخص للقراءة فقط يوضح سياسة الوصول الحالية والعمل الأمني المؤجل لإصدارات لاحقة.</p>
+              <p>ملخص للقراءة فقط يوضح سياسة الوصول الحالية والضوابط المطبقة.</p>
             </div>
             <StatusBadge tone={error ? "danger" : "neutral"}>{error ? "يتطلب مراجعة" : "قراءة فقط"}</StatusBadge>
           </div>
@@ -582,22 +570,10 @@ export default function SettingsPage() {
               </>
             )}
 
-            <div className="stack">
-              {roadmapItems.map((item) => (
-                <div key={item.title} className="section-divider">
-                  <div className="helper-row">
-                    <strong>{item.title}</strong>
-                    <StatusBadge tone="info">{item.status}</StatusBadge>
-                  </div>
-                  <p className="helper-text mt-tight">
-                    {item.note}
-                  </p>
-                </div>
-              ))}
-            </div>
           </div>
         </article>
 
+        <LanguageSettings />
         <ShortcutsSettings />
         <AppearanceSettings />
 

@@ -1405,6 +1405,7 @@ export interface ArchiveApiClient {
   removeFavorite(recordId: string, store?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   login(payload: LoginRequest): Promise<ApiEnvelope<AuthSession>>;
   me(options?: AuthRequestOptions): Promise<ApiEnvelope<{ user: ArchiveUser }>>;
+  updateAccountPreferences(payload: { locale: "ar" | "en" }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ user: ArchiveUser }>>;
   refresh(): Promise<ApiEnvelope<AuthSession>>;
   logout(options?: AuthRequestOptions): Promise<ApiEnvelope>;
   search(
@@ -1961,6 +1962,8 @@ export function createArchiveApiClient({
       return response;
     },
     me: (options?: AuthRequestOptions) => get("/auth/me", options),
+    updateAccountPreferences: (payload, options) =>
+      patch<{ user: ArchiveUser }>("/account/preferences", payload, options),
     refresh: async () => {
       const response = await post<AuthSession>("/auth/refresh");
       if (response.ok) {

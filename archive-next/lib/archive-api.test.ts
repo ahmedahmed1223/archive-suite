@@ -67,6 +67,21 @@ describe("archive API authentication", () => {
       rememberMe: true
     }));
   });
+
+  it("updates the authenticated account locale through the preferences endpoint", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(Response.json({
+      ok: true,
+      user: { id: "admin", email: "admin@example.test", role: "admin", locale: "en" },
+    }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    await api.updateAccountPreferences({ locale: "en" });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "/api/v1/account/preferences",
+      expect.objectContaining({ method: "PATCH", body: JSON.stringify({ locale: "en" }) }),
+    );
+  });
 });
 
 describe("department vocabulary preferences API client", () => {

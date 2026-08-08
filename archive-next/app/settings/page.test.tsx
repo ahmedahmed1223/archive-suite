@@ -17,6 +17,7 @@ vi.mock("@/components/MetricStrip", () => ({ default: () => null }));
 vi.mock("@/components/PageToolbar", () => ({ default: () => null }));
 vi.mock("@/components/ShortcutsSettings", () => ({ default: () => null }));
 vi.mock("@/components/AppearanceSettings", () => ({ default: () => null }));
+vi.mock("@/components/LanguageSettings", () => ({ default: () => null }));
 vi.mock("@/components/DropboxFolderPicker", () => ({ default: () => null }));
 vi.mock("@/lib/contextual-tips", () => ({ isTipsEnabledGlobally: () => true, setTipsEnabledGlobally: vi.fn() }));
 

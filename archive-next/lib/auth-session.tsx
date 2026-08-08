@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ARCHIVE_UNAUTHORIZED_EVENT, createArchiveApiClient, type ArchiveUser } from "@/lib/archive-api";
 import { isPublicPath } from "@/lib/public-paths";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import type { AppLocale } from "@/lib/i18n/types";
 
 type AuthStatus = "loading" | "authenticated" | "guest";
 
@@ -21,6 +22,7 @@ interface AuthSessionContextValue extends AuthSessionState {
   login(payload: { email: string; password: string; rememberMe?: boolean }): Promise<{ ok: true } | { ok: false; error: string }>;
   logout(): Promise<void>;
   refreshSession(): Promise<boolean>;
+  updateAccountLocale(locale: AppLocale): Promise<{ ok: true } | { ok: false; error: string }>;
 }
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
@@ -164,14 +166,38 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     setSession({ status: "guest", user: null });
   }, [api, session.accessToken]);
 
+  const updateAccountLocale = useCallback<AuthSessionContextValue["updateAccountLocale"]>(async (locale) => {
+    const previousUser = session.user;
+
+    if (!previousUser) {
+      return { ok: false, error: authCopyRef.current.errors.sessionExpired };
+    }
+
+    setSession((current) => ({
+      ...current,
+      user: current.user ? { ...current.user, locale } : current.user,
+    }));
+
+    const response = await api.updateAccountPreferences({ locale });
+
+    if (!response.ok) {
+      setSession((current) => ({ ...current, user: previousUser }));
+      return { ok: false, error: response.error };
+    }
+
+    setSession((current) => ({ ...current, user: response.user }));
+    return { ok: true };
+  }, [api, session.user]);
+
   const value = useMemo<AuthSessionContextValue>(
     () => ({
       ...session,
       login,
       logout,
-      refreshSession
+      refreshSession,
+      updateAccountLocale,
     }),
-    [login, logout, refreshSession, session]
+    [login, logout, refreshSession, session, updateAccountLocale]
   );
 
   return <AuthSessionContext.Provider value={value}>{children}</AuthSessionContext.Provider>;
