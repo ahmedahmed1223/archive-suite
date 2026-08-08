@@ -47,6 +47,7 @@ export function renderSystemdUnit(service, { installRoot = LINUX_SERVICE_USER.ho
     "Type=simple",
     `User=${service.user}`,
     `Group=${service.user}`,
+    ...(service.id === "archive-next" ? ["Environment=HOSTNAME=127.0.0.1", "Environment=PORT=3000"] : []),
     `ExecStart=${service.command}`,
     "Restart=on-failure",
     "RestartSec=10",

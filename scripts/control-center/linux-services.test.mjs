@@ -37,6 +37,14 @@ test("systemd unit renders restart, hardening, and scoped writable paths", () =>
   assert.throws(() => renderSystemdUnit({ id: "rogue-service" }), (error) => error.code === "LINUX_SERVICE_UNKNOWN");
 });
 
+test("Next systemd unit pins its loopback host and port for the local Caddy upstream", () => {
+  const nextUnit = renderSystemdUnit(LINUX_SERVICES.find(({ id }) => id === "archive-next"));
+  assert.match(nextUnit, /Environment=HOSTNAME=127\.0\.0\.1/);
+  assert.match(nextUnit, /Environment=PORT=3000/);
+  const workerUnit = renderSystemdUnit(LINUX_SERVICES.find(({ id }) => id === "archive-worker"));
+  assert.doesNotMatch(workerUnit, /Environment=HOSTNAME/);
+});
+
 test("package manifest binds version and commit, checksums every file, and requires the detached signature", () => {
   const manifest = buildLinuxPackageManifest(baseInput());
   assert.equal(manifest.platform, "linux-native");
