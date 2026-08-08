@@ -88,6 +88,41 @@ function bundleEntryDigest(root, path) {
   return sha256Value(`symlink\0${rawTarget.replaceAll("\\", "/")}`);
 }
 
+function materializeAllBundleLinks(root) {
+  let count = 0;
+  while (true) {
+    const links = bundleLinks(root);
+    if (links.length === 0) return;
+    for (const link of links) {
+      if (++count > 10_000) throw new Error("Native acceptance bundle contains too many nested links to materialize safely.");
+      const target = realpathSync.native(link);
+      if (!isWithin(root, target)) throw new Error(`Native acceptance link escapes the prepared bundle: ${link}`);
+      const isDirectory = lstatSync(target).isDirectory();
+      unlinkSync(link);
+      cpSync(target, link, { recursive: isDirectory, dereference: true });
+    }
+  }
+}
+
+function hoistPnpmDependencies(root) {
+  const nodeModules = join(root, "app", "next", "node_modules");
+  const virtualRoot = join(nodeModules, ".pnpm", "node_modules");
+  if (!existsSync(virtualRoot)) return;
+  const copyIfMissing = (source, destination) => {
+    if (!existsSync(destination)) cpSync(source, destination, { recursive: true, dereference: true });
+  };
+  for (const entry of readdirSync(virtualRoot, { withFileTypes: true })) {
+    const source = join(virtualRoot, entry.name);
+    if (entry.name.startsWith("@") && entry.isDirectory()) {
+      const scope = join(nodeModules, entry.name);
+      mkdirSync(scope, { recursive: true });
+      for (const child of readdirSync(source, { withFileTypes: true })) copyIfMissing(join(source, child.name), join(scope, child.name));
+    } else {
+      copyIfMissing(source, join(nodeModules, entry.name));
+    }
+  }
+}
+
 export function writeNativeBundleChecksums(bundlePath) {
   const root = resolve(bundlePath);
   const inventory = bundleFiles(root)
@@ -97,14 +132,20 @@ export function writeNativeBundleChecksums(bundlePath) {
   return inventory.length;
 }
 
-export function prepareNativeAcceptanceBundle({ sourceBundle, outDir, overlays = [], linkTargetMappings = [] }) {
+export function prepareNativeAcceptanceBundle({ sourceBundle, outDir, overlays = [], linkTargetMappings = [], linkMode = "relative" }) {
   const sourceRoot = resolve(sourceBundle);
   const outputRoot = resolve(outDir);
   if (!existsSync(sourceRoot)) throw new Error(`Native source bundle does not exist: ${sourceRoot}`);
   if (existsSync(outputRoot)) throw new Error(`Native acceptance output already exists: ${outputRoot}`);
+  if (!new Set(["relative", "materialized"]).has(linkMode)) throw new Error(`Unsupported Native acceptance link mode: ${linkMode}`);
 
   cpSync(sourceRoot, outputRoot, { recursive: true, dereference: false, verbatimSymlinks: true });
   rewriteBundleLinks(sourceRoot, outputRoot, linkTargetMappings);
+  if (linkMode === "materialized") {
+    materializeAllBundleLinks(outputRoot);
+    hoistPnpmDependencies(outputRoot);
+    materializeAllBundleLinks(outputRoot);
+  }
   for (const overlay of overlays) {
     const relativePath = safeInventoryPath(overlay.relativePath);
     const sourcePath = resolve(overlay.source);

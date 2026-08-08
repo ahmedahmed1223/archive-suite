@@ -113,3 +113,26 @@ test("checksum generation refuses links that escape the bundle", () => {
   symlinkSync(outside, join(root, "escape"), process.platform === "win32" ? "junction" : "dir");
   assert.throws(() => writeNativeBundleChecksums(root), /link.*outside|escape/i);
 });
+
+test("materialized preparation hoists pnpm dependencies for Windows-to-Linux container copy", () => {
+  const root = mkdtempSync(join(tmpdir(), "native-materialized-"));
+  const source = join(root, "source");
+  const storePackage = join(source, "store", "package");
+  const storeHelper = join(source, "store", "helper");
+  const packageLink = join(source, "app", "next", "node_modules", "package");
+  const helperLink = join(source, "app", "next", "node_modules", ".pnpm", "node_modules", "helper");
+  mkdirSync(storePackage, { recursive: true });
+  mkdirSync(storeHelper, { recursive: true });
+  mkdirSync(join(source, "app", "next", "node_modules", ".pnpm", "node_modules"), { recursive: true });
+  writeFileSync(join(storePackage, "index.js"), "package\n");
+  writeFileSync(join(storeHelper, "index.js"), "helper\n");
+  symlinkSync(storePackage, packageLink, "dir");
+  symlinkSync(storeHelper, helperLink, "dir");
+
+  const output = join(root, "prepared");
+  prepareNativeAcceptanceBundle({ sourceBundle: source, outDir: output, linkMode: "materialized" });
+  assert.equal(lstatSync(join(output, "app", "next", "node_modules", "package")).isSymbolicLink(), false);
+  assert.equal(lstatSync(join(output, "app", "next", "node_modules", "helper")).isSymbolicLink(), false);
+  assert.equal(readFileSync(join(output, "app", "next", "node_modules", "helper", "index.js"), "utf8"), "helper\n");
+  assert.equal(verifyNativeBundle(output).files > 0, true);
+});
