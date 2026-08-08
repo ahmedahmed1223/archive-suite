@@ -69,6 +69,37 @@ test("applyLogrotate writes a weekly, 8-rotation policy for the install root's l
   assert.match(written[0].content, /su archive archive/);
 });
 
+test("writeAppConfig writes Caddy, PHP-FPM, and Laravel configuration inside the install root", () => {
+  const written = [];
+  const effects = createLinuxHostEffects({
+    installRoot: INSTALL_ROOT,
+    run: () => ({ status: 0 }),
+    writeFile: (path, content) => written.push({ path, content }),
+  });
+
+  const result = effects.writeAppConfig({
+    access: "local",
+    appKey: "base64:test",
+    appUrl: "http://localhost:8443",
+    dataPlan: {
+      postgres: { kind: "external", host: "db.internal", port: 5432, database: "archive" },
+      queue: "database",
+      cache: "database",
+      redis: { enabled: false },
+    },
+    dbUsername: "archive",
+    dbPassword: "test-only-password",
+  });
+
+  assert.equal(result.status, 0);
+  assert.deepEqual(written.map(({ path }) => path), [
+    "/opt/archive-suite/config/Caddyfile",
+    "/opt/archive-suite/config/php-fpm.conf",
+    "/opt/archive-suite/app/laravel/.env",
+  ]);
+  assert.match(written[2].content, /DB_HOST=db\.internal/);
+});
+
 test("logs reads journalctl for every service unit", () => {
   const { run, calls } = fakeRun();
   const services = [{ id: "archive-http" }, { id: "archive-next" }];

@@ -10,6 +10,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 // tool -- posix join/dirname keep them forward-slashed even when built/tested
 // on Windows (plain node:path would emit backslashes there).
 import { dirname, join } from "node:path/posix";
+import { renderLaravelEnv, renderLinuxCaddyfile, renderPhpFpmConfig } from "./linux-app-config.mjs";
 import { LINUX_SERVICES, LINUX_SERVICE_USER, renderSystemdUnit } from "./linux-services.mjs";
 
 const UNIT_DIR = "/etc/systemd/system";
@@ -63,9 +64,16 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
     } catch { return { status: 1 }; }
   };
 
+  const writeAppConfig = ({ access, domain, dataPlan, appKey, appUrl, dbUsername, dbPassword }) => {
+    writeFile(join(installRoot, "config", "Caddyfile"), renderLinuxCaddyfile({ installRoot, access, domain }));
+    writeFile(join(installRoot, "config", "php-fpm.conf"), renderPhpFpmConfig({ installRoot }));
+    writeFile(join(installRoot, "app", "laravel", ".env"), renderLaravelEnv({ appKey, appUrl, dataPlan, dbUsername, dbPassword }));
+    return { status: 0 };
+  };
+
   const logs = () => run(["journalctl", "--no-pager", "-n", "200", ...services.flatMap((service) => ["-u", service.id])]);
 
   const exec = (args) => run([join(installRoot, "runtime", "php", "bin", "php"), join(installRoot, "app", "laravel", "artisan"), ...args]);
 
-  return { serviceControl, applyOwnership, applyLogrotate, logs, exec };
+  return { serviceControl, applyOwnership, applyLogrotate, writeAppConfig, logs, exec };
 }
