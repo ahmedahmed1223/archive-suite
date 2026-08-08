@@ -7,6 +7,7 @@ let pathname = "/archive";
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname
 }));
+vi.mock("@/lib/i18n/LocaleProvider", () => ({ useLocale: () => ({ locale: "ar" }) }));
 
 import RouteAnnouncer from "@/components/RouteAnnouncer";
 

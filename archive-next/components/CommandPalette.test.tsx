@@ -20,6 +20,7 @@ beforeAll(() => {
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() })
 }));
+vi.mock("@/lib/i18n/LocaleProvider", () => ({ useLocale: () => ({ locale: "ar" }) }));
 
 import CommandPalette, { openCommandPalette } from "@/components/CommandPalette";
 
