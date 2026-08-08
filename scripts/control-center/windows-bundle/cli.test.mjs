@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { sep } from "node:path";
-import { runBundleCli } from "./cli.mjs";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, sep } from "node:path";
+import { copyDereferencedTree, runBundleCli } from "./cli.mjs";
 
 function fakeRunCommand(status = 0) {
   const calls = [];
@@ -91,4 +93,28 @@ test("runBundleCli surfaces a non-zero build exit code instead of continuing sil
     () => runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], { assembleWindowsBundle, runCommand }),
     /docker build failed|exit code 1/i
   );
+});
+
+test("copyDereferencedTree materializes nested relative pnpm links without retaining symlinks", () => {
+  const root = mkdtempSync(join(tmpdir(), "windows-next-copy-"));
+  const source = join(root, "standalone");
+  const next = join(source, "node_modules", ".pnpm", "next@x", "node_modules", "next");
+  const react = join(source, "node_modules", ".pnpm", "react@x", "node_modules", "react");
+  const nextPeer = join(source, "node_modules", ".pnpm", "next@x", "node_modules", "react");
+  const appModules = join(source, "archive-next", "node_modules");
+  mkdirSync(next, { recursive: true });
+  mkdirSync(react, { recursive: true });
+  mkdirSync(appModules, { recursive: true });
+  writeFileSync(join(next, "package.json"), "{}\n");
+  writeFileSync(join(react, "index.js"), "export {};\n");
+  symlinkSync(join("..", "..", "react@x", "node_modules", "react"), nextPeer, "dir");
+  symlinkSync(join("..", "..", "node_modules", ".pnpm", "next@x", "node_modules", "next"), join(appModules, "next"), "dir");
+
+  const output = join(root, "output");
+  copyDereferencedTree(join(source, "archive-next"), output, { allowedRoot: source });
+
+  assert.equal(existsSync(join(output, "node_modules", "next", "package.json")), true);
+  assert.equal(existsSync(join(output, "node_modules", "react", "index.js")), true);
+  assert.equal(lstatSync(join(output, "node_modules", "next")).isSymbolicLink(), false);
+  assert.equal(lstatSync(join(output, "node_modules", "react")).isSymbolicLink(), false);
 });
