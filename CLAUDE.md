@@ -1,12 +1,14 @@
 # archive-suite
 
+[العربية](CLAUDE.ar.md) · [Documentation](docs/README.md)
+
 pnpm monorepo for the Archive Suite. It has **canonical layers**:
 - **Frontend (canonical):** `archive-next` — Next.js 16 + TypeScript (App Router)
 - **Backend (canonical):** `archive-laravel` — Laravel 13 PHP API
 
 New product work goes through the shared API contract, Laravel `/api/v1/*`, and Next.js routes. Frontend/backend sharing happens via `docs/api/archive-contract.openapi.json`, not a shared TypeScript package.
 
-> Note: `archive-laravel` is a PHP project managed by Composer; it is **not** part of the pnpm workspace (`pnpm-workspace.yaml` lists `archive-next` only). The legacy `archive-app` (Vite SPA), `archive-server` (Node.js/Prisma server), and `archive-core` (shared TS library) packages were removed on 2026-07-12 and are recoverable from git history.
+> `archive-laravel` is managed by Composer and is not part of the pnpm workspace; `archive-next` is the workspace package.
 
 ## Stack
 
@@ -34,7 +36,7 @@ pnpm build:next             # same as above
 
 ### Test & verify
 ```bash
-pnpm verify                 # canonical cutover gate: API contract + Next typecheck + Next build + Laravel tests
+pnpm verify                 # API contract + Next typecheck/build + Laravel tests
 pnpm verify:laravel-next:live # launches Laravel+Next and runs Playwright integration
 pnpm verify:api-contracts   # validate shared OpenAPI contract
 pnpm typecheck              # typecheck Next.js
@@ -59,4 +61,4 @@ pnpm release:verify         # full verify + build + security check
 - AI SDK integrates Anthropic, OpenAI, Google, Groq, Mistral, OpenRouter
 - The Laravel API uses short-lived bearer access tokens plus a `va_refresh` HttpOnly refresh cookie.
 - Shared API contract source: `docs/api/archive-contract.openapi.json`
-- Cutover record: `archive-laravel/ARCHIVE_MIGRATION.md`
+- Backend reference: `archive-laravel/ARCHIVE_MIGRATION.md`

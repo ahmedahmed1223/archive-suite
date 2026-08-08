@@ -1,8 +1,8 @@
 # Archive Laravel API Migration
 
-This Laravel application is the canonical API target for Archive Suite. The
-legacy Node server remains available as a reference/fallback only while the last
-unmatched operational edges are retired.
+[العربية](ARCHIVE_MIGRATION.ar.md) · [Documentation](../docs/README.md)
+
+This Laravel application is the API target for Archive Suite.
 
 ## Current Status
 

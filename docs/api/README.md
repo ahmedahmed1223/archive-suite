@@ -1,5 +1,7 @@
 # Archive API Contract
 
+[العربية](README.ar.md) · [Documentation](../README.md)
+
 This directory holds the framework-neutral API contract for the canonical
 Laravel + Next.js architecture. Laravel owns API behavior and persistence;
 Next.js consumes the versioned contract. Legacy Node packages are reference-only.

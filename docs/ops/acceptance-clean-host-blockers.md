@@ -1,5 +1,7 @@
 # قبول clean-host الخارجي — عوائق التشغيل
 
+[English](acceptance-clean-host-blockers.en.md) · [فهرس التوثيق](../README.ar.md)
+
 تدعم منصة القبول المحلية تعريف المزودين وحفظ الأدلة، لكنها لا تستطيع أن تدّعي قبول Windows أو Linux نظيفًا من محطة تطوير Docker/WSL2. لا يقبل `wsl2-linux` الحقل `cleanHost: true` في العقد عمدًا.
 
 | الدليل | المالك المطلوب | الحالة المحلية |

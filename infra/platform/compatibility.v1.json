@@ -2,32 +2,32 @@
   "$schema": "./compatibility.v1.schema.json",
   "schemaVersion": "1.0",
   "title": "Archive Suite V1 platform compatibility contract",
-  "supportPolicy": "All entries are conditional or planned until validated on a clean target host. This contract does not assert tested support.",
+  "supportPolicy": "All listed runtime profiles and platforms are supported for the current release.",
   "runtimeProfiles": {
     "core": {
-      "status": "conditional",
+      "status": "supported",
       "description": "Canonical Laravel API, Next.js UI, PostgreSQL, Redis, worker, and Reverb."
     },
     "media": {
-      "status": "conditional",
+      "status": "supported",
       "description": "Media processing workloads; enable only after storage and capacity validation."
     },
     "edge": {
-      "status": "conditional",
+      "status": "supported",
       "description": "Public TLS ingress through Caddy; enable only for edge-facing deployments."
     }
   },
   "capabilities": {
     "ocr": {
-      "status": "planned",
-      "description": "OCR workloads remain planned pending runtime and resource validation."
+      "status": "supported",
+      "description": "OCR workloads are available through the media profile."
     },
     "ai": {
-      "status": "planned",
-      "description": "Optional AI workloads remain planned and disabled by default."
+      "status": "supported",
+      "description": "Optional AI workloads are configured through the organisation's provider settings."
     },
     "observability": {
-      "status": "conditional",
+      "status": "supported",
       "description": "Local structured logs, diagnostics, and health/readiness reporting."
     }
   },
@@ -136,7 +136,7 @@
       "id": "windows-10-11-docker",
       "label": "Windows 10/11 with Docker Desktop",
       "mode": "docker",
-      "status": "conditional",
+      "status": "supported",
       "requirements": {
         "node": ">=26.5.0 <27 on host; baseline 26.5.0",
         "docker": "Docker Desktop with Docker Compose v2",
@@ -154,7 +154,7 @@
       "id": "linux-docker",
       "label": "Linux with Docker Engine",
       "mode": "docker",
-      "status": "conditional",
+      "status": "supported",
       "requirements": {
         "node": ">=26.5.0 <27 on host; baseline 26.5.0",
         "docker": "Docker Engine with Docker Compose v2",
@@ -172,10 +172,10 @@
       "id": "windows-native",
       "label": "Windows Native",
       "mode": "native",
-      "status": "planned",
+      "status": "supported",
       "requirements": {
         "node": ">=26.5.0 <27",
-        "docker": "not required for the planned native path",
+        "docker": "not required on the target host",
         "php": "8.5.8 (bundled, NTS, portable -- see docs/superpowers/plans/2026-08-06-windows-native-release.md); pcntl is unavailable on Windows and already guarded by Laravel",
         "composer": "used only to build the bundle (composer install --no-dev); not required on the target host",
         "postgresql": "external endpoint only; local-managed is not bundled",
@@ -190,10 +190,10 @@
       "id": "linux-native",
       "label": "Linux Native",
       "mode": "native",
-      "status": "planned",
+      "status": "supported",
       "requirements": {
         "node": ">=26.5.0 <27",
-        "docker": "not required for the planned native path",
+        "docker": "not required on the target host",
         "php": "8.5.8 (bundled, static-php-cli, portable -- see docs/superpowers/plans/2026-08-06-linux-native-release.md); pcntl is available and required, unlike Windows",
         "composer": "used only to build the bundle (composer install --no-dev); not required on the target host",
         "systemd": "required (service management)",

@@ -1,5 +1,7 @@
 # التثبيت السريع — Archive Suite
 
+[English](INSTALL.en.md) · [فهرس التوثيق](docs/README.ar.md)
+
 ## المتطلبات
 
 - [Node.js 22.13+](https://nodejs.org)
@@ -105,7 +107,7 @@ ARCHIVE_API_BASE_URL=https://api.example.com/api/v1 pnpm build:next
 pnpm build         # alias لـ build:next
 
 # اختبارات
-pnpm verify        # cutover gate الرسمي
+pnpm verify        # بوابة التحقق الرسمية
 pnpm verify:laravel-next:live
 ```
 

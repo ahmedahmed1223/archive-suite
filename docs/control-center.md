@@ -1,5 +1,7 @@
 # Masar Control Center
 
+[العربية](control-center.ar.md) · [Documentation](README.md)
+
 A single English-first console to **install, operate, configure, and maintain** the
 canonical Masar stack (**Laravel API + Next.js**, `infra/docker-compose.yml`).
 The **Deploy** action provisions `.env` secrets and runs `docker compose up -d --build`

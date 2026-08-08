@@ -1,5 +1,7 @@
 # تثبيت Archive Suite دون اتصال (Docker فقط)
 
+[English](README.md) · [فهرس التوثيق](../../docs/README.ar.md)
+
 هذه الحزمة لمسار Docker القانوني على Windows وLinux. لا توفر مثبتًا native/أصليًا ولا تدّعي دعم Windows/Linux الأصلي؛ ذلك باقٍ ضمن V1-208 وما بعدها.
 
 1. نزّل ملف الحزمة و`SHA256SUMS` من الإصدار نفسه، وافحص `SHA256SUMS` **قبل فك الحزمة** (`sha256sum --check SHA256SUMS` على Linux أو `Get-FileHash` ومقارنة السطر على Windows).

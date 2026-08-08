@@ -1,5 +1,7 @@
 # النشر على Hostinger VPS
 
+[English](hostinger-vps.en.md) · [فهرس التوثيق](../../docs/README.ar.md)
+
 هذا الدليل ينشر الحزمة القانونية **Laravel + Next.js** من
 `infra/docker-compose.yml` عبر **Control Center**. لا تستخدم ملفات Compose
 إضافية أو معالجات نشر أخرى.

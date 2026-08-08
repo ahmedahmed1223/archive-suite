@@ -1,5 +1,7 @@
 # Local observability and support diagnostics
 
+[العربية](local-observability.ar.md) · [Documentation](README.md)
+
 The canonical Docker stack uses Docker's `local` logging driver for every
 service. Each container log rotates at **10 MB** and retains **5 files**. Caddy
 access logs, Next request events, Laravel nginx access logs, and Laravel

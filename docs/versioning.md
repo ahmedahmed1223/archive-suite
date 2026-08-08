@@ -1,5 +1,7 @@
 # Versioning & Support Policy (V1-002)
 
+[العربية](versioning.ar.md) · [Documentation](README.md)
+
 **Product:** Masar (archive-suite) · **License:** MIT (root `LICENSE`)
 
 ## SemVer

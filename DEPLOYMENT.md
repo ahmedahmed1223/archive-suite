@@ -1,7 +1,9 @@
 # دليل النشر — Archive Suite (إنتاج)
 
-> **حالة cutover:** التطوير والتحقق الافتراضيان هما **Next.js + Laravel** (`pnpm dev`, `pnpm verify`)، و`Setup-Archive.bat` / `setup.sh` ينشران الحزمة القانونية Laravel + Next (`infra/docker-compose.yml`). الحزم القديمة (Node/SPA) ومعالج نشرها أُزيلت في 2026-07-12 وتبقى متاحة في تاريخ git فقط.
-> عند بناء واجهة Next.js الإنتاجية للمسار الجديد، يجب ضبط `ARCHIVE_API_BASE_URL` وقت البناء (مثال: `https://api.example.com/api/v1`) حتى تُولد rewrites إلى Laravel داخل build.
+[English](DEPLOYMENT.en.md) · [فهرس التوثيق](docs/README.ar.md)
+
+> يستخدم مسار Docker خدمات **Next.js + Laravel** عبر `infra/docker-compose.yml`.
+> عند بناء واجهة Next.js للإنتاج، اضبط `ARCHIVE_API_BASE_URL` وقت البناء (مثال: `https://api.example.com/api/v1`) حتى تُولد rewrites إلى Laravel داخل build.
 
 انشر الحزمة القانونية **Laravel + Next.js** عبر **Control Center** الواحد على
 **Linux** و**Windows**. يفحص المعالج البيئة، يولّد الأسرار، يكتب `.env`، ويرفع
@@ -15,7 +17,7 @@
 ## المتطلبات
 
 - [Docker](https://docs.docker.com/) + Docker Compose v2 (Docker Desktop على Windows، Docker Engine على Linux).
-- [Node.js 22.13+](https://nodejs.org) (لتشغيل المعالج فقط).
+- [Node.js 26.5.0](https://nodejs.org) و`pnpm 11.9.0` (لتشغيل المعالج من المصدر).
 - للوضع العام: **نطاق** يشير سجل DNS الخاص به إلى الخادم.
 
 ---

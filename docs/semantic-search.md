@@ -1,5 +1,7 @@
 # Semantic search (pgvector)
 
+[العربية](semantic-search.ar.md) · [Documentation](README.md)
+
 `GET /api/v1/search?semantic=true` runs a pgvector nearest-neighbor query over
 record embeddings instead of a keyword `LIKE` scan. It **always degrades to
 keyword search** when semantic search can't actually run — the response's

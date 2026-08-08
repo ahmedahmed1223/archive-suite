@@ -48,6 +48,7 @@
     "verify:performance-run": "node scripts/performance-regression.mjs",
     "verify:infra": "node scripts/verify-infra-config.mjs",
     "verify:repo-hygiene": "node scripts/verify-repo-hygiene.mjs",
+    "verify:public-docs": "node scripts/verify-public-documentation.mjs",
     "smoke:watermark": "node scripts/smoke-watermark-ffmpeg.mjs",
     "acceptance:plan": "node -e \"import('./scripts/acceptance/gates.mjs').then(({gatePlan}) => console.log(JSON.stringify(gatePlan(), null, 2)))\"",
     "acceptance:test": "node --test scripts/acceptance/*.test.mjs scripts/acceptance/providers/*.test.mjs",

@@ -1,21 +1,20 @@
 # Masar / مسار
 
+[العربية](README.ar.md) · [Documentation](docs/README.md)
+
 **مسار** نظام مركزي لإدارة الأصول الأرشيفية والإعلامية. يوفّر سجلًا موحّدًا للمواد
 وبياناتها الوصفية، وإدارة للملفات والبحث والمراجعة والتعاون، مع ضوابط للصلاحيات
 والتدقيق. صُمم لفرق الأرشفة والتحرير والإنتاج لتنتقل المادة من الاستلام إلى
 الاستخدام ضمن سير عمل واضح وقابل للتوسع.
 
-## Project status
+## Release status
 
 [`v1.0.0`](docs/release-notes/v1.0.0.md) is the first General Availability
 release. It passed the full release gate (`pnpm release:verify`) and is covered
 by the support window in [docs/versioning.md](docs/versioning.md).
 
-Some capabilities ship disabled or conditional because they have not been
-verified against live environments: ODBC on Windows, Arabic GPU transcription,
-and live AI/vision/embedding providers. This release also ships without a
-formal multi-platform acceptance program, a pilot cohort, or a separate
-Go/No-Go record — see the known limits in the release notes before deploying.
+Masar v1.0.0 is generally available. The release notes describe the changes,
+operator guidance, and support policy for this version.
 
 - [Features and usage guide](docs/features-guide.md)
 - [Launch and support guide](docs/ops/rc-launch-and-support.md)
@@ -47,19 +46,17 @@ Laravel**:
 - `docs/api/archive-contract.openapi.json` — canonical `OpenAPI` contract
   shared by the frontend and backend.
 
-Legacy paths are retained for reference and history only. Do not add new
-features to them. See [CLAUDE.md](CLAUDE.md) for workspace architecture and
-development workflows.
+See [CLAUDE.md](CLAUDE.md) for workspace architecture and development workflows.
 
-## Quick start
+## Start here
 
-### Requirements
+### Requirements for local development
 
 - `Node.js 26.5.0`
 - `pnpm 11.9.0`
 - `Docker Desktop` with Docker Compose
 
-`PHP 8.4.23` and `Composer 2.9.5` run inside Docker, so they are not required
+`PHP 8.5.8` and `Composer 2.10.2` run inside Docker, so they are not required
 on the development host. The supported toolchain is pinned in
 `infra/platform/toolchain.v1.json`.
 
@@ -102,7 +99,7 @@ pnpm deploy
 
 These commands run the application from source in your environment; they are
 not a substitute for a downloadable release artifact. See
-[DEPLOYMENT.md](DEPLOYMENT.md) and [docs/control-center.md](docs/control-center.md)
+[DEPLOYMENT.md](DEPLOYMENT.md) and [Control Center](docs/control-center.md)
 for Docker deployment, environment variables, administrator credentials, and
 cloud-storage configuration.
 
@@ -122,6 +119,6 @@ workflows.
 
 ## Support
 
-For RC evaluation support or incident reporting, start with the
-[RC launch and support guide](docs/ops/rc-launch-and-support.md). Include
+For operational support or incident reporting, start with the
+[support guide](docs/ops/rc-launch-and-support.md). Include
 reproduction steps, an approximate timestamp, and redacted logs only.

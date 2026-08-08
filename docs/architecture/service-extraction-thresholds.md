@@ -1,5 +1,7 @@
 # عتبات استخراج الخدمات والأحداث الموثوقة
 
+[English](service-extraction-thresholds.en.md) · [Documentation](../README.md)
+
 العقد القابل للفحص هو [`service-extraction-thresholds.v1.json`](service-extraction-thresholds.v1.json). وظيفته تحديد متى يستحق فصل عامل الوسائط أو اعتماد transactional outbox الدراسة؛ تجاوز العتبات لا ينفذ ترحيلاً تلقائياً.
 
 ## جمع الأدلة

@@ -1,5 +1,7 @@
 # Archive Suite — Kubernetes data services reference
 
+[العربية](README.ar.md) · [Documentation](../../docs/README.md)
+
 The canonical production application path is Laravel + Next through
 `infra/docker-compose.yml`. Kubernetes application deployment is not supported
 for V1 because no published canonical Laravel/Next image digests are available

@@ -1,5 +1,7 @@
 # Laravel ODBC bridge
 
+[English](odbc-laravel-bridge.en.md) · [فهرس التوثيق](README.ar.md)
+
 هذه الشريحة تضيف فحص جاهزية آمن لقواعد Windows القديمة عبر ODBC داخل المسار القانوني الجديد Laravel + Next.js.
 
 ## المتطلبات
