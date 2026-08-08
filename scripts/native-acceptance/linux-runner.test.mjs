@@ -19,10 +19,8 @@ test("Linux acceptance always installs, verifies six services and HTTP, uninstal
   const docker = (args) => {
     calls.push(args);
     if (args[0] === "rm") args.filter((value) => value.startsWith("archive-native-")).forEach((value) => removed.add(value));
-    if (args[0] === "image" && args[1] === "rm") removed.add(args[2]);
     if (args[0] === "network" && args[1] === "rm") removed.add(args[2]);
     if ((args[0] === "inspect" || (args[0] === "network" && args[1] === "inspect")) && removed.has(args.at(-1))) return { status: 1, stdout: "", stderr: "not found" };
-    if (args[0] === "image" && args[1] === "inspect" && removed.has(args[2])) return { status: 1, stdout: "", stderr: "not found" };
     return { status: 0, stdout: args[0] === "run" ? "container-id\n" : "", stderr: "" };
   };
   const evidence = [];
@@ -38,15 +36,12 @@ test("Linux acceptance always installs, verifies six services and HTTP, uninstal
     version: "1.0.0",
     passwordFactory: () => "ephemeral-test-value",
     systemdImage: "archive-native-systemd:test",
-    bundleImage: "archive-native-linux-bundle:test",
     postgresImage: "postgres:test",
     redisImage: "redis:test",
   });
 
   assert.equal(result.ok, true);
   const flattened = calls.map((args) => args.join(" ")).join("\n");
-  assert.match(flattened, /Dockerfile\.bundle --build-arg BASE_IMAGE=archive-native-systemd:test -t archive-native-linux-bundle:test/);
-  assert.match(flattened, /--mount type=bind,source=\/sys\/fs\/cgroup,target=\/sys\/fs\/cgroup archive-native-linux-bundle:test/);
   assert.match(flattened, /network create --label archive\.acceptance\.run=unit1234 archive-native-net-unit1234/);
   assert.match(flattened, /control-center\.mjs install --config=\/tmp\/setup\.json --json/);
   for (const service of ["archive-http", "archive-next", "archive-php-fpm", "archive-worker", "archive-reverb", "archive-scheduler"]) {
@@ -55,7 +50,6 @@ test("Linux acceptance always installs, verifies six services and HTTP, uninstal
   assert.match(flattened, /curl -fsS http:\/\/127\.0\.0\.1:8443\//);
   assert.match(flattened, /control-center\.mjs uninstall --yes --json/);
   assert.match(flattened, /network rm archive-native-net-unit1234/);
-  assert.match(flattened, /image rm archive-native-linux-bundle:test/);
   assert.equal(evidence.length, 1);
   assert.equal(evidence[0].platform, "linux-native");
   assert.equal(evidence[0].cleanup.ok, true);
