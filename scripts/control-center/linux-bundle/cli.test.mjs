@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { lstatSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
-import { runBundleCli } from "./cli.mjs";
+import { copyBundleTree, runBundleCli } from "./cli.mjs";
 
 // cli.mjs deals with real host filesystem paths (this machine's OS), unlike
 // the Linux-target paths inside the bundle -- build expected values with
@@ -29,6 +31,23 @@ test("runBundleCli requires --out and passes it through as outDir", async () => 
   assert.equal(calls[0].outDir, "/tmp/bundle-test");
   assert.equal(typeof calls[0].buildLaravel, "function");
   assert.equal(typeof calls[0].buildNext, "function");
+});
+
+test("copyBundleTree dereferences pnpm directory links so the bundle is self-contained", () => {
+  const root = mkdtempSync(join(tmpdir(), "linux-bundle-copy-"));
+  const source = join(root, "source");
+  const target = join(source, "store", "package");
+  const link = join(source, "node_modules", "package");
+  const destination = join(root, "destination");
+  mkdirSync(target, { recursive: true });
+  mkdirSync(join(source, "node_modules"), { recursive: true });
+  writeFileSync(join(target, "index.js"), "export default true;\n");
+  symlinkSync(target, link, process.platform === "win32" ? "junction" : "dir");
+
+  copyBundleTree(source, destination);
+
+  assert.equal(lstatSync(join(destination, "node_modules", "package")).isSymbolicLink(), false);
+  assert.equal(readFileSync(join(destination, "node_modules", "package", "index.js"), "utf8"), "export default true;\n");
 });
 
 test("runBundleCli rejects when --out is missing", async () => {

@@ -19,9 +19,10 @@ function defaultRunCommand(command, args, options) {
   return spawnSync(command, args, { stdio: "inherit", shell: true, cwd: ROOT, ...options });
 }
 
-function defaultCopyTree(src, dest, excludeNames = []) {
+export function copyBundleTree(src, dest, excludeNames = []) {
   cpSync(src, dest, {
     recursive: true,
+    dereference: true,
     filter: (source) => !excludeNames.includes(source.split(sep).pop()),
   });
 }
@@ -37,7 +38,7 @@ function runAndCheck(runCommand, command, args, options, label) {
 export async function runBundleCli(argv, {
   assembleLinuxBundle = defaultAssembleLinuxBundle,
   runCommand = defaultRunCommand,
-  copyTree = defaultCopyTree,
+  copyTree = copyBundleTree,
   pathExists = existsSync,
 } = {}) {
   const { flagValue } = createCli(argv);
