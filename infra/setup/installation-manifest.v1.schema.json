@@ -43,6 +43,21 @@
         ]
       }
     },
+    "ownedPaths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 2,
+        "pattern": "\\S",
+        "allOf": [
+          { "not": { "pattern": "^[a-zA-Z][a-zA-Z0-9+.-]*://" } },
+          { "not": { "pattern": "(^|[^\\s:/\\\\])[^\\s:/\\\\]+:[^\\s@]+@" } },
+          { "anyOf": [{ "pattern": "^/(?!/).+" }, { "pattern": "^[A-Za-z]:[\\\\/](?![\\\\/]).+" }] },
+          { "not": { "pattern": "(^|[\\\\/])\\.\\.?([\\\\/]|$)" } }
+        ]
+      }
+    },
     "releaseEnvironment": {
       "type": "object",
       "minProperties": 1,
@@ -83,6 +98,7 @@
             "artifacts": { "$ref": "#/properties/artifacts" },
             "services": { "$ref": "#/properties/services" },
             "dataPaths": { "$ref": "#/properties/dataPaths" },
+            "ownedPaths": { "$ref": "#/properties/ownedPaths" },
             "releaseEnvironment": { "$ref": "#/properties/releaseEnvironment" }
           }
         }

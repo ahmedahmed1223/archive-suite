@@ -34,7 +34,7 @@ export function nativeInstallRoot(platformId, override) {
 
 // The installation manifest input for a Native install. `services` are the
 // native service ids so uninstall/remove iterate exactly what was created.
-export function nativeManifestInput(configuration, { version }) {
+export function nativeManifestInput(configuration, { version, installRoot }) {
   return {
     version,
     source: configuration.source,
@@ -45,6 +45,7 @@ export function nativeManifestInput(configuration, { version }) {
     artifacts: [],
     services: nativeServiceIds(configuration.platform),
     dataPaths: { storage: configuration.storage.path },
+    ownedPaths: [nativeInstallRoot(configuration.platform, installRoot)],
   };
 }
 

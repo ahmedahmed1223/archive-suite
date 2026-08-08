@@ -45,8 +45,9 @@ test("installation manifest creates the exact safe resumable record", async () =
   assert.equal(result.created, true);
   assert.deepEqual(Object.keys(result.manifest), [
     "schemaVersion", "version", "source", "mode", "platform", "runtimeProfiles", "capabilities",
-    "artifacts", "services", "dataPaths", "lastSuccessfulStep", "previousVersion", "operation",
+    "artifacts", "services", "dataPaths", "ownedPaths", "lastSuccessfulStep", "previousVersion", "operation",
   ]);
+  assert.deepEqual(result.manifest.ownedPaths, []);
   assert.equal(result.manifest.lastSuccessfulStep, null);
   assert.equal(result.manifest.previousVersion, null);
   assert.equal(result.manifest.operation.status, "in-progress");
@@ -81,6 +82,39 @@ test("installation manifest rejects secrets and never writes their values", asyn
     /sensitive|credential|secret/i,
   );
   assert.equal(existsSync(path), false);
+});
+
+test("owned paths accept explicit application roots and reject broad or non-local targets", async () => {
+  const manifest = await loadManifest();
+  assert.ok(manifest, "installation manifest module must exist");
+
+  for (const ownedPaths of [
+    ["/"],
+    ["////"],
+    ["C:\\"],
+    ["C:/"],
+    ["\\\\server\\share\\archive-suite"],
+    ["relative/archive-suite"],
+    ["/opt/../archive-suite"],
+    ["D:\\ArchiveSuite\\.."],
+    ["https://example.test/archive-suite"],
+    ["/opt/archive-suite", "/opt/archive-suite"],
+  ]) {
+    const dir = mkdtempSync(join(tmpdir(), "archive-manifest-owned-paths-invalid-"));
+    const path = join(dir, "installation-manifest.json");
+    assert.throws(
+      () => manifest.createInstallationManifest({ path, input: safeInput({ ownedPaths }) }),
+      /ownedPaths|owned path|local path|unique/i,
+    );
+    assert.equal(existsSync(path), false);
+  }
+
+  for (const ownedPaths of [["/opt/archive-suite"], ["D:\\ArchiveSuite\\acceptance"]]) {
+    const dir = mkdtempSync(join(tmpdir(), "archive-manifest-owned-paths-valid-"));
+    const path = join(dir, "installation-manifest.json");
+    const created = manifest.createInstallationManifest({ path, input: safeInput({ ownedPaths }) });
+    assert.deepEqual(created.manifest.ownedPaths, ownedPaths);
+  }
 });
 
 test("installation manifest writes atomically and retains a valid prior JSON when replacement fails", async () => {
@@ -121,12 +155,14 @@ test("installation manifest resumes after failure and repair is idempotent", asy
 
 test("installation manifest schema matches required safe runtime constraints", () => {
   const schema = JSON.parse(readFileSync(new URL("../../infra/setup/installation-manifest.v1.schema.json", import.meta.url), "utf8"));
-  const { artifacts, dataPaths, lastSuccessfulStep, previousVersion, operation } = schema.properties;
+  const { artifacts, dataPaths, ownedPaths, lastSuccessfulStep, previousVersion, operation } = schema.properties;
 
   assert.deepEqual(artifacts.items.anyOf, [{ required: ["digest"] }, { required: ["checksum"] }]);
   assert.equal(dataPaths.minProperties, 1);
   assert.match(dataPaths.propertyNames.pattern, /\[Kk\]\[Ee\]\[Yy\]/);
   assert.equal(dataPaths.additionalProperties.allOf.length, 3, "schema must reject URLs, credential pairs, and secret-like values");
+  assert.equal(ownedPaths.uniqueItems, true);
+  assert.ok(ownedPaths.items.allOf.length >= 3, "schema must reject URLs, credentials, filesystem roots, UNC paths, and relative paths");
   assert.deepEqual(lastSuccessfulStep.oneOf, [{ type: "null" }, { type: "string", minLength: 1, pattern: "\\S" }]);
   assert.deepEqual(previousVersion.oneOf, [{ type: "null" }, { type: "string", minLength: 1, pattern: "\\S" }]);
   assert.deepEqual(operation.properties.failedStep.oneOf, [{ type: "null" }, { type: "string", minLength: 1, pattern: "\\S" }]);

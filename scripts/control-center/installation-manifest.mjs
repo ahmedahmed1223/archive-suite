@@ -69,6 +69,27 @@ function normalizeDataPaths(value) {
   return normalized;
 }
 
+function normalizeOwnedPaths(value) {
+  if (value === undefined) return [];
+  const paths = requireStrings(value, "ownedPaths");
+  const identities = new Set();
+  for (const path of paths) {
+    if (URL.test(path) || CREDENTIAL_URL.test(path) || CREDENTIAL_PAIR.test(path)) {
+      fail("ownedPaths must contain local paths without credentials.");
+    }
+    const posixAbsolute = /^\/(?!\/)(?=.)/.test(path) && path !== "/";
+    const windowsAbsolute = /^[A-Za-z]:[\\/](?![\\/])(?=.)/.test(path) && !/^[A-Za-z]:[\\/]*$/.test(path);
+    const segments = path.split(/[\\/]+/);
+    if ((!posixAbsolute && !windowsAbsolute) || segments.some((segment) => segment === "." || segment === "..")) {
+      fail("ownedPaths must contain explicit non-root local application paths.");
+    }
+    const identity = windowsAbsolute ? path.replaceAll("/", "\\").toLowerCase() : path;
+    if (identities.has(identity)) fail("ownedPaths must be an array of unique non-empty strings.");
+    identities.add(identity);
+  }
+  return paths;
+}
+
 function normalizeReleaseEnvironment(value) {
   if (value === undefined) return undefined;
   if (!value || typeof value !== "object" || Array.isArray(value) || !Object.keys(value).length) fail("releaseEnvironment must be a non-empty object when provided.");
@@ -110,6 +131,7 @@ function normalizeInput(input) {
     artifacts: normalizeArtifacts(input.artifacts),
     services: requireStrings(input.services, "services"),
     dataPaths: normalizeDataPaths(input.dataPaths),
+    ownedPaths: normalizeOwnedPaths(input.ownedPaths),
   };
   const normalizedEnvironment = normalizeReleaseEnvironment(releaseEnvironment);
   if (normalizedEnvironment) normalized.releaseEnvironment = normalizedEnvironment;
@@ -117,14 +139,14 @@ function normalizeInput(input) {
 }
 
 function releaseReference(input) {
-  const { version, source, mode, platform, runtimeProfiles, capabilities, artifacts, services, dataPaths, releaseEnvironment } = input || {};
-  return normalizeInput({ version, source, mode, platform, runtimeProfiles, capabilities, artifacts, services, dataPaths, releaseEnvironment });
+  const { version, source, mode, platform, runtimeProfiles, capabilities, artifacts, services, dataPaths, ownedPaths, releaseEnvironment } = input || {};
+  return normalizeInput({ version, source, mode, platform, runtimeProfiles, capabilities, artifacts, services, dataPaths, ownedPaths, releaseEnvironment });
 }
 
 function validateManifest(manifest) {
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) fail("must be a JSON object.");
   const keys = ["schemaVersion", "version", "source", "mode", "platform", "runtimeProfiles", "capabilities", "artifacts", "services", "dataPaths", "lastSuccessfulStep", "previousVersion", "operation"];
-  const optionalKeys = ["releaseEnvironment", "previousRelease"];
+  const optionalKeys = ["ownedPaths", "releaseEnvironment", "previousRelease"];
   if (keys.some((key) => !(key in manifest)) || Object.keys(manifest).some((key) => !keys.includes(key) && !optionalKeys.includes(key))) {
     fail("has an invalid field set.");
   }

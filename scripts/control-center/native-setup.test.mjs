@@ -118,10 +118,12 @@ test("without probes a local-managed plan is honestly blocked before any host co
   assert.equal(rec.commands.length, 0);
 });
 
-test("the native manifest records native service ids and mode so uninstall removes exactly them", () => {
-  const input = nativeManifestInput(linuxConfig, { version: "1.0.0" });
+test("the native manifest records service ids and the resolved application root without claiming external data services", () => {
+  const input = nativeManifestInput(linuxConfig, { version: "1.0.0", installRoot: "/opt/archive-suite" });
   assert.equal(input.mode, "native");
   assert.deepEqual(input.services, ["archive-http", "archive-next", "archive-php-fpm", "archive-worker", "archive-reverb", "archive-scheduler"]);
+  assert.deepEqual(input.ownedPaths, ["/opt/archive-suite"]);
+  assert.deepEqual(input.dataPaths, { storage: "/srv/archive" });
 });
 
 test("nativeDataPlanOverrideFromEnv returns undefined without an operator-supplied Postgres host, preserving the local-managed default", () => {

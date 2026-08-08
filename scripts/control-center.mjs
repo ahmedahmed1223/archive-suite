@@ -261,7 +261,8 @@ async function nativeSetupInstallOrRepair(operation, configuration) {
   // Keep --json output a single clean object; the human transcript still warns.
   if (!hasFlag("json")) output.warn?.("Native mode is experimental (planned): it is not yet backed by clean-host acceptance evidence (V1-210D/V1-211D).");
   const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
-  const request = { path: INSTALLATION_MANIFEST_PATH, input: nativeManifestInput(configuration, { version }) };
+  const installRoot = process.env.ARCHIVE_NATIVE_INSTALL_ROOT || nativeInstallRoot(configuration.platform);
+  const request = { path: INSTALLATION_MANIFEST_PATH, input: nativeManifestInput(configuration, { version, installRoot }) };
   const planned = resolveNativeSetupDataPlan(configuration, nativeDataPlanOverrideFromEnv(process.env));
   if (!planned.ok) {
     return renderSetupResult({ ok: false, code: planned.code, message: planned.message, details: planned.details, nextActions: planned.nextActions });
@@ -280,7 +281,7 @@ async function nativeSetupInstallOrRepair(operation, configuration) {
     const appUrl = configuration.access === "public" ? `https://${domain}` : "http://localhost:8443";
     const { adapter } = buildNativeRuntime({
       configuration,
-      installRoot: process.env.ARCHIVE_NATIVE_INSTALL_ROOT || nativeInstallRoot(configuration.platform),
+      installRoot,
       health: healthProbe,
       manifestStore: installationManifest,
       manifestRequest: request,
