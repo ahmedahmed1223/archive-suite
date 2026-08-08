@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type ReviewLinkDetails } from "@/lib/archive-api";
 import { buildShareExpiry, redactAdminSecrets } from "@/lib/admin-action-summary";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type ReviewLinkState =
   | { status: "loading" }
@@ -10,6 +11,12 @@ type ReviewLinkState =
   | { status: "error"; message: string };
 
 export function ReviewLinkViewer({ token }: { token: string }) {
+  const { locale } = useLocale();
+  const copy = locale === "en" ? {
+    loading: "Loading review link", loadingDescription: "Retrieving the comments and data allowed by this link.", error: "Could not load the review link", content: "Review link content", notice: "This public review link does not allow asset management or permission changes.", asset: "Asset", permission: "Permission", expires: "Expires", expiryEstimate: "Access estimate", expiryHint: "A local estimate based on the stated date; enforcement is handled by the server.", empty: "There are no comments available through this link.",
+  } : {
+    loading: "جارٍ تحميل رابط المراجعة", loadingDescription: "يتم جلب التعليقات والبيانات المسموحة لهذا الرابط.", error: "تعذر تحميل رابط المراجعة", content: "محتوى رابط المراجعة", notice: "رابط مراجعة عام؛ لا يتيح إدارة الأصل أو تغيير صلاحياته.", asset: "المادة", permission: "الصلاحية", expires: "ينتهي", expiryEstimate: "تقدير الصلاحية", expiryHint: "تقدير محلي حسب التاريخ المعلن؛ الإنفاذ بالخادم.", empty: "لا توجد تعليقات متاحة لهذا الرابط.",
+  };
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<ReviewLinkState>({ status: "loading" });
 
@@ -35,8 +42,8 @@ export function ReviewLinkViewer({ token }: { token: string }) {
   if (state.status === "loading") {
     return (
       <div className="state-banner" role="status">
-        <strong>جار تحميل رابط المراجعة</strong>
-        <p className="helper-text">يتم جلب التعليقات والبيانات المسموحة لهذا الرابط.</p>
+        <strong>{copy.loading}</strong>
+        <p className="helper-text">{copy.loadingDescription}</p>
       </div>
     );
   }
@@ -44,7 +51,7 @@ export function ReviewLinkViewer({ token }: { token: string }) {
   if (state.status === "error") {
     return (
       <div className="state-banner state-banner-error" role="alert">
-        <strong>تعذر تحميل رابط المراجعة</strong>
+        <strong>{copy.error}</strong>
         <p className="helper-text">{redactAdminSecrets(state.message)}</p>
       </div>
     );
@@ -52,29 +59,32 @@ export function ReviewLinkViewer({ token }: { token: string }) {
 
   const { data } = state;
   const expiry = buildShareExpiry(data.review.expiresAt);
+  const expiryLabel = locale === "en"
+    ? ({ "بلا انتهاء": "No expiry", "تاريخ غير واضح": "Date unavailable", "منتهية": "Expired", "تنتهي قريباً": "Expires soon", "نشطة": "Active" }[expiry.label] ?? expiry.label)
+    : expiry.label;
 
   return (
-    <main className="share-list" aria-label="محتوى رابط المراجعة">
-      <p className="helper-text">رابط مراجعة عام؛ لا يتيح إدارة الأصل أو تغيير صلاحياته.</p>
+    <main className="share-list" aria-label={copy.content}>
+      <p className="helper-text">{copy.notice}</p>
       <div className="kv-grid">
         <div className="kv-item">
-          <strong>المادة</strong>
+          <strong>{copy.asset}</strong>
           <span className="wrap-anywhere">{data.mediaUid}</span>
         </div>
         <div className="kv-item">
-          <strong>الصلاحية</strong>
+          <strong>{copy.permission}</strong>
           <span>{data.review.permission}</span>
         </div>
         {data.review.expiresAt ? (
           <div className="kv-item">
-            <strong>ينتهي</strong>
-            <time>{new Date(data.review.expiresAt).toLocaleString("ar-SA")}</time>
+            <strong>{copy.expires}</strong>
+            <time>{new Date(data.review.expiresAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA")}</time>
           </div>
         ) : null}
-        <div className="kv-item"><strong>تقدير الصلاحية</strong><span className={`badge badge-${expiry.tone}`}>{expiry.label}</span><small className="helper-text">تقدير محلي حسب التاريخ المعلن؛ الإنفاذ بالخادم.</small></div>
+        <div className="kv-item"><strong>{copy.expiryEstimate}</strong><span className={`badge badge-${expiry.tone}`}>{expiryLabel}</span><small className="helper-text">{copy.expiryHint}</small></div>
       </div>
       {data.comments.length === 0 ? (
-        <div className="empty-state">لا توجد تعليقات متاحة لهذا الرابط.</div>
+        <div className="empty-state">{copy.empty}</div>
       ) : (
         data.comments.map((comment) => (
           <article className="panel" key={comment.id}>

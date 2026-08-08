@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type ShareState =
   | { status: "loading" }
@@ -10,6 +11,12 @@ type ShareState =
   | { status: "error"; message: string };
 
 export function ShareViewer({ token }: { token: string }) {
+  const { locale } = useLocale();
+  const copy = locale === "en" ? {
+    loading: "Loading shared content", loadingDescription: "Retrieving the records allowed by this link.", error: "Could not load the shared content", content: "Shared content", notice: "This is a limited public view. It includes only records allowed by the link and has no administrative controls.", permission: "Permission", records: "Records", empty: "There are no records in this share.", record: "record",
+  } : {
+    loading: "جارٍ تحميل المشاركة", loadingDescription: "يتم جلب السجلات المسموحة لهذا الرابط.", error: "تعذر تحميل المشاركة", content: "محتوى المشاركة", notice: "عارض عام محدود: لا تظهر إلا السجلات التي يسمح بها الرابط، ولا تتوفر هنا إجراءات إدارية.", permission: "الصلاحية", records: "عدد السجلات", empty: "لا توجد سجلات في هذه المشاركة.", record: "سجل",
+  };
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<ShareState>({ status: "loading" });
 
@@ -39,8 +46,8 @@ export function ShareViewer({ token }: { token: string }) {
   if (state.status === "loading") {
     return (
       <div className="state-banner" role="status">
-        <strong>جار تحميل المشاركة</strong>
-        <p className="helper-text">يتم جلب السجلات المسموحة لهذا الرابط.</p>
+        <strong>{copy.loading}</strong>
+        <p className="helper-text">{copy.loadingDescription}</p>
       </div>
     );
   }
@@ -48,34 +55,34 @@ export function ShareViewer({ token }: { token: string }) {
   if (state.status === "error") {
     return (
       <div className="state-banner state-banner-error" role="alert">
-        <strong>تعذر تحميل المشاركة</strong>
+        <strong>{copy.error}</strong>
         <p className="helper-text">{redactAdminSecrets(state.message)}</p>
       </div>
     );
   }
 
   return (
-    <main className="share-list" aria-label="محتوى المشاركة">
-      <p className="helper-text">عارض عام محدود: لا تظهر إلا السجلات التي يسمح بها الرابط، ولا تتوفر هنا إجراءات إدارية.</p>
+    <main className="share-list" aria-label={copy.content}>
+      <p className="helper-text">{copy.notice}</p>
       <div className="kv-grid">
         <div className="kv-item">
-          <strong>الصلاحية</strong>
+          <strong>{copy.permission}</strong>
           <span>{state.permission ?? "view"}</span>
         </div>
         <div className="kv-item">
-          <strong>عدد السجلات</strong>
+          <strong>{copy.records}</strong>
           <span>{state.records.length}</span>
         </div>
       </div>
       {state.records.length === 0 ? (
-        <div className="empty-state">لا توجد سجلات في هذه المشاركة.</div>
+        <div className="empty-state">{copy.empty}</div>
       ) : (
         state.records.map((record) => (
           <article className="panel" key={record.uid ?? record.id}>
             <h2>{record.title}</h2>
             {record.description ? <p>{redactAdminSecrets(record.description)}</p> : null}
             <div className="record-meta">
-              <span className="badge">{record.type ?? "record"}</span>
+              <span className="badge">{record.type ?? copy.record}</span>
               <span className="badge wrap-anywhere">{record.uid ?? record.id}</span>
             </div>
           </article>
