@@ -12,11 +12,12 @@ export function filterGuideChapters<T extends GuideChapter>(
   chapters: readonly T[],
   role: GuideRole,
   query: string,
+  locale: AppLocale = "ar",
 ): T[] {
-  const normalizedQuery = query.trim().toLocaleLowerCase("ar");
+  const normalizedQuery = query.trim().toLocaleLowerCase(locale);
   return chapters.filter((chapter) =>
     chapter.audience.includes(role) &&
-    (!normalizedQuery || `${chapter.title} ${chapter.body}`.toLocaleLowerCase("ar").includes(normalizedQuery)),
+    (!normalizedQuery || `${chapter.title} ${chapter.body}`.toLocaleLowerCase(locale).includes(normalizedQuery)),
   );
 }
 
@@ -26,3 +27,4 @@ export function getGuideChapterForPath<T extends GuideChapter>(path: string, cha
     .filter((chapter) => path === chapter.href || path.startsWith(`${chapter.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0];
 }
+import type { AppLocale } from "./i18n/types";

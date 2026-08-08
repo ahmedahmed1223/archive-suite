@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { getGuideChapters } from "./guide-content";
 import { filterGuideChapters, getGuideChapterForPath } from "./in-app-guide";
 
@@ -10,7 +10,7 @@ const chapters = [
 
 describe("in-app guide", () => {
   it("publishes stable role-aware chapter entries with routable links", () => {
-    const manifestChapters = getGuideChapters();
+    const manifestChapters = getGuideChapters("admin", "ar");
 
     expect(manifestChapters).toEqual(
       expect.arrayContaining([
@@ -28,14 +28,30 @@ describe("in-app guide", () => {
   });
 
   it("does not load restricted chapter bodies into a viewer guide payload", () => {
-    const viewerPayload = getGuideChapters("viewer");
+    const reader = vi.fn((path: string) => `body:${path.replaceAll("\\", "/").split("/").at(-1)}`);
+    const viewerPayload = getGuideChapters("viewer", "en", reader);
 
     expect(viewerPayload.map((chapter) => chapter.id)).toEqual(["viewer-search", "whats-new"]);
-    expect(viewerPayload.some((chapter) => chapter.body.includes("إدارة النظام"))).toBe(false);
+    expect(viewerPayload.map((chapter) => chapter.title)).toEqual(["Search and access records", "What’s new"]);
+    expect(reader.mock.calls.map(([path]) => path.replaceAll("\\", "/").split("/").at(-1))).toEqual([
+      "viewer-search.md",
+      "whats-new.md",
+    ]);
+  });
+
+  it("reads only Arabic file variants for an Arabic payload", () => {
+    const reader = vi.fn((path: string) => `body:${path}`);
+
+    getGuideChapters("viewer", "ar", reader);
+
+    expect(reader.mock.calls.map(([path]) => path.replaceAll("\\", "/").split("/").at(-1))).toEqual([
+      "viewer-search.ar.md",
+      "whats-new.ar.md",
+    ]);
   });
 
   it("publishes the concise changelog summary and user actions in the whats-new chapter", () => {
-    const whatsNew = getGuideChapters("viewer").find((chapter) => chapter.id === "whats-new");
+    const whatsNew = getGuideChapters("viewer", "ar").find((chapter) => chapter.id === "whats-new");
 
     expect(whatsNew?.body).toContain("ملخص تحديثات 31 يوليو");
     expect(whatsNew?.body).toContain("ما الذي ينبغي عليك فعله الآن؟");
