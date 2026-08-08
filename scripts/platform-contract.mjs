@@ -7,7 +7,7 @@ const COMPOSE_PATH = fileURLToPath(new URL("../infra/docker-compose.yml", import
 
 const PLATFORM_IDS = ["windows-10-11-docker", "linux-docker", "windows-native", "linux-native"];
 const MODES = ["docker", "native"];
-const STATUSES = ["conditional", "planned"];
+const STATUSES = ["supported", "conditional", "planned"];
 const RUNTIME_PROFILE_IDS = ["core", "media", "edge"];
 const CAPABILITY_IDS = ["ocr", "ai", "observability"];
 const REQUIREMENT_IDS = ["node", "docker", "php", "composer", "postgresql", "redis"];
@@ -85,7 +85,7 @@ function validateContract(contract) {
   assertContract(new Set(ids).size === ids.length, "platform ids must be unique");
   for (const platform of contract.platforms) {
     assertContract(MODES.includes(platform.mode), `${platform.id} has an unsupported mode`);
-    assertContract(STATUSES.includes(platform.status), `${platform.id} must be conditional or planned`);
+    assertContract(STATUSES.includes(platform.status), `${platform.id} has an unsupported lifecycle status`);
     assertContract(platform.requirements && REQUIREMENT_IDS.every((id) => typeof platform.requirements[id] === "string"), `${platform.id} is missing a runtime requirement`);
     assertContract(Array.isArray(platform.profiles) && hasExactly(platform.profiles, RUNTIME_PROFILE_IDS), `${platform.id} must declare exactly the legal runtime profiles`);
     assertContract(Array.isArray(platform.capabilities) && hasExactly(platform.capabilities, CAPABILITY_IDS), `${platform.id} must declare exactly the legal capabilities`);
@@ -93,10 +93,10 @@ function validateContract(contract) {
     assertContract(platform.resourceStatus === "provisional", `${platform.id} resources must be provisional`);
   }
   for (const id of RUNTIME_PROFILE_IDS) {
-    assertContract(contract.runtimeProfiles[id] && STATUSES.includes(contract.runtimeProfiles[id].status), `runtime profile ${id} must be conditional or planned`);
+    assertContract(contract.runtimeProfiles[id] && STATUSES.includes(contract.runtimeProfiles[id].status), `runtime profile ${id} has an unsupported lifecycle status`);
   }
   for (const id of CAPABILITY_IDS) {
-    assertContract(contract.capabilities[id] && STATUSES.includes(contract.capabilities[id].status), `capability ${id} must be conditional or planned`);
+    assertContract(contract.capabilities[id] && STATUSES.includes(contract.capabilities[id].status), `capability ${id} has an unsupported lifecycle status`);
   }
   for (const port of contract.ports) {
     assertContract(port.exposure === "public" || port.exposure === "internal", `port ${port.id} must declare its exposure`);

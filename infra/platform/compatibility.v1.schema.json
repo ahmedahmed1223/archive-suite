@@ -80,7 +80,7 @@
           "id": { "enum": ["windows-10-11-docker", "linux-docker", "windows-native", "linux-native"] },
           "label": { "type": "string", "minLength": 1 },
           "mode": { "enum": ["docker", "native"] },
-          "status": { "enum": ["supported"] },
+          "status": { "enum": ["supported", "conditional", "planned"] },
           "requirements": {
             "type": "object",
             "required": ["node", "docker", "php", "composer", "postgresql", "redis"],
@@ -99,7 +99,7 @@
       "type": "object",
       "required": ["status", "description"],
       "properties": {
-        "status": { "enum": ["supported"] },
+        "status": { "enum": ["supported", "conditional", "planned"] },
         "description": { "type": "string", "minLength": 1 }
       }
     }

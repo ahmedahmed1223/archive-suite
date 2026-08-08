@@ -2,7 +2,7 @@
   "$schema": "./compatibility.v1.schema.json",
   "schemaVersion": "1.0",
   "title": "Archive Suite V1 platform compatibility contract",
-  "supportPolicy": "All listed runtime profiles and platforms are supported for the current release.",
+  "supportPolicy": "Support is declared per entry. Native platforms remain planned until their acceptance evidence passes the release gate.",
   "runtimeProfiles": {
     "core": {
       "status": "supported",
@@ -172,7 +172,7 @@
       "id": "windows-native",
       "label": "Windows Native",
       "mode": "native",
-      "status": "supported",
+      "status": "planned",
       "requirements": {
         "node": ">=26.5.0 <27",
         "docker": "not required on the target host",
@@ -190,7 +190,7 @@
       "id": "linux-native",
       "label": "Linux Native",
       "mode": "native",
-      "status": "supported",
+      "status": "planned",
       "requirements": {
         "node": ">=26.5.0 <27",
         "docker": "not required on the target host",
