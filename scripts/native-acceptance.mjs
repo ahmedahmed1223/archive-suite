@@ -218,11 +218,6 @@ async function main() {
     console.log(JSON.stringify({ ok: true, code: "BUNDLE_VERIFIED", platform, ...verified }));
     return 0;
   }
-  if (platform === "windows") {
-    console.error("WINDOWS_HOST_RUNNER_NOT_READY");
-    return 2;
-  }
-
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
   const runIdIndex = args.indexOf("--run-id");
   const runId = runIdIndex >= 0 ? args[runIdIndex + 1] : `${Date.now().toString(36)}`;
@@ -233,8 +228,10 @@ async function main() {
   const commitResult = spawnSync("git", ["-c", `safe.directory=${repoRoot.replaceAll("\\", "/")}`, "rev-parse", "HEAD"], { cwd: repoRoot, encoding: "utf8", stdio: "pipe" });
   const commit = commitResult.status === 0 ? commitResult.stdout.trim() : "unknown";
   const version = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")).version;
-  const { runLinuxNativeAcceptance } = await import("./native-acceptance/linux-runner.mjs");
-  const result = await runLinuxNativeAcceptance({
+  const runner = platform === "windows"
+    ? (await import("./native-acceptance/windows-runner.mjs")).runWindowsNativeAcceptance
+    : (await import("./native-acceptance/linux-runner.mjs")).runLinuxNativeAcceptance;
+  const result = await runner({
     bundlePath: resolve(bundle),
     bundleDigest: verified.bundleDigest,
     runId,
