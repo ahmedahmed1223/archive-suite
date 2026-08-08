@@ -84,7 +84,7 @@ describe("first-run server progress wiring", () => {
   it("keeps login contextual and provides a copyable interactive-test feedback note", () => {
     const source = readFileSync(new URL("../app/first-run/page.tsx", import.meta.url), "utf8");
 
-    expect(source).toContain('aria-label="خطوات التهيئة المختارة"');
+    expect(source).toContain('aria-label={copy.selectedSteps}');
     expect(source).toContain("currentPreset.steps.map");
     expect(source).not.toContain('<a className="button button-primary" href="/login">تسجيل الدخول</a>');
     expect(source).toContain("ملاحظات الفحص التفاعلي");

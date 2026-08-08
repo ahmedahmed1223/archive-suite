@@ -1,4 +1,5 @@
 import type { OnboardingProgress, OnboardingStageId } from "@/lib/archive-api";
+import type { OnboardingLocale } from "@/lib/onboarding";
 
 export interface OnboardingProgressStep {
   id: OnboardingStageId;
@@ -44,12 +45,21 @@ const stepDetails: Record<OnboardingStageId, Omit<OnboardingProgressStep, "id" |
 
 const stageOrder: OnboardingStageId[] = ["organization", "storage", "invitation", "first_record", "first_search"];
 
-export function toOnboardingProgressSteps(progress: OnboardingProgress): OnboardingProgressStep[] {
+const stepDetailsEn: Record<OnboardingStageId, Omit<OnboardingProgressStep, "id" | "completed">> = {
+  organization: { title: "Set up the organization", description: "Review the organization name and essential settings before inviting the team.", href: "/settings", actionLabel: "Open settings" },
+  storage: { title: "Confirm storage", description: "Configure storage and verify its connection before uploading material.", href: "/settings", actionLabel: "Open settings" },
+  invitation: { title: "Invite the team", description: "Add at least one user with the appropriate role.", href: "/settings/users", actionLabel: "Manage users" },
+  first_record: { title: "Add the first record", description: "Upload an initial item, then complete its core metadata.", href: "/uploads", actionLabel: "Upload item" },
+  first_search: { title: "Run the first search", description: "Search for a record to confirm that the index and workflow are ready.", href: "/search", actionLabel: "Open search" }
+};
+
+export function toOnboardingProgressSteps(progress: OnboardingProgress, locale: OnboardingLocale = "ar"): OnboardingProgressStep[] {
   const stages = new Map(progress.stages.map((stage) => [stage.id, stage]));
+  const details = locale === "en" ? stepDetailsEn : stepDetails;
 
   return stageOrder.map((id) => ({
     id,
-    ...stepDetails[id],
+    ...details[id],
     completed: stages.get(id)?.status === "completed"
   }));
 }
