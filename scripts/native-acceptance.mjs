@@ -132,14 +132,25 @@ export function writeNativeBundleChecksums(bundlePath) {
   return inventory.length;
 }
 
-export function prepareNativeAcceptanceBundle({ sourceBundle, outDir, overlays = [], linkTargetMappings = [], linkMode = "relative" }) {
+export function prepareNativeAcceptanceBundle({ sourceBundle, outDir, overlays = [], linkTargetMappings = [], linkMode = "relative", excludedPaths = [] }) {
   const sourceRoot = resolve(sourceBundle);
   const outputRoot = resolve(outDir);
   if (!existsSync(sourceRoot)) throw new Error(`Native source bundle does not exist: ${sourceRoot}`);
   if (existsSync(outputRoot)) throw new Error(`Native acceptance output already exists: ${outputRoot}`);
   if (!new Set(["relative", "materialized"]).has(linkMode)) throw new Error(`Unsupported Native acceptance link mode: ${linkMode}`);
+  const exclusions = excludedPaths.map((path) => safeInventoryPath(path)).map((path) => process.platform === "win32" ? path.toLowerCase() : path);
 
-  cpSync(sourceRoot, outputRoot, { recursive: true, dereference: false, verbatimSymlinks: true });
+  cpSync(sourceRoot, outputRoot, {
+    recursive: true,
+    dereference: false,
+    verbatimSymlinks: true,
+    filter: (source) => {
+      const relativePath = relative(sourceRoot, source).split(sep).join("/");
+      if (!relativePath) return true;
+      const identity = process.platform === "win32" ? relativePath.toLowerCase() : relativePath;
+      return !exclusions.some((excluded) => identity === excluded || identity.startsWith(`${excluded}/`));
+    },
+  });
   rewriteBundleLinks(sourceRoot, outputRoot, linkTargetMappings);
   if (linkMode === "materialized") {
     materializeAllBundleLinks(outputRoot);

@@ -136,3 +136,25 @@ test("materialized preparation hoists pnpm dependencies for Windows-to-Linux con
   assert.equal(readFileSync(join(output, "app", "next", "node_modules", "helper", "index.js"), "utf8"), "helper\n");
   assert.equal(verifyNativeBundle(output).files > 0, true);
 });
+
+test("preparation excludes runtime configuration and logs before they enter the acceptance artifact", () => {
+  const root = mkdtempSync(join(tmpdir(), "native-excludes-"));
+  const source = join(root, "source");
+  mkdirSync(join(source, "app", "laravel"), { recursive: true });
+  mkdirSync(join(source, "services"), { recursive: true });
+  writeFileSync(join(source, "app", "laravel", ".env"), "DB_PASSWORD=must-not-copy\n");
+  writeFileSync(join(source, "services", "archive-http.out.log"), "runtime log\n");
+  writeFileSync(join(source, "app", "laravel", "artisan"), "safe\n");
+  const output = join(root, "prepared");
+
+  prepareNativeAcceptanceBundle({
+    sourceBundle: source,
+    outDir: output,
+    excludedPaths: ["app/laravel/.env", "services/archive-http.out.log"],
+  });
+
+  assert.equal(existsSync(join(output, "app", "laravel", ".env")), false);
+  assert.equal(existsSync(join(output, "services", "archive-http.out.log")), false);
+  assert.equal(readFileSync(join(output, "app", "laravel", "artisan"), "utf8"), "safe\n");
+  assert.doesNotMatch(readFileSync(join(output, "SHA256SUMS"), "utf8"), /\.env|\.log/);
+});
