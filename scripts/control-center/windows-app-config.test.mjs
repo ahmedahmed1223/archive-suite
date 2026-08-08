@@ -31,6 +31,7 @@ test("renderLaravelEnv wires the resolved external data plan and credentials, om
     appKey: "base64:test",
     appUrl: "http://localhost:8443",
     dataPlan: { postgres: { kind: "external", host: "db.internal", port: 5432, database: "archive" }, queue: "database", cache: "database", redis: { enabled: false } },
+    storagePath: "C:\\ArchiveData",
     dbUsername: "archive",
     dbPassword: "s3cret",
   });
@@ -38,6 +39,8 @@ test("renderLaravelEnv wires the resolved external data plan and credentials, om
   assert.match(env, /DB_PORT=5432/);
   assert.match(env, /DB_USERNAME=archive/);
   assert.match(env, /DB_PASSWORD=s3cret/);
+  assert.match(env, /ARCHIVE_LOCAL_STORAGE_PATH=C:\\ArchiveData\\private/);
+  assert.match(env, /ARCHIVE_PUBLIC_STORAGE_PATH=C:\\ArchiveData\\public/);
   assert.doesNotMatch(env, /REDIS_HOST/);
 });
 
@@ -46,6 +49,7 @@ test("renderLaravelEnv adds Redis settings only when the plan enables it", () =>
     appKey: "base64:test",
     appUrl: "http://localhost:8443",
     dataPlan: { postgres: { kind: "external", host: "db.internal", port: 5432, database: "archive" }, queue: "redis", cache: "redis", redis: { enabled: true, host: "cache.internal", port: 6379 } },
+    storagePath: "/srv/archive-suite/data",
     dbUsername: "archive",
     dbPassword: "s3cret",
   });
@@ -55,7 +59,19 @@ test("renderLaravelEnv adds Redis settings only when the plan enables it", () =>
 });
 
 test("renderLaravelEnv requires a resolved data plan rather than writing a broken .env", () => {
-  assert.throws(() => renderLaravelEnv({ appKey: "base64:test", appUrl: "http://localhost", dbUsername: "a", dbPassword: "b" }), /data plan/i);
+  assert.throws(() => renderLaravelEnv({ appKey: "base64:test", appUrl: "http://localhost", storagePath: "/srv/archive", dbUsername: "a", dbPassword: "b" }), /data plan/i);
+});
+
+test("renderLaravelEnv requires an external storage root and rejects line injection", () => {
+  const options = {
+    appKey: "base64:test",
+    appUrl: "http://localhost:8443",
+    dataPlan: { postgres: { kind: "external", host: "db.internal", port: 5432, database: "archive" }, queue: "database", cache: "database", redis: { enabled: false } },
+    dbUsername: "archive",
+    dbPassword: "test-only-password",
+  };
+  assert.throws(() => renderLaravelEnv(options), /storage path/i);
+  assert.throws(() => renderLaravelEnv({ ...options, storagePath: "/srv/archive\nAPP_DEBUG=true" }), /line break|storage path/i);
 });
 
 test("nativeDbCredentialsFromEnv returns null without both username and password, never a half-set pair", () => {

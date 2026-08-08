@@ -64,10 +64,10 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
     } catch { return { status: 1 }; }
   };
 
-  const writeAppConfig = ({ access, domain, dataPlan, appKey, appUrl, dbUsername, dbPassword }) => {
+  const writeAppConfig = ({ access, domain, dataPlan, storagePath, appKey, appUrl, dbUsername, dbPassword }) => {
     writeFile(join(installRoot, "config", "Caddyfile"), renderLinuxCaddyfile({ installRoot, access, domain }));
     writeFile(join(installRoot, "config", "php-fpm.conf"), renderPhpFpmConfig({ installRoot }));
-    writeFile(join(installRoot, "app", "laravel", ".env"), renderLaravelEnv({ appKey, appUrl, dataPlan, dbUsername, dbPassword }));
+    writeFile(join(installRoot, "app", "laravel", ".env"), renderLaravelEnv({ appKey, appUrl, dataPlan, storagePath, dbUsername, dbPassword }));
     return { status: 0 };
   };
 

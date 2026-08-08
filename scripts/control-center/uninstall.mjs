@@ -13,10 +13,25 @@ function fail(code, message, nextActions, details = {}) {
   return { ok: false, code, message, details, nextActions };
 }
 
+export function createInstalledServiceRemover({ removeDockerServices, buildNativeRemover }) {
+  return async function removeInstalledServices(request) {
+    const { manifest } = request;
+    if (manifest.mode === "docker") return removeDockerServices(request);
+    const installRoot = manifest.ownedPaths?.[0];
+    if (manifest.mode !== "native" || !installRoot) return { ok: false };
+    try {
+      return await buildNativeRemover({ platform: manifest.platform, installRoot })(request);
+    } catch {
+      return { ok: false };
+    }
+  };
+}
+
 export function createUninstall({
   manifestPath,
   manifestStore,
   removeServices,
+  removeOwnedPaths = () => {},
   listBackups,
   deleteDataPaths,
   removeManifest,
@@ -73,10 +88,22 @@ export function createUninstall({
     try { removed = await removeServices({ manifest, deleteVolumes: deleteDataRequested }); }
     catch { removed = { ok: false }; }
     if (!removed?.ok) {
-      return fail("UNINSTALL_SERVICES_FAILED", "Docker Compose did not complete removing the installed services.", [
+      return fail("UNINSTALL_SERVICES_FAILED", "The installed services could not be removed safely.", [
         "Your data and the installation manifest are unchanged.",
         "Review setup status and Docker output, then retry the uninstall.",
       ]);
+    }
+
+    // Application/runtime files are separate from user data. They are
+    // removed only when the validated manifest records exact owned roots.
+    if (Array.isArray(manifest.ownedPaths) && manifest.ownedPaths.length > 0) {
+      try { await removeOwnedPaths(manifest.ownedPaths); }
+      catch {
+        return fail("UNINSTALL_OWNED_PATHS_FAILED", "The manifest-owned application files could not be fully removed.", [
+          "User data and the installation manifest were kept.",
+          "Check filesystem permissions on the recorded application paths, then retry.",
+        ]);
+      }
     }
 
     // 3. Data deletion only on the explicit, doubly-confirmed path.
@@ -97,6 +124,7 @@ export function createUninstall({
     }
 
     const details = { removedServices: manifest.services };
+    if (manifest.ownedPaths?.length) details.removedOwnedPaths = manifest.ownedPaths;
     if (deleteDataRequested) details.deletedDataPaths = manifest.dataPaths;
     else details.keptDataPaths = manifest.dataPaths;
     return {

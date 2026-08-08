@@ -87,6 +87,7 @@ test("writeAppConfig writes Caddy, PHP-FPM, and Laravel configuration inside the
       cache: "database",
       redis: { enabled: false },
     },
+    storagePath: "/srv/archive",
     dbUsername: "archive",
     dbPassword: "test-only-password",
   });
@@ -98,6 +99,7 @@ test("writeAppConfig writes Caddy, PHP-FPM, and Laravel configuration inside the
     "/opt/archive-suite/app/laravel/.env",
   ]);
   assert.match(written[2].content, /DB_HOST=db\.internal/);
+  assert.match(written[2].content, /ARCHIVE_LOCAL_STORAGE_PATH=\/srv\/archive\/private/);
 });
 
 test("logs reads journalctl for every service unit", () => {

@@ -5,7 +5,7 @@ import { createLinuxHostEffects } from "./linux-host-effects.mjs";
 import { LINUX_INSTALL_STEPS } from "./linux-runtime-adapter.mjs";
 import { createWindowsHostEffects } from "./windows-host-effects.mjs";
 import { WINDOWS_INSTALL_STEPS } from "./windows-runtime-adapter.mjs";
-import { buildNativeRuntime, nativeDataPlanOverrideFromEnv, nativeManifestInput, nativeServiceIds } from "./native-setup.mjs";
+import { buildNativeRuntime, buildNativeServiceRemover, nativeDataPlanOverrideFromEnv, nativeManifestInput, nativeServiceIds } from "./native-setup.mjs";
 
 const recorder = () => {
   const commands = [];
@@ -98,6 +98,7 @@ test("a wired Linux install writes every app config before starting systemd serv
   assert.ok(rec.files.some(({ path }) => path === "/opt/archive-suite/config/Caddyfile"));
   assert.ok(rec.files.some(({ path }) => path === "/opt/archive-suite/config/php-fpm.conf"));
   assert.ok(rec.files.some(({ path }) => path === "/opt/archive-suite/app/laravel/.env"));
+  assert.match(rec.files.find(({ path }) => path === "/opt/archive-suite/app/laravel/.env").content, /ARCHIVE_LOCAL_STORAGE_PATH=\/srv\/archive\/private/);
   const firstServiceCommand = rec.commands.findIndex(([command]) => command === "systemctl");
   assert.ok(firstServiceCommand >= 0);
 });
@@ -124,6 +125,22 @@ test("the native manifest records service ids and the resolved application root 
   assert.deepEqual(input.services, ["archive-http", "archive-next", "archive-php-fpm", "archive-worker", "archive-reverb", "archive-scheduler"]);
   assert.deepEqual(input.ownedPaths, ["/opt/archive-suite"]);
   assert.deepEqual(input.dataPaths, { storage: "/srv/archive" });
+});
+
+test("Native service remover selects the manifest platform and touches only its recorded services", async () => {
+  const windows = recorder();
+  const windowsRemover = buildNativeServiceRemover({ platform: "windows-native", installRoot: "C:\\App", run: windows.run, writeFile: windows.writeFile });
+  assert.deepEqual(await windowsRemover({ manifest: { services: ["archive-http"] } }), { ok: true });
+  assert.ok(windows.commands.some(([command, action]) => command.endsWith("archive-http.exe") && action === "uninstall"));
+  assert.ok(windows.commands.some(([command]) => command === "netsh"));
+
+  const linux = recorder();
+  const linuxRemover = buildNativeServiceRemover({ platform: "linux-native", installRoot: "/opt/archive-suite", run: linux.run, writeFile: linux.writeFile });
+  assert.deepEqual(await linuxRemover({ manifest: { services: ["archive-worker"] } }), { ok: true });
+  assert.ok(linux.commands.some((command) => command.join(" ") === "systemctl disable archive-worker"));
+  assert.ok(linux.commands.some((command) => command.join(" ") === "rm -f /etc/systemd/system/archive-worker.service"));
+
+  assert.throws(() => buildNativeServiceRemover({ platform: "linux-docker" }), /not a Native platform/);
 });
 
 test("nativeDataPlanOverrideFromEnv returns undefined without an operator-supplied Postgres host, preserving the local-managed default", () => {

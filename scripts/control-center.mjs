@@ -21,7 +21,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, copyFileSync, rmSync, statSync, statfsSync, unlinkSync } from "node:fs";
+import { existsSync, readFileSync, copyFileSync, lstatSync, rmSync, statSync, statfsSync, unlinkSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { formatPlatformContractReport, loadPlatformContract, requiredDiskBytes, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
@@ -38,9 +38,9 @@ import * as installationManifest from "./control-center/installation-manifest.mj
 import { ReleaseDescriptorError, loadOfflineReleaseImages, resolveRelease } from "./control-center/release-descriptor.mjs";
 import { createReleaseUpdate } from "./control-center/update-release.mjs";
 import { createReleaseRollback } from "./control-center/rollback-release.mjs";
-import { createReconnectData, createUninstall } from "./control-center/uninstall.mjs";
+import { createInstalledServiceRemover, createReconnectData, createUninstall } from "./control-center/uninstall.mjs";
 import { createRoleSmoke } from "./control-center/role-smoke.mjs";
-import { buildNativeRuntime, nativeDataPlanOverrideFromEnv, nativeInstallRoot, nativeManifestInput, nativePlatformFamily, resolveNativeSetupDataPlan } from "./control-center/native-setup.mjs";
+import { buildNativeRuntime, buildNativeServiceRemover, nativeDataPlanOverrideFromEnv, nativeInstallRoot, nativeManifestInput, nativePlatformFamily, resolveNativeSetupDataPlan } from "./control-center/native-setup.mjs";
 import { createExternalOnlyProbes } from "./control-center/native-probes.mjs";
 import { generateAppKey, nativeDbCredentialsFromEnv } from "./control-center/windows-app-config.mjs";
 
@@ -526,6 +526,18 @@ function removeReleaseServices({ manifest, deleteVolumes }) {
     : releaseCompose(["down", ...(deleteVolumes ? ["--volumes"] : [])], { inherit: hasFlag("json") ? false : undefined, env: manifest.releaseEnvironment || {} });
   return { ok: (result.status ?? 1) === 0, status: result.status };
 }
+const removeInstalledServices = createInstalledServiceRemover({
+  removeDockerServices: removeReleaseServices,
+  buildNativeRemover: ({ platform, installRoot }) => buildNativeServiceRemover({ platform, installRoot }),
+});
+function removeManifestOwnedPaths(paths) {
+  for (const path of paths) {
+    if (!existsSync(path)) continue;
+    const entry = lstatSync(path);
+    if (entry.isSymbolicLink()) unlinkSync(path);
+    else rmSync(path, { recursive: true, force: false });
+  }
+}
 function listReleaseBackups(manifest) {
   const adapter = manifest.source === "local"
     ? createDockerRuntimeAdapter({ compose: localComposeFor({ runtimeProfiles: manifest.runtimeProfiles }), health: healthProbe })
@@ -539,10 +551,12 @@ function deleteReleaseDataPaths(dataPaths) {
 const releaseUninstallOperation = createUninstall({
   manifestPath: INSTALLATION_MANIFEST_PATH,
   manifestStore: installationManifest,
-  removeServices: removeReleaseServices,
+  removeServices: removeInstalledServices,
+  removeOwnedPaths: removeManifestOwnedPaths,
   listBackups: listReleaseBackups,
   deleteDataPaths: deleteReleaseDataPaths,
   removeManifest: () => unlinkSync(INSTALLATION_MANIFEST_PATH),
+  supportedModes: ["docker", "native"],
 });
 const reconnectDataOperation = createReconnectData({
   manifestPath: INSTALLATION_MANIFEST_PATH,

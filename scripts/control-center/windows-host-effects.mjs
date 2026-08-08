@@ -74,9 +74,9 @@ export function createWindowsHostEffects({ installRoot, services = WINDOWS_SERVI
   // assemble.mjs stages an empty config/ directory; the actual Caddyfile and
   // Laravel .env can only be rendered here, at install time, once the
   // resolved data plan and access mode are known.
-  const writeAppConfig = ({ access, domain, dataPlan, appKey, appUrl, dbUsername, dbPassword }) => {
+  const writeAppConfig = ({ access, domain, dataPlan, storagePath, appKey, appUrl, dbUsername, dbPassword }) => {
     writeFile(join(installRoot, "config", "Caddyfile"), renderCaddyfile({ installRoot, access, domain }));
-    writeFile(join(installRoot, "app", "laravel", ".env"), renderLaravelEnv({ appKey, appUrl, dataPlan, dbUsername, dbPassword }));
+    writeFile(join(installRoot, "app", "laravel", ".env"), renderLaravelEnv({ appKey, appUrl, dataPlan, storagePath, dbUsername, dbPassword }));
     return { status: 0 };
   };
 

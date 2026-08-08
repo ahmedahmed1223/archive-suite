@@ -59,8 +59,13 @@ export function generateAppKey(randomBytesFn = randomBytes) {
   return `base64:${randomBytesFn(32).toString("base64")}`;
 }
 
-export function renderLaravelEnv({ appKey, appUrl, dataPlan, dbUsername, dbPassword } = {}) {
+export function renderLaravelEnv({ appKey, appUrl, dataPlan, storagePath, dbUsername, dbPassword } = {}) {
   if (!dataPlan?.postgres) throw new Error("renderLaravelEnv requires a resolved data plan.");
+  if (typeof storagePath !== "string" || !storagePath.trim() || /[\r\n\0]/.test(storagePath)) {
+    throw new Error("renderLaravelEnv requires a storage path without line breaks.");
+  }
+  const storageRoot = storagePath.trim().replace(/[\\/]+$/, "");
+  const separator = storageRoot.includes("\\") ? "\\" : "/";
   const lines = [
     "APP_NAME=Masar",
     "APP_ENV=production",
@@ -73,6 +78,9 @@ export function renderLaravelEnv({ appKey, appUrl, dataPlan, dbUsername, dbPassw
     `DB_DATABASE=${dataPlan.postgres.database}`,
     `DB_USERNAME=${dbUsername}`,
     `DB_PASSWORD=${dbPassword}`,
+    "FILESYSTEM_DISK=local",
+    `ARCHIVE_LOCAL_STORAGE_PATH=${storageRoot}${separator}private`,
+    `ARCHIVE_PUBLIC_STORAGE_PATH=${storageRoot}${separator}public`,
     `QUEUE_CONNECTION=${dataPlan.queue}`,
     `CACHE_STORE=${dataPlan.cache}`,
   ];

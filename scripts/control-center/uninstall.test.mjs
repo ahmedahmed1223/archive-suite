@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DELETE_DATA_CONFIRMATION_PHRASE, createReconnectData, createUninstall } from "./uninstall.mjs";
+import { DELETE_DATA_CONFIRMATION_PHRASE, createInstalledServiceRemover, createReconnectData, createUninstall } from "./uninstall.mjs";
 
 // Same DI/mocking style as update-release.test.mjs: no Docker, no filesystem.
 
@@ -13,17 +13,19 @@ function baseManifest(overrides = {}) {
     platform: "linux-docker",
     services: ["postgres", "redis", "next"],
     dataPaths: { storage: "/srv/archive-suite/storage" },
+    ownedPaths: [],
     releaseEnvironment: { ARCHIVE_RELEASE_PULL_POLICY: "missing", ARCHIVE_RELEASE_IMAGE_NEXT: "registry/archive-next:1.1.0@sha256:bbb" },
     ...overrides,
   };
 }
 
-function buildDeps({ manifest = baseManifest(), removeOk = true, backups, deleteOk = true, removeManifestOk = true, readError } = {}) {
+function buildDeps({ manifest = baseManifest(), removeOk = true, ownedPathsOk = true, backups, deleteOk = true, removeManifestOk = true, readError } = {}) {
   const calls = [];
   const deps = {
     manifestPath: "manifest.json",
     manifestStore: { readInstallationManifest: () => { if (readError) throw readError; return manifest; } },
     removeServices: (request) => { calls.push(["removeServices", request.deleteVolumes]); return { ok: removeOk }; },
+    removeOwnedPaths: (ownedPaths) => { calls.push(["removeOwnedPaths", ownedPaths]); if (!ownedPathsOk) throw new Error("EACCES /private/path"); },
     listBackups: () => { calls.push(["listBackups"]); return backups ?? [{ name: "b1", createdAt: new Date().toISOString(), checksum: "abc" }]; },
     deleteDataPaths: (dataPaths) => { calls.push(["deleteDataPaths", dataPaths]); if (!deleteOk) throw new Error("EACCES /private/path"); },
     removeManifest: () => { calls.push(["removeManifest"]); if (!removeManifestOk) throw new Error("EACCES /private/path"); },
@@ -40,6 +42,26 @@ test("uninstall fails closed when no installation manifest exists", async () => 
   assert.deepEqual(calls, []);
 });
 
+test("installed service remover dispatches by validated manifest mode", async () => {
+  const calls = [];
+  const removeServices = createInstalledServiceRemover({
+    removeDockerServices: (request) => { calls.push(["docker", request.manifest.platform]); return { ok: true }; },
+    buildNativeRemover: ({ platform, installRoot }) => {
+      calls.push(["native-factory", platform, installRoot]);
+      return (request) => { calls.push(["native", request.manifest.services]); return { ok: true }; };
+    },
+  });
+
+  assert.deepEqual(await removeServices({ manifest: baseManifest() }), { ok: true });
+  assert.deepEqual(await removeServices({ manifest: baseManifest({ mode: "native", platform: "linux-native", services: ["archive-worker"], ownedPaths: ["/opt/archive-suite"] }) }), { ok: true });
+  assert.deepEqual(calls, [
+    ["docker", "linux-docker"],
+    ["native-factory", "linux-native", "/opt/archive-suite"],
+    ["native", ["archive-worker"]],
+  ]);
+  assert.deepEqual(await removeServices({ manifest: baseManifest({ mode: "native", platform: "linux-native", ownedPaths: [] }) }), { ok: false });
+});
+
 test("uninstall is refused for non-Docker installations with a stable code", async () => {
   const { deps } = buildDeps({ manifest: baseManifest({ mode: "native" }) });
   const result = await createUninstall(deps)({ confirmed: true });
@@ -47,14 +69,20 @@ test("uninstall is refused for non-Docker installations with a stable code", asy
   assert.equal(result.code, "MODE_UNSUPPORTED");
 });
 
-test("uninstall accepts a native installation when the native wiring declares support (V1-210B)", async () => {
-  const { deps, calls } = buildDeps({ manifest: baseManifest({ mode: "native", services: ["archive-http", "archive-next"] }) });
+test("uninstall accepts Native wiring, removes application files, and keeps external data by default", async () => {
+  const { deps, calls } = buildDeps({ manifest: baseManifest({ mode: "native", services: ["archive-http", "archive-next"], ownedPaths: ["/opt/archive-suite"] }) });
   const result = await createUninstall({ ...deps, supportedModes: ["native"] })({ confirmed: true });
 
   assert.equal(result.ok, true);
   assert.equal(result.code, "UNINSTALL_COMPLETE");
   assert.deepEqual(result.details.removedServices, ["archive-http", "archive-next"]);
-  assert.ok(calls.some(([name]) => name === "removeServices"));
+  assert.deepEqual(result.details.removedOwnedPaths, ["/opt/archive-suite"]);
+  assert.deepEqual(result.details.keptDataPaths, { storage: "/srv/archive-suite/storage" });
+  assert.deepEqual(calls, [
+    ["removeServices", false],
+    ["removeOwnedPaths", ["/opt/archive-suite"]],
+    ["removeManifest"],
+  ]);
 });
 
 test("uninstall requires explicit confirmation before touching any service", async () => {
@@ -124,6 +152,19 @@ test("a failed service removal reports a stable code and leaves data and manifes
   assert.equal(result.code, "UNINSTALL_SERVICES_FAILED");
   assert.ok(result.nextActions.length > 0);
   assert.ok(!calls.some((c) => c[0] === "removeManifest" || c[0] === "deleteDataPaths"));
+});
+
+test("a failed owned-path removal keeps data and manifest for a safe retry", async () => {
+  const { deps, calls } = buildDeps({
+    manifest: baseManifest({ mode: "native", ownedPaths: ["/opt/archive-suite"] }),
+    ownedPathsOk: false,
+  });
+  const result = await createUninstall({ ...deps, supportedModes: ["native"] })({ confirmed: true });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "UNINSTALL_OWNED_PATHS_FAILED");
+  assert.doesNotMatch(JSON.stringify(result), /\/private\/path/);
+  assert.ok(!calls.some(([name]) => name === "deleteDataPaths" || name === "removeManifest"));
 });
 
 test("a failed data deletion reports a stable redacted code and keeps the manifest for a retry", async () => {

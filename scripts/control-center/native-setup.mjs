@@ -121,7 +121,7 @@ export function buildNativeRuntime({
       // then no-ops (see createWindowsNativeRuntimeAdapter), same pattern as
       // applyFirewallRules above.
       writeAppConfig: appConfig
-        ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword })
+        ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, storagePath: configuration.storage.path, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword })
         : undefined,
       health,
       logs: effects.logs,
@@ -141,7 +141,7 @@ export function buildNativeRuntime({
     applyOwnership: effects.applyOwnership,
     applyLogrotate: effects.applyLogrotate,
     writeAppConfig: appConfig
-      ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword })
+      ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, storagePath: configuration.storage.path, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword })
       : undefined,
     // Linux firewall stays opt-in per the platform contract; the default
     // host-effects layer provides none.
@@ -155,4 +155,16 @@ export function buildNativeRuntime({
     dataPlan,
   });
   return { adapter, removeServices: createLinuxServiceRemover({ serviceControl: effects.serviceControl }) };
+}
+
+export function buildNativeServiceRemover({ platform, installRoot, run, writeFile } = {}) {
+  const family = nativePlatformFamily(platform);
+  if (!family) throw new Error(`"${platform}" is not a Native platform.`);
+  const root = nativeInstallRoot(platform, installRoot);
+  if (family === "windows") {
+    const effects = createWindowsHostEffects({ installRoot: root, run, writeFile });
+    return createWindowsServiceRemover({ serviceControl: effects.serviceControl, removeFirewallRules: effects.removeFirewallRules });
+  }
+  const effects = createLinuxHostEffects({ installRoot: root, run, writeFile });
+  return createLinuxServiceRemover({ serviceControl: effects.serviceControl });
 }
