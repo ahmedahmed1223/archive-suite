@@ -139,6 +139,9 @@ export function buildNativeRuntime({
     serviceControl: effects.serviceControl,
     applyOwnership: effects.applyOwnership,
     applyLogrotate: effects.applyLogrotate,
+    writeAppConfig: appConfig
+      ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword })
+      : undefined,
     // Linux firewall stays opt-in per the platform contract; the default
     // host-effects layer provides none.
     health,

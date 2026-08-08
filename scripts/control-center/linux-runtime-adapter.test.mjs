@@ -27,12 +27,13 @@ test("Linux adapter implements every operation of the shared runtime contract", 
   for (const operation of RUNTIME_OPERATIONS) assert.equal(typeof adapter[operation], "function", operation);
 });
 
-test("install runs ownership, logrotate, optional firewall, then systemd units in order", async () => {
+test("install configures the app after filesystem setup and before firewall or systemd units", async () => {
   const calls = [];
   const adapter = createLinuxNativeRuntimeAdapter({
     serviceControl: okControl(calls),
     applyOwnership: () => { calls.push(["ownership"]); return { status: 0 }; },
     applyLogrotate: () => { calls.push(["logrotate"]); return { status: 0 }; },
+    writeAppConfig: () => { calls.push(["app-config"]); return { status: 0 }; },
     applyFirewallRules: () => { calls.push(["firewall"]); return { status: 0 }; },
     dataGate: async () => ({ ok: true }),
     manifestStore: recordingStore(calls),
@@ -42,7 +43,20 @@ test("install runs ownership, logrotate, optional firewall, then systemd units i
   const result = await adapter.install();
   assert.deepEqual(result, { ok: true, supported: true, status: 0 });
   const steps = calls.filter(([kind]) => kind === "success").map(([, step]) => step);
-  assert.deepEqual(steps, LINUX_INSTALL_STEPS);
+  assert.deepEqual(steps, [
+    "data-services-ready",
+    "ownership-applied",
+    "logrotate-applied",
+    "app-configured",
+    "firewall-applied",
+    "services-installed",
+    "services-started",
+  ]);
+  assert.deepEqual(
+    calls.filter(([kind]) => ["ownership", "logrotate", "app-config", "firewall", "install"].includes(kind)).slice(0, 5).map(([kind]) => kind),
+    ["ownership", "logrotate", "app-config", "firewall", "install"],
+  );
+  assert.deepEqual(LINUX_INSTALL_STEPS, steps);
   assert.equal(calls.filter(([kind]) => kind === "install").length, LINUX_SERVICES.length);
 });
 

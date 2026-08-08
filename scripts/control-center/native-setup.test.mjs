@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createLinuxHostEffects } from "./linux-host-effects.mjs";
+import { LINUX_INSTALL_STEPS } from "./linux-runtime-adapter.mjs";
 import { createWindowsHostEffects } from "./windows-host-effects.mjs";
 import { WINDOWS_INSTALL_STEPS } from "./windows-runtime-adapter.mjs";
 import { buildNativeRuntime, nativeDataPlanOverrideFromEnv, nativeManifestInput, nativeServiceIds } from "./native-setup.mjs";
@@ -72,6 +73,33 @@ test("a wired Native install runs the full step sequence through real host comma
   assert.equal(result.ok, true);
   assert.deepEqual(steps, WINDOWS_INSTALL_STEPS);
   assert.equal(rec.commands.filter((cmd) => cmd[1] === "install").length, 6);
+});
+
+test("a wired Linux install writes every app config before starting systemd services", async () => {
+  const rec = recorder();
+  const steps = [];
+  const { adapter } = buildNativeRuntime({
+    configuration: linuxConfig,
+    installRoot: "/opt/archive-suite",
+    run: rec.run,
+    writeFile: rec.writeFile,
+    health: async () => ({ status: 0 }),
+    manifestStore: passingStore(steps),
+    manifestRequest: { path: "m.json", input: {} },
+    dataPlan: { postgres: { kind: "external", host: "db.internal", port: 5432, database: "archive" }, queue: "database", cache: "database", redis: { enabled: false } },
+    probes: okProbes,
+    appConfig: { appKey: "base64:test", appUrl: "http://localhost:8443", dbUsername: "archive", dbPassword: "test-only-password" },
+  });
+
+  const result = await adapter.install({ path: "m.json", input: {} });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(steps, LINUX_INSTALL_STEPS);
+  assert.ok(rec.files.some(({ path }) => path === "/opt/archive-suite/config/Caddyfile"));
+  assert.ok(rec.files.some(({ path }) => path === "/opt/archive-suite/config/php-fpm.conf"));
+  assert.ok(rec.files.some(({ path }) => path === "/opt/archive-suite/app/laravel/.env"));
+  const firstServiceCommand = rec.commands.findIndex(([command]) => command === "systemctl");
+  assert.ok(firstServiceCommand >= 0);
 });
 
 test("without probes a local-managed plan is honestly blocked before any host command runs", async () => {
