@@ -75,3 +75,33 @@ test("acceptance bundle preparation dereferences existing links, overlays curren
   assert.equal(verifyNativeBundle(output).bundleDigest, result.bundleDigest);
   assert.throws(() => prepareNativeAcceptanceBundle({ sourceBundle: source, outDir: output }), /already exists/i);
 });
+
+test("acceptance bundle preparation materializes nested links only from explicitly allowed roots", () => {
+  const root = mkdtempSync(join(tmpdir(), "native-prepare-links-"));
+  const source = join(root, "source");
+  const allowed = join(root, "allowed");
+  const target = join(allowed, "package");
+  const internalTarget = join(source, "store", "package");
+  const nestedLink = join(source, "app", "node_modules", "package");
+  mkdirSync(join(source, "app", "node_modules"), { recursive: true });
+  mkdirSync(target, { recursive: true });
+  mkdirSync(internalTarget, { recursive: true });
+  writeFileSync(join(target, "index.js"), "external package\n");
+  writeFileSync(join(internalTarget, "index.js"), "self-contained package\n");
+  symlinkSync(target, nestedLink, "dir");
+
+  assert.throws(
+    () => prepareNativeAcceptanceBundle({ sourceBundle: source, outDir: join(root, "rejected") }),
+    /allowed link root/i,
+  );
+
+  const output = join(root, "prepared");
+  const result = prepareNativeAcceptanceBundle({
+    sourceBundle: source,
+    outDir: output,
+    linkTargetMappings: [{ from: allowed, to: join(source, "store") }],
+  });
+  assert.equal(lstatSync(join(output, "app", "node_modules", "package")).isSymbolicLink(), false);
+  assert.equal(readFileSync(join(output, "app", "node_modules", "package", "index.js"), "utf8"), "self-contained package\n");
+  assert.equal(verifyNativeBundle(output).bundleDigest, result.bundleDigest);
+});

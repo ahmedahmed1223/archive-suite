@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -26,6 +26,45 @@ function safeInventoryPath(raw) {
   return normalized;
 }
 
+const canonicalPath = (path) => existsSync(path) ? realpathSync.native(path) : resolve(path);
+
+function isWithin(root, candidate) {
+  const path = relative(canonicalPath(root), canonicalPath(candidate));
+  return path === "" || (!path.startsWith(`..${sep}`) && path !== ".." && !isAbsolute(path));
+}
+
+function bundleLinks(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = join(directory, entry.name);
+    if (entry.isSymbolicLink()) return [absolute];
+    return entry.isDirectory() ? bundleLinks(absolute) : [];
+  });
+}
+
+function materializeBundleLinks(outputRoot, allowedRoots, linkTargetMappings) {
+  let materialized = 0;
+  while (true) {
+    const links = bundleLinks(outputRoot);
+    if (links.length === 0) return materialized;
+    for (const link of links) {
+      if (++materialized > 10_000) throw new Error("Native acceptance bundle contains too many nested links.");
+      const rawTarget = readlinkSync(link);
+      const unresolvedTarget = isAbsolute(rawTarget) ? resolve(rawTarget) : resolve(dirname(link), rawTarget);
+      const mapping = linkTargetMappings.find(({ from }) => isWithin(from, unresolvedTarget));
+      const target = mapping
+        ? resolve(mapping.to, relative(canonicalPath(mapping.from), canonicalPath(unresolvedTarget)))
+        : realpathSync.native(link);
+      if (!existsSync(target)) throw new Error(`Native acceptance mapped link target does not exist: ${link}`);
+      if (!allowedRoots.some((root) => isWithin(root, target))) {
+        throw new Error(`Native acceptance link target is outside every allowed link root: ${link}`);
+      }
+      const isDirectory = lstatSync(target).isDirectory();
+      unlinkSync(link);
+      cpSync(target, link, { recursive: isDirectory, dereference: true });
+    }
+  }
+}
+
 export function writeNativeBundleChecksums(bundlePath) {
   const root = resolve(bundlePath);
   const inventory = bundleFiles(root)
@@ -35,13 +74,16 @@ export function writeNativeBundleChecksums(bundlePath) {
   return inventory.length;
 }
 
-export function prepareNativeAcceptanceBundle({ sourceBundle, outDir, overlays = [] }) {
+export function prepareNativeAcceptanceBundle({ sourceBundle, outDir, overlays = [], allowedLinkRoots = [], linkTargetMappings = [] }) {
   const sourceRoot = resolve(sourceBundle);
   const outputRoot = resolve(outDir);
   if (!existsSync(sourceRoot)) throw new Error(`Native source bundle does not exist: ${sourceRoot}`);
   if (existsSync(outputRoot)) throw new Error(`Native acceptance output already exists: ${outputRoot}`);
 
   cpSync(sourceRoot, outputRoot, { recursive: true, dereference: true });
+  const mappings = linkTargetMappings.map(({ from, to }) => ({ from: canonicalPath(resolve(from)), to: realpathSync.native(resolve(to)) }));
+  const allowedRoots = [sourceRoot, outputRoot, ...allowedLinkRoots.map((path) => resolve(path)), ...mappings.map(({ to }) => to)].map((path) => realpathSync.native(path));
+  materializeBundleLinks(outputRoot, allowedRoots, mappings);
   for (const overlay of overlays) {
     const relativePath = safeInventoryPath(overlay.relativePath);
     const sourcePath = resolve(overlay.source);
