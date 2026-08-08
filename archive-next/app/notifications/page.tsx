@@ -7,6 +7,7 @@ import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const typeIcons = {
   ingest_complete: Package,
@@ -24,13 +25,14 @@ const typeLabels = {
   mention: "إشارة",
 } as const;
 
-function NotificationCard({ notification, onRead, onDelete }: {
+function NotificationCard({ notification, onRead, onDelete, locale }: {
   notification: Notification;
   onRead: (id: number) => void;
   onDelete: (id: number) => void;
+  locale: "ar" | "en";
 }) {
   const Icon = typeIcons[notification.type];
-  const label = typeLabels[notification.type];
+  const label = locale === "en" ? ({ ingest_complete: "Ingest", backup_result: "Backup", share_event: "Share", restore_result: "Restore", mention: "Mention" }[notification.type]) : typeLabels[notification.type];
 
   return (
     <article className="notification-card" data-read={notification.is_read}>
@@ -48,15 +50,15 @@ function NotificationCard({ notification, onRead, onDelete }: {
               type="button"
               className="notification-card__mark-read"
               onClick={() => onRead(notification.id)}
-              aria-label="وضّح كمقروء"
+              aria-label={locale === "en" ? "Mark as read" : "وضع كمقروء"}
             >
-              وضّح
+              {locale === "en" ? "Mark read" : "وضع كمقروء"}
             </button>
           )}
         </div>
         <p className="notification-card__message">{redactAdminSecrets(notification.message)}</p>
         <time className="notification-card__time">
-          {new Date(notification.created_at).toLocaleString("ar-SA", {
+          {new Date(notification.created_at).toLocaleString(locale === "en" ? "en-US" : "ar-SA", {
             year: "numeric",
             month: "short",
             day: "numeric",
@@ -69,7 +71,7 @@ function NotificationCard({ notification, onRead, onDelete }: {
         type="button"
         className="notification-card__delete"
         onClick={() => onDelete(notification.id)}
-        aria-label="حذف"
+        aria-label={locale === "en" ? "Delete" : "حذف"}
       >
         <Trash2 size={18} aria-hidden="true" />
       </button>
@@ -78,6 +80,8 @@ function NotificationCard({ notification, onRead, onDelete }: {
 }
 
 export default function NotificationsPage() {
+  const { locale } = useLocale();
+  const copy = locale === "en" ? { title: "Notifications", unread: "new notifications", allRead: "Mark all as read", all: "All notifications", unreadOnly: "Unread", error: "Could not complete the notifications request", errorHelp: "Check your connection, then try again.", retry: "Try again", loading: "Loading notifications…", noUnread: "No new notifications", empty: "No notifications", back: "Back to archive" } : { title: "الإشعارات", unread: "إشعارات جديدة", allRead: "وضع الكل كمقروء", all: "جميع الإشعارات", unreadOnly: "غير مقروءة", error: "تعذر إكمال طلب الإشعارات", errorHelp: "تحقق من الاتصال ثم أعد المحاولة.", retry: "إعادة المحاولة", loading: "جارٍ تحميل الإشعارات…", noUnread: "لا توجد إشعارات جديدة", empty: "لا توجد إشعارات", back: "العودة إلى الأرشيف" };
   const { notifications, unreadCount, isLoading, error, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
@@ -89,10 +93,10 @@ export default function NotificationsPage() {
     <AppShell subtitle="الإشعارات" contentClassName="notifications-page">
       <header className="notifications-page__header">
         <div>
-          <h1>الإشعارات</h1>
+          <h1>{copy.title}</h1>
           {unreadCount > 0 && (
             <p className="notifications-page__subtitle">
-              لديك {unreadCount} إشعارات جديدة
+              {locale === "en" ? `You have ${unreadCount} ${copy.unread}` : `لديك ${unreadCount} ${copy.unread}`}
             </p>
           )}
         </div>
@@ -102,7 +106,7 @@ export default function NotificationsPage() {
             className="notifications-page__mark-all-read"
             onClick={markAllAsRead}
           >
-            تحديد الكل كمقروء
+            {copy.allRead}
           </button>
         )}
       </header>
@@ -114,7 +118,7 @@ export default function NotificationsPage() {
           data-active={filter === "all"}
           onClick={() => setFilter("all")}
         >
-          جميع الإشعارات
+          {copy.all}
         </button>
         <button
           type="button"
@@ -122,29 +126,29 @@ export default function NotificationsPage() {
           data-active={filter === "unread"}
           onClick={() => setFilter("unread")}
         >
-          غير مقروءة ({unreadCount})
+          {copy.unreadOnly} ({unreadCount})
         </button>
       </div>
 
       <div className="notifications-page__content">
         {error ? (
           <div className="state-banner state-banner-error" role="alert">
-            <strong>تعذر إكمال طلب الإشعارات</strong>
-            <span className="helper-text">{redactAdminSecrets(error)} — تحقق من الاتصال ثم أعد المحاولة.</span>
-            <div><button className="button button-secondary button-sm" type="button" onClick={() => void fetchNotifications()}>إعادة المحاولة</button></div>
+            <strong>{copy.error}</strong>
+            <span className="helper-text">{redactAdminSecrets(error)} — {copy.errorHelp}</span>
+            <div><button className="button button-secondary button-sm" type="button" onClick={() => void fetchNotifications()}>{copy.retry}</button></div>
           </div>
         ) : null}
 
         {isLoading && notifications.length === 0 ? (
-          <Skeleton className="notifications-page__loading" label="جاري تحميل الإشعارات..." />
+          <Skeleton className="notifications-page__loading" label={copy.loading} />
         ) : !isLoading && !error && filteredNotifications.length === 0 ? (
           <div className="notifications-page__empty">
             <Info size={48} aria-hidden="true" />
             <p>
-              {filter === "unread" ? "لا توجد إشعارات جديدة" : "لا توجد إشعارات"}
+              {filter === "unread" ? copy.noUnread : copy.empty}
             </p>
             <Link href="/archive" className="button button--primary">
-              العودة إلى الأرشيف
+              {copy.back}
             </Link>
           </div>
         ) : (
@@ -155,6 +159,7 @@ export default function NotificationsPage() {
                 notification={notification}
                 onRead={markAsRead}
                 onDelete={deleteNotification}
+                locale={locale}
               />
             ))}
           </div>
