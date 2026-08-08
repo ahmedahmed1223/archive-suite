@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import RecentFavoritesMenu from "@/components/RecentFavoritesMenu";
 import { addFavorite } from "@/lib/favorites";
 import { recordView } from "@/lib/recent-items";
+
+vi.mock("@/lib/i18n/LocaleProvider", () => ({ useLocale: () => ({ locale: "ar" }) }));
 
 afterEach(() => {
   cleanup();

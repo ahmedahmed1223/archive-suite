@@ -32,7 +32,7 @@ export const shell = {
   quickActions: "Quick actions",
   add: "Add",
   activity: "Activity",
-  health: "Health",
+  health: "System status",
   alerts: "Alerts",
   dailyNavigation: "Daily navigation",
   openCommands: "Open commands",

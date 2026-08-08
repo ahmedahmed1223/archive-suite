@@ -9,23 +9,26 @@ import {
 } from "@/lib/use-notifications";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export function NotificationsBadge() {
   const { unreadCount, isLoading } = useNotifications();
+  const { locale } = useLocale();
 
   if (isLoading || unreadCount === 0) return null;
 
   return (
-    <span className="notification-badge" aria-label={`${unreadCount} إشعارات جديدة`}>
+    <span className="notification-badge" aria-label={locale === "en" ? `${unreadCount} new notifications` : `${unreadCount} إشعارات جديدة`}>
       {unreadCount}
     </span>
   );
 }
 
-function NotificationItem({ notification, onRead, onDelete }: {
+function NotificationItem({ notification, onRead, onDelete, locale }: {
   notification: Notification;
   onRead: (id: number) => void;
   onDelete: (id: number) => void;
+  locale: "ar" | "en";
 }) {
   return (
     <div
@@ -45,7 +48,7 @@ function NotificationItem({ notification, onRead, onDelete }: {
         </div>
         <p className="notification-item__message">{notification.message}</p>
         <time className="notification-item__time">
-          {new Date(notification.created_at).toLocaleString("ar-SA", {
+          {new Date(notification.created_at).toLocaleString(locale === "en" ? "en-US" : "ar-SA", {
             year: "numeric",
             month: "short",
             day: "numeric",
@@ -58,8 +61,8 @@ function NotificationItem({ notification, onRead, onDelete }: {
         type="button"
         className="notification-item__delete"
         onClick={() => onDelete(notification.id)}
-        aria-label="حذف الإشعار"
-        title="حذف"
+        aria-label={locale === "en" ? "Delete notification" : "حذف الإشعار"}
+        title={locale === "en" ? "Delete" : "حذف"}
       >
         <Trash2 size={16} aria-hidden="true" />
       </button>
@@ -68,6 +71,12 @@ function NotificationItem({ notification, onRead, onDelete }: {
 }
 
 export function NotificationsPanel() {
+  const { locale } = useLocale();
+  const copy = locale === "en" ? {
+    open: "Open notifications", title: "Notifications", close: "Close", enable: "Enable browser alerts", markAll: "Mark all as read", loading: "Loading notifications…", empty: "No notifications",
+  } : {
+    open: "فتح الإشعارات", title: "الإشعارات", close: "إغلاق", enable: "تفعيل تنبيهات المتصفح", markAll: "وضع الكل كمقروء", loading: "جارٍ تحميل الإشعارات…", empty: "لا توجد إشعارات",
+  };
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [alertsGranted, setAlertsGranted] = useState(false);
@@ -121,10 +130,10 @@ export function NotificationsPanel() {
         type="button"
         className="notifications-trigger icon-action"
         onClick={() => setIsOpen((current) => !current)}
-        aria-label="فتح الإشعارات"
+        aria-label={copy.open}
         aria-expanded={isOpen}
         aria-controls={panelId}
-        title="الإشعارات"
+        title={copy.title}
         ref={triggerRef}
       >
         <Bell aria-hidden="true" size={18} strokeWidth={2} />
@@ -143,11 +152,11 @@ export function NotificationsPanel() {
           aria-labelledby={`${panelId}-title`}
         >
           <div className="notifications-panel__header">
-            <h2 id={`${panelId}-title`}>الإشعارات</h2>
+            <h2 id={`${panelId}-title`}>{copy.title}</h2>
             <button
               type="button"
               onClick={() => closePanel()}
-              aria-label="إغلاق"
+              aria-label={copy.close}
             >
               <X size={20} />
             </button>
@@ -162,7 +171,7 @@ export function NotificationsPanel() {
                 style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}
               >
                 <BellRing size={14} aria-hidden="true" />
-                تفعيل تنبيهات المتصفح
+                {copy.enable}
               </button>
             )}
             {unreadCount > 0 && (
@@ -171,16 +180,16 @@ export function NotificationsPanel() {
                 className="notifications-panel__mark-all-read"
                 onClick={markAllAsRead}
               >
-                وضّح الكل كمقروء
+                {copy.markAll}
               </button>
             )}
           </div>
 
           <div className="notifications-panel__list">
             {isLoading ? (
-              <Skeleton className="notifications-panel__loading" label="جاري تحميل الإشعارات..." />
+              <Skeleton className="notifications-panel__loading" label={copy.loading} />
             ) : notifications.length === 0 ? (
-              <div className="notifications-panel__empty">لا توجد إشعارات</div>
+              <div className="notifications-panel__empty">{copy.empty}</div>
             ) : (
               notifications.map((notification) => (
                 <NotificationItem
@@ -188,6 +197,7 @@ export function NotificationsPanel() {
                   notification={notification}
                   onRead={markAsRead}
                   onDelete={deleteNotification}
+                  locale={locale}
                 />
               ))
             )}

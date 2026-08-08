@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
 
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import WhatsNewDialog from "./WhatsNewDialog";
 import {
   WHATS_NEW_DISMISSED_KEY,
   WHATS_NEW_RELEASE,
   WHATS_NEW_STORAGE_KEY,
 } from "@/lib/whats-new";
+
+vi.mock("@/lib/i18n/LocaleProvider", () => ({ useLocale: () => ({ locale: "ar" }) }));
 
 describe("WhatsNewDialog", () => {
   beforeEach(() => window.localStorage.clear());

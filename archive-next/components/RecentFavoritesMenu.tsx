@@ -5,9 +5,16 @@ import { Clock, Star } from "lucide-react";
 import Link from "next/link";
 import { listFavorites } from "@/lib/favorites";
 import { listRecent } from "@/lib/recent-items";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 /** Header popover listing recently viewed and favorited records (V1-773). */
 export default function RecentFavoritesMenu() {
+  const { locale } = useLocale();
+  const copy = locale === "en" ? {
+    trigger: "Recent and favorite items", title: "Recent and favorites", favorites: "Favorites", recent: "Recent", noFavorites: "No favorite items yet.", noRecent: "You have not opened any records yet.",
+  } : {
+    trigger: "العناصر الأخيرة والمفضّلة", title: "الأخيرة والمفضّلة", favorites: "المفضّلة", recent: "الأخيرة", noFavorites: "لا توجد عناصر مفضّلة بعد.", noRecent: "لم تفتح أي سجل بعد.",
+  };
   const [isOpen, setIsOpen] = useState(false);
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -51,10 +58,10 @@ export default function RecentFavoritesMenu() {
         type="button"
         className="icon-action"
         onClick={() => setIsOpen((current) => !current)}
-        aria-label="العناصر الأخيرة والمفضّلة"
+        aria-label={copy.trigger}
         aria-expanded={isOpen}
         aria-controls={panelId}
-        title="الأخيرة والمفضّلة"
+        title={copy.title}
         ref={triggerRef}
       >
         <Clock aria-hidden="true" size={18} strokeWidth={2} />
@@ -63,10 +70,10 @@ export default function RecentFavoritesMenu() {
       {isOpen && (
         <div className="recent-favorites-menu ui-dropdown-content" id={panelId} ref={panelRef} role="menu">
           <p className="recent-favorites-menu__heading">
-            <Star aria-hidden="true" size={14} strokeWidth={2} /> المفضّلة
+            <Star aria-hidden="true" size={14} strokeWidth={2} /> {copy.favorites}
           </p>
           {favorites.length === 0 ? (
-            <p className="helper-text">لا توجد عناصر مفضّلة بعد.</p>
+            <p className="helper-text">{copy.noFavorites}</p>
           ) : (
             favorites.map((item) => (
               <Link key={item.id} href={`/archive/${encodeURIComponent(item.id)}`} role="menuitem" onClick={() => closePanel(false)}>
@@ -75,10 +82,10 @@ export default function RecentFavoritesMenu() {
             ))
           )}
           <p className="recent-favorites-menu__heading">
-            <Clock aria-hidden="true" size={14} strokeWidth={2} /> الأخيرة
+            <Clock aria-hidden="true" size={14} strokeWidth={2} /> {copy.recent}
           </p>
           {recent.length === 0 ? (
-            <p className="helper-text">لم تفتح أي سجل بعد.</p>
+            <p className="helper-text">{copy.noRecent}</p>
           ) : (
             recent.map((item) => (
               <Link key={item.id} href={`/archive/${encodeURIComponent(item.id)}`} role="menuitem" onClick={() => closePanel(false)}>
