@@ -19,6 +19,7 @@ import { clearRecentSearches, listRecentSearches, recordRecentSearch } from "@/l
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
 import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type SearchState =
   | { status: "idle" }
@@ -81,11 +82,13 @@ function facetLabel(items: SearchFacetBucket[] | undefined, value: string) {
 }
 
 export default function SearchPage() {
+  const { locale } = useLocale();
+  const copy = locale === "en" ? { title: "Advanced search", loading: "Loading search…" } : { title: "بحث متقدم", loading: "جارٍ تحميل البحث…" };
   return (
     <Suspense fallback={(
-      <AppShell subtitle="بحث متقدم">
+      <AppShell subtitle={copy.title}>
         <div className="panel panel-compact">
-          <Skeleton label="جار تحميل البحث..." />
+          <Skeleton label={copy.loading} />
         </div>
       </AppShell>
     )}>
@@ -95,6 +98,13 @@ export default function SearchPage() {
 }
 
 function SearchPageContent() {
+  const { locale } = useLocale();
+  const searchCopy = locale === "en" ? {
+    title: "Advanced search", workspace: "Search workspace", description: "Search records, apply server-provided classifications, save recurring searches, and preview results without leaving the page.", keywords: "Keywords", search: "Search", advanced: "Advanced filters", store: "Storage location", type: "Type", tag: "Tag", from: "From date", to: "To date", save: "Save search", reset: "Reset", loading: "Searching…", results: "Search results", empty: "Start by entering a search term.", emptyDescription: "Search records, then save a recurring search for later.", unavailable: "Search could not be completed", noResults: "No records found.",
+  } : {
+    title: "بحث متقدم", workspace: "مساحة البحث", description: "بحث موحد في السجلات مع تصنيفات من الخادم، وحفظ بحث دائم، ومعاينة سريعة للنتائج دون مغادرة الصفحة.", keywords: "الكلمات المفتاحية", search: "بحث", advanced: "تصفية متقدمة", store: "المخزن", type: "النوع", tag: "الوسم", from: "من التاريخ", to: "إلى التاريخ", save: "حفظ البحث", reset: "تصفير", loading: "جارٍ البحث…", results: "نتائج البحث", empty: "ابدأ بكتابة كلمة بحث.", emptyDescription: "استخدم البحث العام للوصول إلى السجلات، ثم احفظ البحث في الخادم إذا كان يتكرر في عملك اليومي.", unavailable: "تعذر تنفيذ البحث", noResults: "لم يتم العثور على سجلات.",
+  };
+  const pageTitle = searchCopy.title;
   const dialogs = useConfirmDialog();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -445,11 +455,11 @@ function SearchPageContent() {
   };
 
   return (
-    <AppShell subtitle="بحث متقدم" contentClassName="search-content" tipsPage="search">
+    <AppShell subtitle={pageTitle} contentClassName="search-content" tipsPage="search">
       <PageToolbar
-        eyebrow={<span className="badge">مساحة البحث</span>}
-        title="البحث المتقدم"
-        description="بحث موحد في السجلات مع تصنيفات من الخادم، وحفظ بحث دائم، ومعاينة سريعة للنتائج دون مغادرة الصفحة."
+        eyebrow={<span className="badge">{searchCopy.workspace}</span>}
+        title={searchCopy.title}
+        description={searchCopy.description}
         meta={(
           <>
             <span className="badge">{filteredRecords.length} نتيجة</span>
@@ -461,7 +471,7 @@ function SearchPageContent() {
         <form className="search-workbench-form" onSubmit={handleSearch}>
           <div className="search-query-row">
             <label>
-              <span>الكلمات المفتاحية</span>
+              <span>{searchCopy.keywords}</span>
               <SearchAutocomplete
                 value={query}
                 onChange={setQuery}
@@ -474,31 +484,31 @@ function SearchPageContent() {
                 للبحث المهيكل استخدم مثلاً: <code dir="ltr">type:video AND tag:"تاريخ شفهي"</code>
               </span>
             </label>
-            <button type="submit" className="button button-primary">بحث</button>
+            <button type="submit" className="button button-primary">{searchCopy.search}</button>
           </div>
           <details className="search-advanced-filters">
-            <summary>تصفية متقدمة</summary>
+            <summary>{searchCopy.advanced}</summary>
             <div className="archive-toolbar-grid">
               <label>
-                <span>المخزن</span>
+                <span>{searchCopy.store}</span>
                 <input type="text" placeholder="اتركه فارغاً لكل المخازن" value={store} onChange={(event) => setStore(event.target.value)} className="search-input" />
               </label>
               <label>
-                <span>النوع</span>
+                <span>{searchCopy.type}</span>
                 <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
                   <option value="all">كل الأنواع</option>
                   {typeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
                 </select>
               </label>
               <label>
-                <span>الوسم</span>
+                <span>{searchCopy.tag}</span>
                 <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
                   <option value="">كل الوسوم</option>
                   {tagOptions.map((tag) => <option key={tag.value} value={tag.value}>{tag.label} ({tag.count})</option>)}
                 </select>
               </label>
-              <label><span>من التاريخ</span><input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
-              <label><span>إلى التاريخ</span><input type="date" min={dateFrom || undefined} value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
+              <label><span>{searchCopy.from}</span><input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
+              <label><span>{searchCopy.to}</span><input type="date" min={dateFrom || undefined} value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
               <label>
                 <span>اكتمال التوصيف</span>
                 <select value={descriptionState} onChange={(event) => setDescriptionState(event.target.value as "" | "complete" | "incomplete")}>
@@ -519,10 +529,10 @@ function SearchPageContent() {
         </form>
         <div className="search-workbench-actions">
           <button type="button" className="button button-primary" onClick={() => void saveCurrentSearch()} disabled={!query.trim() && !store && typeFilter === "all" && !tagFilter}>
-            حفظ البحث
+            {searchCopy.save}
           </button>
           <button type="button" className="button button-secondary" onClick={resetSearch}>
-            تصفير
+            {searchCopy.reset}
           </button>
           <a className="button button-secondary" href="/search/saved">
             إدارة البحوث المحفوظة
@@ -575,34 +585,34 @@ function SearchPageContent() {
 
       {state.status === "idle" ? (
         <EmptyState
-          title="ابدأ بكتابة كلمة بحث."
-          description="استخدم البحث العام للوصول إلى السجلات، ثم احفظ البحث في الخادم إذا كان يتكرر في عملك اليومي."
+          title={searchCopy.empty}
+          description={searchCopy.emptyDescription}
         />
       ) : null}
 
       {state.status === "loading" ? (
         <div className="panel panel-compact" aria-live="polite" aria-atomic="true" role="status">
-          <p className="form-status">جار البحث...</p>
+          <p className="form-status">{searchCopy.loading}</p>
         </div>
       ) : null}
 
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تنفيذ البحث</strong>
+          <strong>{searchCopy.unavailable}</strong>
           <span className="helper-text">{state.message}</span>
         </div>
       ) : null}
 
       {state.status === "ready" && visibleRecords.length === 0 ? (
         <EmptyState
-          title="لم يتم العثور على سجلات."
+          title={searchCopy.noResults}
           description="جرّب بحثاً مختلفاً، أو أزل فلتر النوع/الوسم، أو راجع المخزن المحدد."
           actions={<button type="button" className="button button-secondary" onClick={resetSearch}>تصفير البحث</button>}
         />
       ) : null}
 
       {state.status === "ready" && visibleRecords.length > 0 ? (
-        <section className="search-workspace" aria-label="نتائج البحث">
+        <section className="search-workspace" aria-label={searchCopy.results}>
           <div className="search-results-surface" data-view={viewMode}>
             <div className="panel panel-compact">
               <p className="form-status">
