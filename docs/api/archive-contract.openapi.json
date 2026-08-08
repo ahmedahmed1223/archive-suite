@@ -107,6 +107,34 @@
         }
       }
     },
+    "/account/preferences": {
+      "patch": {
+        "tags": ["Auth"],
+        "summary": "Update preferences for the current account",
+        "operationId": "updateAccountPreferences",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AccountPreferencesRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated account preferences",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AccountPreferencesResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/auth/refresh": {
       "post": {
         "tags": ["Auth"],
@@ -5630,16 +5658,37 @@
       },
       "User": {
         "type": "object",
-        "required": ["id", "username", "role"],
+        "required": ["id", "username", "role", "locale"],
         "properties": {
           "id": { "type": "string" },
           "username": { "type": "string" },
           "displayName": { "type": "string" },
           "email": { "type": "string", "format": "email" },
           "role": { "type": "string", "enum": ["admin", "editor", "viewer"] },
+          "locale": { "type": ["string", "null"], "enum": ["ar", "en", null] },
           "totpEnabled": { "type": "boolean" },
           "totpRecoveryCodesRemaining": { "type": "integer" }
         }
+      },
+      "AccountPreferencesRequest": {
+        "type": "object",
+        "required": ["locale"],
+        "properties": {
+          "locale": { "type": "string", "enum": ["ar", "en"] }
+        },
+        "additionalProperties": false
+      },
+      "AccountPreferencesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["user"],
+            "properties": {
+              "user": { "$ref": "#/components/schemas/User" }
+            }
+          }
+        ]
       },
       "RecordCreateRequest": {
         "type": "object", "required": ["title"],

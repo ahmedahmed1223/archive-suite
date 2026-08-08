@@ -238,6 +238,7 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware(['archive.auth', 'archive.audit'])->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
+        Route::patch('/account/preferences', [AuthController::class, 'preferences']);
 
         Route::get('/records', [RecordsController::class, 'index']);
         // V1-714: bulk record export/import via CSV. Kept off RecordsController

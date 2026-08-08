@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateAccountPreferencesRequest;
 use App\Models\ApiSession;
 use App\Models\User;
 use App\Support\ApiError;
@@ -46,6 +47,23 @@ class AuthController extends Controller
         }
 
         return response()->json(['ok' => true, 'user' => $this->formatUser($user)]);
+    }
+
+    public function preferences(UpdateAccountPreferencesRequest $request): JsonResponse
+    {
+        $user = $request->attributes->get('archive_user');
+
+        if (! $user instanceof User) {
+            return response()->json(ApiError::envelope('Unauthorized.', 401), 401);
+        }
+
+        $user->locale = $request->validated('locale');
+        $user->save();
+
+        return response()->json([
+            'ok' => true,
+            'user' => $this->formatUser($user->refresh()),
+        ]);
     }
 
     public function refresh(Request $request): JsonResponse
@@ -199,6 +217,7 @@ class AuthController extends Controller
             'email' => $user->email,
             'role' => $user->role,
             'roles' => [$user->role],
+            'locale' => $user->locale,
         ];
     }
 

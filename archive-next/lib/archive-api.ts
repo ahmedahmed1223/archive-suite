@@ -22,6 +22,7 @@ export interface ArchiveUser {
   name?: string;
   displayName?: string;
   email?: string;
+  locale: "ar" | "en" | null;
   totpEnabled?: boolean;
 }
 

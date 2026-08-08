@@ -17,6 +17,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/account/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update preferences for the current account */
+        patch: operations["updateAccountPreferences"];
+        trace?: never;
+    };
     "/activity": {
         parameters: {
             query?: never;
@@ -3418,6 +3435,13 @@ export interface components {
         AccountExportResponse: components["schemas"]["OkEnvelope"] & {
             export: components["schemas"]["AccountExport"];
         };
+        AccountPreferencesRequest: {
+            /** @enum {string} */
+            locale: "ar" | "en";
+        };
+        AccountPreferencesResponse: components["schemas"]["OkEnvelope"] & {
+            user: components["schemas"]["User"];
+        };
         ActivityResponse: components["schemas"]["OkEnvelope"] & {
             entries: components["schemas"]["RecordHistoryEntry"][];
             filters: {
@@ -5734,6 +5758,8 @@ export interface components {
             /** Format: email */
             email?: string;
             id: string;
+            /** @enum {string|null} */
+            locale: "ar" | "en" | null;
             /** @enum {string} */
             role: "admin" | "editor" | "viewer";
             totpEnabled?: boolean;
@@ -6010,6 +6036,32 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+        };
+    };
+    updateAccountPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated account preferences */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountPreferencesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listActivity: {

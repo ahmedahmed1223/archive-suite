@@ -80,6 +80,7 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/share'] => ['share.create', 'share_link'],
             ['POST', 'api/v1/media/jobs'] => ['media.workflow.queue', 'media_job'],
             ['POST', 'api/v1/auth/logout'] => ['auth.logout', 'api_session'],
+            ['PATCH', 'api/v1/account/preferences'] => ['account.preferences.update', 'user_preferences'],
             ['POST', 'api/v1/collaboration/rooms/{roomKey}/locks'] => [
                 $response->getStatusCode() === 200 ? 'collaboration_locks.refresh' : 'collaboration_locks.acquire',
                 'collaboration_lock',
@@ -169,6 +170,10 @@ class AuditArchiveApiRequest
             $resourceId = $request->attributes->get('archive_session')?->getKey();
         }
 
+        if ($route === 'api/v1/account/preferences') {
+            $resourceId = $request->attributes->get('archive_user')?->getKey();
+        }
+
         if ($route === 'api/v1/system/control/{action}') {
             $resourceId = $request->route('action');
         }
@@ -226,6 +231,10 @@ class AuditArchiveApiRequest
         if ($collaboration !== null) {
             $metadata['collaboration'] = $collaboration;
 
+            return $metadata;
+        }
+
+        if ($taxonomy['event'] === 'account.preferences.update') {
             return $metadata;
         }
 
