@@ -26,11 +26,14 @@ test("Linux topology runs every required component as its own unit under the non
 });
 
 test("systemd unit renders restart, hardening, and scoped writable paths", () => {
-  const unit = renderSystemdUnit(LINUX_SERVICES[2]);
+  const unit = renderSystemdUnit(LINUX_SERVICES[2], { installRoot: "/opt/archive-suite", storagePath: "/srv/archive" });
   assert.match(unit, /User=archive/);
   assert.match(unit, /Restart=on-failure/);
   assert.match(unit, /ProtectSystem=strict/);
-  assert.match(unit, /ReadWritePaths=\/opt\/archive-suite\/storage/);
+  assert.match(unit, /ReadWritePaths=.*\/opt\/archive-suite\/app\/laravel\/storage/);
+  assert.match(unit, /ReadWritePaths=.*\/opt\/archive-suite\/app\/laravel\/bootstrap\/cache/);
+  assert.match(unit, /ReadWritePaths=.*\/srv\/archive/);
+  assert.throws(() => renderSystemdUnit(LINUX_SERVICES[2], { storagePath: "/srv/archive\nReadWritePaths=/etc" }), /path/i);
   assert.throws(() => renderSystemdUnit({ id: "rogue-service" }), (error) => error.code === "LINUX_SERVICE_UNKNOWN");
 });
 

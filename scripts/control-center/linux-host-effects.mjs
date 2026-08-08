@@ -26,12 +26,12 @@ function defaultWriteFile(path, content) {
   writeFileSync(path, content, "utf8");
 }
 
-export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, services = LINUX_SERVICES, run = defaultRun, writeFile = defaultWriteFile } = {}) {
+export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, storagePath = join(installRoot, "storage"), services = LINUX_SERVICES, run = defaultRun, writeFile = defaultWriteFile } = {}) {
   const firstFailure = (results) => results.find((result) => (result?.status ?? 1) !== 0) ?? { status: 0 };
 
   const serviceControl = {
     install(service) {
-      writeFile(join(UNIT_DIR, service.unit), renderSystemdUnit(service));
+      writeFile(join(UNIT_DIR, service.unit), renderSystemdUnit(service, { installRoot, storagePath }));
       return firstFailure([run(["systemctl", "daemon-reload"]), run(["systemctl", "enable", service.id])]);
     },
     remove: (id) => firstFailure([
@@ -45,7 +45,7 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
     query: (id) => run(["systemctl", "status", "--no-pager", id]),
   };
 
-  const applyOwnership = () => run(["chown", "-R", `${LINUX_SERVICE_USER.name}:${LINUX_SERVICE_USER.name}`, installRoot]);
+  const applyOwnership = () => firstFailure([...new Set([installRoot, storagePath])].map((path) => run(["chown", "-R", `${LINUX_SERVICE_USER.name}:${LINUX_SERVICE_USER.name}`, path])));
 
   const applyLogrotate = () => {
     try {

@@ -28,8 +28,15 @@ function fail(code, message, nextActions) { throw new LinuxPackageError(code, me
 
 // One systemd unit per service: non-interactive user, auto-restart, and
 // baseline hardening so a compromised service cannot rewrite the system.
-export function renderSystemdUnit(service) {
+function systemdPath(path, name) {
+  if (typeof path !== "string" || !path.startsWith("/") || /[\0\r\n]/.test(path)) fail("LINUX_SERVICE_PATH_INVALID", `${name} must be a safe absolute POSIX path.`);
+  return /[\s"\\]/.test(path) ? `"${path.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"` : path;
+}
+
+export function renderSystemdUnit(service, { installRoot = LINUX_SERVICE_USER.home, storagePath = `${LINUX_SERVICE_USER.home}/storage` } = {}) {
   if (!LINUX_SERVICES.some((known) => known.id === service?.id)) fail("LINUX_SERVICE_UNKNOWN", "Only the fixed Archive service topology can be rendered.");
+  const root = systemdPath(installRoot, "installRoot");
+  const storage = systemdPath(storagePath, "storagePath");
   return [
     "[Unit]",
     `Description=${service.description}`,
@@ -45,7 +52,7 @@ export function renderSystemdUnit(service) {
     "RestartSec=10",
     "NoNewPrivileges=true",
     "ProtectSystem=strict",
-    "ReadWritePaths=/opt/archive-suite/storage /opt/archive-suite/logs",
+    `ReadWritePaths=${root}/logs ${root}/app/laravel/storage ${root}/app/laravel/bootstrap/cache ${storage}`,
     "PrivateTmp=true",
     "",
     "[Install]",

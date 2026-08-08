@@ -14,12 +14,13 @@ test("serviceControl.install writes the systemd unit and enables it", () => {
   const { run, calls } = fakeRun();
   const written = [];
   const writeFile = (path, content) => written.push({ path, content });
-  const effects = createLinuxHostEffects({ installRoot: INSTALL_ROOT, run, writeFile });
+  const effects = createLinuxHostEffects({ installRoot: INSTALL_ROOT, storagePath: "/srv/archive", run, writeFile });
 
   const result = effects.serviceControl.install({ id: "archive-http", unit: "archive-http.service", description: "d", command: "/opt/archive-suite/runtime/caddy/caddy run" });
 
   assert.equal(result.status, 0);
   assert.equal(written[0].path, "/etc/systemd/system/archive-http.service");
+  assert.match(written[0].content, /ReadWritePaths=.*\/srv\/archive/);
   assert.deepEqual(calls[0], ["systemctl", "daemon-reload"]);
   assert.deepEqual(calls[1], ["systemctl", "enable", "archive-http"]);
 });
@@ -50,11 +51,14 @@ test("serviceControl.remove disables, deletes the unit file, and reloads", () =>
   ]);
 });
 
-test("applyOwnership chowns the install root to the service user", () => {
+test("applyOwnership chowns the install root and configured storage to the service user", () => {
   const { run, calls } = fakeRun();
-  const effects = createLinuxHostEffects({ installRoot: INSTALL_ROOT, run, writeFile: () => {} });
+  const effects = createLinuxHostEffects({ installRoot: INSTALL_ROOT, storagePath: "/srv/archive", run, writeFile: () => {} });
   effects.applyOwnership();
-  assert.deepEqual(calls[0], ["chown", "-R", "archive:archive", INSTALL_ROOT]);
+  assert.deepEqual(calls, [
+    ["chown", "-R", "archive:archive", INSTALL_ROOT],
+    ["chown", "-R", "archive:archive", "/srv/archive"],
+  ]);
 });
 
 test("applyLogrotate writes a weekly, 8-rotation policy for the install root's logs", () => {

@@ -135,7 +135,7 @@ export function buildNativeRuntime({
     return { adapter, removeServices: createWindowsServiceRemover({ serviceControl: effects.serviceControl, removeFirewallRules: effects.removeFirewallRules }) };
   }
 
-  const effects = createLinuxHostEffects({ installRoot: root, run, writeFile });
+  const effects = createLinuxHostEffects({ installRoot: root, storagePath: configuration.storage.path, run, writeFile });
   const adapter = createLinuxNativeRuntimeAdapter({
     serviceControl: effects.serviceControl,
     applyOwnership: effects.applyOwnership,
