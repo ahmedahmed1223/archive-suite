@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { prepareNativeAcceptanceBundle, verifyNativeBundle } from "./native-acceptance.mjs";
+import { prepareNativeAcceptanceBundle, verifyNativeBundle, writeNativeBundleChecksums } from "./native-acceptance.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -48,7 +48,7 @@ test("bundle verifier rejects traversal and duplicate inventory entries", () => 
   assert.throws(() => verifyNativeBundle(duplicate), /duplicate/i);
 });
 
-test("acceptance bundle preparation dereferences existing links, overlays current files, and rewrites checksums", () => {
+test("acceptance bundle preparation rewrites internal links as portable relative links and refreshes checksums", () => {
   const root = mkdtempSync(join(tmpdir(), "native-prepare-"));
   const source = join(root, "source");
   const target = join(source, "store", "package");
@@ -58,7 +58,7 @@ test("acceptance bundle preparation dereferences existing links, overlays curren
   mkdirSync(target, { recursive: true });
   mkdirSync(join(source, "app", "next", "node_modules"), { recursive: true });
   writeFileSync(join(target, "index.js"), "self-contained\n");
-  symlinkSync(target, link, process.platform === "win32" ? "junction" : "dir");
+  symlinkSync(target, link, "dir");
   writeFileSync(overlay, "<?php return [];\n");
 
   const result = prepareNativeAcceptanceBundle({
@@ -68,7 +68,7 @@ test("acceptance bundle preparation dereferences existing links, overlays curren
   });
 
   assert.equal(result.ok, true);
-  assert.equal(lstatSync(join(output, "app", "next", "node_modules", "package")).isSymbolicLink(), false);
+  assert.equal(lstatSync(join(output, "app", "next", "node_modules", "package")).isSymbolicLink(), true);
   assert.equal(readFileSync(join(output, "app", "next", "node_modules", "package", "index.js"), "utf8"), "self-contained\n");
   assert.equal(readFileSync(join(output, "app", "laravel", "config", "filesystems.php"), "utf8"), "<?php return [];\n");
   assert.equal(existsSync(join(output, "SHA256SUMS")), true);
@@ -76,7 +76,7 @@ test("acceptance bundle preparation dereferences existing links, overlays curren
   assert.throws(() => prepareNativeAcceptanceBundle({ sourceBundle: source, outDir: output }), /already exists/i);
 });
 
-test("acceptance bundle preparation materializes nested links only from explicitly allowed roots", () => {
+test("acceptance bundle preparation maps external build links back to portable internal links", () => {
   const root = mkdtempSync(join(tmpdir(), "native-prepare-links-"));
   const source = join(root, "source");
   const allowed = join(root, "allowed");
@@ -92,7 +92,7 @@ test("acceptance bundle preparation materializes nested links only from explicit
 
   assert.throws(
     () => prepareNativeAcceptanceBundle({ sourceBundle: source, outDir: join(root, "rejected") }),
-    /allowed link root/i,
+    /outside the bundle|safe mapping/i,
   );
 
   const output = join(root, "prepared");
@@ -101,7 +101,15 @@ test("acceptance bundle preparation materializes nested links only from explicit
     outDir: output,
     linkTargetMappings: [{ from: allowed, to: join(source, "store") }],
   });
-  assert.equal(lstatSync(join(output, "app", "node_modules", "package")).isSymbolicLink(), false);
+  assert.equal(lstatSync(join(output, "app", "node_modules", "package")).isSymbolicLink(), true);
   assert.equal(readFileSync(join(output, "app", "node_modules", "package", "index.js"), "utf8"), "self-contained package\n");
   assert.equal(verifyNativeBundle(output).bundleDigest, result.bundleDigest);
+});
+
+test("checksum generation refuses links that escape the bundle", () => {
+  const root = mkdtempSync(join(tmpdir(), "native-link-escape-"));
+  const outside = join(root, "..", "outside-package");
+  mkdirSync(outside, { recursive: true });
+  symlinkSync(outside, join(root, "escape"), process.platform === "win32" ? "junction" : "dir");
+  assert.throws(() => writeNativeBundleChecksums(root), /link.*outside|escape/i);
 });

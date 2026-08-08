@@ -1,0 +1,4 @@
+ARG BASE_IMAGE=archive-native-systemd-acceptance:bookworm
+FROM ${BASE_IMAGE}
+
+COPY . /opt/archive-suite

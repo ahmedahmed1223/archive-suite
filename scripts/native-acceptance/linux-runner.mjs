@@ -60,6 +60,7 @@ export async function runLinuxNativeAcceptance({
   version,
   passwordFactory = () => randomBytes(24).toString("base64url"),
   systemdImage = "archive-native-systemd-acceptance:bookworm",
+  bundleImage = `archive-native-linux-bundle:${bundleDigest.slice(0, 12)}`,
   postgresImage = "archive-suite/postgres:1.0.0-bundletest",
   redisImage = "archive-suite/redis:1.0.0-bundletest",
   progress = () => {},
@@ -83,17 +84,17 @@ export async function runLinuxNativeAcceptance({
     progress("Building the isolated systemd acceptance image.");
     const imageContext = join(repoRoot, "scripts", "native-acceptance");
     requireOk(docker, ["build", "-f", join(imageContext, "Dockerfile.systemd"), "-t", systemdImage, imageContext], "systemd image build");
+    progress("Building the checksum-addressed Native bundle image.");
+    requireOk(docker, ["build", "-f", join(imageContext, "Dockerfile.bundle"), "--build-arg", `BASE_IMAGE=${systemdImage}`, "-t", bundleImage, bundlePath], "Native bundle image build");
     requireOk(docker, ["network", "create", "--label", label, names.network], "network creation");
     requireOk(docker, ["run", "-d", "--name", names.postgres, "--network", names.network, "--label", label, "-e", "POSTGRES_DB=archive", "-e", "POSTGRES_USER=archive", "-e", `POSTGRES_PASSWORD=${dbPassword}`, postgresImage], "PostgreSQL start");
     requireOk(docker, ["run", "-d", "--name", names.redis, "--network", names.network, "--label", label, redisImage, "redis-server", "--appendonly", "no"], "Redis start");
     await waitFor(() => docker(["exec", names.postgres, "pg_isready", "-U", "archive", "-d", "archive"]), "PostgreSQL readiness");
     await waitFor(() => docker(["exec", names.redis, "redis-cli", "ping"]), "Redis readiness");
 
-    requireOk(docker, ["run", "-d", "--name", names.systemd, "--network", names.network, "--label", label, "--privileged", "--cgroupns=host", "--tmpfs", "/run", "--tmpfs", "/run/lock", "--mount", "type=bind,source=/sys/fs/cgroup,target=/sys/fs/cgroup", systemdImage], "systemd container start");
+    requireOk(docker, ["run", "-d", "--name", names.systemd, "--network", names.network, "--label", label, "--privileged", "--cgroupns=host", "--tmpfs", "/run", "--tmpfs", "/run/lock", "--mount", "type=bind,source=/sys/fs/cgroup,target=/sys/fs/cgroup", bundleImage], "systemd container start");
     await waitFor(() => docker(["exec", names.systemd, "systemctl", "show", "--property=Version"]), "systemd readiness");
-    requireOk(docker, ["exec", names.systemd, "mkdir", "-p", "/opt/archive-suite", "/opt/archive-control", "/srv/archive/private", "/srv/archive/public"], "target directory creation");
-    progress("Copying the verified self-contained bundle into the systemd target.");
-    requireOk(docker, ["cp", `${bundlePath}${join("", ".") === "." ? "/." : "\\."}`, `${names.systemd}:/opt/archive-suite`], "bundle copy");
+    requireOk(docker, ["exec", names.systemd, "mkdir", "-p", "/opt/archive-control", "/srv/archive/private", "/srv/archive/public"], "target directory creation");
     requireOk(docker, ["cp", join(repoRoot, "scripts"), `${names.systemd}:/opt/archive-control/scripts`], "Control Center copy");
     requireOk(docker, ["cp", join(repoRoot, "infra"), `${names.systemd}:/opt/archive-control/infra`], "platform contract copy");
     requireOk(docker, ["cp", join(repoRoot, "package.json"), `${names.systemd}:/opt/archive-control/package.json`], "version metadata copy");
@@ -147,11 +148,13 @@ export async function runLinuxNativeAcceptance({
     docker(["stop", "--timeout", "0", names.systemd]);
     docker(["rm", "-f", names.systemd, names.postgres, names.redis]);
     docker(["network", "rm", names.network]);
+    docker(["image", "rm", bundleImage]);
     rmSync(scratch, { recursive: true, force: true });
   }
 
   const resourcesAbsent = [names.systemd, names.postgres, names.redis].every((name) => docker(["inspect", name]).status !== 0)
-    && docker(["network", "inspect", names.network]).status !== 0;
+    && docker(["network", "inspect", names.network]).status !== 0
+    && docker(["image", "inspect", bundleImage]).status !== 0;
   const cleanup = { ok: resourcesAbsent, dockerResourcesAbsent: resourcesAbsent };
   if (failure) throw failure;
   if (!cleanup.ok) throw new Error("Linux Native acceptance could not prove Docker resource cleanup.");
