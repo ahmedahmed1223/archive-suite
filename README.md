@@ -9,10 +9,10 @@
 
 ## Release status
 
-[`v1.0.0`](docs/release-notes/v1.0.0.md) is the current General Availability
+[`v1.1.0`](docs/release-notes/v1.1.0.md) is the current General Availability
 release and is covered by the support window in [docs/versioning.md](docs/versioning.md).
 
-Archive Suite v1.0.0 is generally available. The release notes describe the changes,
+Archive Suite v1.1.0 is generally available. The release notes describe the changes,
 operator guidance, and support policy for this version.
 
 - [Features and usage guide](docs/features-guide.md)

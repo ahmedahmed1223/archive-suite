@@ -11,6 +11,7 @@
 - [النشر عبر Docker](../DEPLOYMENT.ar.md)
 - [التثبيت للتشغيل المباشر على Windows أو Linux](native-installation.ar.md)
 - [التثبيت من حزمة دون اتصال](../infra/offline/README.ar.md)
+- [ملاحظات إصدار v1.1.0](release-notes/v1.1.0.ar.md)
 - [ملاحظات إصدار v1.0.0](release-notes/v1.0.0.ar.md)
 
 ## استخدم مسار

@@ -2,7 +2,8 @@
 
 [العربية](README.ar.md) · [Documentation](../docs/README.md)
 
-This package owns Archive Suite's API behaviour, persistence, authorisation, queues,
+This package is the backend for the canonical Laravel + Next.js architecture.
+It owns Archive Suite's API behaviour, persistence, authorisation, queues,
 realtime services, and audit trail. The supported frontend is `archive-next`;
 the shared public contract is `../docs/api/archive-contract.openapi.json`.
 

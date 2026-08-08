@@ -57,6 +57,16 @@ async function prepareLaravelRuntime() {
   ]);
 }
 
+async function prepareLaravelTestDependencies() {
+  await run("docker", dockerArgs([
+    "composer",
+    "install",
+    "--no-interaction",
+    "--no-progress",
+    "--quiet",
+  ]));
+}
+
 function dockerArgs(command, extra = []) {
   return [
     "run",
@@ -122,9 +132,12 @@ if (!mode || !commands[mode]) {
 const extraDockerArgs = mode === "serve" ? ["-p", `${servePort}:8000`] : [];
 
 prepareLaravelRuntime()
-  .then(() => mode === "test" && rest.length === 0
-    ? runLaravelTestBatches()
-    : run("docker", dockerArgs(commands[mode], extraDockerArgs)))
+  .then(async () => {
+    if (mode === "test") await prepareLaravelTestDependencies();
+    return mode === "test" && rest.length === 0
+      ? runLaravelTestBatches()
+      : run("docker", dockerArgs(commands[mode], extraDockerArgs));
+  })
   .catch((error) => {
   console.error(error.message);
   process.exit(1);

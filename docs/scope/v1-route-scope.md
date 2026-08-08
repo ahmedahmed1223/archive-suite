@@ -96,6 +96,7 @@ Core records/search/files/share/collections/tags surface — the 1.0 contract:
 | GET/POST/PATCH | `/v1/media/{mediaUid}/review-comments*`, `/v1/media/{mediaUid}/review-links`, `/v1/review-comments/{id}` | v1 | — | |
 | GET | `/v1/records/{id}/broadcast-metadata` | **experimental** | `broadcast_metadata` | niche MOS/MXF broadcast-industry integration; already degrades to `configured:false` without env config, but the surface itself is flagged off by default in production per the V1-001 judgement guide |
 | PUT | `/v1/records/{id}/broadcast-metadata` | **experimental** | `broadcast_metadata` | same as above |
+| PATCH | `/v1/account/preferences` | v1 | — | any authenticated role may update only the current account's locale; the change is audited without request contents |
 | GET | `/v1/account/export` | v1 | — | self-service export, not admin-gated |
 | GET/POST/DELETE | `/v1/notifications*` | v1 | — | |
 | GET | `/v1/users/mentionable` | v1 | — | any authenticated role; {id,name} only, not admin's full user directory — V1-721 @-mention picker |

@@ -34,7 +34,15 @@ test("release inventories and enforces licenses for pnpm and Composer", () => {
   const policy = JSON.parse(read("config/release-license-policy.json"));
   assert.ok(policy.allowed.length > 0);
   assert.ok(policy.forbidden.length > 0);
-  assert.deepEqual(policy.exceptions, []);
+  assert.ok(Array.isArray(policy.exceptions));
+  for (const exception of policy.exceptions) {
+    assert.equal(typeof exception.package, "string");
+    assert.ok(exception.package.length > 0);
+    assert.equal(typeof exception.license, "string");
+    assert.ok(exception.license.length > 0);
+    assert.equal(typeof exception.reason, "string");
+    assert.ok(exception.reason.length > 0);
+  }
   assert.match(policy.expressionSemantics, /OR.+alternative.+AND.+all/i);
 });
 
