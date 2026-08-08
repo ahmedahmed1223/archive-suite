@@ -4,9 +4,9 @@
 
 **Goal:** Deliver account-persisted Arabic and English application localization, a language-aware Help center, and a complete role-filtered user guide.
 
-**Architecture:** Laravel stores a nullable `ar|en` account preference and exposes it through the shared user contract. Next.js resolves the request locale, renders through typed feature dictionaries, and reconciles the authenticated account preference. Help reads one authorized locale-specific Markdown file per chapter and renders it with a safe GFM renderer.
+**Architecture:** Laravel stores a nullable `ar|en` account preference and exposes it through the shared user contract. Next.js resolves the request locale, renders through typed feature dictionaries, and reconciles the authenticated account preference. Help reads one authorized locale-specific HTML fragment per chapter, sanitizes it through an explicit allow-list, and renders only the sanitized result.
 
-**Tech Stack:** Laravel 13, PHP 8.5, OpenAPI 3.1, Next.js 16 App Router, React 19, TypeScript 6, Vitest, PHPUnit, Playwright, `react-markdown`, and `remark-gfm`.
+**Tech Stack:** Laravel 13, PHP 8.5, OpenAPI 3.1, Next.js 16 App Router, React 19, TypeScript 6, Vitest, PHPUnit, Playwright, and `sanitize-html`.
 
 ## Global Constraints
 
@@ -240,7 +240,7 @@ git commit -m "feat(settings): persist interface language"
 
 Run: `pnpm --filter @archive/next exec vitest run lib/in-app-guide.test.ts app/api/guide/route.test.ts`
 
-- [ ] **Step 3: Change the manifest to `{ sourceStem, titles: { ar, en } }`, filter entries by role, then read `${stem}.${locale === "ar" ? "ar.md" : "md"}`**
+- [ ] **Step 3: Change the manifest to `{ sourceStem, titles: { ar, en } }`, filter entries by role, then read `${stem}${locale === "ar" ? ".ar" : ""}.html`**
 
 - [ ] **Step 4: Make `/api/guide` use account locale, then validated query locale only for a null account locale**
 
@@ -251,42 +251,43 @@ git add archive-next/lib/guide-content.ts archive-next/lib/in-app-guide.ts archi
 git commit -m "feat(help): localize authorized guide payloads"
 ```
 
-### Task 6: Replace the Markdown parser with a safe GFM renderer
+### Task 6: Replace the Markdown parser with a sanitized HTML renderer
 
 **Files:**
 - Modify: `archive-next/package.json`
 - Modify: `pnpm-lock.yaml`
-- Create: `archive-next/components/GuideMarkdown.tsx`
+- Create: `archive-next/components/GuideHtml.tsx`
+- Create: `archive-next/lib/guide-html.ts`
 - Modify: `archive-next/components/GuideBrowser.tsx`
-- Test: `archive-next/components/GuideMarkdown.test.tsx`
+- Test: `archive-next/components/GuideHtml.test.tsx`
 - Modify: `archive-next/components/GuideBrowser.test.tsx`
 
 **Interfaces:**
-- Produces: `<GuideMarkdown body locale />` with no raw HTML.
+- Produces: `<GuideHtml html locale />` with a strict sanitized allow-list.
 
-- [ ] **Step 1: Add failing tests for headings, code, tables, safe links, blocked `javascript:` links, and ignored raw HTML**
+- [ ] **Step 1: Add failing tests for headings, code, tables, safe links, blocked `javascript:` links, scripts, images, and inline event handlers**
 
-- [ ] **Step 2: Install `react-markdown` and `remark-gfm`**
+- [ ] **Step 2: Install `sanitize-html` and its TypeScript declarations**
 
-Run: `pnpm install --filter @archive/next react-markdown remark-gfm`
+Run: `pnpm --filter @archive/next add sanitize-html && pnpm --filter @archive/next add -D @types/sanitize-html`
 
-- [ ] **Step 3: Implement `GuideMarkdown` with explicit component overrides and no `rehype-raw`**
+- [ ] **Step 3: Implement idempotent server/client HTML sanitization with explicit tag, attribute, and URL allow-lists**
 
 Relative links must begin with `/`; external links must use `https:` and add `rel="noreferrer"`.
 
-- [ ] **Step 4: Replace `markdownToSections`, localize browser labels, and focus the selected H2**
+- [ ] **Step 4: Replace `markdownToSections`, localize browser labels, and focus the selected chapter heading**
 
 - [ ] **Step 5: Run tests and commit**
 
 ```bash
-git add archive-next/package.json pnpm-lock.yaml archive-next/components/GuideMarkdown.tsx archive-next/components/GuideMarkdown.test.tsx archive-next/components/GuideBrowser.tsx archive-next/components/GuideBrowser.test.tsx
-git commit -m "feat(help): render localized guide markdown safely"
+git add archive-next/package.json pnpm-lock.yaml archive-next/lib/guide-html.ts archive-next/components/GuideHtml.tsx archive-next/components/GuideHtml.test.tsx archive-next/components/GuideBrowser.tsx archive-next/components/GuideBrowser.test.tsx
+git commit -m "feat(help): render localized guide HTML safely"
 ```
 
 ### Task 7: Publish the complete bilingual role-aware user guide
 
 **Files:**
-- Rename Arabic files under: `archive-next/content/guide/*.md` to `*.ar.md`
+- Replace guide sources with English `.html` and Arabic `.ar.html` pairs under `archive-next/content/guide/`
 - Create English and Arabic chapter pairs under: `archive-next/content/guide/`
 - Modify: `archive-next/app/help/page.tsx`
 - Modify: `archive-next/lib/guide-content.ts`
@@ -296,7 +297,7 @@ git commit -m "feat(help): render localized guide markdown safely"
 **Interfaces:**
 - Produces: eleven chapter families defined in the approved spec.
 
-- [ ] **Step 1: Add manifest tests requiring every source stem to have `.md` and `.ar.md`, a routable destination, and non-empty outcome/procedure/verification sections**
+- [ ] **Step 1: Add manifest tests requiring every source stem to have `.html` and `.ar.html`, a routable destination, and non-empty outcome/procedure/verification sections**
 
 - [ ] **Step 2: Confirm RED**
 
@@ -304,7 +305,7 @@ Run: `pnpm --filter @archive/next exec vitest run lib/in-app-guide.test.ts`
 
 - [ ] **Step 3: Author natural Arabic and English pairs for getting started, search, files, rights, uploads, collaboration, media, users, integrations, operations, and current release changes**
 
-Every pair uses `## Outcome`, `## Prerequisites`, `## Procedure`, `## Verify`, and where applicable `## Safety`; Arabic uses equivalent natural headings.
+Every pair uses semantic sections for Outcome, Prerequisites, Procedure, Verify, and where applicable Safety; Arabic uses equivalent natural headings.
 
 - [ ] **Step 4: Rebuild `/help` around localized onboarding, guide search, role label, and support links; remove raw route and command prose from the checklist**
 

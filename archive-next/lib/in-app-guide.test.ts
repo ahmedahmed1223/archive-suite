@@ -34,8 +34,8 @@ describe("in-app guide", () => {
     expect(viewerPayload.map((chapter) => chapter.id)).toEqual(["viewer-search", "whats-new"]);
     expect(viewerPayload.map((chapter) => chapter.title)).toEqual(["Search and access records", "What’s new"]);
     expect(reader.mock.calls.map(([path]) => path.replaceAll("\\", "/").split("/").at(-1))).toEqual([
-      "viewer-search.md",
-      "whats-new.md",
+      "viewer-search.html",
+      "whats-new.html",
     ]);
   });
 
@@ -45,16 +45,17 @@ describe("in-app guide", () => {
     getGuideChapters("viewer", "ar", reader);
 
     expect(reader.mock.calls.map(([path]) => path.replaceAll("\\", "/").split("/").at(-1))).toEqual([
-      "viewer-search.ar.md",
-      "whats-new.ar.md",
+      "viewer-search.ar.html",
+      "whats-new.ar.html",
     ]);
   });
 
-  it("publishes the concise changelog summary and user actions in the whats-new chapter", () => {
+  it("publishes current supported capabilities without historical stage language", () => {
     const whatsNew = getGuideChapters("viewer", "ar").find((chapter) => chapter.id === "whats-new");
 
-    expect(whatsNew?.body).toContain("ملخص تحديثات 31 يوليو");
-    expect(whatsNew?.body).toContain("ما الذي ينبغي عليك فعله الآن؟");
+    expect(whatsNew?.body).toContain("حزم Native مدعومة بالكامل");
+    expect(whatsNew?.body).toContain("اختر لغة الواجهة");
+    expect(whatsNew?.body).not.toContain("31 يوليو");
   });
 
   it("searches Arabic chapter titles and Markdown body without exposing restricted chapters", () => {

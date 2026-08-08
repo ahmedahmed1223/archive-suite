@@ -173,8 +173,8 @@ or historical delivery phases.
 Guide files follow the public documentation naming convention:
 
 ```text
-content/guide/getting-started.md       # English
-content/guide/getting-started.ar.md    # Arabic
+content/guide/getting-started.html       # English
+content/guide/getting-started.ar.html    # Arabic
 ```
 
 The manifest stores a source stem rather than one filename. `getGuideChapters`
@@ -189,16 +189,17 @@ account locale wins. The response contains one language and uses `no-store`.
 Search uses locale-aware normalization. Arabic normalization handles common
 letter variants and diacritics; English search uses case-insensitive matching.
 
-## Markdown rendering
+## Safe HTML rendering
 
-Replace the ad hoc line parser with a safe renderer that supports:
+Store guide chapters as semantic HTML fragments and sanitize them before they
+enter the API response and again before client rendering. The allow-list supports:
 
 - H2 and H3 headings;
 - ordered and unordered lists;
 - links restricted to safe application-relative or HTTPS targets;
 - inline code and fenced code blocks;
 - emphasis, tables, and callout blocks;
-- no raw HTML execution.
+- no scripts, embedded media, inline event handlers, or unsafe protocols.
 
 Heading anchors are stable and locale-specific. Keyboard focus moves to the
 selected chapter heading, and search result counts are announced in the active
@@ -242,7 +243,7 @@ Required automated coverage:
 - Dictionary key parity and static visible-string coverage.
 - Locale-aware date, number, and size formatting tests.
 - Guide manifest pair, role isolation, locale isolation, search, and broken-link tests.
-- Markdown safety and accessibility tests.
+- HTML sanitization and accessibility tests.
 - Playwright journeys for visitor detection, account persistence across login,
   Settings switching, RTL/LTR navigation, and role-specific Help content.
 - Visual regression snapshots for representative Arabic and English pages at

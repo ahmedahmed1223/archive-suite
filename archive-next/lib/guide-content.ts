@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { GuideChapter, GuideRole } from "@/lib/in-app-guide";
 import type { AppLocale } from "@/lib/i18n/types";
+import { sanitizeGuideHtml } from "@/lib/guide-html";
 
 type GuideManifestEntry = Omit<GuideChapter, "body" | "title"> & {
   sourceStem: string;
@@ -27,23 +28,9 @@ export function getGuideChapters(
   return authorizedEntries.map(({ sourceStem, titles, ...chapter }) => ({
     ...chapter,
     title: titles[locale],
-    body: readChapter(
-      join(process.cwd(), "content", "guide", `${sourceStem}${locale === "ar" ? ".ar" : ""}.md`),
+    body: sanitizeGuideHtml(readChapter(
+      join(process.cwd(), "content", "guide", `${sourceStem}${locale === "ar" ? ".ar" : ""}.html`),
       "utf8",
-    ),
+    )),
   }));
-}
-
-export function getGuideRoles(locale: AppLocale): readonly { value: GuideRole; label: string }[] {
-  return locale === "ar"
-    ? [
-        { value: "viewer", label: "المستعرض" },
-        { value: "editor", label: "المحرر" },
-        { value: "admin", label: "المدير" },
-      ]
-    : [
-        { value: "viewer", label: "Viewer" },
-        { value: "editor", label: "Editor" },
-        { value: "admin", label: "Administrator" },
-      ];
 }

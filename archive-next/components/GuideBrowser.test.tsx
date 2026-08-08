@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import GuideBrowser from "@/components/GuideBrowser";
 import type { GuideChapter } from "@/lib/in-app-guide";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+import type { AppLocale } from "@/lib/i18n/types";
 
 const mockUseAuthSession = vi.fn();
 const mockUseSearchParams = vi.fn();
@@ -47,6 +49,31 @@ function setChapter(chapter: string | null) {
   mockUseSearchParams.mockReturnValue(new URLSearchParams(chapter ? { chapter } : undefined));
 }
 
+function renderGuide(chaptersToRender: GuideChapter[], locale: AppLocale = "ar") {
+  return render(
+    <LocaleProvider initialLocale={locale} hasLocaleCookie>
+      <GuideBrowser chapters={chaptersToRender} />
+    </LocaleProvider>,
+  );
+}
+
+beforeEach(() => {
+  const values = new Map<string, string>();
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: {
+      get length() {
+        return values.size;
+      },
+      clear: () => values.clear(),
+      getItem: (key: string) => values.get(key) ?? null,
+      key: (index: number) => [...values.keys()][index] ?? null,
+      removeItem: (key: string) => values.delete(key),
+      setItem: (key: string, value: string) => values.set(key, value),
+    } satisfies Storage,
+  });
+});
+
 afterEach(() => {
   cleanup();
   mockUseAuthSession.mockReset();
@@ -57,7 +84,7 @@ describe("GuideBrowser", () => {
   test("filters the local guide by search query without showing chapters outside the viewer role", () => {
     setRole("viewer");
     setChapter(null);
-    render(<GuideBrowser chapters={chapters} />);
+    renderGuide(chapters);
 
     expect(screen.getByRole("link", { name: "البحث في السجلات" })).toBeTruthy();
     expect(screen.queryByText("رفع الملفات")).toBeNull();
@@ -66,14 +93,14 @@ describe("GuideBrowser", () => {
     fireEvent.change(screen.getByLabelText("ابحث في الدليل"), { target: { value: "صلاحيات" } });
 
     expect(screen.getByText("لا توجد نتيجة مطابقة في الدليل المتاح لدورك.")).toBeTruthy();
-    expect(screen.getByRole("status")).toHaveTextContent("0 نتائج مطابقة في الدليل.");
+    expect(screen.getByRole("status")).toHaveTextContent("لا توجد نتائج مطابقة في الدليل.");
     expect(screen.queryByText("إدارة المستخدمين")).toBeNull();
   });
 
   test("uses the requested allowed chapter and preserves its destination link", () => {
     setRole("editor");
     setChapter("editor-upload");
-    render(<GuideBrowser chapters={chapters} />);
+    renderGuide(chapters);
 
     expect(screen.getByRole("link", { name: "رفع الملفات" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "افتح الصفحة المرتبطة" })).toHaveAttribute("href", "/uploads");
@@ -83,12 +110,15 @@ describe("GuideBrowser", () => {
   test("renders Markdown instruction lists with semantic list elements", () => {
     setRole("viewer");
     setChapter("viewer-search");
-    render(<GuideBrowser chapters={[{
+    renderGuide([{
       ...chapters[0],
-      body: "## خطوات\n1. افتح البحث\n2. راجع النتائج\n\n- صفِّ النتائج\n- احفظ البحث",
-    }]} />);
+      body: "<h2>خطوات</h2><ol><li>افتح البحث</li><li>راجع النتائج</li></ol><ul><li>صفِّ النتائج</li><li>احفظ البحث</li></ul>",
+    }]);
 
-    const instructionLists = screen.getAllByRole("list", { name: "خطوات" });
+    expect(screen.getByRole("heading", { name: "خطوات", level: 3 })).toBeInTheDocument();
+    const selectedArticle = screen.getByRole("heading", { name: "البحث في السجلات", level: 2 }).closest("article");
+    expect(selectedArticle).not.toBeNull();
+    const instructionLists = within(selectedArticle!).getAllByRole("list");
     expect(instructionLists[0]).toHaveTextContent("افتح البحث");
     expect(instructionLists.flatMap((list) => Array.from(list.querySelectorAll("li")))).toHaveLength(4);
   });
@@ -101,13 +131,30 @@ describe("GuideBrowser", () => {
       chapters: [chapters[0], chapters[1]],
     }))));
 
-    render(<GuideBrowser chapters={[]} />);
+    renderGuide([]);
 
     expect(await screen.findByRole("heading", { name: "رفع الملفات" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "افتح الصفحة المرتبطة" })).toHaveAttribute("href", "/uploads");
-    expect(fetch).toHaveBeenCalledWith("/api/guide", expect.objectContaining({
+    expect(fetch).toHaveBeenCalledWith("/api/guide?locale=ar", expect.objectContaining({
       cache: "no-store",
       headers: { Authorization: "Bearer editor-token" },
     }));
+  });
+
+  test("renders guide controls and empty results in natural English", () => {
+    setRole("viewer");
+    setChapter(null);
+    renderGuide([{
+      id: "viewer-search",
+      title: "Search records",
+      audience: ["viewer", "editor", "admin"],
+      body: "Use filters to narrow the results.",
+      href: "/search",
+    }], "en");
+
+    expect(screen.getByRole("heading", { name: "Viewer guide" })).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search the guide" }), { target: { value: "permissions" } });
+    expect(screen.getByText("No matching result is available in your guide.")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("No matching results in the guide.");
   });
 });

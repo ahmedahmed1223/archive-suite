@@ -8,6 +8,20 @@ export type GuideChapter = {
   href: string;
 };
 
+export function getGuideRoles(locale: AppLocale): readonly { value: GuideRole; label: string }[] {
+  return locale === "ar"
+    ? [
+        { value: "viewer", label: "المستعرض" },
+        { value: "editor", label: "المحرر" },
+        { value: "admin", label: "المدير" },
+      ]
+    : [
+        { value: "viewer", label: "Viewer" },
+        { value: "editor", label: "Editor" },
+        { value: "admin", label: "Administrator" },
+      ];
+}
+
 export function filterGuideChapters<T extends GuideChapter>(
   chapters: readonly T[],
   role: GuideRole,
@@ -17,7 +31,7 @@ export function filterGuideChapters<T extends GuideChapter>(
   const normalizedQuery = query.trim().toLocaleLowerCase(locale);
   return chapters.filter((chapter) =>
     chapter.audience.includes(role) &&
-    (!normalizedQuery || `${chapter.title} ${chapter.body}`.toLocaleLowerCase(locale).includes(normalizedQuery)),
+    (!normalizedQuery || `${chapter.title} ${chapter.body.replace(/<[^>]*>/g, " ")}`.toLocaleLowerCase(locale).includes(normalizedQuery)),
   );
 }
 
