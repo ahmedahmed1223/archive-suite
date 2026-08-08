@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0",
+  "platform": "linux-native",
+  "runId": "lnx0808g",
+  "commit": "de23251b05ff1131b3524f216c8cea0570ceb4e3",
+  "version": "1.0.0",
+  "bundleDigest": "66dd0414550837d33da2008ab37486d86e4333a9ea70856d2cfa0e2206f77520",
+  "environment": {
+    "isolation": "docker",
+    "init": "systemd-pid1",
+    "cgroupNamespace": "host",
+    "privileged": true
+  },
+  "scenarios": [
+    {
+      "name": "install",
+      "ok": true
+    },
+    {
+      "name": "systemd-pid1",
+      "ok": true
+    },
+    {
+      "name": "six-services-active",
+      "ok": true
+    },
+    {
+      "name": "http-health",
+      "ok": true
+    },
+    {
+      "name": "uninstall",
+      "ok": true
+    }
+  ],
+  "cleanup": {
+    "ok": true,
+    "dockerResourcesAbsent": true
+  },
+  "createdAt": "2026-08-08T15:05:56.268Z"
+}
