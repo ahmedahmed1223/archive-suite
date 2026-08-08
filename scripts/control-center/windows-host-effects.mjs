@@ -21,7 +21,7 @@ function defaultWriteFile(path, content) {
   writeFileSync(path, content, "utf8");
 }
 
-export function createWindowsHostEffects({ installRoot, storagePath, services = WINDOWS_SERVICES, run = defaultRun, writeFile = defaultWriteFile, readLogTail } = {}) {
+export function createWindowsHostEffects({ installRoot, storagePath, services = WINDOWS_SERVICES, run = defaultRun, writeFile = defaultWriteFile, ensureDirectory = (path) => mkdirSync(path, { recursive: true }), readLogTail } = {}) {
   if (typeof installRoot !== "string" || !installRoot.trim()) throw new Error("Windows host effects require an install root.");
   const servicesDir = join(installRoot, "services");
   const writablePaths = [...new Set([
@@ -55,10 +55,13 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
 
   // Install-root ACLs for the per-service virtual accounts: read/execute on
   // the tree, modify only on storage and logs.
-  const applyAcls = () => firstFailure(services.flatMap((service) => [
-    run(["icacls", installRoot, "/grant", `NT SERVICE\\${service.id}:(OI)(CI)RX`]),
-    ...writablePaths.map((path) => run(["icacls", path, "/grant", `NT SERVICE\\${service.id}:(OI)(CI)M`])),
-  ]));
+  const applyAcls = () => {
+    writablePaths.forEach((path) => ensureDirectory(path));
+    return firstFailure(services.flatMap((service) => [
+      run(["icacls", installRoot, "/grant", `NT SERVICE\\${service.id}:(OI)(CI)RX`]),
+      ...writablePaths.map((path) => run(["icacls", path, "/grant", `NT SERVICE\\${service.id}:(OI)(CI)M`])),
+    ]));
+  };
 
   // Only archive-http accepts inbound traffic; every other service is
   // loopback-only by construction.

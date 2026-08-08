@@ -15,6 +15,7 @@ const recorder = () => {
     files,
     run: (args) => { commands.push(args); return { status: 0 }; },
     writeFile: (path, content) => files.push({ path, content }),
+    ensureDirectory: () => {},
   };
 };
 
@@ -30,7 +31,7 @@ const okProbes = { postgres: async () => ({ ok: true, code: "POSTGRES_READY" }),
 
 test("Windows host-effects issue the real winsw/icacls commands and write a WinSW definition per service", () => {
   const rec = recorder();
-  const effects = createWindowsHostEffects({ installRoot: "C:\\App", run: rec.run, writeFile: rec.writeFile });
+  const effects = createWindowsHostEffects({ installRoot: "C:\\App", run: rec.run, writeFile: rec.writeFile, ensureDirectory: rec.ensureDirectory });
   effects.serviceControl.install({ id: "archive-next" });
   effects.applyAcls();
   effects.applyFirewallRules();
@@ -62,6 +63,7 @@ test("a wired Native install runs the full step sequence through real host comma
     installRoot: "C:\\App",
     run: rec.run,
     writeFile: rec.writeFile,
+    ensureDirectory: rec.ensureDirectory,
     health: async () => ({ status: 0 }),
     manifestStore: passingStore(steps),
     manifestRequest: { path: "m.json", input: {} },

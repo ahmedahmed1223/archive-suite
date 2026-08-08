@@ -53,7 +53,7 @@ test("serviceControl start/stop/restart/remove/query call the right WinSW verb",
 test("applyAcls grants read/execute on the tree and modify on every runtime and external storage path", () => {
   const { run, calls } = fakeRun();
   const services = [{ id: "svc-a" }, { id: "svc-b" }];
-  const effects = createWindowsHostEffects({ installRoot: INSTALL_ROOT, storagePath: "D:\\ArchiveData", run, writeFile: () => {}, services });
+  const effects = createWindowsHostEffects({ installRoot: INSTALL_ROOT, storagePath: "D:\\ArchiveData", run, writeFile: () => {}, ensureDirectory: () => {}, services });
   const result = effects.applyAcls();
   assert.equal(result.status, 0);
   assert.equal(calls.length, 12);
@@ -65,11 +65,34 @@ test("applyAcls grants read/execute on the tree and modify on every runtime and 
   assert.deepEqual(calls[5], ["icacls", "D:\\ArchiveData", "/grant", "NT SERVICE\\svc-a:(OI)(CI)M"]);
 });
 
+test("applyAcls creates every writable directory before granting modify access", () => {
+  const { run, calls } = fakeRun();
+  const directories = [];
+  const effects = createWindowsHostEffects({
+    installRoot: INSTALL_ROOT,
+    storagePath: "D:\\ArchiveData",
+    run,
+    writeFile: () => {},
+    ensureDirectory: (path) => directories.push(path),
+    services: [{ id: "svc-a" }],
+  });
+
+  effects.applyAcls();
+  assert.deepEqual(directories, [
+    "C:\\Program Files\\ArchiveSuite\\storage",
+    "C:\\Program Files\\ArchiveSuite\\logs",
+    "C:\\Program Files\\ArchiveSuite\\app\\laravel\\storage",
+    "C:\\Program Files\\ArchiveSuite\\app\\laravel\\bootstrap\\cache",
+    "D:\\ArchiveData",
+  ]);
+  assert.equal(calls.length, 6);
+});
+
 test("applyAcls surfaces the first failing icacls call, not the last", () => {
   let call = 0;
   const run = () => { call += 1; return call === 2 ? { status: 5, stdout: "", stderr: "denied" } : { status: 0 }; };
   const services = [{ id: "svc-a" }];
-  const effects = createWindowsHostEffects({ installRoot: INSTALL_ROOT, run, writeFile: () => {}, services });
+  const effects = createWindowsHostEffects({ installRoot: INSTALL_ROOT, run, writeFile: () => {}, ensureDirectory: () => {}, services });
   const result = effects.applyAcls();
   assert.equal(result.status, 5);
 });
