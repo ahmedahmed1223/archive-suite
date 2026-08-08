@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -41,6 +42,8 @@ class GenerateBenchmarkDatasetCommand extends Command
 
     /** Fixed namespace for deterministic attachment UUIDs (Uuid::uuid5). */
     private const UUID_NAMESPACE = '6f9b1e2a-2f0a-4d8a-9d1b-7e0c7c5e6a10';
+
+    private const TIMESTAMP_ORIGIN = '2026-01-01T00:00:00+00:00';
 
     protected $signature = 'archive:generate-benchmark-dataset
         {--seed=42 : Deterministic seed; same seed+counts always reproduces the same dataset}
@@ -98,7 +101,7 @@ class GenerateBenchmarkDatasetCommand extends Command
         $faker = \Faker\Factory::create('ar_SA');
         $faker->seed($seed);
 
-        $now = now();
+        $timestampOrigin = CarbonImmutable::parse(self::TIMESTAMP_ORIGIN);
         $uids = [];
         $batch = [];
 
@@ -109,7 +112,7 @@ class GenerateBenchmarkDatasetCommand extends Command
             $type = self::TYPES[$index % count(self::TYPES)];
             $section = self::SECTIONS[$index % count(self::SECTIONS)];
             $classification = self::CLASSIFICATIONS[$index % count(self::CLASSIFICATIONS)];
-            $created = $now->copy()->subMinutes($index);
+            $created = $timestampOrigin->subMinutes($index);
 
             $data = [
                 'id' => $uid,
@@ -166,12 +169,14 @@ class GenerateBenchmarkDatasetCommand extends Command
         $sizes = $this->distributeSizes($seed, $count, $totalSize);
         $storage = Storage::disk($disk);
         $recordCount = count($recordUids);
+        $timestampOrigin = CarbonImmutable::parse(self::TIMESTAMP_ORIGIN);
         $batch = [];
         $bytesWritten = 0;
 
         foreach ($sizes as $index => $size) {
             $recordUid = $recordUids[$index % $recordCount];
             $path = self::STORE.'/'.$seed.'/file-'.sprintf('%06d', $index).'.bin';
+            $created = $timestampOrigin->subSeconds($index);
 
             $checksum = $this->writeDeterministicFile($storage, $path, $seed, $index, $size);
             $bytesWritten += $size;
@@ -189,8 +194,8 @@ class GenerateBenchmarkDatasetCommand extends Command
                 'is_primary' => intdiv($index, $recordCount) === 0,
                 'processing_status' => 'ready',
                 'created_by' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
+                'created_at' => $created,
+                'updated_at' => $created,
             ];
 
             if (count($batch) >= $chunkSize) {

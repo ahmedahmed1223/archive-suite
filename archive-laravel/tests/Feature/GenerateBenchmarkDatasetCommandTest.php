@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Console\Commands\GenerateBenchmarkDatasetCommand;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -38,31 +39,37 @@ class GenerateBenchmarkDatasetCommandTest extends TestCase
 
     public function test_same_seed_is_deterministic(): void
     {
-        $this->artisan('archive:generate-benchmark-dataset', [
-            '--seed' => 11,
-            '--records' => 3,
-            '--files' => 2,
-            '--files-total-size' => 200,
-            '--disk' => 'local',
-        ])->assertExitCode(0);
+        Carbon::setTestNow('2026-08-08T12:00:00Z');
+        try {
+            $this->artisan('archive:generate-benchmark-dataset', [
+                '--seed' => 11,
+                '--records' => 3,
+                '--files' => 2,
+                '--files-total-size' => 200,
+                '--disk' => 'local',
+            ])->assertExitCode(0);
 
-        $firstRun = DB::table('storage_rows')->where('store', GenerateBenchmarkDatasetCommand::STORE)
-            ->orderBy('uid')->pluck('data')->all();
-        $firstChecksums = DB::table('record_attachments')->where('record_store', GenerateBenchmarkDatasetCommand::STORE)
-            ->orderBy('path')->pluck('checksum_sha256')->all();
+            $firstRun = DB::table('storage_rows')->where('store', GenerateBenchmarkDatasetCommand::STORE)
+                ->orderBy('uid')->pluck('data')->all();
+            $firstChecksums = DB::table('record_attachments')->where('record_store', GenerateBenchmarkDatasetCommand::STORE)
+                ->orderBy('path')->pluck('checksum_sha256')->all();
 
-        $this->artisan('archive:generate-benchmark-dataset', [
-            '--seed' => 11,
-            '--records' => 3,
-            '--files' => 2,
-            '--files-total-size' => 200,
-            '--disk' => 'local',
-        ])->assertExitCode(0);
+            Carbon::setTestNow('2026-08-09T12:00:00Z');
+            $this->artisan('archive:generate-benchmark-dataset', [
+                '--seed' => 11,
+                '--records' => 3,
+                '--files' => 2,
+                '--files-total-size' => 200,
+                '--disk' => 'local',
+            ])->assertExitCode(0);
 
-        $secondRun = DB::table('storage_rows')->where('store', GenerateBenchmarkDatasetCommand::STORE)
-            ->orderBy('uid')->pluck('data')->all();
-        $secondChecksums = DB::table('record_attachments')->where('record_store', GenerateBenchmarkDatasetCommand::STORE)
-            ->orderBy('path')->pluck('checksum_sha256')->all();
+            $secondRun = DB::table('storage_rows')->where('store', GenerateBenchmarkDatasetCommand::STORE)
+                ->orderBy('uid')->pluck('data')->all();
+            $secondChecksums = DB::table('record_attachments')->where('record_store', GenerateBenchmarkDatasetCommand::STORE)
+                ->orderBy('path')->pluck('checksum_sha256')->all();
+        } finally {
+            Carbon::setTestNow();
+        }
 
         $this->assertSame($firstRun, $secondRun);
         $this->assertSame($firstChecksums, $secondChecksums);
