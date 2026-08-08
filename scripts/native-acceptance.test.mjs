@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { verifyNativeBundle } from "./native-acceptance.mjs";
+import { prepareNativeAcceptanceBundle, verifyNativeBundle } from "./native-acceptance.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -46,4 +46,32 @@ test("bundle verifier rejects traversal and duplicate inventory entries", () => 
   const duplicate = bundleFixture();
   writeFileSync(join(duplicate, "SHA256SUMS"), `${sha256("app\n")}  app.txt\n${sha256("app\n")}  app.txt\n`);
   assert.throws(() => verifyNativeBundle(duplicate), /duplicate/i);
+});
+
+test("acceptance bundle preparation dereferences existing links, overlays current files, and rewrites checksums", () => {
+  const root = mkdtempSync(join(tmpdir(), "native-prepare-"));
+  const source = join(root, "source");
+  const target = join(source, "store", "package");
+  const link = join(source, "app", "next", "node_modules", "package");
+  const overlay = join(root, "filesystems.php");
+  const output = join(root, "prepared");
+  mkdirSync(target, { recursive: true });
+  mkdirSync(join(source, "app", "next", "node_modules"), { recursive: true });
+  writeFileSync(join(target, "index.js"), "self-contained\n");
+  symlinkSync(target, link, process.platform === "win32" ? "junction" : "dir");
+  writeFileSync(overlay, "<?php return [];\n");
+
+  const result = prepareNativeAcceptanceBundle({
+    sourceBundle: source,
+    outDir: output,
+    overlays: [{ source: overlay, relativePath: "app/laravel/config/filesystems.php" }],
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(lstatSync(join(output, "app", "next", "node_modules", "package")).isSymbolicLink(), false);
+  assert.equal(readFileSync(join(output, "app", "next", "node_modules", "package", "index.js"), "utf8"), "self-contained\n");
+  assert.equal(readFileSync(join(output, "app", "laravel", "config", "filesystems.php"), "utf8"), "<?php return [];\n");
+  assert.equal(existsSync(join(output, "SHA256SUMS")), true);
+  assert.equal(verifyNativeBundle(output).bundleDigest, result.bundleDigest);
+  assert.throws(() => prepareNativeAcceptanceBundle({ sourceBundle: source, outDir: output }), /already exists/i);
 });

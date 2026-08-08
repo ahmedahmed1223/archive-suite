@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const CHECKSUM_LINE = /^([a-f0-9]{64})  (.+)$/i;
@@ -24,6 +24,35 @@ function safeInventoryPath(raw) {
     throw new Error(`Invalid checksum inventory path: ${raw}`);
   }
   return normalized;
+}
+
+export function writeNativeBundleChecksums(bundlePath) {
+  const root = resolve(bundlePath);
+  const inventory = bundleFiles(root)
+    .sort()
+    .map((path) => `${sha256File(join(root, ...path.split("/")))}  ${path}`);
+  writeFileSync(join(root, "SHA256SUMS"), `${inventory.join("\n")}\n`, { mode: 0o600 });
+  return inventory.length;
+}
+
+export function prepareNativeAcceptanceBundle({ sourceBundle, outDir, overlays = [] }) {
+  const sourceRoot = resolve(sourceBundle);
+  const outputRoot = resolve(outDir);
+  if (!existsSync(sourceRoot)) throw new Error(`Native source bundle does not exist: ${sourceRoot}`);
+  if (existsSync(outputRoot)) throw new Error(`Native acceptance output already exists: ${outputRoot}`);
+
+  cpSync(sourceRoot, outputRoot, { recursive: true, dereference: true });
+  for (const overlay of overlays) {
+    const relativePath = safeInventoryPath(overlay.relativePath);
+    const sourcePath = resolve(overlay.source);
+    if (!existsSync(sourcePath)) throw new Error(`Native acceptance overlay does not exist: ${sourcePath}`);
+    const destination = join(outputRoot, ...relativePath.split("/"));
+    mkdirSync(dirname(destination), { recursive: true });
+    cpSync(sourcePath, destination, { recursive: true, dereference: true, force: true });
+  }
+
+  writeNativeBundleChecksums(outputRoot);
+  return { ok: true, outputRoot, ...verifyNativeBundle(outputRoot) };
 }
 
 export function verifyNativeBundle(bundlePath) {
