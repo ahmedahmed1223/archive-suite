@@ -29,6 +29,6 @@ describe("RecordFieldRequestsPanel", () => {
       message: "تأكيد التاريخ من المصدر.",
       assignee: "فريق التوثيق"
     }));
-    expect(screen.getByText("تم إسناد طلب الاستكمال.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("تم إسناد طلب الاستكمال.")).toBeInTheDocument());
   });
 });
