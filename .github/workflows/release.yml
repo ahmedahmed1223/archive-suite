@@ -400,12 +400,24 @@ jobs:
           offline_bundle="release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}.tar.gz"
           offline_asset="$(basename "${offline_bundle}")"
           evidence_asset="v1-206-rehearsal-evidence.json"
-          cp "${offline_bundle}" "${offline_asset}"
+          split -d -a 2 -b 1900M "${offline_bundle}" "${offline_asset}.part-"
+          mapfile -t offline_parts < <(find . -maxdepth 1 -type f -name "${offline_asset}.part-*" -print | sort)
+          sha256sum "${offline_bundle}" | sed "s#${offline_bundle}#${offline_asset}#" > OFFLINE-BUNDLE-SHA256
+          printf '%s\n' \
+            'حزمة Archive Suite غير المتصلة مقسمة لتوافق حد ملفات GitHub.' \
+            "Linux/macOS: cat ${offline_asset}.part-* > ${offline_asset}" \
+            "Windows CMD: copy /b ${offline_asset}.part-* ${offline_asset}" \
+            'بعد التجميع تحقق من الملف: sha256sum --check OFFLINE-BUNDLE-SHA256' \
+            > OFFLINE-BUNDLE-README.txt
           cp "release-offline/${evidence_asset}" "${evidence_asset}"
           mapfile -t native_assets < <(find native-release-assets -type f -print | sort)
-          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_asset}" "${evidence_asset}" "${native_assets[@]}")
+          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json OFFLINE-BUNDLE-README.txt OFFLINE-BUNDLE-SHA256 "${offline_parts[@]}" "${evidence_asset}" "${native_assets[@]}")
           sha256sum "${artifacts[@]}" > SHA256SUMS
           sha256sum --check SHA256SUMS
           flags=(--generate-notes --title "${GITHUB_REF_NAME}")
           [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]] && flags+=(--prerelease)
-          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" "${artifacts[@]}" SHA256SUMS
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" "${artifacts[@]}" SHA256SUMS --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" "${flags[@]}" "${artifacts[@]}" SHA256SUMS
+          fi

@@ -209,9 +209,10 @@ test("release builds bundle after signature verification and attaches it with to
   assert.match(release, /NEXT_IMAGE: "\$\{\{ env\.NEXT_IMAGE \}\}@/);
   assert.match(release, /SHA256SUMS/);
   assert.match(release, /basename[^\n]+offline_bundle/);
-  assert.match(release, /artifacts=\([^\n]+"\$\{offline_asset\}"/);
-  assert.match(release, /gh release create[^\n]+"\$\{artifacts\[@\]\}" SHA256SUMS/);
-  assert.doesNotMatch(release, /sha256sum[^\n]+offline_bundle/);
+  assert.match(release, /split -d -a 2 -b 1900M "\$\{offline_bundle\}"/);
+  assert.match(release, /artifacts=\([^\n]+"\$\{offline_parts\[@\]\}"/);
+  assert.match(release, /gh release (?:create|upload)[^\n]+"\$\{artifacts\[@\]\}" SHA256SUMS/);
+  assert.match(release, /sha256sum "\$\{offline_bundle\}" \| sed[^\n]+OFFLINE-BUNDLE-SHA256/);
 });
 
 test("top-level checksum verifies the flat GitHub Release download layout", () => {
