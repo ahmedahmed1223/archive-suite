@@ -10,8 +10,8 @@
 | --- | --- | --- | --- |
 | Windows 10/11 | Docker | `Setup-Archive.bat` | Docker Desktop مع Compose v2 |
 | Linux | Docker | `setup.sh` | Docker Engine مع Compose v2 |
-| Windows 10/11 | Native | `pnpm bundle:windows-native` | PostgreSQL وRedis متاحان للجهاز |
-| Linux | Native | `pnpm bundle:linux-native` | `systemd` وPostgreSQL وRedis |
+| Windows 10/11 | Native | `pnpm bundle:windows-native` | PostgreSQL متاح للجهاز (Redis اختياري) |
+| Linux | Native | `pnpm bundle:linux-native` | `systemd` وPostgreSQL (Redis اختياري) |
 
 شغّل `node scripts/control-center.mjs doctor` قبل التثبيت. اختر Docker عندما
 تدير المؤسسة الحاويات، واختر Native عندما تدير خدمات الجهاز مباشرة. يستخدم

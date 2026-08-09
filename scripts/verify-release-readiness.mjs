@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 // Verifies actual release-readiness CONTENT (version coherence, license,
 // support policy, release pipeline shape, API contract, open P0s, env
@@ -265,6 +265,15 @@ function checkNodeEngineCoherence() {
   );
 }
 
+// Reuses the loader Control Center itself runs at install time — if the
+// descriptor is malformed, placeholder, or version-incoherent, this fails
+// with the exact same error the installer would raise on a real machine.
+async function checkReleaseDescriptorIntegrity() {
+  const modulePath = pathToFileURL(path.join(ROOT, "scripts/control-center/release-descriptor.mjs"));
+  const { loadReleaseDescriptor } = await import(modulePath);
+  loadReleaseDescriptor();
+}
+
 function checkScriptWiring() {
   assert.equal(
     rootPkg.scripts?.dev,
@@ -356,6 +365,7 @@ await run("release-claims", checkReleaseClaims);
 await run("whisper-coherence", checkWhisperCoherence);
 await run("env-example-completeness", checkEnvExampleCompleteness);
 await run("node-engine-coherence", checkNodeEngineCoherence);
+await run("release-descriptor-integrity", checkReleaseDescriptorIntegrity);
 await run("script-wiring", checkScriptWiring);
 await run("ci-workflow-wiring", checkCiWorkflowWiring);
 

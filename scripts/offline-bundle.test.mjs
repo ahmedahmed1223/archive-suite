@@ -160,13 +160,13 @@ test("builder path writes workflow-shaped digest-only application refs into a co
   const output = mkdtempSync(join(tmpdir(), "archive-offline-build-"));
   const original = { NEXT_IMAGE: process.env.NEXT_IMAGE, LARAVEL_IMAGE: process.env.LARAVEL_IMAGE, POSTGRES_IMAGE: process.env.POSTGRES_IMAGE, REDIS_IMAGE: process.env.REDIS_IMAGE };
   Object.assign(process.env, {
-    NEXT_IMAGE: `ghcr.io/workflow/next:v1.0.0-rc.1@sha256:${"d".repeat(64)}`,
-    LARAVEL_IMAGE: `ghcr.io/workflow/laravel:v1.0.0-rc.1@sha256:${"c".repeat(64)}`,
-    POSTGRES_IMAGE: "ghcr.io/archive-suite/postgres:v1.0.0-rc.1@sha256:815bf5378222044da3b34d98e6a5fdac37b15c428b67d09c7c2d90a038e597bf",
-    REDIS_IMAGE: "ghcr.io/archive-suite/redis:v1.0.0-rc.1@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99",
+    NEXT_IMAGE: `ghcr.io/workflow/next:v1.1.0@sha256:${"d".repeat(64)}`,
+    LARAVEL_IMAGE: `ghcr.io/workflow/laravel:v1.1.0@sha256:${"c".repeat(64)}`,
+    POSTGRES_IMAGE: "pgvector/pgvector:0.8.5-pg18@sha256:12a379b47ad65289572ea0756efc11b7c241a6662833e8af7038cd3b73d647e0",
+    REDIS_IMAGE: "redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005",
   });
   try {
-    build("v1.0.0-rc.1", output, { runCommand: (command, args) => {
+    build("v1.1.0", output, { runCommand: (command, args) => {
       if (command === "git") return "test-commit";
       if (command === "docker" && args[0] === "save") writeFileSync(args[args.indexOf("--output") + 1], `tar:${args.at(-1)}`);
       // Locate the archive by its flag rather than a fixed index: build()
@@ -174,16 +174,16 @@ test("builder path writes workflow-shaped digest-only application refs into a co
       if (command === "tar") writeFileSync(args[args.indexOf("-czf") + 1], "archive");
       return "";
     } });
-    const manifest = JSON.parse(readFileSync(join(output, "archive-suite-offline-v1.0.0-rc.1", "manifest.json"), "utf8"));
-    assert.equal(manifest.version, "v1.0.0-rc.1");
-    assert.equal(manifest.images.find((image) => image.id === "next").source, process.env.NEXT_IMAGE.replace(":v1.0.0-rc.1@", ":1.0.0-rc.1@"));
-    assert.equal(manifest.images.find((image) => image.id === "laravel-reverb").source, process.env.LARAVEL_IMAGE.replace(":v1.0.0-rc.1@", ":1.0.0-rc.1@"));
-    const bundle = join(output, "archive-suite-offline-v1.0.0-rc.1");
+    const manifest = JSON.parse(readFileSync(join(output, "archive-suite-offline-v1.1.0", "manifest.json"), "utf8"));
+    assert.equal(manifest.version, "v1.1.0");
+    assert.equal(manifest.images.find((image) => image.id === "next").source, process.env.NEXT_IMAGE.replace(":v1.1.0@", ":1.1.0@"));
+    assert.equal(manifest.images.find((image) => image.id === "laravel-reverb").source, process.env.LARAVEL_IMAGE.replace(":v1.1.0@", ":1.1.0@"));
+    const bundle = join(output, "archive-suite-offline-v1.1.0");
     const release = resolveRelease({ configuration: { mode: "docker", source: "offline", runtimeProfiles: ["core"] }, offlineBundlePath: bundle });
     const calls = [];
     loadOfflineReleaseImages(release, { runDocker: (args) => calls.push(args) });
     assert.equal(calls.filter((args) => args[0] === "image" && args[1] === "load").length, 7);
-    assert.match(release.images.find((image) => image.service === "next").online, /:1\.0\.0-rc\.1@sha256:/);
+    assert.match(release.images.find((image) => image.service === "next").online, /:1\.1\.0@sha256:/);
   } finally {
     for (const [key, value] of Object.entries(original)) value === undefined ? delete process.env[key] : process.env[key] = value;
     rmSync(output, { recursive: true, force: true });

@@ -21,23 +21,16 @@ where node >nul 2>nul
 if errorlevel 1 (
   echo.
   echo   [X] Node.js was not found.
-  echo       Install Node.js 22+ from https://nodejs.org, then run this file again.
+  echo       Install Node.js from https://nodejs.org, then run this file again.
   echo.
   goto :fail
 )
 
-for /f "usebackq delims=" %%v in (`node -p "process.versions.node.split('.')[0]" 2^>nul`) do set "NODE_MAJOR=%%v"
-if not defined NODE_MAJOR (
-  echo.
-  echo   [X] Could not read the installed Node.js version.
-  echo.
-  goto :fail
-)
-
-if %NODE_MAJOR% LSS 22 (
-  echo.
-  echo   [X] Node.js 22+ is required. Found:
-  node -v
+REM infra/platform/toolchain.v1.json is the single source of truth for the
+REM minimum Node version (mirrored by scripts/node-version.mjs); read it
+REM through that module instead of hardcoding a number here.
+node -e "import('./scripts/node-version.mjs').then(({isSupportedNodeVersion, MIN_NODE_VERSION}) => { if (!isSupportedNodeVersion()) { console.error('  [X] Node ' + MIN_NODE_VERSION.split('.')[0] + '+ required (found ' + process.version + ').'); process.exit(1); } })"
+if errorlevel 1 (
   echo.
   goto :fail
 )

@@ -1,15 +1,14 @@
 {
   "schemaVersion": "1.0",
-  "version": "1.0.0-rc.1",
+  "version": "1.1.0",
   "images": [
-    { "id": "postgres", "service": "postgres", "profile": "core", "online": "ghcr.io/archive-suite/postgres:1.0.0-rc.1@sha256:815bf5378222044da3b34d98e6a5fdac37b15c428b67d09c7c2d90a038e597bf", "offlineRef": "archive-suite/postgres:$VERSION" },
-    { "id": "redis", "service": "redis", "profile": "core", "online": "ghcr.io/archive-suite/redis:1.0.0-rc.1@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99", "offlineRef": "archive-suite/redis:$VERSION" },
-    { "id": "laravel", "service": "laravel", "profile": "core", "online": "ghcr.io/archive-suite/laravel:1.0.0-rc.1@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "offlineRef": "archive-suite/laravel:$VERSION" },
-    { "id": "laravel-fpm", "service": "laravel-fpm", "profile": "core", "online": "ghcr.io/archive-suite/laravel:1.0.0-rc.1@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "offlineRef": "archive-suite/laravel:$VERSION" },
-    { "id": "laravel-worker", "service": "laravel-worker", "profile": "core", "online": "ghcr.io/archive-suite/laravel:1.0.0-rc.1@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "offlineRef": "archive-suite/laravel:$VERSION" },
-    { "id": "laravel-reverb", "service": "laravel-reverb", "profile": "core", "online": "ghcr.io/archive-suite/laravel:1.0.0-rc.1@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "offlineRef": "archive-suite/laravel:$VERSION" },
-    { "id": "next", "service": "next", "profile": "core", "online": "ghcr.io/archive-suite/next:1.0.0-rc.1@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "offlineRef": "archive-suite/next:$VERSION" },
-    { "id": "ocr", "service": "ocr", "profile": "media", "online": "ghcr.io/archive-suite/ocr:1.0.0-rc.1@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "offlineRef": "archive-suite/ocr:$VERSION" },
-    { "id": "caddy", "service": "caddy", "profile": "edge", "online": "ghcr.io/archive-suite/caddy:1.0.0-rc.1@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648", "offlineRef": "archive-suite/caddy:$VERSION" }
+    { "id": "postgres", "service": "postgres", "profile": "core", "online": "pgvector/pgvector:0.8.5-pg18@sha256:12a379b47ad65289572ea0756efc11b7c241a6662833e8af7038cd3b73d647e0", "offlineRef": "archive-suite/postgres:$VERSION" },
+    { "id": "redis", "service": "redis", "profile": "core", "online": "redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005", "offlineRef": "archive-suite/redis:$VERSION" },
+    { "id": "laravel", "service": "laravel", "profile": "core", "online": "ghcr.io/ahmedahmed1223/archive-suite/masar-laravel:1.1.0@sha256:2879d504834a9b9951fe2c01d6a75fae53234d4f0285222f627153545af9fb9b", "offlineRef": "archive-suite/laravel:$VERSION" },
+    { "id": "laravel-fpm", "service": "laravel-fpm", "profile": "core", "online": "ghcr.io/ahmedahmed1223/archive-suite/masar-laravel:1.1.0@sha256:2879d504834a9b9951fe2c01d6a75fae53234d4f0285222f627153545af9fb9b", "offlineRef": "archive-suite/laravel:$VERSION" },
+    { "id": "laravel-worker", "service": "laravel-worker", "profile": "core", "online": "ghcr.io/ahmedahmed1223/archive-suite/masar-laravel:1.1.0@sha256:2879d504834a9b9951fe2c01d6a75fae53234d4f0285222f627153545af9fb9b", "offlineRef": "archive-suite/laravel:$VERSION" },
+    { "id": "laravel-reverb", "service": "laravel-reverb", "profile": "core", "online": "ghcr.io/ahmedahmed1223/archive-suite/masar-laravel:1.1.0@sha256:2879d504834a9b9951fe2c01d6a75fae53234d4f0285222f627153545af9fb9b", "offlineRef": "archive-suite/laravel:$VERSION" },
+    { "id": "next", "service": "next", "profile": "core", "online": "ghcr.io/ahmedahmed1223/archive-suite/masar-next:1.1.0@sha256:7ade09492fcfc3ab50ff45aedfe8506b155d95afb0eb31bce274b76947d8d637", "offlineRef": "archive-suite/next:$VERSION" },
+    { "id": "caddy", "service": "caddy", "profile": "edge", "online": "caddy:2.11.4-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648", "offlineRef": "archive-suite/caddy:$VERSION" }
   ]
 }
