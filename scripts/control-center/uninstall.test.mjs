@@ -167,7 +167,7 @@ test("a failed owned-path removal keeps data and manifest for a safe retry", asy
   assert.ok(!calls.some(([name]) => name === "deleteDataPaths" || name === "removeManifest"));
 });
 
-test("Windows owned-path cleanup retries transient access-denied service-wrapper locks", async () => {
+test("Windows owned-path cleanup retries an unclassified transient service-wrapper lock", async () => {
   const calls = [];
   let attempt = 0;
   await removeOwnedPathsWithRetries(["D:\\ArchiveSuite"], {
@@ -176,7 +176,7 @@ test("Windows owned-path cleanup retries transient access-denied service-wrapper
     removeTree: (path, options) => {
       calls.push([path, options]);
       attempt += 1;
-      if (attempt === 1) throw Object.assign(new Error("locked"), { code: "EACCES" });
+      if (attempt === 1) throw Object.assign(new Error("locked"), { code: "WINDOWS_TRANSIENT" });
     },
     wait: async () => {},
   });

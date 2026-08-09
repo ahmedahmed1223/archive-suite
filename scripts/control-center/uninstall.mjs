@@ -21,7 +21,7 @@ export async function removeOwnedPathsWithRetries(paths, {
   unlink = unlinkSync,
   removeTree = rmSync,
   wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
-  maxAttempts = 30,
+  maxAttempts = 120,
   retryDelay = 1_000,
 } = {}) {
   for (const path of paths) {
@@ -32,8 +32,8 @@ export async function removeOwnedPathsWithRetries(paths, {
         else removeTree(path, { recursive: true, force: false });
         break;
       } catch (error) {
-        const transient = ["EACCES", "EPERM", "EBUSY", "ENOTEMPTY"].includes(error?.code);
-        if (!transient || attempt === maxAttempts) throw error;
+        if (error?.code === "ENOENT" || !exists(path)) break;
+        if (attempt === maxAttempts) throw error;
         await wait(retryDelay);
       }
     }
