@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lstatSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 import { copyBundleTree, runBundleCli } from "./cli.mjs";
@@ -48,6 +48,29 @@ test("copyBundleTree dereferences pnpm directory links so the bundle is self-con
 
   assert.equal(lstatSync(join(destination, "node_modules", "package")).isSymbolicLink(), false);
   assert.equal(readFileSync(join(destination, "node_modules", "package", "index.js"), "utf8"), "export default true;\n");
+});
+
+test("copyBundleTree includes pnpm dependency siblings required by a linked package", () => {
+  const root = mkdtempSync(join(tmpdir(), "linux-next-copy-"));
+  const source = join(root, "standalone");
+  const next = join(source, "node_modules", ".pnpm", "next@x", "node_modules", "next");
+  const swc = join(source, "node_modules", ".pnpm", "swc@x", "node_modules", "@swc", "helpers");
+  const nextPeer = join(source, "node_modules", ".pnpm", "next@x", "node_modules", "@swc", "helpers");
+  const appModules = join(source, "archive-next", "node_modules");
+  mkdirSync(next, { recursive: true });
+  mkdirSync(swc, { recursive: true });
+  mkdirSync(join(source, "node_modules", ".pnpm", "next@x", "node_modules", "@swc"), { recursive: true });
+  mkdirSync(appModules, { recursive: true });
+  writeFileSync(join(next, "package.json"), "{}\n");
+  writeFileSync(join(swc, "index.js"), "export {};\n");
+  symlinkSync(join("..", "..", "..", "swc@x", "node_modules", "@swc", "helpers"), nextPeer, "dir");
+  symlinkSync(join("..", "..", "node_modules", ".pnpm", "next@x", "node_modules", "next"), join(appModules, "next"), "dir");
+
+  const output = join(root, "output");
+  copyBundleTree(join(source, "archive-next"), output, [], { allowedRoot: source });
+
+  assert.equal(existsSync(join(output, "node_modules", "next", "package.json")), true);
+  assert.equal(existsSync(join(output, "node_modules", "@swc", "helpers", "index.js")), true);
 });
 
 test("runBundleCli rejects when --out is missing", async () => {

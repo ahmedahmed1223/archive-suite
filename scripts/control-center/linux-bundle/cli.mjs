@@ -5,8 +5,8 @@
 // buildLaravel/buildNext, copying each build's real output into destDir.
 // Mirrors scripts/control-center/windows-bundle/cli.mjs.
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync } from "node:fs";
-import { dirname, join, sep } from "node:path";
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readlinkSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createCli } from "../cli.mjs";
 import { assembleLinuxBundle as defaultAssembleLinuxBundle } from "./assemble.mjs";
@@ -19,12 +19,47 @@ function defaultRunCommand(command, args, options) {
   return spawnSync(command, args, { stdio: "inherit", shell: true, cwd: ROOT, ...options });
 }
 
-export function copyBundleTree(src, dest, excludeNames = []) {
-  cpSync(src, dest, {
-    recursive: true,
-    dereference: true,
-    filter: (source) => !excludeNames.includes(source.split(sep).pop()),
-  });
+function pathInside(root, candidate) {
+  const path = relative(resolve(root), resolve(candidate));
+  return path === "" || (path !== ".." && !path.startsWith(`..${sep}`) && !isAbsolute(path));
+}
+
+export function copyBundleTree(src, dest, excludeNames = [], { allowedRoot = src, maxEntries = 250_000 } = {}) {
+  const root = resolve(allowedRoot);
+  let entries = 0;
+  const active = new Set();
+  const expandedDependencyRoots = new Set();
+  const copyEntry = (from, to) => {
+    if (++entries > maxEntries) throw new Error("Bundle tree exceeds the safe materialization limit.");
+    if (excludeNames.includes(from.split(sep).pop())) return;
+    const metadata = lstatSync(from);
+    if (metadata.isSymbolicLink()) {
+      const rawTarget = readlinkSync(from);
+      const target = isAbsolute(rawTarget) ? resolve(rawTarget) : resolve(dirname(from), rawTarget);
+      if (!pathInside(root, target) || !existsSync(target)) throw new Error(`Bundle link escapes or is broken: ${from}`);
+      if (active.has(target)) throw new Error(`Bundle tree contains a cyclic link: ${from}`);
+      active.add(target);
+      copyEntry(target, to);
+      active.delete(target);
+      const dependencyRoot = dirname(target);
+      if (target.includes(`${sep}.pnpm${sep}`) && !expandedDependencyRoots.has(dependencyRoot)) {
+        expandedDependencyRoots.add(dependencyRoot);
+        for (const peer of readdirSync(dependencyRoot)) {
+          const peerSource = join(dependencyRoot, peer);
+          if (resolve(peerSource) !== resolve(target)) copyEntry(peerSource, join(dirname(to), peer));
+        }
+      }
+      return;
+    }
+    if (metadata.isDirectory()) {
+      mkdirSync(to, { recursive: true });
+      for (const entry of readdirSync(from)) copyEntry(join(from, entry), join(to, entry));
+      return;
+    }
+    mkdirSync(dirname(to), { recursive: true });
+    cpSync(from, to, { force: true });
+  };
+  copyEntry(resolve(src), resolve(dest));
 }
 
 function runAndCheck(runCommand, command, args, options, label) {
@@ -61,9 +96,12 @@ export async function runBundleCli(argv, {
     runAndCheck(runCommand, "pnpm", ["--filter", "@archive/next", "build"], {}, "pnpm build");
     const nextRoot = join(ROOT, "archive-next");
     const standaloneRoot = join(nextRoot, ".next", "standalone");
-    copyTree(join(standaloneRoot, "archive-next"), destDir);
+    const copyNext = copyTree === copyBundleTree
+      ? (source, destination) => copyBundleTree(source, destination, [], { allowedRoot: standaloneRoot })
+      : copyTree;
+    copyNext(join(standaloneRoot, "archive-next"), destDir);
     const standaloneNodeModules = join(standaloneRoot, "node_modules");
-    if (pathExists(standaloneNodeModules)) copyTree(standaloneNodeModules, join(destDir, "node_modules"));
+    if (pathExists(standaloneNodeModules)) copyNext(standaloneNodeModules, join(destDir, "node_modules"));
     copyTree(join(nextRoot, ".next", "static"), join(destDir, ".next", "static"));
     const publicDir = join(nextRoot, "public");
     if (pathExists(publicDir)) copyTree(publicDir, join(destDir, "public"));
