@@ -526,8 +526,8 @@ const removeInstalledServices = createInstalledServiceRemover({
   removeDockerServices: removeReleaseServices,
   buildNativeRemover: ({ platform, installRoot }) => buildNativeServiceRemover({ platform, installRoot }),
 });
-function removeManifestOwnedPaths(paths) {
-  removeOwnedPathsWithRetries(paths);
+async function removeManifestOwnedPaths(paths) {
+  await removeOwnedPathsWithRetries(paths);
 }
 function listReleaseBackups(manifest) {
   const adapter = manifest.source === "local"

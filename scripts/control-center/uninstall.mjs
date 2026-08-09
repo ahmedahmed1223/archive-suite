@@ -15,16 +15,28 @@ function fail(code, message, nextActions, details = {}) {
   return { ok: false, code, message, details, nextActions };
 }
 
-export function removeOwnedPathsWithRetries(paths, {
+export async function removeOwnedPathsWithRetries(paths, {
   exists = existsSync,
   inspect = lstatSync,
   unlink = unlinkSync,
   removeTree = rmSync,
+  wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+  maxAttempts = 30,
+  retryDelay = 1_000,
 } = {}) {
   for (const path of paths) {
-    if (!exists(path)) continue;
-    if (inspect(path).isSymbolicLink()) unlink(path);
-    else removeTree(path, { recursive: true, force: false, maxRetries: 20, retryDelay: 250 });
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      if (!exists(path)) break;
+      try {
+        if (inspect(path).isSymbolicLink()) unlink(path);
+        else removeTree(path, { recursive: true, force: false });
+        break;
+      } catch (error) {
+        const transient = ["EACCES", "EPERM", "EBUSY", "ENOTEMPTY"].includes(error?.code);
+        if (!transient || attempt === maxAttempts) throw error;
+        await wait(retryDelay);
+      }
+    }
   }
 }
 
