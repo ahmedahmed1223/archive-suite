@@ -497,6 +497,13 @@ test("install --mode=native reads the configured managed or external data plan w
   assert.equal(JSON.parse(withoutCredentials.stdout).code, "DATA_POSTGRES_CREDENTIALS_REQUIRED");
 });
 
+test("Native install forwards the explicit disk-capacity override to its host preflight", () => {
+  const source = readFileSync(join(ROOT, "scripts/control-center.mjs"), "utf8");
+  assert.match(source, /nativeSetupInstallOrRepair\(operation, configuration, \{ skipDiskCheck \}\)/);
+  assert.match(source, /nativeHostPreflightFor\(configuration, \{ skipDiskCheck \}\)/);
+  assert.match(source, /preflight\.run\(\{ requiredBytes: required, skipDiskCheck \}\)/);
+});
+
 test("wizard answers use the declarative planner resolver rather than a second selection rule", () => {
   const setup = createSetupConfiguration({ loadPlatformContract });
   const answers = validSetupConfig({

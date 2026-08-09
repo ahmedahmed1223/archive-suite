@@ -187,13 +187,13 @@ function setupInstallOrRepair(operation, configurationInput = null, { skipDiskCh
     : setupConfiguration.importConfig(flagValue("config"));
   if (!imported.ok) return renderSetupResult(imported);
   const configuration = imported.details;
+  const skipDiskCheck = skipDiskCheckOverride ?? hasFlag("skip-disk-check");
   if (configuration.mode === "native") {
-    return nativeSetupInstallOrRepair(operation, configuration);
+    return nativeSetupInstallOrRepair(operation, configuration, { skipDiskCheck });
   }
   if (configuration.mode !== "docker") {
     return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Install and repair are currently available for Docker mode only.", { mode: configuration.mode }));
   }
-  const skipDiskCheck = skipDiskCheckOverride ?? hasFlag("skip-disk-check");
   if (skipDiskCheck && !hasFlag("json")) {
     warn("WARNING: Disk capacity check skipped by explicit operator request. Docker may still fail if the host runs out of space.");
   }
@@ -244,18 +244,18 @@ function setupInstallOrRepair(operation, configurationInput = null, { skipDiskCh
 // V1-210B/V1-211B: the Native host gate. Binaries are bundled, so no Docker
 // dependency — Linux still needs its service manager present; Windows `sc` is
 // always available.
-function nativeHostPreflightFor(configuration) {
+function nativeHostPreflightFor(configuration, { skipDiskCheck = false } = {}) {
   const contract = loadPlatformContract();
   const required = requiredDiskBytes(contract, { runtimeProfiles: configuration.runtimeProfiles, capabilities: configuration.capabilities });
   const probes = createHostProbes({ dataPath: configuration.storage.path });
   const requiredDependencies = nativePlatformFamily(configuration.platform) === "linux" ? ["systemctl"] : [];
   const preflight = createInstallPreflight({ diskProbe: probes.diskProbe, dependencyProbe: probes.dependencyProbe, requiredDependencies });
-  return () => preflight.run({ requiredBytes: required });
+  return () => preflight.run({ requiredBytes: required, skipDiskCheck });
 }
 
 // Native install/repair uses the same lifecycle engine as the supported
 // Windows and Linux platform bundles.
-async function nativeSetupInstallOrRepair(operation, configuration) {
+async function nativeSetupInstallOrRepair(operation, configuration, { skipDiskCheck = false } = {}) {
   const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
   const installRoot = process.env.ARCHIVE_NATIVE_INSTALL_ROOT || nativeInstallRoot(configuration.platform);
   const request = { path: INSTALLATION_MANIFEST_PATH, input: nativeManifestInput(configuration, { version, installRoot }) };
@@ -281,7 +281,7 @@ async function nativeSetupInstallOrRepair(operation, configuration) {
       health: healthProbe,
       manifestStore: installationManifest,
       manifestRequest: request,
-      preflight: nativeHostPreflightFor(configuration),
+      preflight: nativeHostPreflightFor(configuration, { skipDiskCheck }),
       dataPlan: planned.plan,
       probes: {
         postgres: () => externalProbes.postgres(planned.plan.postgres),
@@ -932,7 +932,7 @@ async function guidedSetup() {
   const flow = await runGuidedProvisioningFlow({ ask, log, configuration: resolved, provision: async () => {
   if (resolved.mode === "native") {
     log(`\n${C.b}Step 3/5 — Provision Native configuration${C.x}`);
-    return await nativeSetupInstallOrRepair("install", resolved);
+    return await nativeSetupInstallOrRepair("install", resolved, { skipDiskCheck });
   }
 
   const guidedPreflight = hostPreflightFor(resolved)();
