@@ -21,7 +21,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, copyFileSync, lstatSync, rmSync, statSync, statfsSync, unlinkSync } from "node:fs";
+import { existsSync, readFileSync, copyFileSync, rmSync, statSync, statfsSync, unlinkSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { resolve, join } from "node:path";
 import { formatPlatformContractReport, loadPlatformContract, requiredDiskBytes, resolveComposeProfiles, selectPlatforms } from "./platform-contract.mjs";
@@ -38,7 +38,7 @@ import * as installationManifest from "./control-center/installation-manifest.mj
 import { ReleaseDescriptorError, loadOfflineReleaseImages, resolveRelease } from "./control-center/release-descriptor.mjs";
 import { createReleaseUpdate } from "./control-center/update-release.mjs";
 import { createReleaseRollback } from "./control-center/rollback-release.mjs";
-import { createInstalledServiceRemover, createReconnectData, createUninstall } from "./control-center/uninstall.mjs";
+import { createInstalledServiceRemover, createReconnectData, createUninstall, removeOwnedPathsWithRetries } from "./control-center/uninstall.mjs";
 import { createRoleSmoke } from "./control-center/role-smoke.mjs";
 import { buildNativeRuntime, buildNativeServiceRemover, nativeDataPlanOverrideFromEnv, nativeInstallRoot, nativeManifestInput, nativePlatformFamily, resolveNativeSetupDataPlan } from "./control-center/native-setup.mjs";
 import { createExternalOnlyProbes } from "./control-center/native-probes.mjs";
@@ -527,12 +527,7 @@ const removeInstalledServices = createInstalledServiceRemover({
   buildNativeRemover: ({ platform, installRoot }) => buildNativeServiceRemover({ platform, installRoot }),
 });
 function removeManifestOwnedPaths(paths) {
-  for (const path of paths) {
-    if (!existsSync(path)) continue;
-    const entry = lstatSync(path);
-    if (entry.isSymbolicLink()) unlinkSync(path);
-    else rmSync(path, { recursive: true, force: false });
-  }
+  removeOwnedPathsWithRetries(paths);
 }
 function listReleaseBackups(manifest) {
   const adapter = manifest.source === "local"

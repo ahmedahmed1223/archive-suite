@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DELETE_DATA_CONFIRMATION_PHRASE, createInstalledServiceRemover, createReconnectData, createUninstall } from "./uninstall.mjs";
+import { DELETE_DATA_CONFIRMATION_PHRASE, createInstalledServiceRemover, createReconnectData, createUninstall, removeOwnedPathsWithRetries } from "./uninstall.mjs";
 
 // Same DI/mocking style as update-release.test.mjs: no Docker, no filesystem.
 
@@ -165,6 +165,22 @@ test("a failed owned-path removal keeps data and manifest for a safe retry", asy
   assert.equal(result.code, "UNINSTALL_OWNED_PATHS_FAILED");
   assert.doesNotMatch(JSON.stringify(result), /\/private\/path/);
   assert.ok(!calls.some(([name]) => name === "deleteDataPaths" || name === "removeManifest"));
+});
+
+test("Windows owned-path cleanup retries transient service-wrapper locks", () => {
+  const calls = [];
+  removeOwnedPathsWithRetries(["D:\\ArchiveSuite"], {
+    exists: () => true,
+    inspect: () => ({ isSymbolicLink: () => false }),
+    removeTree: (path, options) => calls.push([path, options]),
+  });
+
+  assert.deepEqual(calls, [["D:\\ArchiveSuite", {
+    recursive: true,
+    force: false,
+    maxRetries: 20,
+    retryDelay: 250,
+  }]]);
 });
 
 test("a failed data deletion reports a stable redacted code and keeps the manifest for a retry", async () => {

@@ -4,6 +4,8 @@
 // recent successful backup. reconnect-data re-attaches an existing data
 // directory to a fresh install. Same DI style as createReleaseUpdate/
 // createReleaseRollback so everything is unit-testable without Docker.
+import { existsSync, lstatSync, rmSync, unlinkSync } from "node:fs";
+
 export const DELETE_DATA_CONFIRMATION_PHRASE = "DELETE ARCHIVE DATA";
 const RECENT_BACKUP_MAX_AGE_MS = 24 * 3_600_000;
 const URL_PATTERN = /^[a-z][a-z\d+.-]*:\/\//i;
@@ -11,6 +13,19 @@ const CREDENTIAL_PAIR = /[^\s:/\\]+:[^\s@]+@/;
 
 function fail(code, message, nextActions, details = {}) {
   return { ok: false, code, message, details, nextActions };
+}
+
+export function removeOwnedPathsWithRetries(paths, {
+  exists = existsSync,
+  inspect = lstatSync,
+  unlink = unlinkSync,
+  removeTree = rmSync,
+} = {}) {
+  for (const path of paths) {
+    if (!exists(path)) continue;
+    if (inspect(path).isSymbolicLink()) unlink(path);
+    else removeTree(path, { recursive: true, force: false, maxRetries: 20, retryDelay: 250 });
+  }
 }
 
 export function createInstalledServiceRemover({ removeDockerServices, buildNativeRemover }) {
