@@ -63,7 +63,8 @@ pnpm verify:laravel-next:live
 
 ## النشر والإعداد
 
-استخدم Control Center للنشر عبر Docker:
+استخدم Control Center للنشر عبر Docker من خلال الملف المعتمد
+[`infra/docker-compose.yml`](infra/docker-compose.yml):
 
 ```powershell
 pnpm setup

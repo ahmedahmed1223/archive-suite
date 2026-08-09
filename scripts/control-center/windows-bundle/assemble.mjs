@@ -7,6 +7,7 @@ import { join, relative } from "node:path";
 import { stagePhpRuntime } from "./stage-php.mjs";
 import { stageNodeRuntime } from "./stage-node.mjs";
 import { stageCaddyRuntime } from "./stage-caddy.mjs";
+import { stageWindowsDataServices } from "./stage-data-services.mjs";
 import { stageWinswCopies } from "./stage-winsw.mjs";
 
 function listFilesRecursive(dir) {
@@ -25,6 +26,8 @@ export async function assembleWindowsBundle({
   stageNode = stageNodeRuntime,
   stageCaddy = stageCaddyRuntime,
   stageWinsw = stageWinswCopies,
+  stageDataServices = stageWindowsDataServices,
+  dataServices,
   buildLaravel,
   buildNext,
 } = {}) {
@@ -36,6 +39,7 @@ export async function assembleWindowsBundle({
   await stageNode({ destDir: join(outDir, "runtime", "node") });
   await stageCaddy({ destDir: join(outDir, "runtime", "caddy") });
   await stageWinsw({ destDir: join(outDir, "services") });
+  await stageDataServices({ destDir: join(outDir, "data-services"), ...dataServices });
   await buildLaravel({ destDir: join(outDir, "app", "laravel") });
   await buildNext({ destDir: join(outDir, "app", "next") });
   mkdirSync(join(outDir, "config"), { recursive: true });

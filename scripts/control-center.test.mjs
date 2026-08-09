@@ -441,7 +441,7 @@ test("wizard config mode keeps a planned native choice read-only before executio
   assert.equal(existsSync(envFile), false, "planned native selection must not write .env");
 });
 
-test("install --mode=native reads the external Postgres/Redis endpoint from the environment instead of always falling back to the unbundled local-managed plan", () => {
+test("install --mode=native reads the configured managed or external data plan without silently falling back", () => {
   // Native install preflight requires 100 GiB free on the target disk
   // regardless of profile; use a repo-relative scratch dir (gitignored
   // .tmp/) rather than os.tmpdir() so this doesn't flake on a host whose
@@ -460,12 +460,13 @@ test("install --mode=native reads the external Postgres/Redis endpoint from the 
     storage: { driver: "local", path: storagePath },
   })));
 
-  // No endpoint configured: the data gate blocks on the honest,
-  // already-existing code -- this is a regression guard, not new behavior.
+  // A normalized Native config selects managed data services. Until the
+  // signed managed-data provisioner is wired into a released installer, the
+  // data gate blocks honestly before any host effects.
   const withoutEndpoint = run(["install", `--config=${configFile}`, "--json"], {
     ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestFile,
   });
-  assert.equal(JSON.parse(withoutEndpoint.stdout).code, "LOCAL_POSTGRES_UNAVAILABLE");
+  assert.equal(JSON.parse(withoutEndpoint.stdout).code, "MANAGED_DATA_UNAVAILABLE");
 
   // An endpoint configured via ARCHIVE_NATIVE_POSTGRES_* env vars: the plan
   // must switch to "external" and actually attempt a reachability probe
@@ -480,7 +481,7 @@ test("install --mode=native reads the external Postgres/Redis endpoint from the 
     ARCHIVE_NATIVE_POSTGRES_PASSWORD: "test-only",
   });
   const result = JSON.parse(withEndpoint.stdout);
-  assert.notEqual(result.code, "LOCAL_POSTGRES_UNAVAILABLE", "an operator-supplied endpoint must not silently fall back to local-managed");
+  assert.notEqual(result.code, "MANAGED_DATA_UNAVAILABLE", "an operator-supplied endpoint must not silently fall back to managed data services");
   assert.equal(result.code, "DATA_ENDPOINT_UNHEALTHY");
   assert.equal(result.details.backend, "postgres");
 

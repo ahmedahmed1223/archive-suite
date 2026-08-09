@@ -96,6 +96,11 @@ export async function runBundleCli(argv, {
   const { flagValue } = createCli(argv);
   const outDir = flagValue("out");
   if (!outDir) throw new Error("runBundleCli requires --out=<directory>.");
+  const postgresInstaller = flagValue("postgres-installer");
+  const pgvectorDirectory = flagValue("pgvector-dir");
+  if (!postgresInstaller || !pgvectorDirectory) {
+    throw new Error("runBundleCli requires --postgres-installer=<file> and --pgvector-dir=<directory>.");
+  }
 
   const buildLaravel = async ({ destDir }) => {
     runAndCheck(runCommand, "docker", [
@@ -124,7 +129,7 @@ export async function runBundleCli(argv, {
     if (pathExists(publicDir)) copyTree(publicDir, join(destDir, "public"));
   };
 
-  return assembleWindowsBundle({ outDir, buildLaravel, buildNext });
+  return assembleWindowsBundle({ outDir, buildLaravel, buildNext, dataServices: { postgresInstaller, pgvectorDirectory } });
 }
 
 // pathToFileURL handles platform URL rules correctly (Windows needs

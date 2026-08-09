@@ -87,7 +87,8 @@ Laravel and Next.js integration check.
 
 ## Deployment and configuration
 
-`Control Center` provides guided setup and operation. Docker deployment uses:
+`Control Center` provides guided setup and operation. Docker deployment uses the
+canonical [infra/docker-compose.yml](infra/docker-compose.yml):
 
 ```powershell
 pnpm setup

@@ -20,11 +20,19 @@ function fakeCopyTree() {
 test("runBundleCli requires --out and passes it through as outDir", async () => {
   const calls = [];
   const assembleWindowsBundle = async (options) => { calls.push(options); return { ok: true, shasumsPath: "X" }; };
-  const result = await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], { assembleWindowsBundle });
+  const result = await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector"], { assembleWindowsBundle });
   assert.equal(result.ok, true);
   assert.equal(calls[0].outDir, "D:\\bundle-test");
   assert.equal(typeof calls[0].buildLaravel, "function");
   assert.equal(typeof calls[0].buildNext, "function");
+});
+
+test("runBundleCli refuses a Windows bundle without both required data-service artifacts", async () => {
+  const assembleWindowsBundle = async () => ({ ok: true });
+  await assert.rejects(
+    () => runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], { assembleWindowsBundle }),
+    /postgres-installer.*pgvector-dir/i,
+  );
 });
 
 test("runBundleCli rejects when --out is missing", async () => {
@@ -35,11 +43,27 @@ test("runBundleCli rejects when --out is missing", async () => {
   );
 });
 
+test("runBundleCli passes the verified PostgreSQL installer and pgvector directory into bundle assembly", async () => {
+  const calls = [];
+  const assembleWindowsBundle = async (options) => { calls.push(options); return { ok: true }; };
+
+  await runBundleCli([
+    "node", "cli.mjs", "--out=D:\\bundle-test",
+    "--postgres-installer=D:\\supply\\postgresql-18.exe",
+    "--pgvector-dir=D:\\supply\\pgvector",
+  ], { assembleWindowsBundle });
+
+  assert.deepEqual(calls[0].dataServices, {
+    postgresInstaller: "D:\\supply\\postgresql-18.exe",
+    pgvectorDirectory: "D:\\supply\\pgvector",
+  });
+});
+
 test("runBundleCli's default buildLaravel builds+runs composer via docker, then copies real output into destDir", async () => {
   const assembleWindowsBundle = async (options) => { await options.buildLaravel({ destDir: "D:\\out\\app\\laravel" }); return { ok: true }; };
   const { runCommand, calls } = fakeRunCommand();
   const { copyTree, calls: copyCalls } = fakeCopyTree();
-  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], { assembleWindowsBundle, runCommand, copyTree });
+  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector"], { assembleWindowsBundle, runCommand, copyTree });
 
   assert.equal(calls[0].command, "docker");
   assert.deepEqual(calls[0].args.slice(0, 2), ["build", "--quiet"]);
@@ -58,7 +82,7 @@ test("runBundleCli's default buildNext builds the pnpm workspace and copies stan
   const assembleWindowsBundle = async (options) => { await options.buildNext({ destDir: "D:\\out\\app\\next" }); return { ok: true }; };
   const { runCommand, calls } = fakeRunCommand();
   const { copyTree, calls: copyCalls } = fakeCopyTree();
-  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], {
+  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector"], {
     assembleWindowsBundle, runCommand, copyTree, pathExists: () => true,
   });
 
@@ -77,7 +101,7 @@ test("runBundleCli's buildNext skips optional node_modules/public copies when th
   const assembleWindowsBundle = async (options) => { await options.buildNext({ destDir: "D:\\out\\app\\next" }); return { ok: true }; };
   const { runCommand } = fakeRunCommand();
   const { copyTree, calls: copyCalls } = fakeCopyTree();
-  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], {
+  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector"], {
     assembleWindowsBundle, runCommand, copyTree, pathExists: () => false,
   });
 
@@ -90,7 +114,7 @@ test("runBundleCli surfaces a non-zero build exit code instead of continuing sil
   const assembleWindowsBundle = async (options) => { await options.buildLaravel({ destDir: "D:\\out\\app\\laravel" }); return { ok: true }; };
   const runCommand = () => ({ status: 1, stderr: "docker build failed" });
   await assert.rejects(
-    () => runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], { assembleWindowsBundle, runCommand }),
+    () => runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector"], { assembleWindowsBundle, runCommand }),
     /docker build failed|exit code 1/i
   );
 });

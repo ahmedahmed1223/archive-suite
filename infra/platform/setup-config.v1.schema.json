@@ -19,8 +19,20 @@
       "additionalProperties": false,
       "required": ["postgres", "redis"],
       "properties": {
-        "postgres": { "type": "object", "additionalProperties": false, "required": ["enabled"], "properties": { "enabled": { "type": "boolean" } } },
-        "redis": { "type": "object", "additionalProperties": false, "required": ["enabled"], "properties": { "enabled": { "type": "boolean" } } }
+        "postgres": {
+          "oneOf": [
+            { "type": "object", "additionalProperties": false, "required": ["enabled"], "properties": { "enabled": { "type": "boolean" } } },
+            { "type": "object", "additionalProperties": false, "required": ["enabled", "kind"], "properties": { "enabled": { "const": true }, "kind": { "const": "managed" } } },
+            { "type": "object", "additionalProperties": false, "required": ["enabled", "kind", "host", "port", "database"], "properties": { "enabled": { "const": true }, "kind": { "const": "external" }, "host": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]$" }, "port": { "type": "integer", "minimum": 1, "maximum": 65535 }, "database": { "type": "string", "minLength": 1 } } }
+          ]
+        },
+        "redis": {
+          "oneOf": [
+            { "type": "object", "additionalProperties": false, "required": ["enabled"], "properties": { "enabled": { "type": "boolean" } } },
+            { "type": "object", "additionalProperties": false, "required": ["enabled", "kind"], "properties": { "enabled": { "const": true }, "kind": { "const": "managed" } } },
+            { "type": "object", "additionalProperties": false, "required": ["enabled", "kind", "host", "port"], "properties": { "enabled": { "const": true }, "kind": { "const": "external" }, "host": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]$" }, "port": { "type": "integer", "minimum": 1, "maximum": 65535 } } }
+          ]
+        }
       }
     },
     "storage": {

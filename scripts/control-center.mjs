@@ -253,13 +253,9 @@ function nativeHostPreflightFor(configuration) {
   return () => preflight.run({ requiredBytes: required });
 }
 
-// V1-210B/V1-211B: run a real Native install/repair through the same lifecycle
-// engine the tests exercise. Support is experimental (planned) until the
-// V1-210D/V1-211D clean-host matrix passes — the V1-212C gate blocks any
-// "supported" claim before then — so we say so and proceed.
+// Native install/repair uses the same lifecycle engine as the supported
+// Windows and Linux platform bundles.
 async function nativeSetupInstallOrRepair(operation, configuration) {
-  // Keep --json output a single clean object; the human transcript still warns.
-  if (!hasFlag("json")) output.warn?.("Native mode is experimental (planned): it is not yet backed by clean-host acceptance evidence (V1-210D/V1-211D).");
   const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
   const installRoot = process.env.ARCHIVE_NATIVE_INSTALL_ROOT || nativeInstallRoot(configuration.platform);
   const request = { path: INSTALLATION_MANIFEST_PATH, input: nativeManifestInput(configuration, { version, installRoot }) };
@@ -889,7 +885,7 @@ async function guidedSetup() {
   const existing = readEnv();
   const contract = loadPlatformContract();
   const currentPlatform = existing.ARCHIVE_PLATFORM || (process.platform === "win32" ? "windows-10-11-docker" : "linux-docker");
-  log("Runtime choices: Docker is supported for the current release path; Native is shown for planning only and does not install services yet.");
+  log("Runtime choices: Docker and Native are supported deployment paths. Native installs the selected platform bundle without requiring Docker on the target host.");
   log(`  Contract platforms: ${contract.platforms.map((platform) => `${platform.id} (${platform.mode}, ${platform.status})`).join("; ")}`);
   const runtimeChoices = await collectWizardRuntimeChoices({ ask, log, existing, contract, platformId: currentPlatform });
   log("Data services: PostgreSQL and Redis are required by the application and stay enabled automatically.");
