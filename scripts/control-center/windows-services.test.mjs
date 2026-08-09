@@ -56,6 +56,11 @@ test("Next WinSW definition pins the local Caddy upstream host and port", () => 
   assert.doesNotMatch(renderServiceDefinition(WINDOWS_SERVICES.find(({ id }) => id === "archive-worker")), /name="HOSTNAME"/);
 });
 
+test("WinSW definitions disable startup auto-refresh for least-privilege virtual accounts", () => {
+  const xml = renderServiceDefinition(WINDOWS_SERVICES[0]);
+  assert.match(xml, /<autoRefresh>false<\/autoRefresh>/);
+});
+
 test("package manifest binds version and commit, lists the pinned wrapper in the SBOM, and checksums every file", () => {
   const manifest = buildWindowsPackageManifest(baseInput());
   assert.equal(manifest.platform, "windows-10-11-native");

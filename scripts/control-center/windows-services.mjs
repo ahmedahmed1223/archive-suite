@@ -56,6 +56,11 @@ export function renderServiceDefinition(service) {
     // config\Caddyfile: The system cannot find the path specified."
     "  <workingdirectory>%BASE%\\..</workingdirectory>",
     "  <logpath>%BASE%\\..\\logs</logpath>",
+    // WinSW refreshes its SCM registration at service startup by default.
+    // Per-service virtual accounts intentionally cannot change service
+    // configuration, so keep startup read-only after the elevated installer
+    // has registered the service and assigned its account.
+    "  <autoRefresh>false</autoRefresh>",
     ...(service.id === "archive-next" ? ['  <env name="HOSTNAME" value="127.0.0.1"/>', '  <env name="PORT" value="3000"/>'] : []),
     "  <onfailure action=\"restart\" delay=\"10 sec\"/>",
     "  <log mode=\"roll-by-size\"><sizeThreshold>10240</sizeThreshold><keepFiles>8</keepFiles></log>",
