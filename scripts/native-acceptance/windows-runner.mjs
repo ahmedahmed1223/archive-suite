@@ -18,6 +18,16 @@ function requireOk(result, operation) {
   return result;
 }
 
+function safeDiagnostic(value, secrets = []) {
+  let output = String(value || "");
+  for (const secret of secrets.filter(Boolean)) output = output.replaceAll(secret, "[redacted]");
+  return output
+    .replace(/([a-z][a-z\d+.-]*:\/\/)[^/\s:@]+:[^/\s@]+@/gi, "$1[redacted]@")
+    .replace(/(password\s*[=:]\s*)\S+/gi, "$1[redacted]")
+    .slice(-2_000)
+    .trim();
+}
+
 async function waitFor(check, operation, attempts = 90) {
   for (let index = 0; index < attempts; index += 1) {
     if (await check()) return;
@@ -91,7 +101,11 @@ export function createWindowsAcceptanceEffects({ bundlePath, repoRoot, runId, pr
     },
     async install({ environment }) {
       progress("Installing the six Windows services through Control Center.");
-      requireOk(controlCenter("install", environment), "Native install");
+      const result = controlCenter("install", environment);
+      if (result.status !== 0) {
+        const diagnostic = safeDiagnostic(`${result.stdout}\n${result.stderr}`, [environment.ARCHIVE_NATIVE_POSTGRES_PASSWORD]);
+        throw new Error(`Windows Native acceptance failed during Native install.${diagnostic ? ` ${diagnostic}` : ""}`);
+      }
     },
     async waitForServices() {
       for (const service of SERVICES) {

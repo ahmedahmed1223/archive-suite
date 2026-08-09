@@ -145,7 +145,15 @@ export async function runLinuxNativeAcceptance({
       }
     }
     scenarios.push({ name: "six-services-active", ok: true });
-    await waitFor(() => docker(["exec", names.systemd, "curl", "-fsS", "http://127.0.0.1:8443/"]), "HTTP health", { attempts: 90 });
+    try {
+      await waitFor(() => docker(["exec", names.systemd, "curl", "-fsS", "http://127.0.0.1:8443/"]), "HTTP health", { attempts: 90 });
+    } catch {
+      const proxy = docker(["exec", names.systemd, "curl", "-sS", "-D", "-", "-o", "/dev/null", "http://127.0.0.1:8443/"]);
+      const next = docker(["exec", names.systemd, "curl", "-sS", "-D", "-", "-o", "/dev/null", "http://127.0.0.1:3000/"]);
+      const state = docker(["exec", names.systemd, "systemctl", "show", ...SERVICES, "--property=Id,Result,ExecMainStatus,ExecMainCode,ActiveState,SubState", "--no-pager"]);
+      const journal = docker(["exec", names.systemd, "journalctl", ...SERVICES.flatMap((service) => ["-u", service]), "-n", "80", "--no-pager", "--output=cat"]);
+      throw new Error(`Linux Native acceptance timed out during HTTP health. ${safeServiceDiagnostic(`${proxy.stdout}\n${proxy.stderr}\n${next.stdout}\n${next.stderr}\n${state.stdout}\n${journal.stdout}`, dbPassword)}`);
+    }
     scenarios.push({ name: "http-health", ok: true });
 
     progress("Uninstalling manifest-owned Native services and application files.");
