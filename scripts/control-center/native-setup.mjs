@@ -146,6 +146,7 @@ export function buildNativeRuntime({
       writeAppConfig: appConfig
         ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, storagePath: configuration.storage.path, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword })
         : undefined,
+      migrateDatabase: () => effects.exec(["migrate", "--force"]),
       health,
       logs: effects.logs,
       exec: effects.exec,
@@ -166,6 +167,7 @@ export function buildNativeRuntime({
     writeAppConfig: appConfig
       ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, storagePath: configuration.storage.path, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword })
       : undefined,
+    migrateDatabase: () => effects.exec(["migrate", "--force"]),
     // Linux firewall stays opt-in per the platform contract; the default
     // host-effects layer provides none.
     health,

@@ -32,6 +32,7 @@ test("install runs the full step sequence in order and records each step in the 
     serviceControl: okControl(calls),
     applyAcls: () => { calls.push(["acl"]); return { status: 0 }; },
     applyFirewallRules: () => { calls.push(["firewall"]); return { status: 0 }; },
+    migrateDatabase: () => { calls.push(["migrate"]); return { status: 0 }; },
     dataGate: async () => { calls.push(["data-gate"]); return { ok: true }; },
     manifestStore: recordingStore(calls),
     manifestRequest,
@@ -52,6 +53,7 @@ test("install runs the full step sequence in order and records each step in the 
   const firstStartIdx = calls.findIndex(([kind]) => kind === "start");
   assert.ok(installIdx < aclIdx, "ACLs must be applied after services are installed, not before");
   assert.ok(aclIdx < firstStartIdx, "ACLs must be applied before services start");
+  assert.ok(calls.findIndex(([kind]) => kind === "migrate") < firstStartIdx, "database migrations must finish before services start");
 });
 
 test("a failed host preflight blocks the install before any service is touched", async () => {

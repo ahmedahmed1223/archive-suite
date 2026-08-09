@@ -43,6 +43,7 @@ test("service definition renders the pinned wrapper XML with restart and rolling
   // file: open config\Caddyfile: The system cannot find the path
   // specified."). %BASE% is the WinSW macro for the folder holding the XML.
   assert.match(xml, /<workingdirectory>%BASE%\\\.\.<\/workingdirectory>/);
+  assert.match(xml, /<logpath>%BASE%\\\.\.\\logs<\/logpath>/);
   assert.match(xml, /onfailure action="restart"/);
   assert.match(xml, /roll-by-size/);
   assert.throws(() => renderServiceDefinition({ id: "rogue-service" }), (error) => error.code === "WINDOWS_SERVICE_UNKNOWN");

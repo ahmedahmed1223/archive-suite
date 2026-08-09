@@ -55,6 +55,7 @@ export function renderServiceDefinition(service) {
     // above -- confirmed against real WinSW: "reading config from file: open
     // config\Caddyfile: The system cannot find the path specified."
     "  <workingdirectory>%BASE%\\..</workingdirectory>",
+    "  <logpath>%BASE%\\..\\logs</logpath>",
     ...(service.id === "archive-next" ? ['  <env name="HOSTNAME" value="127.0.0.1"/>', '  <env name="PORT" value="3000"/>'] : []),
     "  <onfailure action=\"restart\" delay=\"10 sec\"/>",
     "  <log mode=\"roll-by-size\"><sizeThreshold>10240</sizeThreshold><keepFiles>8</keepFiles></log>",

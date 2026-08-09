@@ -34,6 +34,7 @@ test("install configures the app after filesystem setup and before firewall or s
     applyOwnership: () => { calls.push(["ownership"]); return { status: 0 }; },
     applyLogrotate: () => { calls.push(["logrotate"]); return { status: 0 }; },
     writeAppConfig: () => { calls.push(["app-config"]); return { status: 0 }; },
+    migrateDatabase: () => { calls.push(["migrate"]); return { status: 0 }; },
     applyFirewallRules: () => { calls.push(["firewall"]); return { status: 0 }; },
     dataGate: async () => ({ ok: true }),
     manifestStore: recordingStore(calls),
@@ -48,13 +49,14 @@ test("install configures the app after filesystem setup and before firewall or s
     "ownership-applied",
     "logrotate-applied",
     "app-configured",
+    "database-migrated",
     "firewall-applied",
     "services-installed",
     "services-started",
   ]);
   assert.deepEqual(
-    calls.filter(([kind]) => ["ownership", "logrotate", "app-config", "firewall", "install"].includes(kind)).slice(0, 5).map(([kind]) => kind),
-    ["ownership", "logrotate", "app-config", "firewall", "install"],
+    calls.filter(([kind]) => ["ownership", "logrotate", "app-config", "migrate", "firewall", "install"].includes(kind)).slice(0, 6).map(([kind]) => kind),
+    ["ownership", "logrotate", "app-config", "migrate", "firewall", "install"],
   );
   assert.deepEqual(LINUX_INSTALL_STEPS, steps);
   assert.equal(calls.filter(([kind]) => kind === "install").length, LINUX_SERVICES.length);
@@ -129,6 +131,7 @@ test("repair resumes at app configuration without repeating completed data or fi
           "ownership-applied",
           "logrotate-applied",
           "app-configured",
+          "database-migrated",
           "firewall-applied",
           "services-installed",
           "services-started",
