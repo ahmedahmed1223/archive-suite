@@ -2,7 +2,7 @@
 // linux-services.mjs already assume. Mirrors infra/offline/install.sh's
 // SHA256SUMS pattern (sha256sum --check).
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { lstatSync, mkdirSync, readlinkSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { stagePhpRuntime } from "./stage-php.mjs";
 import { stageNodeRuntime } from "./stage-node.mjs";
@@ -16,6 +16,14 @@ function listFilesRecursive(dir) {
     else out.push(path);
   }
   return out;
+}
+
+function bundleEntryDigest(path) {
+  if (!lstatSync(path).isSymbolicLink()) {
+    return createHash("sha256").update(readFileSync(path)).digest("hex");
+  }
+  const target = readlinkSync(path).replaceAll("\\", "/");
+  return createHash("sha256").update(`symlink\0${target}`).digest("hex");
 }
 
 export async function assembleLinuxBundle({
@@ -45,7 +53,7 @@ export async function assembleLinuxBundle({
     // SHA256SUMS describes a Linux bundle layout regardless of which OS
     // assembled it -- normalize to forward slashes so sha256sum --check
     // on the target host matches paths built on Windows too.
-    .map((path) => `${createHash("sha256").update(readFileSync(path)).digest("hex")}  ${relative(outDir, path).split("\\").join("/")}`)
+    .map((path) => `${bundleEntryDigest(path)}  ${relative(outDir, path).split("\\").join("/")}`)
     .sort();
   writeFileSync(shasumsPath, lines.join("\n") + "\n", "utf8");
 
