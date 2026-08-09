@@ -38,7 +38,7 @@ import * as installationManifest from "./control-center/installation-manifest.mj
 import { ReleaseDescriptorError, loadOfflineReleaseImages, resolveRelease } from "./control-center/release-descriptor.mjs";
 import { createReleaseUpdate } from "./control-center/update-release.mjs";
 import { createReleaseRollback } from "./control-center/rollback-release.mjs";
-import { createInstalledServiceRemover, createReconnectData, createUninstall, removeOwnedPathsWithRetries } from "./control-center/uninstall.mjs";
+import { createInstalledServiceRemover, createReconnectData, createUninstall, removeOwnedPathsWithRetries, scheduleOwnedPathsAfterExit } from "./control-center/uninstall.mjs";
 import { createRoleSmoke } from "./control-center/role-smoke.mjs";
 import { buildNativeRuntime, buildNativeServiceRemover, nativeDataPlanOverrideFromEnv, nativeInstallRoot, nativeManifestInput, nativePlatformFamily, resolveNativeSetupDataPlan } from "./control-center/native-setup.mjs";
 import { createExternalOnlyProbes } from "./control-center/native-probes.mjs";
@@ -527,7 +527,8 @@ const removeInstalledServices = createInstalledServiceRemover({
   buildNativeRemover: ({ platform, installRoot }) => buildNativeServiceRemover({ platform, installRoot }),
 });
 async function removeManifestOwnedPaths(paths) {
-  await removeOwnedPathsWithRetries(paths);
+  if (process.platform === "win32") scheduleOwnedPathsAfterExit(paths);
+  else await removeOwnedPathsWithRetries(paths);
 }
 function listReleaseBackups(manifest) {
   const adapter = manifest.source === "local"

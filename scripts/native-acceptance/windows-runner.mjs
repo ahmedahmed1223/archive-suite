@@ -128,7 +128,7 @@ export function createWindowsAcceptanceEffects({ bundlePath, repoRoot, runId, pr
       requireOk(controlCenter("uninstall", { ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestPath }), "Native uninstall");
     },
     async proveApplicationCleanup() {
-      if (existsSync(bundlePath)) throw new Error("Windows Native acceptance left the application root behind.");
+      await waitFor(() => !existsSync(bundlePath), "deferred application cleanup", 150);
       if (existsSync(manifestPath)) throw new Error("Windows Native acceptance left its installation manifest behind.");
       if (!existsSync(storagePath)) throw new Error("Windows Native uninstall did not preserve the configured data path.");
     },

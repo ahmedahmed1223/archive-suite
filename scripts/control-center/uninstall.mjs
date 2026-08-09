@@ -5,6 +5,8 @@
 // directory to a fresh install. Same DI style as createReleaseUpdate/
 // createReleaseRollback so everything is unit-testable without Docker.
 import { existsSync, lstatSync, rmSync, unlinkSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 export const DELETE_DATA_CONFIRMATION_PHRASE = "DELETE ARCHIVE DATA";
 const RECENT_BACKUP_MAX_AGE_MS = 24 * 3_600_000;
@@ -38,6 +40,20 @@ export async function removeOwnedPathsWithRetries(paths, {
       }
     }
   }
+}
+
+export function scheduleOwnedPathsAfterExit(paths, {
+  parentPid = process.pid,
+  executable = process.execPath,
+  helperPath = fileURLToPath(new URL("./windows-deferred-cleanup.mjs", import.meta.url)),
+  spawnProcess = spawn,
+} = {}) {
+  const child = spawnProcess(executable, [
+    helperPath,
+    `--parent-pid=${parentPid}`,
+    ...paths.map((path) => `--path=${path}`),
+  ], { detached: true, stdio: "ignore", windowsHide: true });
+  child.unref();
 }
 
 export function createInstalledServiceRemover({ removeDockerServices, buildNativeRemover }) {

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { DELETE_DATA_CONFIRMATION_PHRASE, createInstalledServiceRemover, createReconnectData, createUninstall, removeOwnedPathsWithRetries } from "./uninstall.mjs";
+import { DELETE_DATA_CONFIRMATION_PHRASE, createInstalledServiceRemover, createReconnectData, createUninstall, removeOwnedPathsWithRetries, scheduleOwnedPathsAfterExit } from "./uninstall.mjs";
 
 // Same DI/mocking style as update-release.test.mjs: no Docker, no filesystem.
 
@@ -188,6 +188,24 @@ test("Windows owned-path cleanup retries an unclassified transient service-wrapp
     recursive: true,
     force: false,
   }]]);
+});
+
+test("Windows owned-path cleanup is delegated past the current process lifetime", () => {
+  const calls = [];
+  const child = { unref: () => calls.push(["unref"]) };
+  scheduleOwnedPathsAfterExit(["D:\\ArchiveSuite"], {
+    parentPid: 4242,
+    executable: "node.exe",
+    helperPath: "cleanup.mjs",
+    spawnProcess: (...args) => { calls.push(args); return child; },
+  });
+
+  assert.deepEqual(calls[0], [
+    "node.exe",
+    ["cleanup.mjs", "--parent-pid=4242", "--path=D:\\ArchiveSuite"],
+    { detached: true, stdio: "ignore", windowsHide: true },
+  ]);
+  assert.deepEqual(calls[1], ["unref"]);
 });
 
 test("a failed data deletion reports a stable redacted code and keeps the manifest for a retry", async () => {
