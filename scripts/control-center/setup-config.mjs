@@ -5,6 +5,7 @@ const SOURCES = ["online", "offline", "local"];
 const INTENTS = ["fresh", "repair", "reconfigure", "update", "rollback", "uninstall", "reconnect-data"];
 const ACCESS_MODES = ["local", "intranet", "public"];
 const SETUP_KEYS = ["schemaVersion", "mode", "platform", "source", "intent", "access", "runtimeProfiles", "capabilities", "dataServices", "storage"];
+const HOST = /^[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?$/;
 
 class SetupConfigError extends Error {
   constructor(code, message, details = {}) {
@@ -45,6 +46,44 @@ function requireSafeStoragePath(value) {
     throw new SetupConfigError("CONFIG_INVALID", "storage.path must be a local path without a URL or credentials.", { field: "storage.path" });
   }
   return path;
+}
+
+function requireHost(value, name) {
+  const host = requireString(value, name);
+  if (!HOST.test(host) || /[:@/\\]/.test(host)) {
+    throw new SetupConfigError("CONFIG_INVALID", `${name} must be a hostname without credentials or a URL.`, { field: name });
+  }
+  return host;
+}
+
+function requirePort(value, name) {
+  if (!Number.isInteger(value) || value < 1 || value > 65535) {
+    throw new SetupConfigError("CONFIG_INVALID", `${name} must be an integer between 1 and 65535.`, { field: name });
+  }
+  return value;
+}
+
+function normalizeNativeDataService(value, name) {
+  const service = requireObject(value, `dataServices.${name}`);
+  if (service.enabled !== true) {
+    throw new SetupConfigError("CONFIG_INVALID", `dataServices.${name}.enabled must remain true for Native installs.`, { field: `dataServices.${name}.enabled` });
+  }
+  const kind = service.kind === undefined
+    ? "managed"
+    : requireEnum(service.kind, `dataServices.${name}.kind`, ["managed", "external"]);
+  if (kind === "managed") {
+    if (Object.keys(service).some((key) => !["enabled", "kind"].includes(key))) {
+      throw new SetupConfigError("CONFIG_INVALID", `dataServices.${name}.managed contains unsupported fields.`, { field: `dataServices.${name}` });
+    }
+    return { enabled: true, kind };
+  }
+  const keys = name === "postgres" ? ["enabled", "kind", "host", "port", "database"] : ["enabled", "kind", "host", "port"];
+  if (Object.keys(service).some((key) => !keys.includes(key))) {
+    throw new SetupConfigError("CONFIG_INVALID", `dataServices.${name}.external contains unsupported fields.`, { field: `dataServices.${name}` });
+  }
+  const normalized = { enabled: true, kind, host: requireHost(service.host, `dataServices.${name}.host`), port: requirePort(service.port, `dataServices.${name}.port`) };
+  if (name === "postgres") normalized.database = requireString(service.database, "dataServices.postgres.database");
+  return normalized;
 }
 
 function requireUniqueStrings(value, name) {
@@ -94,13 +133,21 @@ export function createSetupConfiguration({ loadPlatformContract }) {
     if (dataServiceKeys.length !== 2 || !dataServiceKeys.includes("postgres") || !dataServiceKeys.includes("redis")) {
       throw new SetupConfigError("CONFIG_INVALID", "dataServices must declare postgres and redis only.", { field: "dataServices" });
     }
-    for (const id of ["postgres", "redis"]) {
-      const service = requireObject(dataServices[id], `dataServices.${id}`);
-      if (Object.keys(service).length !== 1 || typeof service.enabled !== "boolean") {
-        throw new SetupConfigError("CONFIG_INVALID", `dataServices.${id} must contain only a boolean enabled value.`, { field: `dataServices.${id}` });
+    const normalizedDataServices = mode === "native"
+      ? {
+        postgres: normalizeNativeDataService(dataServices.postgres, "postgres"),
+        redis: normalizeNativeDataService(dataServices.redis, "redis"),
       }
-      if (!service.enabled) throw new SetupConfigError("CONFIG_INVALID", `dataServices.${id} must remain enabled for the canonical stack.`, { field: `dataServices.${id}` });
-    }
+      : (() => {
+        for (const id of ["postgres", "redis"]) {
+          const service = requireObject(dataServices[id], `dataServices.${id}`);
+          if (Object.keys(service).length !== 1 || typeof service.enabled !== "boolean") {
+            throw new SetupConfigError("CONFIG_INVALID", `dataServices.${id} must contain only a boolean enabled value.`, { field: `dataServices.${id}` });
+          }
+          if (!service.enabled) throw new SetupConfigError("CONFIG_INVALID", `dataServices.${id} must remain enabled for the canonical stack.`, { field: `dataServices.${id}` });
+        }
+        return { postgres: { enabled: true }, redis: { enabled: true } };
+      })();
 
     const storage = requireObject(config.storage, "storage");
     if (Object.keys(storage).length !== 2 || storage.driver !== "local") throw new SetupConfigError("CONFIG_INVALID", "storage must use the supported local driver.", { field: "storage" });
@@ -126,7 +173,7 @@ export function createSetupConfiguration({ loadPlatformContract }) {
       access,
       runtimeProfiles: profileIds.filter((id) => runtimeProfiles.includes(id)),
       capabilities: capabilityIds.filter((id) => capabilities.includes(id)),
-      dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
+      dataServices: normalizedDataServices,
       storage: { driver: "local", path: storagePath },
     };
   };
