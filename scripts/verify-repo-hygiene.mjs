@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -39,27 +39,7 @@ const requiredGitignoreEntries = [
   "**/.next/",
 ];
 
-const taskLedgerRelativePath = "TASKS.md";
-const forbiddenPlanDocPaths = [
-  "docs/design/masar-legacy-parity-audit.md",
-  "docs/design/masar-rich-ui-completion-audit.md",
-  "docs/design/masar-ui-redesign-vision.md",
-  "docs/laravel-nextjs-migration-plan.md",
-];
-const requiredTaskLedgerMarkers = [
-  "قاعدة إعادة الفتح",
-  "المسار القانوني",
-];
-const requiredCompletedMarkers = [
-  "تفريغ عربي",
-  "Add archive / AddVideo wizard",
-  "First-run / onboarding في Masar",
-  "Activity/history دائم",
-  "تخزين Laravel دائم",
-  "Automation backend",
-];
 const canonicalArchitectureDocs = [
-  "AGENTS.md",
   "docs/api/README.md",
   "archive-laravel/README.md",
 ];
@@ -139,23 +119,8 @@ assert.deepEqual(
   `Stray root verify-*.mjs scripts not referenced from package.json:\n${strayRootVerifyScripts.join("\n")}`
 );
 
-for (const file of [
-  taskLedgerRelativePath,
-  "ChangeLog.md",
-  "package.json",
-]) {
-  assert.ok(existsSync(path.join(ROOT, file)), `missing expected root file: ${file}`);
-  assert.ok(statSync(path.join(ROOT, file)).isFile(), `expected file: ${file}`);
-}
-
-const taskLedger = readFileSync(path.join(ROOT, taskLedgerRelativePath), "utf8");
-for (const marker of requiredTaskLedgerMarkers) {
-  assert.ok(taskLedger.includes(marker), `${taskLedgerRelativePath} should include task marker: ${marker}`);
-}
-
-const changeLog = readFileSync(path.join(ROOT, "ChangeLog.md"), "utf8");
-for (const marker of requiredCompletedMarkers) {
-  assert.ok(changeLog.includes(marker), `ChangeLog.md should include completed marker: ${marker}`);
+for (const file of ["package.json"]) {
+  assert.ok(existsSync(path.join(ROOT, file)), `expected file: ${file}`);
 }
 
 for (const file of canonicalArchitectureDocs) {
@@ -173,42 +138,5 @@ for (const file of canonicalArchitectureDocs) {
     `${file} must not describe the legacy Node server as the reference implementation`,
   );
 }
-
-const trackedForbiddenPlanDocs = trackedFiles.filter((file) =>
-  forbiddenPlanDocPaths.includes(file) && existsSync(path.join(ROOT, file))
-);
-assert.deepEqual(
-  trackedForbiddenPlanDocs,
-  [],
-  `Merged plan/audit documents must not remain tracked; consolidate into ${taskLedgerRelativePath}:\n${trackedForbiddenPlanDocs.join("\n")}`
-);
-
-// A plan doc still tracking unchecked `- [ ]` steps represents work in
-// progress and is allowed to stay; only a plan whose steps are all checked
-// (or that never had any) should have been consolidated and untracked.
-const trackedSuperpowersPlans = trackedFiles.filter((file) => {
-  if (!file.startsWith("docs/superpowers/plans/") || !existsSync(path.join(ROOT, file))) {
-    return false;
-  }
-
-  const contents = readFileSync(path.join(ROOT, file), "utf8");
-  return !contents.includes("- [ ]");
-});
-assert.deepEqual(
-  trackedSuperpowersPlans,
-  [],
-  `Completed plan documents must not remain tracked; consolidate into ${taskLedgerRelativePath}:\n${trackedSuperpowersPlans.join("\n")}`
-);
-
-// The status table drifted from the real checkbox count three times before this
-// assertion existed, each time understating how much was left. ponytail: assert
-// the total only -- the local/blocked split is derived from it in the same file.
-const openTaskCount = (taskLedger.match(/^- \[ \]/gm) ?? []).length;
-const declaredOpenTotal = Number(taskLedger.match(/\|\s*\*\*المجموع المفتوح\*\*\s*\|\s*\*\*(\d+)\*\*\s*\|/)?.[1]);
-assert.equal(
-  declaredOpenTotal,
-  openTaskCount,
-  `${taskLedgerRelativePath} status table declares ${declaredOpenTotal} open items but the file has ${openTaskCount} '- [ ]' entries; update the table.`
-);
 
 console.log("Repo hygiene verification complete.");

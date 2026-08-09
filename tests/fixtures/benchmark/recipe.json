@@ -1,6 +1,5 @@
 {
   "schemaVersion": 1,
-  "task": "V1-307A",
   "kind": "benchmark-recipe",
   "generator": "php artisan archive:generate-benchmark-dataset",
   "arguments": {
@@ -17,5 +16,5 @@
     "image-digests.json",
     "attachment-checksums.json"
   ],
-  "notes": "This checked-in file is the deterministic input recipe. It is not generated data or a passing performance result; the runtime manifest is saved with each sanitized baseline evidence bundle."
+  "notes": "This checked-in file is a deterministic input recipe, not generated data or a performance result."
 }

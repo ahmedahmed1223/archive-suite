@@ -1,13 +1,11 @@
 {
   "schemaVersion": 1,
-  "task": "V1-812",
   "generator": "php artisan archive:generate-benchmark-dataset",
   "seed": 42,
   "records": 100000,
   "files": 10000,
   "sampleBytes": 1073741824,
   "store": "benchmark-synthetic",
-  "runManifest": "acceptance evidence artifact: dataset-manifest.json",
   "requiredEvidence": ["dataset-manifest.json", "load-metrics.json", "queue-metrics.json", "integrity.json"],
-  "notes": "Input specification only; a real baseline must bind seed, counts, disk, source commit, image digests, timestamps, and all attachment checksums."
+  "notes": "Input specification only. A real baseline binds the seed, counts, disk, source commit, image digests, timestamps, and attachment checksums."
 }

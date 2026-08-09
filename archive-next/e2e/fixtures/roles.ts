@@ -1,7 +1,7 @@
 /**
  * V1-303B: role-based auth fixtures — shared definitions.
  *
- * TASKS.md is explicit: "لا تستخدم token مدير موحدًا" — no single shared admin
+ * Test isolation requires that no single shared administrator token is used.
  * token. Each role below gets its own real authenticated session against the
  * live Laravel API (its own `va_refresh` cookie, minted by its own
  * /auth/login), and its own namespaced data so one role's spec cannot observe

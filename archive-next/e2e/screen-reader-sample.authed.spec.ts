@@ -11,7 +11,7 @@ import { DYNAMIC_ROUTE_PARAMS, ROUTE_COVERAGE } from './fixtures/route-inventory
  * tree a screen reader reads, and the focus walk IS the announcement order it
  * speaks on Tab. What a machine cannot judge is announcement *quality* (is
  * the Arabic wording natural?) — that stays out of scope and is recorded as
- * such in docs/evidence/v1-303d/README.md. What it CAN catch, and what this
+ * such in a manual accessibility review. What it CAN catch, and what this
  * asserts, is the defect a human pass actually finds: a focusable control
  * with no accessible name.
  *
@@ -31,7 +31,7 @@ const TARGET_ROUTES = [
 /** Enough to cross the nav and reach page content; not a full-page sweep. */
 const MAX_FOCUS_STOPS = 40;
 
-const EVIDENCE_DIR = path.resolve(process.cwd(), '../docs/evidence/v1-303d');
+const EVIDENCE_DIR = path.resolve(process.cwd(), 'test-results/screen-reader-sample');
 
 interface FocusStop {
   readonly index: number;

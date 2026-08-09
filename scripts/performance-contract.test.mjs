@@ -4,7 +4,7 @@ import { loadPerformanceContract, validatePerformanceContract } from "./performa
 
 test("performance contract rejects an unavailable dataset manifest", async () => {
   const contract = await loadPerformanceContract();
-  const invalid = { ...contract, dataset: { ...contract.dataset, manifest: "docs/acceptance/datasets/missing-manifest.json" } };
+  const invalid = { ...contract, dataset: { ...contract.dataset, manifest: "tests/fixtures/benchmark/missing-recipe.json" } };
 
   assert.ok(validatePerformanceContract(invalid).includes("dataset.manifest must resolve to a checked-in benchmark recipe."));
 });

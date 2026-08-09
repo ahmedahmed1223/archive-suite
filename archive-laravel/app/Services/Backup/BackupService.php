@@ -100,7 +100,7 @@ class BackupService
 
         // Crypt::encrypt needs the whole payload as a single string, so the
         // encrypted path cannot stream and still buffers the archive in memory.
-        // Streaming encryption is a separate change (V1-X05 in TASKS.md); until
+        // Streaming encryption is handled separately; until
         // then only the default, unencrypted path is memory-flat.
         $checksum = (bool) config('archive.backups.encryption_enabled')
             ? $this->writeBufferedArchive($path, $manifest, $tables)

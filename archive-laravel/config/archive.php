@@ -67,7 +67,7 @@ return [
     ],
 
     // V1-001: scope-lock feature flags for experimental/hidden route groups
-    // (see docs/scope/v1-route-scope.md). Default true in local/testing so
+    // Default true in local/testing so
     // the existing test suite keeps passing without every test opting in;
     // false everywhere else (staging/production) until explicitly enabled.
     //

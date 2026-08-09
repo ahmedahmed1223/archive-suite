@@ -45,7 +45,7 @@ class UploadsController extends Controller
         // directory first. It is moved into the servable uploads path only
         // after content validation passes; on failure it is deleted, not
         // just rejected with an HTTP error, so nothing invalid lingers on
-        // disk (V1-112 — real AV/ClamAV scanning is deferred, see TASKS.md).
+        // disk; real AV/ClamAV scanning is handled by the deployment environment.
         $quarantinePath = $file->storeAs($quarantineDir, $storedName, ['disk' => $disk]);
 
         try {

@@ -11,11 +11,9 @@ use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 /**
- * V1-001: scope lock. Every route registered under /api/v1 must be
- * classified (v1 | admin | experimental | hidden) in the fixture below, kept
- * in sync with docs/scope/v1-route-scope.md. New routes fail this test until
- * classified — same coverage-over-Route::getRoutes() trick as
- * RoleMatrixApiTest (V1-102) uses for role coverage.
+ * Every route registered under /api/v1 must be classified
+ * (v1 | admin | experimental | hidden) in the fixture below. New routes fail
+ * this test until classified.
  */
 class RouteScopeTest extends TestCase
 {
@@ -691,7 +689,7 @@ class RouteScopeTest extends TestCase
             }
         }
 
-        $this->assertSame([], $missing, 'Unclassified /api/v1 route(s) — add to RouteScopeTest::FIXTURE and docs/scope/v1-route-scope.md: '.implode(', ', $missing));
+        $this->assertSame([], $missing, 'Unclassified /api/v1 route(s) — add to RouteScopeTest::FIXTURE: '.implode(', ', $missing));
     }
 
     public function test_fixture_has_no_stale_entries(): void

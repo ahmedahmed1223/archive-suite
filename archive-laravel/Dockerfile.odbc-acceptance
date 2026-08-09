@@ -9,7 +9,7 @@
 #
 # It deliberately does not modify the production image: adding unixODBC and a
 # driver there changes image size and CVE surface, which is a release decision,
-# not a test decision. See TASKS.md V1-X02 for the tracked gap.
+# not a test decision.
 FROM archive-laravel-runtime-test
 
 RUN set -eux; \

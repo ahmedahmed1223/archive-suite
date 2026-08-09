@@ -12,7 +12,7 @@ use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 /**
- * V1 TASKS.md: stable machine-readable `code` alongside the existing
+ * Stable machine-readable `code` alongside the existing
  * human-readable `error` string in the {ok:false, error, code} envelope.
  * `error` text is never asserted here to change — only that `code` is now
  * present and correct, so the Next.js pages can branch on it instead of

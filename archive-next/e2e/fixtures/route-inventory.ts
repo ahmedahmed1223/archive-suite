@@ -14,8 +14,8 @@ import type { RoleName } from './roles';
  * excluded-with-a-reason fails `route-inventory.spec.ts` — the point is that a
  * route can never go untested *silently*.
  *
- * Classification source: docs/scope/v1-route-scope.md + RouteScopeTest's
- * ROLE_FIXTURE (V1-102H). `role` is the LEAST-privileged role that can render
+ * Classification source: the backend route-scope fixture. `role` is the
+ * LEAST-privileged role that can render
  * the route — testing /settings/users as viewer would only ever assert a 403
  * shell, so admin surfaces are exercised as admin.
  */

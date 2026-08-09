@@ -11,7 +11,7 @@
     "viewportWidths": [375, 768, 1280]
   },
   "dataset": {
-    "manifest": "docs/acceptance/datasets/v1-307a.manifest.json",
+    "manifest": "tests/fixtures/benchmark/recipe.json",
     "records": 100000,
     "files": 10000,
     "sampleBytes": 1073741824
