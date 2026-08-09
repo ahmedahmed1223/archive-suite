@@ -1,5 +1,7 @@
 # Native support policy
 
+[العربية](native-support.ar.md) · [Documentation](README.md)
+
 Archive Suite officially supports direct-host deployment on Windows and Linux.
 Native packages run the canonical Laravel and Next.js services without Docker
 on the target host.

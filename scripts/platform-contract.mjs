@@ -90,7 +90,10 @@ function validateContract(contract) {
     assertContract(Array.isArray(platform.profiles) && hasExactly(platform.profiles, RUNTIME_PROFILE_IDS), `${platform.id} must declare exactly the legal runtime profiles`);
     assertContract(Array.isArray(platform.capabilities) && hasExactly(platform.capabilities, CAPABILITY_IDS), `${platform.id} must declare exactly the legal capabilities`);
     assertContract(platform.dataPathFamily === "windows" || platform.dataPathFamily === "linux", `${platform.id} has an unknown data-path family`);
-    assertContract(platform.resourceStatus === "provisional", `${platform.id} resources must be provisional`);
+    assertContract(["provisional", "supported"].includes(platform.resourceStatus), `${platform.id} has an unsupported resource status`);
+    if (platform.mode === "native") {
+      assertContract(platform.resourceStatus === "supported", `${platform.id} resources must be supported`);
+    }
   }
   for (const id of RUNTIME_PROFILE_IDS) {
     assertContract(contract.runtimeProfiles[id] && STATUSES.includes(contract.runtimeProfiles[id].status), `runtime profile ${id} has an unsupported lifecycle status`);

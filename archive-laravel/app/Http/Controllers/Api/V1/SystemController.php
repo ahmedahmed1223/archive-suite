@@ -176,6 +176,7 @@ class SystemController extends Controller
             if (isset($validated['legacyPasswordUpgrade'])) {
                 $service->updateLegacyPasswordUpgrade($validated['legacyPasswordUpgrade']);
             }
+            if (isset($validated['whisperDevice'])) $service->updateWhisperDevice($validated['whisperDevice']);
 
             return response()->json([
                 'ok' => true,

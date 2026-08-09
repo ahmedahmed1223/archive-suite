@@ -21,6 +21,7 @@ use App\Services\Media\WhisperTranscriber;
 use App\Services\Odbc\NativeOdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionProbe;
+use App\Services\Security\SecuritySettingsService;
 use Google\Cloud\Storage\StorageClient;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
@@ -67,6 +68,8 @@ class AppServiceProvider extends ServiceProvider
                 config('media.whisper_compute_type'),
                 config('media.whisper_diarize'),
                 config('media.whisper_hf_token'),
+                null,
+                $app->make(SecuritySettingsService::class),
             )
         );
 

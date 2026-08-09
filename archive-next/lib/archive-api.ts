@@ -1263,6 +1263,7 @@ export interface SecuritySettings {
   perUserRateLimit: number;
   webhookUrlAllowlist: string[];
   legacyPasswordUpgrade: boolean;
+  whisperDevice: "cpu" | "cuda";
   cspPolicy: string;
   corsOrigins: string[];
 }
@@ -1576,6 +1577,7 @@ export interface ArchiveApiClient {
   files(params?: { q?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ files: ArchiveFile[] }>>;
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
+  updateSecuritySettings(payload: Partial<SecuritySettings>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
   dropboxConnection(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
   connectDropbox(payload: { accessToken: string; refreshToken?: string; folderPath?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
   authorizeDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ authorizationUrl: string }>>;
@@ -2484,6 +2486,8 @@ export function createArchiveApiClient({
       post<{ token: string; url?: string }>("/share", { scope: { itemIds: payload.itemIds }, permission: payload.permission, expiresAt: payload.expiresAt }, options),
     getSecuritySettings: (options?: AuthRequestOptions) =>
       get<{ settings: SecuritySettings }>("/system/security-settings", options),
+    updateSecuritySettings: (payload: Partial<SecuritySettings>, options?: AuthRequestOptions) =>
+      patch<{ settings: SecuritySettings }>("/system/security-settings", payload, options),
     dropboxConnection: (options?: AuthRequestOptions) =>
       get<{ dropbox: DropboxConnection }>("/system/dropbox", options),
     connectDropbox: (payload: { accessToken: string; refreshToken?: string; folderPath?: string; expiresAt?: string }, options?: AuthRequestOptions) =>

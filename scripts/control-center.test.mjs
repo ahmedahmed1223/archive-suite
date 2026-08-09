@@ -1014,13 +1014,14 @@ test("doctor uses the Windows-safe pnpm invocation and reports the environment",
   assert.doesNotMatch(out, /pnpm not found/);
 });
 
-test("doctor filters the platform contract and keeps native deployment explicitly planned", () => {
+test("doctor reports Native as a supported, read-only target", () => {
   const r = run(["doctor", "--mode=native", "--platform=linux-native"]);
   const out = r.stderr + r.stdout;
   assert.equal(r.status, 0, out);
   assert.match(out, /Platform compatibility contract v1\.0/);
-  assert.match(out, /Linux Native \(linux-native\) — planned/);
-  assert.match(out, /Native deployment is planned: no install or start action is available yet\./);
+  assert.match(out, /Linux Native \(linux-native\) — supported/);
+  assert.match(out, /Docker checks skipped for the selected Native platform\./);
+  assert.match(out, /Read-only checks completed for the selected Native platform\./);
   assert.match(out, /Read-only report/);
   assert.doesNotMatch(out, /docker compose up/);
 });

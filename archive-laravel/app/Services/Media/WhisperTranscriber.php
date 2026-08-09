@@ -2,6 +2,8 @@
 
 namespace App\Services\Media;
 
+use App\Services\Security\SecuritySettingsService;
+
 class WhisperTranscriber
 {
     private readonly MediaPathGuard $pathGuard;
@@ -17,6 +19,7 @@ class WhisperTranscriber
         private readonly bool $whisperDiarize = false,
         private readonly string $hfToken = '',
         ?MediaPathGuard $pathGuard = null,
+        private readonly ?SecuritySettingsService $securitySettings = null,
     ) {
         $this->pathGuard = $pathGuard ?? new MediaPathGuard();
     }
@@ -31,9 +34,14 @@ class WhisperTranscriber
      */
     public function transcribe(string $inputPath, string $recordId, array $jobOptions = []): array
     {
-        // ponytail: live whisper smoke-test deferred.
-        $device = $jobOptions['device'] ?? $this->whisperDevice;
-        $computeType = $jobOptions['computeType'] ?? $this->whisperComputeType;
+        $selectedDevice = $this->securitySettings?->getSettings()['whisperDevice'] ?? null;
+        $device = $jobOptions['device'] ?? $selectedDevice ?? $this->whisperDevice;
+        $computeType = $jobOptions['computeType']
+            ?? match ($device) {
+                'cpu' => 'int8',
+                'cuda' => 'float16',
+                default => $this->whisperComputeType,
+            };
         $outputFormats = $jobOptions['outputFormats'] ?? ['srt', 'vtt', 'ttml'];
 
         // Normalize formats: always include 'vtt' for TTML derivation

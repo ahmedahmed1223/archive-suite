@@ -8785,6 +8785,7 @@
           "perUserRateLimit",
           "webhookUrlAllowlist",
           "legacyPasswordUpgrade",
+          "whisperDevice",
           "cspPolicy",
           "corsOrigins"
         ],
@@ -8796,6 +8797,12 @@
             "items": { "type": "string", "format": "uri" }
           },
           "legacyPasswordUpgrade": { "type": "boolean" },
+          "whisperDevice": {
+            "type": "string",
+            "enum": ["cpu", "cuda"],
+            "default": "cpu",
+            "description": "Whisper execution device. CPU is the default; CUDA requires a compatible GPU runtime."
+          },
           "cspPolicy": {
             "type": "string",
             "description": "Deploy-time only; read-only in the API"
@@ -8828,7 +8835,8 @@
             "type": "array",
             "items": { "type": "string", "format": "uri" }
           },
-          "legacyPasswordUpgrade": { "type": "boolean" }
+          "legacyPasswordUpgrade": { "type": "boolean" },
+          "whisperDevice": { "type": "string", "enum": ["cpu", "cuda"] }
         }
       },
       "SavedFavorite": {

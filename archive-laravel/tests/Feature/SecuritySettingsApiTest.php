@@ -3,6 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\Media\FakeProcessRunner;
+use App\Services\Media\ProcessRunner;
+use App\Services\Media\WhisperTranscriber;
+use App\Services\Security\SecuritySettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -76,12 +80,33 @@ class SecuritySettingsApiTest extends TestCase
                     'perUserRateLimit',
                     'webhookUrlAllowlist',
                     'legacyPasswordUpgrade',
+                    'whisperDevice',
                     'cspPolicy',
                     'corsOrigins',
                 ],
             ]);
 
         $this->assertIsArray($response->json('settings.webhookUrlAllowlist'));
+    }
+
+    public function test_whisper_device_setting_is_used_by_new_transcription_jobs(): void
+    {
+        $runner = new FakeProcessRunner();
+        $this->app->instance(ProcessRunner::class, $runner);
+        $this->app->forgetInstance(WhisperTranscriber::class);
+
+        app(SecuritySettingsService::class)->updateWhisperDevice('cuda');
+
+        app(WhisperTranscriber::class)->transcribe('archive/audio.mp3', 'whisper-device-setting');
+
+        $command = $runner->lastCommand();
+        $deviceIndex = array_search('--device', $command, true);
+        $computeTypeIndex = array_search('--compute_type', $command, true);
+
+        $this->assertNotFalse($deviceIndex);
+        $this->assertSame('cuda', $command[$deviceIndex + 1]);
+        $this->assertNotFalse($computeTypeIndex);
+        $this->assertSame('float16', $command[$computeTypeIndex + 1]);
     }
 
     public function test_patch_security_settings_requires_auth(): void
@@ -149,6 +174,20 @@ class SecuritySettingsApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('settings.legacyPasswordUpgrade', true);
+    }
+
+    public function test_patch_security_settings_updates_whisper_device(): void
+    {
+        $token = $this->loginAs('admin@example.test', 'password');
+
+        $this->patchJson('/api/v1/system/security-settings', [
+            'whisperDevice' => 'cuda',
+        ], [
+            'Authorization' => 'Bearer '.$token,
+        ])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('settings.whisperDevice', 'cuda');
     }
 
     public function test_patch_security_settings_rejects_invalid_access_token_ttl(): void

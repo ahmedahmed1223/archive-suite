@@ -37,6 +37,7 @@ class SecuritySettingsService
             'legacyPasswordUpgrade' => isset($overrides['legacyPasswordUpgrade'])
                 ? (bool) $overrides['legacyPasswordUpgrade']
                 : (bool) config('archive.security.legacy_password_upgrade', false),
+            'whisperDevice' => $overrides['whisperDevice'] ?? (string) config('media.whisper_device', 'cpu'),
             // ponytail: CSP/CORS are deploy-time config only — read-only, never writable.
             'cspPolicy' => (string) config('archive.security.csp_policy', ''),
             'corsOrigins' => (array) config('archive.security.cors_origins', []),
@@ -91,6 +92,12 @@ class SecuritySettingsService
     public function updateLegacyPasswordUpgrade(bool $enabled): void
     {
         $this->persist(['legacyPasswordUpgrade' => $enabled]);
+    }
+
+    public function updateWhisperDevice(string $device): void
+    {
+        if (! in_array($device, ['cpu', 'cuda'], true)) throw new InvalidArgumentException('Whisper device must be cpu or cuda.');
+        $this->persist(['whisperDevice' => $device]);
     }
 
     /**

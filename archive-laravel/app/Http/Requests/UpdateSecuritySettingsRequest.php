@@ -29,6 +29,7 @@ class UpdateSecuritySettingsRequest extends FormRequest
             'webhookUrlAllowlist' => ['array'],
             'webhookUrlAllowlist.*' => ['url', 'regex:/^https:\/\//'],
             'legacyPasswordUpgrade' => ['boolean'],
+            'whisperDevice' => ['in:cpu,cuda'],
         ];
     }
 
@@ -64,7 +65,7 @@ class UpdateSecuritySettingsRequest extends FormRequest
         }
 
         // Allowlist writable fields only — reject CSP, CORS, and other deploy-time settings
-        $allowed = ['accessTokenTtlMinutes', 'perUserRateLimit', 'webhookUrlAllowlist', 'legacyPasswordUpgrade'];
+        $allowed = ['accessTokenTtlMinutes', 'perUserRateLimit', 'webhookUrlAllowlist', 'legacyPasswordUpgrade', 'whisperDevice'];
 
         return array_intersect_key($validated, array_flip($allowed));
     }

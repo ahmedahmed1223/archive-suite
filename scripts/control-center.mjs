@@ -907,9 +907,8 @@ async function guidedSetup() {
   }
   const resolved = planned.details.configuration;
 
-  // Step 1 is deliberately run after resolving the requested platform. That
-  // lets a planned Native choice remain inspectable even on a host without
-  // Docker, while Docker choices still receive their platform-specific checks.
+  // Step 1 runs after resolving the requested platform so each supported path
+  // receives its own host checks without requiring Docker for Native hosts.
   log(`\n${C.b}Step 1/5 — Environment check (read-only)${C.x}`);
   const doctorStatus = await runDoctor({ mode: resolved.mode, platformId: resolved.platform });
   if (doctorStatus !== 0) {
@@ -931,8 +930,9 @@ async function guidedSetup() {
   log(`  Capabilities: ${resolved.capabilities.join(", ") || "none"}`);
   log("  The plan was validated via the same resolver used by `setup plan --config`; no files have been written yet.");
   const flow = await runGuidedProvisioningFlow({ ask, log, configuration: resolved, provision: async () => {
-  if (resolved.mode !== "docker") {
-    return renderSetupResult(setupConfiguration.errorResult("MODE_UNSUPPORTED", "Native installation is planned and cannot be executed yet; no files or services were changed.", { mode: resolved.mode }));
+  if (resolved.mode === "native") {
+    log(`\n${C.b}Step 3/5 — Provision Native configuration${C.x}`);
+    return await nativeSetupInstallOrRepair("install", resolved);
   }
 
   const guidedPreflight = hostPreflightFor(resolved)();
@@ -1105,7 +1105,7 @@ async function runDoctor({ mode: requestedMode, platformId: requestedPlatformId 
     if (dc) ok("Docker Compose — available");
     else warn("Docker Compose not found — install Docker Desktop or docker-compose v2");
   } else {
-    log(`${C.d}Docker checks skipped: the selected native platform is planned and no native services are installed or started.${C.x}`);
+    log(`${C.d}Docker checks skipped for the selected Native platform.${C.x}`);
   }
 
   // .env file
@@ -1115,7 +1115,7 @@ async function runDoctor({ mode: requestedMode, platformId: requestedPlatformId 
     warn(`.env not found at ${ENV_PATH} — run Deploy first`);
   }
 
-  // Health is a safe GET, but does not apply to a planned native deployment.
+  // Health is a safe GET. Native host checks do not start or alter services.
   if (!nativeOnly) {
     const env = readEnv();
     const url = defaultHealthUrl(env);
@@ -1126,13 +1126,13 @@ async function runDoctor({ mode: requestedMode, platformId: requestedPlatformId 
       log(`  ${C.d}${url} — not responding (server may not be started yet — run 'start')${C.x}`);
     }
   } else {
-    log(`${C.d}Health endpoint skipped: native deployment is planned and this doctor command does not start services.${C.x}`);
+    log(`${C.d}Health endpoint is checked after the Native installer starts its services.${C.x}`);
   }
 
   // Summary
   hr();
   if (issues === 0 && nativeOnly) {
-    ok("Read-only checks completed. Native deployment remains planned; no install or start action is available.");
+    ok("Read-only checks completed for the selected Native platform.");
   } else if (issues === 0) {
     ok("All checks passed. Run 'setup quick' to deploy and start, or 'node scripts/control-center.mjs start'.");
   } else {

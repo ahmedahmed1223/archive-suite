@@ -160,6 +160,7 @@ function formatPreviewValue(value: unknown) {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SecuritySettings | null>(null);
+  const [whisperSaveState, setWhisperSaveState] = useState<{ status: "idle" | "saving" | "success" | "error"; message?: string }>({ status: "idle" });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [odbc, setOdbc] = useState<OdbcProbe | null>(null);
@@ -343,6 +344,28 @@ export default function SettingsPage() {
     }
   };
 
+  const updateWhisperDevice = async (whisperDevice: "cpu" | "cuda") => {
+    if (!settings) return;
+
+    setWhisperSaveState({ status: "saving" });
+
+    try {
+      const response = await createArchiveApiClient().updateSecuritySettings({ whisperDevice });
+      if (!response.ok) {
+        setWhisperSaveState({ status: "error", message: response.error || "تعذر حفظ إعداد Whisper." });
+        return;
+      }
+
+      setSettings(response.settings);
+      setWhisperSaveState({ status: "success", message: "تم حفظ إعداد Whisper. سيُطبق على مهام التفريغ الجديدة." });
+    } catch (err) {
+      setWhisperSaveState({
+        status: "error",
+        message: err instanceof Error ? err.message : "تعذر الاتصال بالخادم لحفظ إعداد Whisper."
+      });
+    }
+  };
+
   const runDatabaseConnectionTest = async () => {
     const database = databaseTestForm.database.trim();
     if (!database) {
@@ -396,6 +419,7 @@ export default function SettingsPage() {
         { label: "حد الطلبات لكل دقيقة", value: `${settings.perUserRateLimit} طلب` },
         { label: "ترقية كلمات المرور القديمة", value: settings.legacyPasswordUpgrade ? "مفعلة" : "معطلة" },
         { label: "قائمة Webhook المسموحة", value: settings.webhookUrlAllowlist.length > 0 ? `${settings.webhookUrlAllowlist.length} رابط` : "فارغة" },
+        { label: "معالج Whisper", value: settings.whisperDevice === "cuda" ? "GPU (CUDA)" : "CPU" },
       ]
     : [];
   const odbcRows = odbc
@@ -571,6 +595,42 @@ export default function SettingsPage() {
             )}
 
           </div>
+        </article>
+
+        <article className="workspace-panel" aria-label="إعداد معالجة Whisper">
+          <div className="workspace-panel__header">
+            <div>
+              <h2>معالجة Whisper</h2>
+              <p>اختر المعالج الذي تستخدمه مهام تفريغ الصوت والفيديو الجديدة. المعالج المركزي هو الإعداد الافتراضي.</p>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <p className="helper-text">جاري تحميل إعداد Whisper...</p>
+          ) : settings ? (
+            <div className="stack">
+              <label>
+                <span className="field-note">المعالج</span>
+                <select
+                  className="search-input"
+                  value={settings.whisperDevice}
+                  disabled={whisperSaveState.status === "saving"}
+                  onChange={(event) => void updateWhisperDevice(event.target.value as "cpu" | "cuda")}
+                >
+                  <option value="cpu">CPU — الافتراضي</option>
+                  <option value="cuda">GPU عبر CUDA</option>
+                </select>
+              </label>
+              <p className="helper-text">يتطلب خيار GPU بيئة Whisper مجهزة بـ CUDA وبطاقة رسومية متوافقة.</p>
+              {whisperSaveState.status !== "idle" && whisperSaveState.status !== "saving" && (
+                <p className={`form-status ${whisperSaveState.status === "error" ? "status-error" : "status-success"}`} role={whisperSaveState.status === "error" ? "alert" : undefined}>
+                  {whisperSaveState.message}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="helper-text status-error">تعذر تحميل إعداد Whisper.</p>
+          )}
         </article>
 
         <LanguageSettings />

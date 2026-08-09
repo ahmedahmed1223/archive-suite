@@ -5378,6 +5378,12 @@ export interface components {
             legacyPasswordUpgrade: boolean;
             perUserRateLimit: number;
             webhookUrlAllowlist: string[];
+            /**
+             * @description Whisper execution device. CPU is the default; CUDA requires a compatible GPU runtime.
+             * @default cpu
+             * @enum {string}
+             */
+            whisperDevice: "cpu" | "cuda";
         };
         SecuritySettingsResponse: components["schemas"]["OkEnvelope"] & {
             settings: components["schemas"]["SecuritySettings"];
@@ -5684,6 +5690,8 @@ export interface components {
             legacyPasswordUpgrade?: boolean;
             perUserRateLimit?: number;
             webhookUrlAllowlist?: string[];
+            /** @enum {string} */
+            whisperDevice?: "cpu" | "cuda";
         };
         UpdateUserRoleRequest: {
             /** @enum {string} */
