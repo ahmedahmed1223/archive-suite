@@ -50,7 +50,7 @@ jobs:
 
   windows-native-build:
     name: Build Windows Native package
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows, x64, archive-native-release]
     timeout-minutes: 60
     needs: verify
     permissions:

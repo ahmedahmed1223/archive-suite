@@ -69,8 +69,8 @@ export async function runLinuxNativeAcceptance({
   version,
   passwordFactory = () => randomBytes(24).toString("base64url"),
   systemdImage = "archive-native-systemd-acceptance:bookworm",
-  postgresImage = "archive-suite/postgres:1.0.0-bundletest",
-  redisImage = "archive-suite/redis:1.0.0-bundletest",
+  postgresImage = "pgvector/pgvector:0.8.5-pg18@sha256:12a379b47ad65289572ea0756efc11b7c241a6662833e8af7038cd3b73d647e0",
+  redisImage = "redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005",
   serviceAttempts = 90,
   progress = () => {},
 } = {}) {

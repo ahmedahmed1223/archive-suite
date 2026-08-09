@@ -78,8 +78,8 @@ export function createWindowsAcceptanceEffects({ bundlePath, repoRoot, runId, pr
       mkdirSync(storagePath, { recursive: true });
       writeFileSync(configPath, `${JSON.stringify(setupConfiguration(storagePath), null, 2)}\n`, { mode: 0o600 });
       requireOk(docker(["network", "create", "--label", label, names.network]), "Docker network creation");
-      requireOk(docker(["run", "-d", "--name", names.postgres, "--network", names.network, "--label", label, "-p", "127.0.0.1::5432", "-e", "POSTGRES_DB=archive", "-e", "POSTGRES_USER=archive", "-e", `POSTGRES_PASSWORD=${databasePassword}`, "archive-suite/postgres:1.0.0-bundletest"]), "PostgreSQL start");
-      requireOk(docker(["run", "-d", "--name", names.redis, "--network", names.network, "--label", label, "-p", "127.0.0.1::6379", "archive-suite/redis:1.0.0-bundletest", "redis-server", "--appendonly", "no"]), "Redis start");
+      requireOk(docker(["run", "-d", "--name", names.postgres, "--network", names.network, "--label", label, "-p", "127.0.0.1::5432", "-e", "POSTGRES_DB=archive", "-e", "POSTGRES_USER=archive", "-e", `POSTGRES_PASSWORD=${databasePassword}`, "pgvector/pgvector:0.8.5-pg18@sha256:12a379b47ad65289572ea0756efc11b7c241a6662833e8af7038cd3b73d647e0"]), "PostgreSQL start");
+      requireOk(docker(["run", "-d", "--name", names.redis, "--network", names.network, "--label", label, "-p", "127.0.0.1::6379", "redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005", "redis-server", "--appendonly", "no"]), "Redis start");
       await waitFor(() => docker(["exec", names.postgres, "pg_isready", "-U", "archive", "-d", "archive"]).status === 0, "PostgreSQL readiness");
       await waitFor(() => docker(["exec", names.redis, "redis-cli", "ping"]).status === 0, "Redis readiness");
       const postgresPort = parsePublishedPort(requireOk(docker(["port", names.postgres, "5432/tcp"]), "PostgreSQL port lookup").stdout);
