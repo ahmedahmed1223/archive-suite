@@ -11,6 +11,7 @@ const containerName = `archive-laravel-e2e-${process.pid}`;
 // `composer install`, so vendor/autoload.php never gets created (silent
 // downstream failure: "Laravel did not become ready").
 const LARAVEL_RUNTIME_IMAGE = "archive-laravel-e2e-runtime";
+const LARAVEL_VENDOR_VOLUME = "archive-laravel-e2e-vendor";
 const children = [];
 let startedLaravelContainer = false;
 
@@ -129,6 +130,8 @@ async function main() {
       containerName,
       "-v",
       `${ROOT}:/app`,
+      "-v",
+      `${LARAVEL_VENDOR_VOLUME}:/app/archive-laravel/vendor`,
       "-w",
       "/app/archive-laravel",
       "-p",
@@ -143,7 +146,7 @@ async function main() {
       // actually draining scheduled-uploads — `php artisan serve` alone only
       // serves HTTP. Both run backgrounded inside this one container so the
       // due-now->completed scenario has something to complete it against.
-      "test -f .env || cp .env.example .env; test -d vendor || composer install --no-interaction; php artisan config:clear && php artisan migrate:fresh --seed --seeder=NextIntegrationSeeder --force && (php artisan schedule:work &) && (php artisan queue:work --queue=scheduled-uploads,default --tries=3 --sleep=1 &) && php artisan serve --host=0.0.0.0 --port=8000",
+      "test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction; php artisan config:clear && php artisan migrate:fresh --seed --seeder=NextIntegrationSeeder --force && (php artisan schedule:work &) && (php artisan queue:work --queue=scheduled-uploads,default --tries=3 --sleep=1 &) && php artisan serve --host=0.0.0.0 --port=8000",
     ]);
   }
 

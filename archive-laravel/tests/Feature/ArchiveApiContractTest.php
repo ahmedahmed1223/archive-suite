@@ -9,9 +9,10 @@ class ArchiveApiContractTest extends TestCase
 {
     public function test_it_serves_the_versioned_health_endpoint(): void
     {
-        $this->getJson('/api/v1/health')
-            ->assertOk()
-            ->assertJson(fn (AssertableJson $json) => $json
+        $response = $this->getJson('/api/v1/health');
+
+        $this->assertSame(200, $response->status(), $response->getContent());
+        $response->assertJson(fn (AssertableJson $json) => $json
                 ->where('ok', true)
                 ->where('backend', 'laravel')
                 ->has('engine')

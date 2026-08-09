@@ -209,7 +209,8 @@ test("release builds bundle after signature verification and attaches it with to
   assert.match(release, /NEXT_IMAGE: "\$\{\{ env\.NEXT_IMAGE \}\}@/);
   assert.match(release, /SHA256SUMS/);
   assert.match(release, /basename[^\n]+offline_bundle/);
-  assert.match(release, /gh release create[^\n]+\$\{offline_asset\}/);
+  assert.match(release, /artifacts=\([^\n]+"\$\{offline_asset\}"/);
+  assert.match(release, /gh release create[^\n]+"\$\{artifacts\[@\]\}" SHA256SUMS/);
   assert.doesNotMatch(release, /sha256sum[^\n]+offline_bundle/);
 });
 

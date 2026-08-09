@@ -2,6 +2,11 @@ import { test, expect } from './fixtures/auth';
 
 const ui = expect.configure({ timeout: 30_000 });
 
+async function openFreshUpload(page: import('@playwright/test').Page) {
+  await page.addInitScript(() => window.localStorage.removeItem('archive.intake-draft'));
+  await page.goto('/uploads');
+}
+
 /**
  * datetime-local inputs (and this app's validateScheduleTime) treat the value
  * as browser-local wall-clock time, not UTC — `date.toISOString()` returns
@@ -24,7 +29,7 @@ test.describe('scheduled uploads — live acceptance', () => {
   test('schedule a file, see it listed, reschedule it, then cancel it', async ({ roleSession }) => {
     test.setTimeout(120_000);
     const { page } = await roleSession('editor');
-    await page.goto('/uploads');
+    await openFreshUpload(page);
 
     await page.setInputFiles('input[type="file"]', {
       name: `e2e-scheduled-${Date.now()}.txt`,
@@ -64,7 +69,7 @@ test.describe('scheduled uploads — live acceptance', () => {
   test('a due-now schedule reaches completed via the live scheduler and worker', async ({ roleSession }) => {
     test.setTimeout(180_000);
     const { page } = await roleSession('editor');
-    await page.goto('/uploads');
+    await openFreshUpload(page);
 
     const fileName = `e2e-due-now-${Date.now()}.txt`;
     await page.setInputFiles('input[type="file"]', {
