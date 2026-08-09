@@ -134,7 +134,7 @@ export function createUninstall({
       return fail("UNINSTALL_SERVICES_FAILED", "The installed services could not be removed safely.", [
         "Your data and the installation manifest are unchanged.",
         "Review setup status and Docker output, then retry the uninstall.",
-      ]);
+      ], removed?.details || {});
     }
 
     // Application/runtime files are separate from user data. They are

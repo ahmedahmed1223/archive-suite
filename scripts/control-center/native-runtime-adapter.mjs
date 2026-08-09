@@ -141,11 +141,11 @@ export function createNativeServiceRemover({ serviceControl, removeFirewallRules
       // failed removal aborts, leaving the manifest intact for a retry.
       serviceControl.stop(id);
       const removed = serviceControl.remove(id);
-      if ((removed?.status ?? 1) !== 0) return { ok: false };
+      if ((removed?.status ?? 1) !== 0) return { ok: false, details: { stage: "service-remove", service: id, status: removed?.status ?? 1 } };
     }
     if (removeFirewallRules) {
       const cleared = removeFirewallRules(manifest.services);
-      if ((cleared?.status ?? 1) !== 0) return { ok: false };
+      if ((cleared?.status ?? 1) !== 0) return { ok: false, details: { stage: "firewall-remove", status: cleared?.status ?? 1 } };
     }
     return { ok: true };
   };

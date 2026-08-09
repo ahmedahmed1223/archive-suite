@@ -125,7 +125,11 @@ export function createWindowsAcceptanceEffects({ bundlePath, repoRoot, runId, pr
     },
     async uninstall() {
       progress("Uninstalling manifest-owned Windows services and application files.");
-      requireOk(controlCenter("uninstall", { ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestPath }), "Native uninstall");
+      const result = controlCenter("uninstall", { ARCHIVE_INSTALLATION_MANIFEST_PATH: manifestPath });
+      if (result.status !== 0) {
+        const diagnostic = safeDiagnostic(`${result.stdout}\n${result.stderr}`);
+        throw new Error(`Windows Native acceptance failed during Native uninstall.${diagnostic ? ` ${diagnostic}` : ""}`);
+      }
     },
     async proveApplicationCleanup() {
       await waitFor(() => !existsSync(bundlePath), "deferred application cleanup", 150);

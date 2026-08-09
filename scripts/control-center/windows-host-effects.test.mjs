@@ -111,6 +111,18 @@ test("removeFirewallRules deletes the same named rule", () => {
   assert.deepEqual(calls[0], ["netsh", "advfirewall", "firewall", "delete", "rule", "name=archive-http"]);
 });
 
+test("removeFirewallRules accepts a non-zero delete only after proving the rule is absent", () => {
+  const calls = [];
+  const run = (args) => {
+    calls.push(args);
+    return { status: args.includes("delete") ? 1 : 1, stdout: "", stderr: "" };
+  };
+  const effects = createWindowsHostEffects({ installRoot: INSTALL_ROOT, run, writeFile: () => {} });
+  const result = effects.removeFirewallRules();
+  assert.equal(result.status, 0);
+  assert.deepEqual(calls[1], ["netsh", "advfirewall", "firewall", "show", "rule", "name=archive-http"]);
+});
+
 test("exec invokes the staged php.exe with artisan and the given arguments", () => {
   const { run, calls } = fakeRun();
   const effects = createWindowsHostEffects({ installRoot: INSTALL_ROOT, run, writeFile: () => {} });

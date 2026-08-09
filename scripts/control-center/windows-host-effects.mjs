@@ -190,7 +190,12 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
   // Only archive-http accepts inbound traffic; every other service is
   // loopback-only by construction.
   const applyFirewallRules = () => run(["netsh", "advfirewall", "firewall", "add", "rule", `name=${HTTP_RULE}`, "dir=in", "action=allow", "protocol=TCP", "localport=443"]);
-  const removeFirewallRules = () => run(["netsh", "advfirewall", "firewall", "delete", "rule", `name=${HTTP_RULE}`]);
+  const removeFirewallRules = () => {
+    const removed = run(["netsh", "advfirewall", "firewall", "delete", "rule", `name=${HTTP_RULE}`]);
+    if (removed.status === 0) return removed;
+    const remaining = run(["netsh", "advfirewall", "firewall", "show", "rule", `name=${HTTP_RULE}`]);
+    return remaining.status !== 0 ? { status: 0 } : removed;
+  };
 
   const logs = () => {
     try {
