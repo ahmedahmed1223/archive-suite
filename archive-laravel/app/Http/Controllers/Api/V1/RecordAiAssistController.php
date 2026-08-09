@@ -55,7 +55,9 @@ final class RecordAiAssistController extends Controller
     {
         foreach (['transcript', 'description', 'title'] as $key) {
             $value = trim((string) ($record[$key] ?? ''));
-            if ($value !== '') return $value;
+            if ($value !== '') {
+                return $value;
+            }
         }
 
         return '';
@@ -88,7 +90,9 @@ final class RecordAiAssistController extends Controller
         $stop = ['هذا', 'هذه', 'ذلك', 'التي', 'الذي', 'على', 'من', 'إلى', 'في', 'عن', 'the', 'and', 'for', 'with'];
         $counts = [];
         foreach ($tokens as $token) {
-            if (mb_strlen($token) < 4 || in_array($token, $stop, true)) continue;
+            if (mb_strlen($token) < 4 || in_array($token, $stop, true)) {
+                continue;
+            }
             $counts[$token] = ($counts[$token] ?? 0) + 1;
         }
         arsort($counts);
@@ -108,9 +112,15 @@ final class RecordAiAssistController extends Controller
     private function proofreading(string $text): array
     {
         $issues = [];
-        if (preg_match('/\s{2,}/u', $text) === 1) $issues[] = ['code' => 'extra_whitespace', 'message' => 'توجد مسافات متكررة؛ راجع تنسيق النص قبل الاعتماد.'];
-        if (preg_match('/[!؟،.]{2,}/u', $text) === 1) $issues[] = ['code' => 'repeated_punctuation', 'message' => 'توجد علامات ترقيم متتابعة؛ راجع الصياغة.'];
-        if ($issues === []) $issues[] = ['code' => 'manual_review', 'message' => 'لا توجد ملاحظة آلية مؤكدة؛ تبقى المراجعة البشرية مطلوبة قبل النشر.'];
+        if (preg_match('/\s{2,}/u', $text) === 1) {
+            $issues[] = ['code' => 'extra_whitespace', 'message' => 'توجد مسافات متكررة؛ راجع تنسيق النص قبل الاعتماد.'];
+        }
+        if (preg_match('/[!؟،.]{2,}/u', $text) === 1) {
+            $issues[] = ['code' => 'repeated_punctuation', 'message' => 'توجد علامات ترقيم متتابعة؛ راجع الصياغة.'];
+        }
+        if ($issues === []) {
+            $issues[] = ['code' => 'manual_review', 'message' => 'لا توجد ملاحظة آلية مؤكدة؛ تبقى المراجعة البشرية مطلوبة قبل النشر.'];
+        }
 
         return $issues;
     }

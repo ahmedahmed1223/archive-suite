@@ -1,3 +1,27 @@
 <?php
-use Illuminate\Database\Migrations\Migration; use Illuminate\Database\Schema\Blueprint; use Illuminate\Support\Facades\Schema;
-return new class extends Migration { public function up(): void { Schema::create('project_tasks', function (Blueprint $t): void { $t->string('id')->primary(); $t->string('project_id')->index(); $t->string('title',300); $t->string('status',30)->default('todo')->index(); $t->string('assignee')->nullable()->index(); $t->string('record_id')->nullable()->index(); $t->date('due_date')->nullable(); $t->timestamps(); }); } public function down(): void { Schema::dropIfExists('project_tasks'); } };
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('project_tasks', function (Blueprint $t): void {
+            $t->string('id')->primary();
+            $t->string('project_id')->index();
+            $t->string('title', 300);
+            $t->string('status', 30)->default('todo')->index();
+            $t->string('assignee')->nullable()->index();
+            $t->string('record_id')->nullable()->index();
+            $t->date('due_date')->nullable();
+            $t->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('project_tasks');
+    }
+};

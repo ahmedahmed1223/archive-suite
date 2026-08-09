@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 
@@ -21,7 +22,9 @@ class VocabularyRelinkController extends Controller
     public function preview(string $id): JsonResponse
     {
         $term = DB::table('vocabulary_terms')->where('id', $id)->first();
-        if (! $term) return $this->notFound();
+        if (! $term) {
+            return $this->notFound();
+        }
 
         $affected = $this->affectedRecords($term->term);
 
@@ -30,10 +33,14 @@ class VocabularyRelinkController extends Controller
 
     public function relink(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
 
         $term = DB::table('vocabulary_terms')->where('id', $id)->first();
-        if (! $term) return $this->notFound();
+        if (! $term) {
+            return $this->notFound();
+        }
 
         $validated = $request->validate([
             'replacement' => ['nullable', 'string', 'max:200'],
@@ -45,7 +52,9 @@ class VocabularyRelinkController extends Controller
         foreach (DB::table('storage_rows')->where('store', self::ARCHIVE_STORE)->get() as $row) {
             $data = json_decode($row->data, true) ?? [];
             $tags = array_values(array_filter((array) ($data['tags'] ?? []), 'is_string'));
-            if (! in_array($term->term, $tags, true)) continue;
+            if (! in_array($term->term, $tags, true)) {
+                continue;
+            }
 
             $newTags = array_values(array_unique(array_filter(
                 array_map(fn (string $tag): ?string => $tag === $term->term ? $replacement : $tag, $tags)
@@ -64,7 +73,7 @@ class VocabularyRelinkController extends Controller
         return response()->json(['ok' => true, 'relinked' => $relinked, 'replacement' => $replacement]);
     }
 
-    /** @return \Illuminate\Support\Collection<int, array<string, mixed>> */
+    /** @return Collection<int, array<string, mixed>> */
     private function affectedRecords(string $term)
     {
         return DB::table('storage_rows')
@@ -72,6 +81,7 @@ class VocabularyRelinkController extends Controller
             ->get()
             ->map(function (stdClass $row) {
                 $data = json_decode($row->data, true) ?? [];
+
                 return ['uid' => $row->uid, 'title' => $data['title'] ?? $row->uid, 'tags' => $data['tags'] ?? []];
             })
             ->filter(fn (array $record): bool => in_array($term, (array) $record['tags'], true))

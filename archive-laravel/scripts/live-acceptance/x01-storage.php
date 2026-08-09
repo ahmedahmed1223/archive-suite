@@ -16,8 +16,10 @@
 
 require __DIR__.'/../../vendor/autoload.php';
 $app = require __DIR__.'/../../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
+use App\Services\Storage\FlysystemStorageAdapter;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Storage;
 
 const PREFIX = 'v1-x01-live';
@@ -137,7 +139,7 @@ try {
     if ($phase === 'large') {
         $key = PREFIX.'/large.bin';
         $staged = stagePayload($sizeMb);
-        $adapter = new App\Services\Storage\FlysystemStorageAdapter($disk);
+        $adapter = new FlysystemStorageAdapter($disk);
         try {
             $started = microtime(true);
             $adapter->writeStream($key, $staged['handle']);
@@ -189,7 +191,7 @@ try {
         $productThrew = false;
         $error = '';
         try {
-            (new App\Services\Storage\FlysystemStorageAdapter($disk))->writeStream($key, $staged['handle']);
+            (new FlysystemStorageAdapter($disk))->writeStream($key, $staged['handle']);
         } catch (Throwable $e) {
             $productThrew = true;
             $error = redact($e->getMessage());

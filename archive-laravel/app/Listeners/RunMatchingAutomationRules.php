@@ -28,9 +28,7 @@ use stdClass;
  */
 class RunMatchingAutomationRules
 {
-    public function __construct(private readonly AutomationRuleRunner $runner)
-    {
-    }
+    public function __construct(private readonly AutomationRuleRunner $runner) {}
 
     /**
      * @throws JsonException
@@ -54,7 +52,7 @@ class RunMatchingAutomationRules
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      *
      * @throws JsonException
      */

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\Dropbox\DropboxConnectionService;
 use App\Services\Dropbox\DropboxGateway;
 use App\Services\Dropbox\DropboxIngestTransport;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -23,6 +24,7 @@ class DropboxIngestTransportTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private DropboxIngestTransport $transport;
 
     protected function setUp(): void
@@ -37,7 +39,7 @@ class DropboxIngestTransportTest extends TestCase
             'password' => Hash::make('password'), 'role' => 'editor',
         ]);
 
-        $gateway = new DropboxGateway();
+        $gateway = new DropboxGateway;
         $connections = new DropboxConnectionService($gateway);
         $connections->connect($this->user, 'access-token', null, '/Archive');
 
@@ -201,7 +203,7 @@ class DropboxIngestTransportTest extends TestCase
 
         // Faithful stand-in for the pre-fix path: put() reports failure the way a
         // throw=false disk does, and the chunk it never wrote reads back as null.
-        $failingDisk = \Mockery::mock(\Illuminate\Contracts\Filesystem\Filesystem::class);
+        $failingDisk = \Mockery::mock(Filesystem::class);
         $failingDisk->shouldReceive('put')->andReturnFalse();
         $failingDisk->shouldReceive('get')->andReturnNull();
         $failingDisk->shouldReceive('deleteDirectory')->andReturnTrue();

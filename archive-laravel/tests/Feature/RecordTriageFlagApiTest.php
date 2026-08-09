@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class RecordTriageFlagApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_a_record_with_no_flag_returns_null(): void
     {

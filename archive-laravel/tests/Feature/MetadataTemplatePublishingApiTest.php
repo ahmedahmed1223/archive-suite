@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class MetadataTemplatePublishingApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_only_an_admin_can_publish_a_draft_and_users_receive_the_published_snapshot(): void
     {

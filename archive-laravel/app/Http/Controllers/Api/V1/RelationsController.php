@@ -223,8 +223,8 @@ class RelationsController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
-     * @param array<int, stdClass> $relations
+     * @param  array<int, array<string, mixed>>  $records
+     * @param  array<int, stdClass>  $relations
      * @return array{nodes: array<int, array<string, mixed>>, edges: array<int, array<string, mixed>>, stats: array<string, int|string|null>}
      */
     private function buildGraph(array $records, array $relations, string $focusId, int $limit): array
@@ -341,11 +341,11 @@ class RelationsController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
-     * @param array<string, string> $aliases
-     * @param array<string, array<string, mixed>> $nodesById
-     * @param array<int, array<string, mixed>> $edges
-     * @param array<string, true> $edgeKeys
+     * @param  array<int, array<string, mixed>>  $records
+     * @param  array<string, string>  $aliases
+     * @param  array<string, array<string, mixed>>  $nodesById
+     * @param  array<int, array<string, mixed>>  $edges
+     * @param  array<string, true>  $edgeKeys
      */
     private function addSharedTagEdges(array $records, array $aliases, array &$nodesById, array &$edges, array &$edgeKeys): void
     {
@@ -396,9 +396,9 @@ class RelationsController extends Controller
     }
 
     /**
-     * @param array<string, array<string, mixed>> $nodesById
-     * @param array<int, array<string, mixed>> $edges
-     * @param array<string, true> $edgeKeys
+     * @param  array<string, array<string, mixed>>  $nodesById
+     * @param  array<int, array<string, mixed>>  $edges
+     * @param  array<string, true>  $edgeKeys
      */
     private function addSharedTypeEdges(array &$nodesById, array &$edges, array &$edgeKeys): void
     {
@@ -431,10 +431,10 @@ class RelationsController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $edges
-     * @param array<string, true> $edgeKeys
-     * @param array<string, array<string, mixed>> $nodesById
-     * @param array<string, mixed> $edge
+     * @param  array<int, array<string, mixed>>  $edges
+     * @param  array<string, true>  $edgeKeys
+     * @param  array<string, array<string, mixed>>  $nodesById
+     * @param  array<string, mixed>  $edge
      */
     private function addEdge(array &$edges, array &$edgeKeys, array &$nodesById, array $edge): void
     {
@@ -449,7 +449,7 @@ class RelationsController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      */
     private function recordId(array $record): string
     {

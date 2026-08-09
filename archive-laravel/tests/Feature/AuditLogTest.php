@@ -4,12 +4,12 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Tests\TestCase;
 use Tests\Support\AuthenticatesArchiveRequests;
+use Tests\TestCase;
 
 class AuditLogTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_audits_mutating_archive_api_requests(): void
     {
@@ -72,5 +72,4 @@ class AuditLogTest extends TestCase
         $this->assertSame(true, $decoded['restoreDecision']['available']);
         $this->assertContains('records.0.title', $decoded['diff']['fields']);
     }
-
 }

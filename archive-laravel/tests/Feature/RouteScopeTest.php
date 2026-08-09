@@ -17,7 +17,7 @@ use Tests\TestCase;
  */
 class RouteScopeTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     private const V1 = 'v1';
 

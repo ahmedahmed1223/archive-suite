@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 class SuggestionsApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_returns_deterministic_discovery_suggestions_from_archive_rows(): void
     {

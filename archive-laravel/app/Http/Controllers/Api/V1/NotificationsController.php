@@ -44,7 +44,7 @@ class NotificationsController extends Controller
         $userId = $this->archiveUserId($request);
         $notification = Notification::where('user_id', $userId)->find($id);
 
-        if (!$notification) {
+        if (! $notification) {
             return response()->json(ApiError::envelope('Notification not found', 404), 404);
         }
 
@@ -56,7 +56,7 @@ class NotificationsController extends Controller
         $userId = $this->archiveUserId($request);
         $notification = Notification::where('user_id', $userId)->find($id);
 
-        if (!$notification) {
+        if (! $notification) {
             return response()->json(ApiError::envelope('Notification not found', 404), 404);
         }
 
@@ -70,7 +70,7 @@ class NotificationsController extends Controller
         $userId = $this->archiveUserId($request);
         $notification = Notification::where('user_id', $userId)->find($id);
 
-        if (!$notification) {
+        if (! $notification) {
             return response()->json(ApiError::envelope('Notification not found', 404), 404);
         }
 
@@ -95,7 +95,7 @@ class NotificationsController extends Controller
         $userId = $this->archiveUserId($request);
         $notification = Notification::where('user_id', $userId)->find($id);
 
-        if (!$notification) {
+        if (! $notification) {
             return response()->json(ApiError::envelope('Notification not found', 404), 404);
         }
 

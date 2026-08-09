@@ -19,7 +19,7 @@ use Throwable;
  * WithoutOverlapping middleware are Laravel's built-in idempotency
  * primitives — no bespoke job framework.
  */
-class ProcessMediaWorkflow implements ShouldQueue, ShouldBeUnique
+class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 

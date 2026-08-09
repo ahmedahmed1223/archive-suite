@@ -14,7 +14,7 @@ class AudioPreprocessorTest extends TestCase
     {
         parent::setUp();
         $this->preprocessor = new AudioPreprocessor(
-            new FakeProcessRunner(),
+            new FakeProcessRunner,
             segmentDurationSeconds: 300
         );
     }

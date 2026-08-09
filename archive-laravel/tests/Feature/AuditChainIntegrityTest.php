@@ -4,12 +4,12 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Tests\TestCase;
 use Tests\Support\AuthenticatesArchiveRequests;
+use Tests\TestCase;
 
 class AuditChainIntegrityTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_verify_chain_passes_for_an_untampered_log(): void
     {

@@ -14,13 +14,12 @@ class CollaborationDocumentUpdated implements ShouldBroadcastNow
     use InteractsWithSockets;
 
     /**
-     * @param array<string, mixed> $document
+     * @param  array<string, mixed>  $document
      */
     public function __construct(
         public readonly string $roomKey,
         public readonly array $document,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, Channel>

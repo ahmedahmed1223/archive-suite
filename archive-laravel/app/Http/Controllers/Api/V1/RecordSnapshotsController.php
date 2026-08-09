@@ -17,6 +17,7 @@ use stdClass;
 class RecordSnapshotsController extends Controller
 {
     private const ARCHIVE_STORE = 'archive-items';
+
     private const DIFF_FIELDS = ['title', 'description', 'type', 'subtype', 'tags'];
 
     public function __construct(private readonly StorageRowRepository $storageRows) {}
@@ -45,10 +46,14 @@ class RecordSnapshotsController extends Controller
     {
         $store = $this->store($request);
         $snapshot = $this->findSnapshot($store, $recordId, $snapshotId);
-        if (! $snapshot) return $this->notFound('Snapshot not found.');
+        if (! $snapshot) {
+            return $this->notFound('Snapshot not found.');
+        }
 
         $current = $this->storageRows->find($store, $recordId);
-        if (! $current) return $this->notFound('Record not found.');
+        if (! $current) {
+            return $this->notFound('Record not found.');
+        }
 
         $before = json_decode($snapshot->snapshot, true) ?? [];
         $after = json_decode($current->data, true) ?? [];
@@ -65,7 +70,9 @@ class RecordSnapshotsController extends Controller
 
     public function restore(Request $request, string $recordId, string $snapshotId): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
 
         $store = $this->store($request);
         $validated = $request->validate([
@@ -74,10 +81,14 @@ class RecordSnapshotsController extends Controller
         ]);
 
         $snapshot = $this->findSnapshot($store, $recordId, $snapshotId);
-        if (! $snapshot) return $this->notFound('Snapshot not found.');
+        if (! $snapshot) {
+            return $this->notFound('Snapshot not found.');
+        }
 
         $current = $this->storageRows->find($store, $recordId);
-        if (! $current) return $this->notFound('Record not found.');
+        if (! $current) {
+            return $this->notFound('Record not found.');
+        }
 
         $before = json_decode($snapshot->snapshot, true) ?? [];
         $currentData = json_decode($current->data, true) ?? [];

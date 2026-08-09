@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class DepartmentQualityRulesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_quality_preview_is_limited_to_its_department_and_type(): void
     {

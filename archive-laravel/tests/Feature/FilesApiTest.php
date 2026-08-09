@@ -5,12 +5,12 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
-use Tests\TestCase;
 use Tests\Support\AuthenticatesArchiveRequests;
+use Tests\TestCase;
 
 class FilesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     private string $fileRoot;
 

@@ -13,7 +13,7 @@ class UploadFileValidatorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->validator = new UploadFileValidator();
+        $this->validator = new UploadFileValidator;
     }
 
     public function test_it_accepts_real_pdf_content_for_pdf_extension(): void

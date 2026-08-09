@@ -14,9 +14,7 @@ use stdClass;
 
 class TypesController extends Controller
 {
-    public function __construct(private readonly StorageRowRepository $storageRows)
-    {
-    }
+    public function __construct(private readonly StorageRowRepository $storageRows) {}
 
     /**
      * List all type definitions.
@@ -62,7 +60,7 @@ class TypesController extends Controller
     {
         $row = $this->storageRows->findByUidOrRecordId($id, 'types');
 
-        if (!$row instanceof stdClass) {
+        if (! $row instanceof stdClass) {
             return response()->json([
                 'ok' => false,
                 'error' => 'Type not found.',
@@ -102,7 +100,7 @@ class TypesController extends Controller
             'fields.*.condition.equals' => [
                 'required_with:fields.*.condition',
                 static function (string $attribute, mixed $value, \Closure $fail): void {
-                    if (!is_string($value) && !is_int($value) && !is_float($value) && !is_bool($value)) {
+                    if (! is_string($value) && ! is_int($value) && ! is_float($value) && ! is_bool($value)) {
                         $fail('The '.$attribute.' field must be a string, number, or boolean.');
                     }
                 },
@@ -121,11 +119,11 @@ class TypesController extends Controller
             foreach ($fields as $index => $field) {
                 $conditionField = $field['condition']['field'] ?? null;
 
-                if (!is_string($conditionField)) {
+                if (! is_string($conditionField)) {
                     continue;
                 }
 
-                if ($conditionField === ($field['name'] ?? null) || !in_array($conditionField, $fieldNames, true)) {
+                if ($conditionField === ($field['name'] ?? null) || ! in_array($conditionField, $fieldNames, true)) {
                     $validator->errors()->add("fields.{$index}.condition.field", 'The condition field must reference another field in this type.');
                 }
             }
@@ -143,7 +141,7 @@ class TypesController extends Controller
             'fields' => $validated['fields'],
         ];
 
-        if (!$row) {
+        if (! $row) {
             $this->storageRows->insert('types', $uid, [
                 'data' => json_encode($data, JSON_THROW_ON_ERROR),
                 'created_at' => now(),
@@ -199,7 +197,7 @@ class TypesController extends Controller
 
         $row = $this->storageRows->find('types', $typeId);
 
-        if (!$row instanceof stdClass) {
+        if (! $row instanceof stdClass) {
             return response()->json([
                 'ok' => false,
                 'error' => 'Type not found.',
@@ -211,7 +209,7 @@ class TypesController extends Controller
         $fieldName = $request->input('fieldName');
         $field = collect($data['fields'] ?? [])->firstWhere('name', $fieldName);
 
-        if (!$field) {
+        if (! $field) {
             return response()->json([
                 'ok' => false,
                 'error' => 'Field not found.',
@@ -220,8 +218,8 @@ class TypesController extends Controller
         }
 
         $fieldAcl = $field['fieldAcl'] ?? null;
-        $canView = !$fieldAcl || empty($fieldAcl['view']) || in_array($userRole, $fieldAcl['view']);
-        $canEdit = !$fieldAcl || empty($fieldAcl['edit']) || in_array($userRole, $fieldAcl['edit']);
+        $canView = ! $fieldAcl || empty($fieldAcl['view']) || in_array($userRole, $fieldAcl['view']);
+        $canEdit = ! $fieldAcl || empty($fieldAcl['edit']) || in_array($userRole, $fieldAcl['edit']);
 
         return response()->json([
             'ok' => true,

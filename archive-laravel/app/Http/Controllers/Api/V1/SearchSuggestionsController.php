@@ -32,10 +32,14 @@ class SearchSuggestionsController extends Controller
         foreach ($records as $record) {
             foreach ((array) ($record['tags'] ?? []) as $tag) {
                 $value = trim((string) $tag);
-                if ($value !== '' && str_contains(mb_strtolower($value), $needle)) $suggestions[] = ['kind' => 'tag', 'label' => $value, 'value' => $value];
+                if ($value !== '' && str_contains(mb_strtolower($value), $needle)) {
+                    $suggestions[] = ['kind' => 'tag', 'label' => $value, 'value' => $value];
+                }
             }
             $type = trim((string) ($record['type'] ?? ''));
-            if ($type !== '' && str_contains(mb_strtolower($type), $needle)) $suggestions[] = ['kind' => 'type', 'label' => $type, 'value' => $type];
+            if ($type !== '' && str_contains(mb_strtolower($type), $needle)) {
+                $suggestions[] = ['kind' => 'type', 'label' => $type, 'value' => $type];
+            }
         }
 
         return response()->json(['ok' => true, 'suggestions' => collect($suggestions)->unique(fn (array $item) => $item['kind'].':'.$item['value'])->take($limit)->values()]);

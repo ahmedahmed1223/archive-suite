@@ -20,7 +20,7 @@ use Tests\TestCase;
  */
 class MediaJobsContainmentTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     // -- store(): traversal / absolute-path rejection -----------------------
 
@@ -277,7 +277,7 @@ class MediaJobsContainmentTest extends TestCase
         mkdir($root, 0777, true);
         $pathGuard = new MediaPathGuard($root);
 
-        $runner = new FakeProcessRunner();
+        $runner = new FakeProcessRunner;
         $transcriber = new WhisperTranscriber($runner, 'whisper-ctranslate2', 'large-v3', 'ar', 'vtt');
         $processor = new RealMediaProcessor(
             $runner,
@@ -290,7 +290,7 @@ class MediaJobsContainmentTest extends TestCase
             $pathGuard,
         );
 
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-malicious-ocr';
         $job->record_id = 'malicious-record';
         $job->operation = 'ocr';
@@ -317,11 +317,11 @@ class MediaJobsContainmentTest extends TestCase
         mkdir($root, 0777, true);
         $pathGuard = new MediaPathGuard($root);
 
-        $runner = new FakeProcessRunner();
+        $runner = new FakeProcessRunner;
         $transcriber = new WhisperTranscriber($runner, 'whisper-ctranslate2', 'large-v3', 'ar', 'vtt');
         $processor = new RealMediaProcessor($runner, $transcriber, 'ffmpeg', 'ffprobe', [], null, null, $pathGuard);
 
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-malicious-thumb';
         $job->record_id = 'malicious-record';
         $job->operation = 'thumbnail';

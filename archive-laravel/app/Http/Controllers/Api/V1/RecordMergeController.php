@@ -25,10 +25,13 @@ class RecordMergeController extends Controller
         $store = $validated['store'];
 
         $primary = $this->findRow($store, $primaryId);
-        if (! $primary) return $this->notFound('Primary record not found.');
+        if (! $primary) {
+            return $this->notFound('Primary record not found.');
+        }
 
         $duplicates = collect($validated['duplicateIds'])->map(function (string $id) use ($store): array {
             $row = $this->findRow($store, $id);
+
             return ['id' => $id, 'found' => $row !== null];
         })->values();
 
@@ -47,20 +50,28 @@ class RecordMergeController extends Controller
 
     public function merge(Request $request, string $primaryId): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
 
         $validated = $this->validateRequest($request);
         $store = $validated['store'];
         $user = $request->attributes->get('archive_user');
 
         $primary = $this->findRow($store, $primaryId);
-        if (! $primary) return $this->notFound('Primary record not found.');
+        if (! $primary) {
+            return $this->notFound('Primary record not found.');
+        }
 
         $merged = [];
         foreach ($validated['duplicateIds'] as $duplicateId) {
-            if ($duplicateId === $primaryId) continue;
+            if ($duplicateId === $primaryId) {
+                continue;
+            }
             $duplicate = $this->findRow($store, $duplicateId);
-            if (! $duplicate) continue;
+            if (! $duplicate) {
+                continue;
+            }
 
             DB::transaction(function () use ($store, $primary, $duplicate, $duplicateId, $primaryId, $user): void {
                 $this->transferTags($primary, $duplicate);
@@ -87,7 +98,9 @@ class RecordMergeController extends Controller
         $duplicateTags = array_values(array_filter((array) ($duplicateData['tags'] ?? []), 'is_string'));
         $merged = array_values(array_unique([...$primaryTags, ...$duplicateTags]));
 
-        if ($merged === $primaryTags) return;
+        if ($merged === $primaryTags) {
+            return;
+        }
 
         $primaryData['tags'] = $merged;
         DB::table('storage_rows')->where('store', $primary->store)->where('uid', $primary->uid)->update([
@@ -102,9 +115,10 @@ class RecordMergeController extends Controller
             $other = $column === 'source_record_id' ? 'target_record_id' : 'source_record_id';
             $rows = DB::table('record_relations')->where($column, $duplicateId)->get();
             foreach ($rows as $row) {
-                if ($row->$other === $primaryId) {
+                if ($primaryId === $row->$other) {
                     // Would become a self-relation once reassigned — drop it instead.
                     DB::table('record_relations')->where('id', $row->id)->delete();
+
                     continue;
                 }
                 try {

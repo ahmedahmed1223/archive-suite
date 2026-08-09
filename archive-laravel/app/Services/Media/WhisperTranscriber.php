@@ -21,7 +21,7 @@ class WhisperTranscriber
         ?MediaPathGuard $pathGuard = null,
         private readonly ?SecuritySettingsService $securitySettings = null,
     ) {
-        $this->pathGuard = $pathGuard ?? new MediaPathGuard();
+        $this->pathGuard = $pathGuard ?? new MediaPathGuard;
     }
 
     /**
@@ -45,7 +45,7 @@ class WhisperTranscriber
         $outputFormats = $jobOptions['outputFormats'] ?? ['srt', 'vtt', 'ttml'];
 
         // Normalize formats: always include 'vtt' for TTML derivation
-        if (!in_array('vtt', $outputFormats, true)) {
+        if (! in_array('vtt', $outputFormats, true)) {
             $outputFormats[] = 'vtt';
         }
 
@@ -102,7 +102,7 @@ class WhisperTranscriber
             $vttPath = $outputDir.DIRECTORY_SEPARATOR.'transcript.vtt';
             $ttmlPath = $outputDir.DIRECTORY_SEPARATOR.'transcript.ttml';
             $this->deriveTtml($vttPath, $ttmlPath);
-            if (is_file($ttmlPath) && !$this->hasArtifact($artifacts, 'transcript_ttml')) {
+            if (is_file($ttmlPath) && ! $this->hasArtifact($artifacts, 'transcript_ttml')) {
                 $artifacts[] = [
                     'kind' => 'transcript_ttml',
                     'key' => "{$recordId}/transcript.ttml",
@@ -124,6 +124,7 @@ class WhisperTranscriber
                 return true;
             }
         }
+
         return false;
     }
 

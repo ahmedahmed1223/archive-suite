@@ -16,20 +16,17 @@ use Illuminate\Support\Facades\Storage;
  */
 class SmbIngestTransport implements IngestTransport
 {
-    public function __construct(private readonly ProcessRunner $runner)
-    {
-    }
+    public function __construct(private readonly ProcessRunner $runner) {}
 
     /**
      * Pull files from SMB share.
      *
-     * @param  array<string, mixed>  $params Connection parameters:
-     *   - host: SMB server hostname or IP
-     *   - share: SMB share name (e.g., "media")
-     *   - user: SMB username
-     *   - password: SMB password
-     *   - remotePath: Remote directory path within share (default "/")
-     *
+     * @param  array<string, mixed>  $params  Connection parameters:
+     *                                        - host: SMB server hostname or IP
+     *                                        - share: SMB share name (e.g., "media")
+     *                                        - user: SMB username
+     *                                        - password: SMB password
+     *                                        - remotePath: Remote directory path within share (default "/")
      * @return array<int, string> Local file keys on ingest disk
      *
      * @throws \RuntimeException on SMB failure
@@ -42,7 +39,7 @@ class SmbIngestTransport implements IngestTransport
         $password = $params['password'] ?? null;
         $remotePath = $params['remotePath'] ?? '/';
 
-        if (!$host || !$share || !$user) {
+        if (! $host || ! $share || ! $user) {
             throw new \RuntimeException('SMB pull requires host, share, and user parameters');
         }
 
@@ -60,7 +57,7 @@ class SmbIngestTransport implements IngestTransport
             'smbclient',
             $uncPath,
             '-U',
-            $user . '%' . $password,
+            $user.'%'.$password,
             '-c',
             'ls',
         ];
@@ -82,9 +79,9 @@ class SmbIngestTransport implements IngestTransport
         $keys = [];
 
         foreach ($fileNames as $fileName) {
-            $remoteFile = $uncPath . '/' . $fileName;
-            $localKey = $ingestDir . '/' . $fileName;
-            $tempPath = sys_get_temp_dir() . '/' . uniqid('ingest_', true) . '_' . $fileName;
+            $remoteFile = $uncPath.'/'.$fileName;
+            $localKey = $ingestDir.'/'.$fileName;
+            $tempPath = sys_get_temp_dir().'/'.uniqid('ingest_', true).'_'.$fileName;
 
             try {
                 // Download file using smbclient
@@ -92,7 +89,7 @@ class SmbIngestTransport implements IngestTransport
                     'smbclient',
                     $uncPath,
                     '-U',
-                    $user . '%' . $password,
+                    $user.'%'.$password,
                     '-c',
                     "get {$fileName} {$tempPath}",
                 ];
@@ -140,7 +137,7 @@ class SmbIngestTransport implements IngestTransport
             $line = trim($line);
 
             // Skip empty lines and directory markers
-            if (!$line || $line === '.' || $line === '..') {
+            if (! $line || $line === '.' || $line === '..') {
                 continue;
             }
 
@@ -153,14 +150,14 @@ class SmbIngestTransport implements IngestTransport
 
             // Extract the first token (filename)
             $parts = preg_split('/\s+/', $line);
-            if (!empty($parts[0]) && $parts[0] !== '.' && $parts[0] !== '..') {
+            if (! empty($parts[0]) && $parts[0] !== '.' && $parts[0] !== '..') {
                 // Check if it looks like metadata (D for directory, etc.)
                 // and skip if so
                 if (count($parts) > 1 && $parts[1] === 'D') {
                     continue; // Directory marker
                 }
 
-                if (!empty($parts[0])) {
+                if (! empty($parts[0])) {
                     $fileNames[] = $parts[0];
                 }
             }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ScheduledUpload;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ use Tests\TestCase;
  */
 class ScheduledUploadApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     private const VALID_MP4 = "\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom\x00\x00\x00\x00\x00\x00\x00\x00";
 
@@ -310,8 +311,8 @@ class ScheduledUploadApiTest extends TestCase
         $editorId = $this->editorUserId();
         [$otherHeaders, $otherId] = $this->secondEditorHeadersWithId();
 
-        $mine = \App\Models\ScheduledUpload::factory()->create(['created_by' => $editorId]);
-        \App\Models\ScheduledUpload::factory()->create(['created_by' => $otherId]);
+        $mine = ScheduledUpload::factory()->create(['created_by' => $editorId]);
+        ScheduledUpload::factory()->create(['created_by' => $otherId]);
 
         $response = $this->getJson('/api/v1/uploads/schedules', $this->editorHeaders())->assertOk();
 
@@ -327,8 +328,8 @@ class ScheduledUploadApiTest extends TestCase
         [, $otherId] = $this->secondEditorHeadersWithId();
         [$adminHeaders] = $this->adminHeadersWithId();
 
-        \App\Models\ScheduledUpload::factory()->create(['created_by' => $editorId]);
-        \App\Models\ScheduledUpload::factory()->create(['created_by' => $otherId]);
+        ScheduledUpload::factory()->create(['created_by' => $editorId]);
+        ScheduledUpload::factory()->create(['created_by' => $otherId]);
 
         $response = $this->getJson('/api/v1/uploads/schedules', $adminHeaders)->assertOk();
 
@@ -343,7 +344,7 @@ class ScheduledUploadApiTest extends TestCase
     public function test_reschedule_with_stale_version_returns_409_with_current(): void
     {
         $editorId = $this->editorUserId();
-        $schedule = \App\Models\ScheduledUpload::factory()->create([
+        $schedule = ScheduledUpload::factory()->create([
             'created_by' => $editorId,
             'status' => 'scheduled',
             'version' => 1,
@@ -361,7 +362,7 @@ class ScheduledUploadApiTest extends TestCase
     public function test_reschedule_updates_scheduled_at_and_time_zone(): void
     {
         $editorId = $this->editorUserId();
-        $schedule = \App\Models\ScheduledUpload::factory()->create([
+        $schedule = ScheduledUpload::factory()->create([
             'created_by' => $editorId,
             'status' => 'scheduled',
             'version' => 1,
@@ -382,7 +383,7 @@ class ScheduledUploadApiTest extends TestCase
     public function test_cancelling_claimed_schedule_conflicts(): void
     {
         $editorId = $this->editorUserId();
-        $schedule = \App\Models\ScheduledUpload::factory()->create([
+        $schedule = ScheduledUpload::factory()->create([
             'created_by' => $editorId,
             'status' => 'claimed',
             'version' => 1,
@@ -395,7 +396,7 @@ class ScheduledUploadApiTest extends TestCase
     public function test_cancel_is_idempotent_for_already_cancelled_schedule(): void
     {
         $editorId = $this->editorUserId();
-        $schedule = \App\Models\ScheduledUpload::factory()->create([
+        $schedule = ScheduledUpload::factory()->create([
             'created_by' => $editorId,
             'status' => 'cancelled',
             'version' => 3,
@@ -409,7 +410,7 @@ class ScheduledUploadApiTest extends TestCase
     public function test_cancel_scheduled_upload_succeeds(): void
     {
         $editorId = $this->editorUserId();
-        $schedule = \App\Models\ScheduledUpload::factory()->create([
+        $schedule = ScheduledUpload::factory()->create([
             'created_by' => $editorId,
             'status' => 'scheduled',
             'version' => 1,
@@ -423,7 +424,7 @@ class ScheduledUploadApiTest extends TestCase
     public function test_retry_rejects_non_infrastructure_failure_code(): void
     {
         $editorId = $this->editorUserId();
-        $schedule = \App\Models\ScheduledUpload::factory()->create([
+        $schedule = ScheduledUpload::factory()->create([
             'created_by' => $editorId,
             'status' => 'failed',
             'failure_code' => 'validation_error',
@@ -437,7 +438,7 @@ class ScheduledUploadApiTest extends TestCase
     public function test_retry_requires_the_staged_artifact_to_still_exist(): void
     {
         $editorId = $this->editorUserId();
-        $schedule = \App\Models\ScheduledUpload::factory()->create([
+        $schedule = ScheduledUpload::factory()->create([
             'created_by' => $editorId,
             'status' => 'failed',
             'failure_code' => 'infrastructure_timeout',
@@ -456,7 +457,7 @@ class ScheduledUploadApiTest extends TestCase
         $disk = config('ingest.disk');
         Storage::disk($disk)->put('schedules/present-artifact.mp4', 'x');
 
-        $schedule = \App\Models\ScheduledUpload::factory()->create([
+        $schedule = ScheduledUpload::factory()->create([
             'created_by' => $editorId,
             'status' => 'failed',
             'failure_code' => 'infrastructure_timeout',

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaJob;
+use App\Models\User;
+use App\Services\Media\MediaJobExecutor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\AuthenticatesArchiveRequests;
@@ -11,7 +13,7 @@ use Tests\TestCase;
 
 class MediaJobsApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_queues_a_media_workflow_job(): void
     {
@@ -73,7 +75,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
+            $this->app->make(MediaJobExecutor::class)
         );
 
         $this->assertDatabaseHas('media_jobs', [
@@ -142,7 +144,7 @@ class MediaJobsApiTest extends TestCase
         $this->assertSame('queued', $jobs[0]['status']);
     }
 
-    public function test_list_filters_by_recordId(): void
+    public function test_list_filters_by_record_id(): void
     {
         MediaJob::query()->create([
             'id' => 'media-job-record-filter-1',
@@ -241,7 +243,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
+            $this->app->make(MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -262,7 +264,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
+            $this->app->make(MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -336,7 +338,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
+            $this->app->make(MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -357,7 +359,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
+            $this->app->make(MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -376,6 +378,6 @@ class MediaJobsApiTest extends TestCase
     {
         $this->authHeaders();
 
-        return (string) \App\Models\User::query()->where('email', 'admin@example.test')->firstOrFail()->getKey();
+        return (string) User::query()->where('email', 'admin@example.test')->firstOrFail()->getKey();
     }
 }

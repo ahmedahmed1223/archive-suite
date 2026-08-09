@@ -14,13 +14,12 @@ class ReviewCommentBroadcasted implements ShouldBroadcastNow
     use InteractsWithSockets;
 
     /**
-     * @param array<string, mixed> $comment Formatted review comment payload.
+     * @param  array<string, mixed>  $comment  Formatted review comment payload.
      */
     public function __construct(
         public readonly string $mediaUid,
         public readonly array $comment,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, Channel>

@@ -17,7 +17,7 @@ class WhisperTranscriberTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runner = new FakeProcessRunner();
+        $this->runner = new FakeProcessRunner;
         $this->transcriber = new WhisperTranscriber(
             $this->runner,
             'whisper-ctranslate2',
@@ -52,7 +52,7 @@ class WhisperTranscriberTest extends TestCase
 
     private function removeMockDirectory(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
         array_map('unlink', glob("{$dir}/*"));
@@ -221,7 +221,7 @@ class WhisperTranscriberTest extends TestCase
 
     public function test_real_processor_delegates_to_transcriber(): void
     {
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-whisper';
         $job->record_id = 'record-whisper';
         $job->operation = 'transcription';

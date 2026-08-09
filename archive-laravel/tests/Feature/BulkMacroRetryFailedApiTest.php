@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class BulkMacroRetryFailedApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_retry_reruns_only_the_partial_target_and_links_it_to_the_original_run(): void
     {

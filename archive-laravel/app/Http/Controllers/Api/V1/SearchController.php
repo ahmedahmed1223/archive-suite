@@ -21,9 +21,7 @@ class SearchController extends Controller
         private readonly EmbeddingService $embeddings,
         private readonly TranscriptSearchService $transcripts,
         private readonly StorageRowRepository $storageRows,
-    )
-    {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -120,7 +118,7 @@ class SearchController extends Controller
      * — simplest correct pagination for a ranked (non-sorted-by-key) list.
      * Deep pagination beyond the pool size falls off; fine for a search UI.
      *
-     * @param array<string, mixed> $validated
+     * @param  array<string, mixed>  $validated
      * @return array<string, mixed>|null
      */
     private function semanticSearch(string $queryText, ?string $store, int $limit, array $validated): ?array
@@ -266,11 +264,13 @@ class SearchController extends Controller
                     }
                 }
                 $this->appendAdvancedToken($tokens, ['type' => 'predicate', 'field' => $field, 'value' => $value]);
+
                 continue;
             }
 
             if (in_array($word, ['AND', 'OR', 'NOT'], true) && ($offset === $length || preg_match('/\s/u', $query[$offset]) === 1)) {
                 $this->appendAdvancedToken($tokens, ['type' => $word]);
+
                 continue;
             }
 
@@ -285,8 +285,8 @@ class SearchController extends Controller
     }
 
     /**
-     * @param array<int, array{type: string, field?: string, value?: string}> $tokens
-     * @param array{type: string, field?: string, value?: string} $token
+     * @param  array<int, array{type: string, field?: string, value?: string}>  $tokens
+     * @param  array{type: string, field?: string, value?: string}  $token
      */
     private function appendAdvancedToken(array &$tokens, array $token): void
     {
@@ -377,8 +377,8 @@ class SearchController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $record
+     * @param  array<string, mixed>  $filters
      */
     private function matchesFilters(array $record, array $filters): bool
     {
@@ -421,8 +421,8 @@ class SearchController extends Controller
     }
 
     /**
-     * @param Collection<int, array<string, mixed>> $records
-     * @param array<string, mixed> $validated
+     * @param  Collection<int, array<string, mixed>>  $records
+     * @param  array<string, mixed>  $validated
      * @return array<string, mixed>
      */
     private function buildFacets(Collection $records, array $validated, string $mode): array
@@ -447,9 +447,9 @@ class SearchController extends Controller
     }
 
     /**
-     * @param Collection<int, array<string, mixed>> $records
-     * @param callable(array<string, mixed>): mixed $extractor
-     * @param array<string, string> $labels
+     * @param  Collection<int, array<string, mixed>>  $records
+     * @param  callable(array<string, mixed>): mixed  $extractor
+     * @param  array<string, string>  $labels
      * @return array<int, array{value: string, label: string, count: int}>
      */
     private function facetCounts(Collection $records, callable $extractor, array $labels = []): array
@@ -469,7 +469,7 @@ class SearchController extends Controller
     }
 
     /**
-     * @param Collection<int, array<string, mixed>> $records
+     * @param  Collection<int, array<string, mixed>>  $records
      * @return array<int, array{value: string, label: string, count: int}>
      */
     private function tagFacetCounts(Collection $records): array
@@ -494,8 +494,8 @@ class SearchController extends Controller
     }
 
     /**
-     * @param array<string, int> $counts
-     * @param array<string, string> $labels
+     * @param  array<string, int>  $counts
+     * @param  array<string, string>  $labels
      * @return array<int, array{value: string, label: string, count: int}>
      */
     private function formatFacetCounts(array $counts, array $labels = [], int $limit = 20): array
@@ -515,7 +515,7 @@ class SearchController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      */
     private function workflowStatus(array $record): string
     {

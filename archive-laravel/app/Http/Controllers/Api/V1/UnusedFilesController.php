@@ -33,12 +33,16 @@ class UnusedFilesController extends Controller
         $unused = [];
 
         foreach ($iterator as $file) {
-            if (! $file instanceof SplFileInfo || ! $file->isFile()) continue;
+            if (! $file instanceof SplFileInfo || ! $file->isFile()) {
+                continue;
+            }
 
             $relative = ltrim(str_replace($root, '', $file->getPathname()), DIRECTORY_SEPARATOR);
             $relative = str_replace('\\', '/', $relative);
 
-            if ($referenced->has($relative)) continue;
+            if ($referenced->has($relative)) {
+                continue;
+            }
 
             $unused[] = [
                 'key' => $relative,
@@ -48,7 +52,9 @@ class UnusedFilesController extends Controller
                 'reason' => 'no_attachment_reference',
             ];
 
-            if (count($unused) >= 200) break;
+            if (count($unused) >= 200) {
+                break;
+            }
         }
 
         return response()->json(['ok' => true, 'files' => $unused]);

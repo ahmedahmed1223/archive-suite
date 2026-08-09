@@ -3,12 +3,12 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Tests\Support\AuthenticatesArchiveRequests;
+use Tests\TestCase;
 
 class RecordsApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_bulk_upserts_and_lists_records_with_cursor_pagination(): void
     {
@@ -218,5 +218,4 @@ class RecordsApiTest extends TestCase
             ->assertUnauthorized()
             ->assertJsonPath('ok', false);
     }
-
 }

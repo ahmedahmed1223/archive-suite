@@ -3,12 +3,12 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Tests\Support\AuthenticatesArchiveRequests;
+use Tests\TestCase;
 
 class SearchApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_searches_records_by_keyword(): void
     {
@@ -34,7 +34,7 @@ class SearchApiTest extends TestCase
             ]],
         ], $this->authHeaders())->assertOk();
 
-        $this->getJson('/api/v1/search?store=archive-items&q='.rawurlencode('اختبار قبول صوتي') , $this->authHeaders())
+        $this->getJson('/api/v1/search?store=archive-items&q='.rawurlencode('اختبار قبول صوتي'), $this->authHeaders())
             ->assertOk()
             ->assertJsonCount(1, 'records')
             ->assertJsonPath('records.0.uid', 'audio-arabic-001');
@@ -184,5 +184,4 @@ class SearchApiTest extends TestCase
             ],
         ], $this->authHeaders())->assertOk();
     }
-
 }

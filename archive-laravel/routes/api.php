@@ -1,91 +1,94 @@
 <?php
 
+use App\Console\Commands\DispatchScheduledUploads;
 use App\Http\Controllers\Api\V1\AccountExportController;
 use App\Http\Controllers\Api\V1\ActivityController;
 use App\Http\Controllers\Api\V1\ApiKeysController;
-use App\Http\Controllers\Api\V1\AutomationRulesController;
-use App\Http\Controllers\Api\V1\BulkMacrosController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\AutomationRulesController;
 use App\Http\Controllers\Api\V1\BackupsController;
+use App\Http\Controllers\Api\V1\BulkMacrosController;
 use App\Http\Controllers\Api\V1\CollaborationController;
-use App\Http\Controllers\Api\V1\ComplianceReportsController;
 use App\Http\Controllers\Api\V1\CollectionsController;
+use App\Http\Controllers\Api\V1\ComplianceReportsController;
 use App\Http\Controllers\Api\V1\DelegatedAccessController;
+use App\Http\Controllers\Api\V1\DepartmentFieldOwnersController;
+use App\Http\Controllers\Api\V1\DepartmentHandoffController;
+use App\Http\Controllers\Api\V1\DepartmentQualityRulesController;
+use App\Http\Controllers\Api\V1\DepartmentRoutingController;
+use App\Http\Controllers\Api\V1\DepartmentTemplateMetricsController;
 use App\Http\Controllers\Api\V1\DiscoverController;
-use App\Http\Controllers\Api\V1\FilesController;
+use App\Http\Controllers\Api\V1\DropboxController;
+use App\Http\Controllers\Api\V1\DropboxWebhookController;
 use App\Http\Controllers\Api\V1\FavoritesController;
+use App\Http\Controllers\Api\V1\FileHealthController;
+use App\Http\Controllers\Api\V1\FilesController;
 use App\Http\Controllers\Api\V1\ImportPreviewController;
 use App\Http\Controllers\Api\V1\InboxController;
 use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\IntakeTemplatesController;
 use App\Http\Controllers\Api\V1\InvitationsController;
+use App\Http\Controllers\Api\V1\LinkAuditController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
+use App\Http\Controllers\Api\V1\MetadataTemplatesController;
 use App\Http\Controllers\Api\V1\MontageProjectsController;
+use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\NotificationsController;
 use App\Http\Controllers\Api\V1\OnboardingProgressController;
 use App\Http\Controllers\Api\V1\PluginMarketplaceController;
-use App\Http\Controllers\Api\V1\PublicCatalogController;
-use App\Http\Controllers\Api\V1\RecordCommentsController;
-use App\Http\Controllers\Api\V1\RecordChangeImpactController;
-use App\Http\Controllers\Api\V1\RecordAttachmentsController;
-use App\Http\Controllers\Api\V1\RecordAiAssistController;
-use App\Http\Controllers\Api\V1\RecordHistoryController;
-use App\Http\Controllers\Api\V1\RecordsBulkCsvController;
-use App\Http\Controllers\Api\V1\RecordsController;
-use App\Http\Controllers\Api\V1\RecordBroadcastMetadataController;
-use App\Http\Controllers\Api\V1\LinkAuditController;
-use App\Http\Controllers\Api\V1\MetadataTemplatesController;
-use App\Http\Controllers\Api\V1\DepartmentQualityRulesController;
-use App\Http\Controllers\Api\V1\DepartmentFieldOwnersController;
-use App\Http\Controllers\Api\V1\DepartmentTemplateMetricsController;
-use App\Http\Controllers\Api\V1\DepartmentHandoffController;
-use App\Http\Controllers\Api\V1\DepartmentRoutingController;
-use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\ProjectsController;
 use App\Http\Controllers\Api\V1\ProjectTasksController;
-use App\Http\Controllers\Api\V1\RecordNotesController;
+use App\Http\Controllers\Api\V1\PublicCatalogController;
+use App\Http\Controllers\Api\V1\RecordAiAssistController;
+use App\Http\Controllers\Api\V1\RecordAttachmentsController;
+use App\Http\Controllers\Api\V1\RecordBroadcastMetadataController;
+use App\Http\Controllers\Api\V1\RecordChangeImpactController;
+use App\Http\Controllers\Api\V1\RecordCommentsController;
 use App\Http\Controllers\Api\V1\RecordEditClaimController;
-use App\Http\Controllers\Api\V1\FileHealthController;
-use App\Http\Controllers\Api\V1\RecordFieldSourcesController;
 use App\Http\Controllers\Api\V1\RecordFieldRequestController;
+use App\Http\Controllers\Api\V1\RecordFieldSourcesController;
 use App\Http\Controllers\Api\V1\RecordFreezeController;
-use App\Http\Controllers\Api\V1\UnusedFilesController;
-use App\Http\Controllers\Api\V1\VocabularyRelinkController;
+use App\Http\Controllers\Api\V1\RecordHistoryController;
 use App\Http\Controllers\Api\V1\RecordMergeController;
+use App\Http\Controllers\Api\V1\RecordNotesController;
+use App\Http\Controllers\Api\V1\RecordsBulkCsvController;
+use App\Http\Controllers\Api\V1\RecordsController;
 use App\Http\Controllers\Api\V1\RecordSegmentsController;
-use App\Http\Controllers\Api\V1\RecordSourceReplacementController;
 use App\Http\Controllers\Api\V1\RecordSnapshotsController;
-use App\Http\Controllers\Api\V1\RecordTriageFlagController;
+use App\Http\Controllers\Api\V1\RecordSourceReplacementController;
 use App\Http\Controllers\Api\V1\RecordTranscriptController;
+use App\Http\Controllers\Api\V1\RecordTriageFlagController;
 use App\Http\Controllers\Api\V1\RelationsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
 use App\Http\Controllers\Api\V1\RightsController;
+use App\Http\Controllers\Api\V1\SafetyPreviewController;
 use App\Http\Controllers\Api\V1\SavedSearchesController;
 use App\Http\Controllers\Api\V1\ScheduledUploadsController;
-use App\Http\Controllers\Api\V1\SafetyPreviewController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SearchSuggestionsController;
-use App\Http\Controllers\Api\V1\SuggestionsController;
 use App\Http\Controllers\Api\V1\ShareController;
+use App\Http\Controllers\Api\V1\StorageWorkspaceController;
+use App\Http\Controllers\Api\V1\SuggestionsController;
 use App\Http\Controllers\Api\V1\SyncController;
-use App\Http\Controllers\Api\V1\TagNodesController;
 use App\Http\Controllers\Api\V1\SystemControlController;
 use App\Http\Controllers\Api\V1\SystemController;
-use App\Http\Controllers\Api\V1\DropboxController;
-use App\Http\Controllers\Api\V1\DropboxWebhookController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
-use App\Http\Controllers\Api\V1\StorageWorkspaceController;
+use App\Http\Controllers\Api\V1\TagNodesController;
 use App\Http\Controllers\Api\V1\TrashController;
 use App\Http\Controllers\Api\V1\TypesController;
+use App\Http\Controllers\Api\V1\UnusedFilesController;
 use App\Http\Controllers\Api\V1\UploadLinksController;
 use App\Http\Controllers\Api\V1\UploadsController;
 use App\Http\Controllers\Api\V1\UploadSessionsController;
 use App\Http\Controllers\Api\V1\UsersController;
 use App\Http\Controllers\Api\V1\VocabularyController;
-use App\Http\Controllers\Api\V1\WebhooksController;
+use App\Http\Controllers\Api\V1\VocabularyRelinkController;
 use App\Http\Controllers\Api\V1\WatchedIngestRulesController;
+use App\Http\Controllers\Api\V1\WebhooksController;
+use App\Models\ScheduledUpload;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -109,7 +112,7 @@ Route::prefix('v1')->group(function (): void {
         try {
             DB::select('select 1');
             $checks['db'] = true;
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // left false
         }
 
@@ -117,7 +120,7 @@ Route::prefix('v1')->group(function (): void {
             $key = 'archive:health:check';
             Cache::put($key, '1', 5);
             $checks['redis'] = Cache::get($key) === '1';
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // left false
         }
 
@@ -126,7 +129,7 @@ Route::prefix('v1')->group(function (): void {
             Storage::disk('local')->put($file, 'ok');
             $checks['storage'] = Storage::disk('local')->get($file) === 'ok';
             Storage::disk('local')->delete($file);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // left false
         }
 
@@ -141,9 +144,9 @@ Route::prefix('v1')->group(function (): void {
         // sign/absolute-value default has flipped across Carbon versions, which silently
         // inverted these "seconds elapsed since X" comparisons (fresh became stale, stale
         // read as fresh) when using it directly against a past timestamp.
-        $heartbeatAt = Cache::get(\App\Console\Commands\DispatchScheduledUploads::HEARTBEAT_CACHE_KEY);
+        $heartbeatAt = Cache::get(DispatchScheduledUploads::HEARTBEAT_CACHE_KEY);
         $schedulerFresh = $heartbeatAt !== null
-            && (now()->getTimestamp() - \Illuminate\Support\Carbon::parse($heartbeatAt)->getTimestamp()) <= (int) config('scheduled-uploads.health_fresh_after_seconds', 120);
+            && (now()->getTimestamp() - Carbon::parse($heartbeatAt)->getTimestamp()) <= (int) config('scheduled-uploads.health_fresh_after_seconds', 120);
 
         // Wrapped like the db/redis/storage checks above: a test or environment without the
         // scheduled_uploads table (e.g. contract-shape tests with no RefreshDatabase) must
@@ -152,16 +155,16 @@ Route::prefix('v1')->group(function (): void {
         $queueDepth = 0;
 
         try {
-            $oldestDueAt = \App\Models\ScheduledUpload::query()
+            $oldestDueAt = ScheduledUpload::query()
                 ->where('status', 'scheduled')
                 ->where('scheduled_at', '<=', now())
                 ->min('scheduled_at');
             $oldestDueSeconds = $oldestDueAt !== null
-                ? max(0, now()->getTimestamp() - \Illuminate\Support\Carbon::parse($oldestDueAt)->getTimestamp())
+                ? max(0, now()->getTimestamp() - Carbon::parse($oldestDueAt)->getTimestamp())
                 : 0;
 
-            $queueDepth = \App\Models\ScheduledUpload::query()->whereIn('status', ['claimed', 'processing'])->count();
-        } catch (\Throwable) {
+            $queueDepth = ScheduledUpload::query()->whereIn('status', ['claimed', 'processing'])->count();
+        } catch (Throwable) {
             // left at defaults
         }
 

@@ -51,9 +51,8 @@ class UpdateSecuritySettingsRequest extends FormRequest
     /**
      * Get the validated input only for writable fields.
      *
-     * @param string|array<string>|null $key
-     * @param mixed $default
-     *
+     * @param  string|array<string>|null  $key
+     * @param  mixed  $default
      * @return mixed
      */
     public function validated($key = null, $default = null)

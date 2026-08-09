@@ -1,3 +1,21 @@
 <?php
-namespace Tests\Feature; use Illuminate\Foundation\Testing\RefreshDatabase; use Illuminate\Support\Facades\DB; use Tests\Support\AuthenticatesArchiveRequests; use Tests\TestCase;
-class DepartmentHandoffApiTest extends TestCase { use RefreshDatabase, AuthenticatesArchiveRequests; public function test_it_records_a_summary_without_changing_record_data(): void { DB::table('record_field_requests')->insert(['id'=>'r','record_id'=>'item','field'=>'summary','message'=>'x','created_at'=>now(),'updated_at'=>now()]); DB::table('rights_records')->insert(['id'=>'rights','item_id'=>'item','rights_holder'=>'A','license_type'=>'UNKNOWN','created_at'=>now(),'updated_at'=>now()]); $this->postJson('/api/v1/records/item/department-handoffs',['fromDepartmentId'=>'news','toDepartmentId'=>'legal','receivedBy'=>'legal@example.test'],$this->authHeaders())->assertCreated()->assertJsonPath('handoff.summary.openFieldRequests.0','summary')->assertJsonPath('handoff.summary.hasRights',true)->assertJsonPath('handoff.toDepartmentId','legal'); $this->assertDatabaseHas('department_handoffs',['record_id'=>'item','from_department_id'=>'news']); } }
+
+namespace Tests\Feature;
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Tests\Support\AuthenticatesArchiveRequests;
+use Tests\TestCase;
+
+class DepartmentHandoffApiTest extends TestCase
+{
+    use AuthenticatesArchiveRequests, RefreshDatabase;
+
+    public function test_it_records_a_summary_without_changing_record_data(): void
+    {
+        DB::table('record_field_requests')->insert(['id' => 'r', 'record_id' => 'item', 'field' => 'summary', 'message' => 'x', 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('rights_records')->insert(['id' => 'rights', 'item_id' => 'item', 'rights_holder' => 'A', 'license_type' => 'UNKNOWN', 'created_at' => now(), 'updated_at' => now()]);
+        $this->postJson('/api/v1/records/item/department-handoffs', ['fromDepartmentId' => 'news', 'toDepartmentId' => 'legal', 'receivedBy' => 'legal@example.test'], $this->authHeaders())->assertCreated()->assertJsonPath('handoff.summary.openFieldRequests.0', 'summary')->assertJsonPath('handoff.summary.hasRights', true)->assertJsonPath('handoff.toDepartmentId', 'legal');
+        $this->assertDatabaseHas('department_handoffs', ['record_id' => 'item', 'from_department_id' => 'news']);
+    }
+}

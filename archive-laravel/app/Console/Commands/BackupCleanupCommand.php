@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -56,7 +56,7 @@ class BackupCleanupCommand extends Command
             }
 
             $mtime = (int) filemtime($file);
-            $fileTime = \Carbon\Carbon::createFromTimestamp($mtime);
+            $fileTime = Carbon::createFromTimestamp($mtime);
 
             if ($fileTime->isBefore($cutoffDate)) {
                 $deleted[] = basename($file);
@@ -73,6 +73,7 @@ class BackupCleanupCommand extends Command
 
             if (! $file || in_array(basename($file), $deleted)) {
                 array_pop($files);
+
                 continue;
             }
 

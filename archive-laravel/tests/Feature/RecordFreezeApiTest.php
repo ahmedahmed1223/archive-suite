@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class RecordFreezeApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_freezes_reads_and_unfreezes(): void
     {

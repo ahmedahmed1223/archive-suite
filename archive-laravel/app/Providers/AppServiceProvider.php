@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\Dropbox\DropboxConnectionService;
+use App\Services\Dropbox\DropboxGateway;
+use App\Services\Dropbox\DropboxIngestTransport;
 use App\Services\Ingest\FakeIngestTransport;
 use App\Services\Ingest\FtpIngestTransport;
 use App\Services\Ingest\IngestScanner;
@@ -9,10 +12,9 @@ use App\Services\Ingest\IngestTransport;
 use App\Services\Ingest\PhpFtpClient;
 use App\Services\Ingest\SmbIngestTransport;
 use App\Services\Media\FakeMediaProcessor;
-use App\Services\Media\FakeProcessRunner;
-use App\Services\Media\MediaProcessor;
-use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\LocalMediaJobExecutor;
+use App\Services\Media\MediaJobExecutor;
+use App\Services\Media\MediaProcessor;
 use App\Services\Media\OcrClient;
 use App\Services\Media\ProcessRunner;
 use App\Services\Media\RealMediaProcessor;
@@ -22,12 +24,12 @@ use App\Services\Odbc\NativeOdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionProbe;
 use App\Services\Security\SecuritySettingsService;
+use AzureOss\Storage\Blob\BlobServiceClient;
+use AzureOss\Storage\BlobFlysystem\AzureBlobStorageAdapter;
 use Google\Cloud\Storage\StorageClient;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
-use AzureOss\Storage\Blob\BlobServiceClient;
-use AzureOss\Storage\BlobFlysystem\AzureBlobStorageAdapter;
 use League\Flysystem\Filesystem;
 use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
 use Spatie\Dropbox\Client as DropboxClient;
@@ -115,7 +117,7 @@ class AppServiceProvider extends ServiceProvider
         match ($transportType) {
             'ftp' => $this->app->bind(
                 IngestTransport::class,
-                fn () => new FtpIngestTransport(new PhpFtpClient())
+                fn () => new FtpIngestTransport(new PhpFtpClient)
             ),
             'smb' => $this->app->bind(
                 IngestTransport::class,
@@ -123,9 +125,9 @@ class AppServiceProvider extends ServiceProvider
             ),
             'dropbox' => $this->app->bind(
                 IngestTransport::class,
-                fn ($app) => new \App\Services\Dropbox\DropboxIngestTransport(
-                    $app->make(\App\Services\Dropbox\DropboxConnectionService::class),
-                    $app->make(\App\Services\Dropbox\DropboxGateway::class),
+                fn ($app) => new DropboxIngestTransport(
+                    $app->make(DropboxConnectionService::class),
+                    $app->make(DropboxGateway::class),
                 )
             ),
             default => $this->app->bind(IngestTransport::class, FakeIngestTransport::class),
@@ -206,7 +208,7 @@ class AppServiceProvider extends ServiceProvider
         if (! config('archive.auth.secure_cookies') && ! $loopbackHttp) {
             throw new \RuntimeException(
                 'ARCHIVE_SECURE_COOKIES must be true in production. Set ARCHIVE_SECURE_COOKIES=true '
-                . 'so the va_refresh auth cookie is only sent over HTTPS.'
+                .'so the va_refresh auth cookie is only sent over HTTPS.'
             );
         }
     }

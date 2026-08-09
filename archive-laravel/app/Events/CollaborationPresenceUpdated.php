@@ -14,13 +14,12 @@ class CollaborationPresenceUpdated implements ShouldBroadcastNow
     use InteractsWithSockets;
 
     /**
-     * @param array<string, mixed> $participant Single participant delta — keep payload minimal.
+     * @param  array<string, mixed>  $participant  Single participant delta — keep payload minimal.
      */
     public function __construct(
         public readonly string $roomKey,
         public readonly array $participant,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, Channel>

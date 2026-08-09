@@ -1,4 +1,26 @@
 <?php
+
 namespace App\Http\Controllers\Api\V1;
-use App\Http\Controllers\Controller; use Illuminate\Http\JsonResponse; use Illuminate\Http\Request; use Illuminate\Support\Facades\DB; use Illuminate\Support\Str;
-final class DepartmentHandoffController extends Controller { public function store(Request $request, string $id): JsonResponse { if ($denied=$this->requireEditor($request)) return $denied; $v=$request->validate(['fromDepartmentId'=>['required','string','max:100'],'toDepartmentId'=>['required','string','max:100','different:fromDepartmentId'],'receivedBy'=>['nullable','string','max:200']]); $openFields=DB::table('record_field_requests')->where('record_id',$id)->whereNull('resolved_at')->pluck('field')->values()->all(); $summary=['openFieldRequests'=>$openFields,'openFieldRequestCount'=>count($openFields),'hasRights'=>DB::table('rights_records')->where('item_id',$id)->exists(),'openCommentCount'=>DB::table('record_comments')->where('item_id',$id)->count()]; $now=now(); $handoff=['id'=>(string)Str::uuid(),'record_id'=>$id,'from_department_id'=>$v['fromDepartmentId'],'to_department_id'=>$v['toDepartmentId'],'sent_by'=>(string)$request->attributes->get('archive_user')?->getKey(),'received_by'=>$v['receivedBy']??null,'summary'=>json_encode($summary),'created_at'=>$now,'updated_at'=>$now]; DB::table('department_handoffs')->insert($handoff); return response()->json(['ok'=>true,'handoff'=>['id'=>$handoff['id'],'recordId'=>$id,'fromDepartmentId'=>$handoff['from_department_id'],'toDepartmentId'=>$handoff['to_department_id'],'sentBy'=>$handoff['sent_by'],'receivedBy'=>$handoff['received_by'],'summary'=>$summary]],201); } }
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+final class DepartmentHandoffController extends Controller
+{
+    public function store(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        } $v = $request->validate(['fromDepartmentId' => ['required', 'string', 'max:100'], 'toDepartmentId' => ['required', 'string', 'max:100', 'different:fromDepartmentId'], 'receivedBy' => ['nullable', 'string', 'max:200']]);
+        $openFields = DB::table('record_field_requests')->where('record_id', $id)->whereNull('resolved_at')->pluck('field')->values()->all();
+        $summary = ['openFieldRequests' => $openFields, 'openFieldRequestCount' => count($openFields), 'hasRights' => DB::table('rights_records')->where('item_id', $id)->exists(), 'openCommentCount' => DB::table('record_comments')->where('item_id', $id)->count()];
+        $now = now();
+        $handoff = ['id' => (string) Str::uuid(), 'record_id' => $id, 'from_department_id' => $v['fromDepartmentId'], 'to_department_id' => $v['toDepartmentId'], 'sent_by' => (string) $request->attributes->get('archive_user')?->getKey(), 'received_by' => $v['receivedBy'] ?? null, 'summary' => json_encode($summary), 'created_at' => $now, 'updated_at' => $now];
+        DB::table('department_handoffs')->insert($handoff);
+
+        return response()->json(['ok' => true, 'handoff' => ['id' => $handoff['id'], 'recordId' => $id, 'fromDepartmentId' => $handoff['from_department_id'], 'toDepartmentId' => $handoff['to_department_id'], 'sentBy' => $handoff['sent_by'], 'receivedBy' => $handoff['received_by'], 'summary' => $summary]], 201);
+    }
+}

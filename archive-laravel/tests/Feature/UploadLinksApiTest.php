@@ -3,12 +3,13 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class UploadLinksApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_creates_lists_and_revokes_upload_links(): void
     {
@@ -57,7 +58,7 @@ class UploadLinksApiTest extends TestCase
 
         $token = $created->json('link.token');
 
-        \Illuminate\Support\Facades\DB::table('upload_links')
+        DB::table('upload_links')
             ->where('token', $token)
             ->update(['expires_at' => now()->subHour()]);
 

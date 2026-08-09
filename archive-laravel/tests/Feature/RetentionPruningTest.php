@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Models\MediaJob;
 use App\Models\User;
 use App\Services\Backup\DrReadinessService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -182,7 +183,7 @@ class RetentionPruningTest extends TestCase
     {
         $path = $dir.DIRECTORY_SEPARATOR.$name;
         file_put_contents($path, 'fake-backup-payload');
-        touch($path, $createdAt instanceof \Carbon\Carbon ? $createdAt->getTimestamp() : $createdAt->getTimestamp());
+        touch($path, $createdAt instanceof Carbon ? $createdAt->getTimestamp() : $createdAt->getTimestamp());
 
         return $path;
     }

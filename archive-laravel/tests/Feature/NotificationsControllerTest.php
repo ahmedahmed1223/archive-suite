@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 class NotificationsControllerTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     private User $user;
 
@@ -31,9 +31,9 @@ class NotificationsControllerTest extends TestCase
         $response->assertJsonStructure([
             'ok',
             'notifications' => [
-                '*' => ['id', 'user_id', 'type', 'title', 'message', 'is_read', 'created_at', 'updated_at']
+                '*' => ['id', 'user_id', 'type', 'title', 'message', 'is_read', 'created_at', 'updated_at'],
             ],
-            'pagination' => ['total', 'page', 'limit', 'hasMore']
+            'pagination' => ['total', 'page', 'limit', 'hasMore'],
         ]);
         $this->assertCount(10, $response->json('notifications'));
         $this->assertEquals(25, $response->json('pagination.total'));
@@ -67,7 +67,7 @@ class NotificationsControllerTest extends TestCase
                 'id' => $notification->id,
                 'title' => 'Test Notification',
                 'message' => 'This is a test',
-            ]
+            ],
         ]);
     }
 

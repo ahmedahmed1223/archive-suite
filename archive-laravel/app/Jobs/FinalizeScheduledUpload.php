@@ -32,7 +32,7 @@ use Throwable;
  * -- handle() is then a silent no-op, so a duplicate delivery never creates
  * a second storage_rows record.
  */
-class FinalizeScheduledUpload implements ShouldQueue, ShouldBeUnique
+class FinalizeScheduledUpload implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 

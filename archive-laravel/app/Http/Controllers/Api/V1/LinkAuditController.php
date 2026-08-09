@@ -27,6 +27,7 @@ class LinkAuditController extends Controller
                     })
                     ->exists();
             }
+
             return $cache[$id];
         };
 

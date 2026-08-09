@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 class ComplianceReportService
 {
     /**
-     * @param array{from?: string|null, to?: string|null, event?: string|null, resourceType?: string|null, outcome?: string|null, limit?: int|null} $filters
+     * @param  array{from?: string|null, to?: string|null, event?: string|null, resourceType?: string|null, outcome?: string|null, limit?: int|null}  $filters
      * @return array{filters: array<string, mixed>, summary: array<string, mixed>, entries: list<array<string, mixed>>}
      */
     public function report(array $filters): array
@@ -38,7 +38,7 @@ class ComplianceReportService
     }
 
     /**
-     * @param array{from?: string|null, to?: string|null, event?: string|null, resourceType?: string|null, outcome?: string|null, limit?: int|null} $filters
+     * @param  array{from?: string|null, to?: string|null, event?: string|null, resourceType?: string|null, outcome?: string|null, limit?: int|null}  $filters
      */
     public function csv(array $filters): string
     {
@@ -77,7 +77,7 @@ class ComplianceReportService
     }
 
     /**
-     * @param array{from?: string|null, to?: string|null, event?: string|null, resourceType?: string|null, outcome?: string|null, limit?: int|null} $filters
+     * @param  array{from?: string|null, to?: string|null, event?: string|null, resourceType?: string|null, outcome?: string|null, limit?: int|null}  $filters
      */
     private function filteredQuery(array $filters): Builder
     {
@@ -151,7 +151,7 @@ class ComplianceReportService
     }
 
     /**
-     * @param array{from?: string|null, to?: string|null, event?: string|null, resourceType?: string|null, outcome?: string|null, limit?: int|null} $filters
+     * @param  array{from?: string|null, to?: string|null, event?: string|null, resourceType?: string|null, outcome?: string|null, limit?: int|null}  $filters
      * @return array<string, mixed>
      */
     private function publicFilters(array $filters): array

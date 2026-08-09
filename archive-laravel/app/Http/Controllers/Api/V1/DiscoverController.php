@@ -97,7 +97,7 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
+     * @param  array<int, array<string, mixed>>  $records
      * @return array<int, array<string, mixed>>
      */
     private function explore(array $records): array
@@ -110,7 +110,7 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      */
     private function exploreScore(array $record): int
     {
@@ -120,8 +120,8 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
-     * @param array<string, int> $activityCounts
+     * @param  array<int, array<string, mixed>>  $records
+     * @param  array<string, int>  $activityCounts
      * @return array<int, array<string, mixed>>
      */
     private function trending(array $records, array $activityCounts): array
@@ -134,8 +134,8 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
-     * @param array<string, int> $activityCounts
+     * @param  array<string, mixed>  $record
+     * @param  array<string, int>  $activityCounts
      */
     private function trendingScore(array $record, array $activityCounts): int
     {
@@ -151,8 +151,8 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
-     * @param array<string, int> $activityCounts
+     * @param  array<int, array<string, mixed>>  $records
+     * @param  array<string, int>  $activityCounts
      * @return array<int, array<string, mixed>>
      */
     private function active(array $records, array $activityCounts): array
@@ -166,8 +166,8 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
-     * @param array<string, int> $activityCounts
+     * @param  array<int, array<string, mixed>>  $records
+     * @param  array<string, int>  $activityCounts
      * @return array<int, array<string, mixed>>
      */
     private function forgotten(array $records, array $activityCounts): array
@@ -181,8 +181,8 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
-     * @param array<string, int> $activityCounts
+     * @param  array<string, mixed>  $record
+     * @param  array<string, int>  $activityCounts
      */
     private function activityScore(array $record, array $activityCounts): int
     {
@@ -193,7 +193,7 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
+     * @param  array<int, array<string, mixed>>  $records
      * @return array<int, array<string, mixed>>
      */
     private function sortByTimestamp(array $records, bool $descending): array
@@ -208,7 +208,7 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
+     * @param  array<int, array<string, mixed>>  $records
      * @return array<int, array<string, mixed>>
      */
     private function needsMetadata(array $records): array
@@ -227,7 +227,7 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
+     * @param  array<int, array<string, mixed>>  $records
      * @return array<int, array<string, mixed>>
      */
     private function dailyRandom(array $records): array
@@ -242,7 +242,7 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
+     * @param  array<int, array<string, mixed>>  $records
      * @return array{key: string, label: string, description: string, count: int, records: array<int, array<string, mixed>>}
      */
     private function section(string $key, string $label, string $description, array $records, int $limit): array
@@ -257,7 +257,7 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      */
     private function timestamp(array $record): int
     {
@@ -273,7 +273,7 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      */
     private function ageDays(array $record): int
     {
@@ -283,7 +283,7 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      */
     private function missingMetadataScore(array $record): int
     {
@@ -309,7 +309,7 @@ class DiscoverController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      */
     private function metadataCompleteness(array $record): int
     {

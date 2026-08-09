@@ -11,21 +11,18 @@ use Illuminate\Support\Facades\Storage;
  */
 class FtpIngestTransport implements IngestTransport
 {
-    public function __construct(private readonly FtpClient $client)
-    {
-    }
+    public function __construct(private readonly FtpClient $client) {}
 
     /**
      * Pull files from FTP server.
      *
-     * @param  array<string, mixed>  $params Connection parameters:
-     *   - host: FTP server host
-     *   - port: FTP server port (default 21)
-     *   - user: FTP username
-     *   - password: FTP password
-     *   - remotePath: Remote directory path (e.g., "/uploads")
-     *   - ssl: Use FTPS (default false)
-     *
+     * @param  array<string, mixed>  $params  Connection parameters:
+     *                                        - host: FTP server host
+     *                                        - port: FTP server port (default 21)
+     *                                        - user: FTP username
+     *                                        - password: FTP password
+     *                                        - remotePath: Remote directory path (e.g., "/uploads")
+     *                                        - ssl: Use FTPS (default false)
      * @return array<int, string> Local file keys on ingest disk
      *
      * @throws \RuntimeException on FTP failure
@@ -39,7 +36,7 @@ class FtpIngestTransport implements IngestTransport
         $remotePath = $params['remotePath'] ?? '/';
         $ssl = (bool) ($params['ssl'] ?? false);
 
-        if (!$host || !$user) {
+        if (! $host || ! $user) {
             throw new \RuntimeException('FTP pull requires host and user parameters');
         }
 
@@ -56,11 +53,11 @@ class FtpIngestTransport implements IngestTransport
 
             foreach ($files as $fileInfo) {
                 $fileName = $fileInfo['name'];
-                $remoteName = rtrim($remotePath, '/') . '/' . $fileName;
-                $localKey = $ingestDir . '/' . $fileName;
+                $remoteName = rtrim($remotePath, '/').'/'.$fileName;
+                $localKey = $ingestDir.'/'.$fileName;
 
                 // Create a temporary path for download
-                $tempPath = sys_get_temp_dir() . '/' . uniqid('ingest_', true) . '_' . $fileName;
+                $tempPath = sys_get_temp_dir().'/'.uniqid('ingest_', true).'_'.$fileName;
 
                 try {
                     // Download to temp

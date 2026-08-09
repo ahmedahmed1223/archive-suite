@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Backup;
 
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+
 /**
  * Disaster-recovery readiness probe: last backup + last restore-test result.
  * Reuses BackupService's existing backup directory; the restore marker is a
@@ -19,9 +22,7 @@ class DrReadinessService
 
     private const DRILL_STATUS_FILE = 'dr-drill-status.json';
 
-    public function __construct(private readonly BackupService $backups)
-    {
-    }
+    public function __construct(private readonly BackupService $backups) {}
 
     /**
      * @return array{lastBackupAt: string|null, lastBackupName: string|null, lastRestoreTestAt: string|null, lastRestoreTestOk: bool|null, rpoHours: float|null}
@@ -77,7 +78,7 @@ class DrReadinessService
         // RPO exposure: age of the most recent successful backup, i.e. how
         // much data we'd lose right now if we lost the live DB. No backup
         // yet is "unbounded" (null), never zero.
-        return round(now()->diffInMinutes(\Carbon\Carbon::parse($lastBackupAt), true) / 60, 2);
+        return round(now()->diffInMinutes(Carbon::parse($lastBackupAt), true) / 60, 2);
     }
 
     public function recordRestoreTest(bool $ok): void
@@ -226,7 +227,7 @@ class DrReadinessService
     private function countStorageByStore(): array
     {
         $counts = [];
-        $rows = \Illuminate\Support\Facades\DB::table('storage_rows')
+        $rows = DB::table('storage_rows')
             ->select('store')
             ->selectRaw('COUNT(*) as count')
             ->groupBy('store')
@@ -250,7 +251,7 @@ class DrReadinessService
         // ponytail: Minimal restoration — just clear the drill data.
         // In a production DR scenario, you'd restore from a snapshot.
         // For now, clear all storage_rows to reset the DB to pre-drill state.
-        \Illuminate\Support\Facades\DB::table('storage_rows')->delete();
+        DB::table('storage_rows')->delete();
     }
 
     private function directory(): string

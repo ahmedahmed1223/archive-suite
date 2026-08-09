@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class ProjectTasksApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_persists_a_project_task_with_assignment_status_and_optional_record(): void
     {

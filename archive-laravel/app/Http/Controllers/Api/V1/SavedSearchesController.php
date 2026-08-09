@@ -65,7 +65,9 @@ class SavedSearchesController extends Controller
         ]);
         $userId = $this->userId($request);
         $search = $this->accessible($id, $userId);
-        if (! $search || ! $this->canManage($search, $userId)) return $this->notFound();
+        if (! $search || ! $this->canManage($search, $userId)) {
+            return $this->notFound();
+        }
 
         DB::transaction(function () use ($validated, $id): void {
             DB::table('saved_search_access')->where('saved_search_id', $id)->delete();
@@ -78,7 +80,9 @@ class SavedSearchesController extends Controller
                 'created_at' => $now,
                 'updated_at' => $now,
             ], $validated['members']);
-            if ($rows !== []) DB::table('saved_search_access')->insert($rows);
+            if ($rows !== []) {
+                DB::table('saved_search_access')->insert($rows);
+            }
             DB::table('saved_searches')->where('id', $id)->update([
                 'department_id' => $validated['departmentId'] ?? null,
                 'shared_at' => $rows === [] ? null : $now,
@@ -92,7 +96,9 @@ class SavedSearchesController extends Controller
     public function destroy(Request $request, string $id): JsonResponse
     {
         $deleted = DB::table('saved_searches')->where('id', $id)->where('user_id', $this->userId($request))->delete();
-        if ($deleted < 1) return $this->notFound();
+        if ($deleted < 1) {
+            return $this->notFound();
+        }
 
         return response()->json(['ok' => true, 'deleted' => true]);
     }
@@ -101,7 +107,9 @@ class SavedSearchesController extends Controller
     {
         $userId = $this->userId($request);
         $source = $this->accessible($id, $userId);
-        if (! $source) return $this->notFound();
+        if (! $source) {
+            return $this->notFound();
+        }
 
         $copyId = (string) Str::uuid();
         $now = now();
@@ -130,14 +138,27 @@ class SavedSearchesController extends Controller
             ->first();
     }
 
-    private function owned(string $id, string $userId): ?stdClass { return DB::table('saved_searches')->where('id', $id)->where('user_id', $userId)->first(); }
-    private function userId(Request $request): string { return (string) $request->attributes->get('archive_user')?->getKey(); }
-    private function canManage(stdClass $search, string $userId): bool { return $search->user_id === $userId || ($search->access_role ?? null) === 'editor'; }
+    private function owned(string $id, string $userId): ?stdClass
+    {
+        return DB::table('saved_searches')->where('id', $id)->where('user_id', $userId)->first();
+    }
+
+    private function userId(Request $request): string
+    {
+        return (string) $request->attributes->get('archive_user')?->getKey();
+    }
+
+    private function canManage(stdClass $search, string $userId): bool
+    {
+        return $search->user_id === $userId || ($search->access_role ?? null) === 'editor';
+    }
 
     /** @return array<string, mixed> */
     private function formatSearch(?stdClass $row, string $userId): array
     {
-        if (! $row) return [];
+        if (! $row) {
+            return [];
+        }
         $role = $row->user_id === $userId ? 'owner' : $row->access_role;
         $canManage = in_array($role, ['owner', 'editor'], true);
         $hasMembers = DB::table('saved_search_access')->where('saved_search_id', $row->id)->exists();
@@ -159,5 +180,8 @@ class SavedSearchesController extends Controller
         ];
     }
 
-    private function notFound(): JsonResponse { return response()->json(['ok' => false, 'error' => 'Saved search not found.', 'code' => 'not_found'], 404); }
+    private function notFound(): JsonResponse
+    {
+        return response()->json(['ok' => false, 'error' => 'Saved search not found.', 'code' => 'not_found'], 404);
+    }
 }

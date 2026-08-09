@@ -13,9 +13,7 @@ class LocalMediaJobExecutor implements MediaJobExecutor
     public function __construct(
         private readonly MediaProcessor $processor,
         private readonly string $executorName = 'local-v1',
-    )
-    {
-    }
+    ) {}
 
     public function name(): string
     {

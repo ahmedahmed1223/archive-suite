@@ -19,7 +19,7 @@ class RealMediaProcessor implements MediaProcessor
         private readonly ?AudioPreprocessor $audioPreprocessor = null,
         ?MediaPathGuard $pathGuard = null,
     ) {
-        $this->pathGuard = $pathGuard ?? new MediaPathGuard();
+        $this->pathGuard = $pathGuard ?? new MediaPathGuard;
     }
 
     /**
@@ -207,7 +207,7 @@ class RealMediaProcessor implements MediaProcessor
             ]);
 
             // Store segment artifacts keyed by index for merging
-            if (!isset($allArtifacts['by_format'])) {
+            if (! isset($allArtifacts['by_format'])) {
                 $allArtifacts['by_format'] = [];
                 foreach ($outputFormats as $fmt) {
                     $allArtifacts['by_format'][$fmt] = [];
@@ -253,7 +253,7 @@ class RealMediaProcessor implements MediaProcessor
         $merged = [];
 
         foreach ($outputFormats as $format) {
-            if (!isset($byFormat[$format]) || empty($byFormat[$format])) {
+            if (! isset($byFormat[$format]) || empty($byFormat[$format])) {
                 continue;
             }
 
@@ -291,7 +291,7 @@ class RealMediaProcessor implements MediaProcessor
             }
 
             $content = match ($format) {
-                'vtt' => "WEBVTT\n\n" . implode("\n\n", array_filter($chunks)),
+                'vtt' => "WEBVTT\n\n".implode("\n\n", array_filter($chunks)),
                 'ttml' => $this->mergeTtmlChunks($chunks),
                 default => implode("\n\n", array_filter($chunks)),
             };
@@ -319,7 +319,7 @@ class RealMediaProcessor implements MediaProcessor
         if ($format === 'ttml') {
             return preg_replace_callback(
                 '/\\b(begin|end)=(["\'])([^"\']+)\\2/',
-                fn (array $match): string => "{$match[1]}={$match[2]}" . $this->shiftTimestamp($match[3], $offsetSec) . $match[2],
+                fn (array $match): string => "{$match[1]}={$match[2]}".$this->shiftTimestamp($match[3], $offsetSec).$match[2],
                 $content
             ) ?? $content;
         }
@@ -330,8 +330,8 @@ class RealMediaProcessor implements MediaProcessor
                 [$start, $end] = preg_split('/\\s*-->\\s*/', $match[0]) ?: [];
 
                 return $this->shiftTimestamp($start, $offsetSec)
-                    . ' --> '
-                    . $this->shiftTimestamp($end, $offsetSec);
+                    .' --> '
+                    .$this->shiftTimestamp($end, $offsetSec);
             },
             $content
         ) ?? $content;
@@ -339,7 +339,7 @@ class RealMediaProcessor implements MediaProcessor
 
     private function shiftTimestamp(string $timestamp, float $offsetSec): string
     {
-        if (!preg_match('/^(?:(\\d{2,}):)?(\\d{2}):(\\d{2})([,.])(\\d{3})$/', trim($timestamp), $match)) {
+        if (! preg_match('/^(?:(\\d{2,}):)?(\\d{2}):(\\d{2})([,.])(\\d{3})$/', trim($timestamp), $match)) {
             return $timestamp;
         }
 
@@ -360,7 +360,7 @@ class RealMediaProcessor implements MediaProcessor
     {
         return preg_replace_callback(
             '/^\\d+\\R(?=\\d{2}:\\d{2}:\\d{2},\\d{3}\\s*-->)/m',
-            fn (): string => (++$nextCueIndex) . "\n",
+            fn (): string => (++$nextCueIndex)."\n",
             $content
         ) ?? $content;
     }
@@ -388,9 +388,9 @@ class RealMediaProcessor implements MediaProcessor
         }
 
         return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-            . "<tt xmlns=\"http://www.w3.org/ns/ttml\">\n  <body>\n    <div>\n      "
-            . implode("\n      ", $paragraphs)
-            . "\n    </div>\n  </body>\n</tt>";
+            ."<tt xmlns=\"http://www.w3.org/ns/ttml\">\n  <body>\n    <div>\n      "
+            .implode("\n      ", $paragraphs)
+            ."\n    </div>\n  </body>\n</tt>";
     }
 
     /**
@@ -479,7 +479,7 @@ class RealMediaProcessor implements MediaProcessor
 
     private function processOcr(MediaJob $job): array
     {
-        $client = $this->ocrClient ?? new OcrClient();
+        $client = $this->ocrClient ?? new OcrClient;
         $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
         $text = $client->extractText($sourcePath);
 

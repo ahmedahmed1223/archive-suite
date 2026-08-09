@@ -19,7 +19,7 @@ class FieldAclService
             ->where('uid', $typeId)
             ->first();
 
-        if (!$row instanceof stdClass) {
+        if (! $row instanceof stdClass) {
             return [];
         }
 
@@ -42,16 +42,17 @@ class FieldAclService
      */
     public function canViewField(string $typeId, string $fieldName, ?string $userRole): bool
     {
-        if (!$userRole) {
+        if (! $userRole) {
             return false;
         }
 
         $fieldAcl = $this->getFieldAcl($typeId);
-        if (!isset($fieldAcl[$fieldName])) {
+        if (! isset($fieldAcl[$fieldName])) {
             return true; // Field not found in type, assume accessible
         }
 
         $viewRoles = $fieldAcl[$fieldName]['view'];
+
         return empty($viewRoles) || in_array($userRole, $viewRoles);
     }
 
@@ -60,23 +61,24 @@ class FieldAclService
      */
     public function canEditField(string $typeId, string $fieldName, ?string $userRole): bool
     {
-        if (!$userRole) {
+        if (! $userRole) {
             return false;
         }
 
         $fieldAcl = $this->getFieldAcl($typeId);
-        if (!isset($fieldAcl[$fieldName])) {
+        if (! isset($fieldAcl[$fieldName])) {
             return true; // Field not found in type, assume editable
         }
 
         $editRoles = $fieldAcl[$fieldName]['edit'];
+
         return empty($editRoles) || in_array($userRole, $editRoles);
     }
 
     /**
      * Filter record data to only include fields the user can view.
      *
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      * @return array<string, mixed>
      */
     public function filterVisibleFields(string $typeId, array $record, ?string $userRole): array
@@ -88,6 +90,7 @@ class FieldAclService
             // Always include system fields (id, type, etc.)
             if (str_starts_with($fieldName, '_') || in_array($fieldName, ['id', 'uid', 'type', 'createdAt', 'updatedAt'])) {
                 $filtered[$fieldName] = $value;
+
                 continue;
             }
 
@@ -103,7 +106,7 @@ class FieldAclService
      * Validate that a user can edit the provided fields.
      * Returns an array of field names the user cannot edit, or empty array if all OK.
      *
-     * @param array<string, mixed> $fieldsToUpdate
+     * @param  array<string, mixed>  $fieldsToUpdate
      * @return array<int, string>
      */
     public function validateEditPermissions(string $typeId, array $fieldsToUpdate, ?string $userRole): array
@@ -116,7 +119,7 @@ class FieldAclService
                 continue;
             }
 
-            if (!$this->canEditField($typeId, $fieldName, $userRole)) {
+            if (! $this->canEditField($typeId, $fieldName, $userRole)) {
                 $deniedFields[] = $fieldName;
             }
         }

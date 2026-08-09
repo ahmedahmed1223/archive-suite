@@ -22,7 +22,9 @@ class RecordFreezeController extends Controller
 
     public function freeze(Request $request, string $recordId): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
 
         $validated = $request->validate([
             'reason' => ['required', 'string', 'min:1', 'max:2000'],
@@ -42,7 +44,9 @@ class RecordFreezeController extends Controller
 
     public function unfreeze(Request $request, string $recordId): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
 
         $deleted = DB::table('record_freezes')->where('record_id', $recordId)->delete();
 

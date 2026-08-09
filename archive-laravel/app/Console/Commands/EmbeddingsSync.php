@@ -49,6 +49,7 @@ class EmbeddingsSync extends Command
                     $text = $this->extractText((string) $row->data);
                     if ($text === '') {
                         $skipped++;
+
                         continue;
                     }
 
@@ -60,6 +61,7 @@ class EmbeddingsSync extends Command
 
                     if ($existingHash === $contentHash) {
                         $skipped++;
+
                         continue;
                     }
 

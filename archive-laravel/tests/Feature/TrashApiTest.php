@@ -19,7 +19,7 @@ use Tests\TestCase;
  */
 class TrashApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     // -- delete moves to trash instead of destroying -------------------------
 

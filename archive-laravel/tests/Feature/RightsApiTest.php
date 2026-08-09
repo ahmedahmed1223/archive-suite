@@ -3,12 +3,12 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Tests\Support\AuthenticatesArchiveRequests;
+use Tests\TestCase;
 
 class RightsApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_upserts_and_fetches_a_rights_record(): void
     {
@@ -76,5 +76,4 @@ class RightsApiTest extends TestCase
             ->assertUnauthorized()
             ->assertJsonPath('ok', false);
     }
-
 }

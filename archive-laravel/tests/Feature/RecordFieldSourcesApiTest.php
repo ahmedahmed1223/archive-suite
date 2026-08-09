@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class RecordFieldSourcesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_records_and_lists_field_sources_when_sent(): void
     {

@@ -21,7 +21,7 @@ use Tests\TestCase;
  */
 class EventDrivenAutomationTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_bulk_dispatches_record_changed_for_archive_store(): void
     {
@@ -147,7 +147,7 @@ class EventDrivenAutomationTest extends TestCase
     }
 
     /**
-     * @param array<string, string> $conditions
+     * @param  array<string, string>  $conditions
      */
     private function makeRule(string $trigger, string $action, bool $enabled, array $conditions): string
     {

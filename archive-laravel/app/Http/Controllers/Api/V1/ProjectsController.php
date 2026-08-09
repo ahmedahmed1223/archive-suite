@@ -81,14 +81,24 @@ class ProjectsController extends Controller
             'notes' => ['sometimes', 'nullable', 'string', 'max:5000'],
             'sortOrder' => ['sometimes', 'integer', 'min:0'],
         ]);
-        if ($validated === []) return response()->json(['ok' => false, 'error' => 'No project fields supplied.', 'code' => 'validation_error'], 422);
+        if ($validated === []) {
+            return response()->json(['ok' => false, 'error' => 'No project fields supplied.', 'code' => 'validation_error'], 422);
+        }
 
         $changes = [];
-        if (array_key_exists('name', $validated)) $changes['name'] = $validated['name'];
-        if (array_key_exists('notes', $validated)) $changes['notes'] = $validated['notes'];
-        if (array_key_exists('sortOrder', $validated)) $changes['sort_order'] = $validated['sortOrder'];
+        if (array_key_exists('name', $validated)) {
+            $changes['name'] = $validated['name'];
+        }
+        if (array_key_exists('notes', $validated)) {
+            $changes['notes'] = $validated['notes'];
+        }
+        if (array_key_exists('sortOrder', $validated)) {
+            $changes['sort_order'] = $validated['sortOrder'];
+        }
         $changes['updated_at'] = now();
-        if (DB::table('projects')->where('id', $id)->update($changes) < 1) return response()->json(['ok' => false, 'error' => 'Project not found.', 'code' => 'not_found'], 404);
+        if (DB::table('projects')->where('id', $id)->update($changes) < 1) {
+            return response()->json(['ok' => false, 'error' => 'Project not found.', 'code' => 'not_found'], 404);
+        }
 
         return response()->json(['ok' => true, 'project' => $this->formatProject(DB::table('projects')->where('id', $id)->first())]);
     }
@@ -148,9 +158,15 @@ class ProjectsController extends Controller
         $validated = $request->validate(['recordIds' => ['required', 'array'], 'recordIds.*' => ['required', 'string', 'max:255', 'distinct']]);
         $existing = DB::table('project_records')->where('project_id', $id)->pluck('record_id')->sort()->values()->all();
         $requested = collect($validated['recordIds'])->sort()->values()->all();
-        if ($existing === [] && ! DB::table('projects')->where('id', $id)->exists()) return response()->json(['ok' => false, 'error' => 'Project not found.', 'code' => 'not_found'], 404);
-        if ($existing !== $requested) return response()->json(['ok' => false, 'error' => 'recordIds must contain every linked record exactly once.', 'code' => 'record_order_mismatch'], 422);
-        foreach ($validated['recordIds'] as $position => $recordId) DB::table('project_records')->where('project_id', $id)->where('record_id', $recordId)->update(['position' => $position]);
+        if ($existing === [] && ! DB::table('projects')->where('id', $id)->exists()) {
+            return response()->json(['ok' => false, 'error' => 'Project not found.', 'code' => 'not_found'], 404);
+        }
+        if ($existing !== $requested) {
+            return response()->json(['ok' => false, 'error' => 'recordIds must contain every linked record exactly once.', 'code' => 'record_order_mismatch'], 422);
+        }
+        foreach ($validated['recordIds'] as $position => $recordId) {
+            DB::table('project_records')->where('project_id', $id)->where('record_id', $recordId)->update(['position' => $position]);
+        }
 
         return $this->records($id);
     }

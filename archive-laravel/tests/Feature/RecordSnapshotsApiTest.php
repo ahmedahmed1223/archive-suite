@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class RecordSnapshotsApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_creating_a_record_takes_no_snapshot_only_updating_does(): void
     {

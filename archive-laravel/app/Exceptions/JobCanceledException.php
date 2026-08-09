@@ -10,6 +10,4 @@ use RuntimeException;
  * checkpoints while it runs. Callers must not treat this as a normal
  * failure: no retry, no "failed" status, no error message stored.
  */
-class JobCanceledException extends RuntimeException
-{
-}
+class JobCanceledException extends RuntimeException {}

@@ -2,15 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class RecordMergeApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_preview_reports_relation_note_and_comment_counts(): void
     {
@@ -70,7 +72,7 @@ class RecordMergeApiTest extends TestCase
     {
         $this->seedRecord('item-primary', []);
         $this->seedRecord('item-dup', []);
-        $viewer = \App\Models\User::query()->create(['name' => 'v', 'email' => 'viewer@example.com', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password'), 'role' => 'viewer']);
+        $viewer = User::query()->create(['name' => 'v', 'email' => 'viewer@example.com', 'password' => Hash::make('secret-password'), 'role' => 'viewer']);
         $token = $this->postJson('/api/v1/auth/login', ['email' => 'viewer@example.com', 'password' => 'secret-password'])->assertOk()->json('accessToken');
 
         $this->postJson('/api/v1/records/item-primary/merge', ['duplicateIds' => ['item-dup']], ['Authorization' => 'Bearer '.$token])

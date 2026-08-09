@@ -20,7 +20,7 @@ final class StorageOperationService
      * without this exact token, which prevents a destructive UI preview from
      * being changed between display and execution.
      *
-     * @param list<array{sourcePath?:string,destinationPath?:string,expectedChecksum?:string,metadata?:array<string,mixed>}> $items
+     * @param  list<array{sourcePath?:string,destinationPath?:string,expectedChecksum?:string,metadata?:array<string,mixed>}>  $items
      * @return array{previewToken:string,expiresAt:string,action:string,items:list<array<string,mixed>>}
      */
     public function preview(string $action, string $sourceProviderId, ?string $destinationProviderId, array $items): array
@@ -49,7 +49,6 @@ final class StorageOperationService
         ];
     }
 
-    /** @return StorageOperation */
     public function start(string $previewToken, string $idempotencyKey, ?int $requestedBy = null): StorageOperation
     {
         $payload = $this->verify($previewToken);
@@ -132,6 +131,7 @@ final class StorageOperationService
     {
         $encoded = rtrim(strtr(base64_encode((string) json_encode($payload, JSON_THROW_ON_ERROR)), '+/', '-_'), '=');
         $signature = hash_hmac('sha256', $encoded, (string) config('app.key'), true);
+
         return $encoded.'.'.rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
     }
 
@@ -151,6 +151,7 @@ final class StorageOperationService
             throw new RuntimeException('Expired preview token.');
         }
         $this->assertAction((string) $decoded['action']);
+
         return $decoded;
     }
 

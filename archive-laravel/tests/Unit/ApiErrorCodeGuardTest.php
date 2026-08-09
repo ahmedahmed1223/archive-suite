@@ -36,7 +36,7 @@ class ApiErrorCodeGuardTest extends TestCase
             [],
             $offenders,
             "Found manual {ok:false} responses without a 'code' key. Use ApiError::envelope() ".
-            "(see app/Support/ApiError.php) instead of a raw array so the frontend can branch on ".
+            '(see app/Support/ApiError.php) instead of a raw array so the frontend can branch on '.
             "code rather than matching English error text:\n".implode("\n", $offenders)
         );
     }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,7 @@ use Tests\TestCase;
 
 class RecordsBulkCsvTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     private function seedRecord(string $uid, array $overrides = []): void
     {
@@ -52,7 +53,7 @@ class RecordsBulkCsvTest extends TestCase
     {
         $this->seedRecord('item-1');
 
-        \App\Models\User::query()->firstOrCreate(
+        User::query()->firstOrCreate(
             ['email' => 'viewer-csv@example.test'],
             ['name' => 'Viewer', 'password' => Hash::make('secret-password'), 'role' => 'viewer']
         );
@@ -196,7 +197,7 @@ class RecordsBulkCsvTest extends TestCase
 
     public function test_import_requires_editor_role(): void
     {
-        \App\Models\User::query()->firstOrCreate(
+        User::query()->firstOrCreate(
             ['email' => 'viewer-import@example.test'],
             ['name' => 'Viewer', 'password' => Hash::make('secret-password'), 'role' => 'viewer']
         );

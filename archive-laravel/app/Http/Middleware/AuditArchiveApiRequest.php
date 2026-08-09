@@ -5,13 +5,14 @@ namespace App\Http\Middleware;
 use App\Models\AuditLog;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuditArchiveApiRequest
 {
     /**
-     * @param Closure(Request): Response $next
+     * @param  Closure(Request): Response  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -215,7 +216,7 @@ class AuditArchiveApiRequest
     }
 
     /**
-     * @param array{event: string, resource_type: string|null, resource_id: string|null, outcome: string} $taxonomy
+     * @param  array{event: string, resource_type: string|null, resource_id: string|null, outcome: string}  $taxonomy
      * @return array<string, mixed>
      */
     private function metadata(Request $request, Response $response, array $taxonomy, ?array $recordBefore = null): array
@@ -279,7 +280,7 @@ class AuditArchiveApiRequest
      * Return an allow-listed summary for collaboration writes. Raw document
      * content and conflict snapshots must never enter the audit log.
      *
-     * @param array{event: string, resource_type: string|null, resource_id: string|null, outcome: string} $taxonomy
+     * @param  array{event: string, resource_type: string|null, resource_id: string|null, outcome: string}  $taxonomy
      * @return array<string, mixed>|null
      */
     private function collaborationMetadata(Request $request, Response $response, array $taxonomy): ?array
@@ -325,13 +326,19 @@ class AuditArchiveApiRequest
     /** @return array<string, mixed>|null */
     private function recordBefore(Request $request): ?array
     {
-        if (! $request->isMethod('post') || $request->route()?->uri() !== 'api/v1/records/bulk') return null;
+        if (! $request->isMethod('post') || $request->route()?->uri() !== 'api/v1/records/bulk') {
+            return null;
+        }
 
         $records = $request->input('records');
-        if (! is_array($records) || count($records) !== 1 || ! is_array($records[0] ?? null)) return null;
+        if (! is_array($records) || count($records) !== 1 || ! is_array($records[0] ?? null)) {
+            return null;
+        }
 
         $id = $records[0]['uid'] ?? $records[0]['id'] ?? null;
-        if (! is_string($id) || $id === '') return null;
+        if (! is_string($id) || $id === '') {
+            return null;
+        }
 
         $row = DB::table('storage_rows')
             ->where('store', (string) ($request->input('store') ?: 'archive-items'))
@@ -345,17 +352,21 @@ class AuditArchiveApiRequest
     }
 
     /**
-     * @param array{event: string, resource_type: string|null, resource_id: string|null, outcome: string} $taxonomy
-     * @param array<string, mixed>|null $recordBefore
+     * @param  array{event: string, resource_type: string|null, resource_id: string|null, outcome: string}  $taxonomy
+     * @param  array<string, mixed>|null  $recordBefore
      * @return array{before: array<string, mixed>, after: array<string, mixed>, fields: array<int, string>}|null
      */
     private function recordDiff(Request $request, array $taxonomy, ?array $recordBefore): ?array
     {
-        if ($taxonomy['event'] !== 'records.bulk_upsert' || $taxonomy['outcome'] !== 'success' || $recordBefore === null) return null;
+        if ($taxonomy['event'] !== 'records.bulk_upsert' || $taxonomy['outcome'] !== 'success' || $recordBefore === null) {
+            return null;
+        }
 
         $records = $request->input('records');
         $record = is_array($records) && is_array($records[0] ?? null) ? $records[0] : null;
-        if ($record === null) return null;
+        if ($record === null) {
+            return null;
+        }
 
         $before = [];
         $after = [];
@@ -380,7 +391,7 @@ class AuditArchiveApiRequest
     }
 
     /**
-     * @param array{event: string, resource_type: string|null, resource_id: string|null, outcome: string} $taxonomy
+     * @param  array{event: string, resource_type: string|null, resource_id: string|null, outcome: string}  $taxonomy
      * @return array<string, mixed>
      */
     private function restoreDecision(Request $request, array $taxonomy): array
@@ -417,7 +428,7 @@ class AuditArchiveApiRequest
     }
 
     /**
-     * @param array<string, mixed> $value
+     * @param  array<string, mixed>  $value
      * @return array<string, mixed>
      */
     private function redact(array $value): array
@@ -428,30 +439,35 @@ class AuditArchiveApiRequest
             $normalizedKey = strtolower((string) $key);
             if ($this->isSensitiveKey($normalizedKey)) {
                 $redacted[$key] = '[redacted]';
+
                 continue;
             }
 
             if (is_array($item)) {
                 $redacted[$key] = $this->redact(array_slice($item, 0, 50, true));
+
                 continue;
             }
 
-            if ($item instanceof \Illuminate\Http\UploadedFile) {
+            if ($item instanceof UploadedFile) {
                 $redacted[$key] = [
                     'name' => $item->getClientOriginalName(),
                     'size' => $item->getSize(),
                     'mimeType' => $item->getClientMimeType(),
                 ];
+
                 continue;
             }
 
             if (is_object($item)) {
                 $redacted[$key] = '[object '.class_basename($item).']';
+
                 continue;
             }
 
             if (is_string($item) && strlen($item) > 500) {
                 $redacted[$key] = substr($item, 0, 500).'...';
+
                 continue;
             }
 
@@ -462,7 +478,7 @@ class AuditArchiveApiRequest
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      * @return array<int, string>
      */
     private function fieldPaths(array $payload, string $prefix = ''): array

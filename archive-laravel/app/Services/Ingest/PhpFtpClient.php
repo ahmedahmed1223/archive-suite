@@ -14,7 +14,7 @@ class PhpFtpClient implements FtpClient
 
     public function connect(string $host, int $port, string $user, string $password, bool $ssl = false): void
     {
-        if (!extension_loaded('ftp')) {
+        if (! extension_loaded('ftp')) {
             throw new \RuntimeException('ext-ftp not installed. Install with: apt-get install php-ftp');
         }
 
@@ -30,7 +30,7 @@ class PhpFtpClient implements FtpClient
         }
 
         $loginResult = ftp_login($this->connection, $user, $password);
-        if (!$loginResult) {
+        if (! $loginResult) {
             ftp_close($this->connection);
             $this->connection = null;
 
@@ -88,12 +88,12 @@ class PhpFtpClient implements FtpClient
 
         // Ensure parent directory exists
         $dir = dirname($localPath);
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
         $result = @ftp_get($this->connection, $localPath, $remotePath, FTP_BINARY);
-        if (!$result) {
+        if (! $result) {
             throw new \RuntimeException("FTP download failed for {$remotePath}");
         }
     }

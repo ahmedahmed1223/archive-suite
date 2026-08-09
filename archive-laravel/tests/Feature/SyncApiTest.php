@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class SyncApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_lists_sync_log_entries_with_conflict_state(): void
     {

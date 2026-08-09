@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class UnusedFilesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_flags_a_file_with_no_attachment_reference(): void
     {

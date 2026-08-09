@@ -2,14 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class FavoritesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_saves_and_lists_favorites_for_the_current_user(): void
     {
@@ -47,9 +49,9 @@ class FavoritesApiTest extends TestCase
         ]);
         $this->postJson('/api/v1/favorites', ['recordId' => 'private-favorite'], $this->authHeaders())->assertCreated();
 
-        \App\Models\User::query()->create([
+        User::query()->create([
             'name' => 'Other', 'email' => 'favorites-other@example.test',
-            'password' => \Illuminate\Support\Facades\Hash::make('secret-password'),
+            'password' => Hash::make('secret-password'),
         ]);
         $token = $this->postJson('/api/v1/auth/login', [
             'email' => 'favorites-other@example.test', 'password' => 'secret-password',

@@ -77,7 +77,7 @@ class OcrClientTest extends TestCase
         $sourceRelative = "{$recordId}/source.jpg";
         file_put_contents("{$root}/{$sourceRelative}", 'fake image bytes');
 
-        $runner = new FakeProcessRunner();
+        $runner = new FakeProcessRunner;
         $transcriber = new WhisperTranscriber($runner, 'whisper-ctranslate2', 'large-v3', 'ar', 'vtt');
         $processor = new RealMediaProcessor(
             $runner,
@@ -90,7 +90,7 @@ class OcrClientTest extends TestCase
             $pathGuard,
         );
 
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-ocr';
         $job->record_id = $recordId;
         $job->operation = 'ocr';

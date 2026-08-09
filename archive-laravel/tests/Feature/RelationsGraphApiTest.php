@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class RelationsGraphApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_returns_manual_and_inferred_relations_from_archive_records_only(): void
     {

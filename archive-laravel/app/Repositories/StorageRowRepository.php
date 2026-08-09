@@ -54,7 +54,7 @@ final class StorageRowRepository
     }
 
     /**
-     * @param list<array{store: string, uid: string}> $keys
+     * @param  list<array{store: string, uid: string}>  $keys
      * @return Collection<string, stdClass> keyed as "store\0uid"
      */
     public function findManyByKeys(array $keys): Collection

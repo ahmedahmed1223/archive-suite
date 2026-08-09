@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\ApiToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Symfony\Component\HttpFoundation\Cookie;
 use Tests\TestCase;
 
 class AuthApiTest extends TestCase
@@ -314,7 +315,7 @@ class AuthApiTest extends TestCase
         return $this->responseCookie($response, $name)?->getValue();
     }
 
-    private function responseCookie(mixed $response, string $name): ?\Symfony\Component\HttpFoundation\Cookie
+    private function responseCookie(mixed $response, string $name): ?Cookie
     {
         foreach ($response->headers->getCookies() as $cookie) {
             if ($cookie->getName() === $name) {

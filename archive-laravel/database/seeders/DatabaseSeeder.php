@@ -61,7 +61,7 @@ class DatabaseSeeder extends Seeder
         if (empty($email) || strtolower($email) === 'test@example.com') {
             throw new \RuntimeException(
                 'ADMIN_EMAIL is unset or the default test@example.com. Set ADMIN_EMAIL to a '
-                . 'real address before seeding in production.'
+                .'real address before seeding in production.'
             );
         }
 
@@ -75,8 +75,8 @@ class DatabaseSeeder extends Seeder
         ) {
             throw new \RuntimeException(
                 'ADMIN_PASSWORD is unset or too weak for production. Set a strong, unique '
-                . 'ADMIN_PASSWORD (12+ characters, not a placeholder like "CHANGE_ME..." or '
-                . '"password") in your environment before seeding.'
+                .'ADMIN_PASSWORD (12+ characters, not a placeholder like "CHANGE_ME..." or '
+                .'"password") in your environment before seeding.'
             );
         }
     }

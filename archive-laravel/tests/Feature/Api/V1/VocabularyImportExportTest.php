@@ -2,16 +2,16 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class VocabularyImportExportTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_export_csv_lists_terms_for_the_owning_user(): void
     {
@@ -147,7 +147,7 @@ class VocabularyImportExportTest extends TestCase
 
     public function test_import_requires_editor_role(): void
     {
-        \App\Models\User::query()->firstOrCreate(
+        User::query()->firstOrCreate(
             ['email' => 'viewer@example.test'],
             ['name' => 'Viewer', 'password' => Hash::make('secret-password'), 'role' => 'viewer']
         );
@@ -164,7 +164,7 @@ class VocabularyImportExportTest extends TestCase
 
     public function test_export_allows_any_authenticated_role(): void
     {
-        \App\Models\User::query()->firstOrCreate(
+        User::query()->firstOrCreate(
             ['email' => 'viewer2@example.test'],
             ['name' => 'Viewer2', 'password' => Hash::make('secret-password'), 'role' => 'viewer']
         );

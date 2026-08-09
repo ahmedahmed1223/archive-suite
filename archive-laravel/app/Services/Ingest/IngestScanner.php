@@ -2,6 +2,7 @@
 
 namespace App\Services\Ingest;
 
+use App\Jobs\ProcessMediaWorkflow;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -9,9 +10,7 @@ use Throwable;
 
 class IngestScanner
 {
-    public function __construct(private readonly string $disk, private readonly string $directory)
-    {
-    }
+    public function __construct(private readonly string $disk, private readonly string $directory) {}
 
     /**
      * Scan ingest directory and create records for new files.
@@ -45,6 +44,7 @@ class IngestScanner
             try {
                 if ($requireStable && ! $this->isStable($storage, $filePath)) {
                     $skipped++;
+
                     continue;
                 }
                 $checksum = $this->computeChecksum($filePath);
@@ -57,6 +57,7 @@ class IngestScanner
 
                 if ($existing) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -153,6 +154,6 @@ class IngestScanner
         ]);
 
         // Dispatch job via Laravel queue
-        \App\Jobs\ProcessMediaWorkflow::dispatch($jobId);
+        ProcessMediaWorkflow::dispatch($jobId);
     }
 }

@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class RecordEditClaimApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_a_record_with_no_claim_returns_null(): void
     {

@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\V1;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TagNodesControllerTest extends TestCase
@@ -219,7 +220,7 @@ class TagNodesControllerTest extends TestCase
 
     private function createTagNode(string $tag, string $parent = ''): string
     {
-        $id = (string) \Illuminate\Support\Str::uuid();
+        $id = (string) Str::uuid();
         DB::table('tag_nodes')->insert([
             'id' => $id,
             'user_id' => $this->user->id,

@@ -96,7 +96,9 @@ class SecuritySettingsService
 
     public function updateWhisperDevice(string $device): void
     {
-        if (! in_array($device, ['cpu', 'cuda'], true)) throw new InvalidArgumentException('Whisper device must be cpu or cuda.');
+        if (! in_array($device, ['cpu', 'cuda'], true)) {
+            throw new InvalidArgumentException('Whisper device must be cpu or cuda.');
+        }
         $this->persist(['whisperDevice' => $device]);
     }
 

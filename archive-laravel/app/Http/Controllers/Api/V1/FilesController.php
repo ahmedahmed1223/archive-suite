@@ -7,9 +7,11 @@ use App\Support\ApiError;
 use FilesystemIterator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
+use Symfony\Component\HttpFoundation\Response;
 
 class FilesController extends Controller
 {
@@ -83,7 +85,7 @@ class FilesController extends Controller
         ]);
     }
 
-    public function stream(Request $request): \Symfony\Component\HttpFoundation\Response
+    public function stream(Request $request): Response
     {
         $validated = $request->validate([
             'path' => ['required', 'string'],
@@ -119,7 +121,7 @@ class FilesController extends Controller
         ]);
     }
 
-    private function streamFromDisk(Request $request, string $diskName, string $path): \Symfony\Component\HttpFoundation\Response
+    private function streamFromDisk(Request $request, string $diskName, string $path): Response
     {
         // Security: only allow disks in the configured filesystem disks array
         $allowedDisks = array_keys((array) config('filesystems.disks', []));
@@ -133,7 +135,7 @@ class FilesController extends Controller
             return response()->json(ApiError::envelope('Invalid file path.', 400), 400);
         }
 
-        $disk = \Illuminate\Support\Facades\Storage::disk($diskName);
+        $disk = Storage::disk($diskName);
 
         // Check file exists
         if (! $disk->exists($path)) {

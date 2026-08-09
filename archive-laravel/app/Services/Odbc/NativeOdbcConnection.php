@@ -4,9 +4,7 @@ namespace App\Services\Odbc;
 
 class NativeOdbcConnection implements OdbcConnection
 {
-    public function __construct(private readonly mixed $connection)
-    {
-    }
+    public function __construct(private readonly mixed $connection) {}
 
     public function __destruct()
     {
