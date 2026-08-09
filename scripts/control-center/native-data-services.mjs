@@ -23,22 +23,34 @@ function validEndpoint(endpoint) {
 // there is no hidden state to migrate here.
 export function resolveNativeDataPlan({ postgres, redis } = {}) {
   const kind = postgres?.kind;
-  if (kind !== "local-managed" && kind !== "external") {
-    return fail("DATA_POSTGRES_CHOICE_REQUIRED", "PostgreSQL must be either the locally managed instance or an external endpoint.", ["Set postgres.kind to \"local-managed\" or \"external\" and retry."]);
+  if (kind !== "managed" && kind !== "local-managed" && kind !== "external") {
+    return fail("DATA_POSTGRES_CHOICE_REQUIRED", "PostgreSQL must be managed, locally managed, or an external endpoint.", ["Set postgres.kind to \"managed\", \"local-managed\", or \"external\" and retry."]);
   }
   if (kind === "external" && (!validEndpoint(postgres) || typeof postgres.database !== "string" || !postgres.database.trim())) {
     return fail("DATA_POSTGRES_ENDPOINT_INVALID", "An external PostgreSQL endpoint needs a plain host, port, and database name without credentials.", ["Provide host, port, and database only; credentials belong in the environment."]);
   }
-  if (redis?.enabled && !validEndpoint(redis)) {
+  const redisManaged = redis?.kind === "managed";
+  const redisExternal = !redisManaged && (redis?.kind === "external" || redis?.enabled === true);
+  if (redisExternal && !validEndpoint(redis)) {
     return fail("DATA_REDIS_ENDPOINT_INVALID", "The optional Redis-compatible endpoint needs a plain host and port without credentials.", ["Provide redis host and port only, or disable the redis option."]);
   }
+  const resolvedRedis = redisManaged
+    ? { enabled: true, kind: "managed", host: "127.0.0.1", port: 6379 }
+    : redisExternal
+      ? { enabled: true, ...(redis?.kind === "external" ? { kind: "external" } : {}), host: redis.host, port: redis.port }
+      : { enabled: false };
+  const resolvedPostgres = kind === "managed"
+    ? { kind, host: "127.0.0.1", port: 5432, database: "archive" }
+    : kind === "external"
+      ? { kind, host: postgres.host, port: postgres.port, database: postgres.database }
+      : { kind };
   return {
     ok: true,
     plan: {
-      postgres: kind === "external" ? { kind, host: postgres.host, port: postgres.port, database: postgres.database } : { kind },
-      queue: "database",
-      cache: "database",
-      redis: redis?.enabled ? { enabled: true, host: redis.host, port: redis.port } : { enabled: false },
+      postgres: resolvedPostgres,
+      queue: redisManaged ? "redis" : "database",
+      cache: redisManaged ? "redis" : "database",
+      redis: resolvedRedis,
     },
   };
 }
@@ -48,10 +60,20 @@ export function resolveNativeDataPlan({ postgres, redis } = {}) {
 // continue. Any failure is returned as a stable code the adapter records.
 // Re-running the gate after an endpoint recovers is the recovery path — the
 // gate holds no state between calls.
-export function createNativeDataGate({ probes, startLocalPostgres } = {}) {
+export function createNativeDataGate({ probes, startLocalPostgres, startManagedData } = {}) {
   if (!probes || typeof probes.postgres !== "function" || typeof probes.redis !== "function") throw new Error("Native data gate requires postgres and redis probes.");
   return async function ensureDataServicesReady(plan) {
     if (!plan?.postgres?.kind) return fail("DATA_PLAN_REQUIRED", "A resolved data services plan is required before install.", ["Run resolveNativeDataPlan on the setup configuration first."]);
+    const needsManagedData = plan.postgres.kind === "managed" || plan.redis?.kind === "managed";
+    if (needsManagedData) {
+      if (typeof startManagedData !== "function") return fail("MANAGED_DATA_UNAVAILABLE", "The managed PostgreSQL and Redis-compatible services are not wired into this installer.", ["Choose external data services, or use a build that bundles the managed data services."]);
+      try {
+        const result = await startManagedData(plan);
+        if (result?.ok === false) return result;
+      } catch {
+        return fail("MANAGED_DATA_START_FAILED", "The managed data services could not be prepared.", ["Review the protected managed-data setup logs, then retry the install."]);
+      }
+    }
     if (plan.postgres.kind === "local-managed") {
       if (typeof startLocalPostgres !== "function") return fail("LOCAL_POSTGRES_UNAVAILABLE", "The locally managed PostgreSQL runtime is not wired into this installer.", ["Choose an external PostgreSQL endpoint, or install a build that bundles the managed instance."]);
       try { await startLocalPostgres(); }

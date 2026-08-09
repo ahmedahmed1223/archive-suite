@@ -5,7 +5,7 @@ import { createLinuxHostEffects } from "./linux-host-effects.mjs";
 import { LINUX_INSTALL_STEPS } from "./linux-runtime-adapter.mjs";
 import { createWindowsHostEffects } from "./windows-host-effects.mjs";
 import { WINDOWS_INSTALL_STEPS } from "./windows-runtime-adapter.mjs";
-import { buildNativeRuntime, buildNativeServiceRemover, nativeDataPlanOverrideFromEnv, nativeManifestInput, nativeServiceIds } from "./native-setup.mjs";
+import { buildNativeRuntime, buildNativeServiceRemover, nativeDataPlanOverrideFromEnv, nativeManifestInput, nativeServiceIds, resolveNativeSetupDataPlan } from "./native-setup.mjs";
 
 const recorder = () => {
   const commands = [];
@@ -118,6 +118,81 @@ test("without probes a local-managed plan is honestly blocked before any host co
   const result = await adapter.install({ path: "m.json", input: {} });
   assert.equal(result.ok, false);
   assert.equal(result.code, "LOCAL_POSTGRES_UNAVAILABLE");
+  assert.equal(rec.commands.length, 0);
+});
+
+test("a normalized Native configuration resolves its managed data services to loopback endpoints", () => {
+  const result = resolveNativeSetupDataPlan({
+    ...linuxConfig,
+    dataServices: {
+      postgres: { enabled: true, kind: "managed" },
+      redis: { enabled: true, kind: "managed" },
+    },
+  });
+
+  assert.deepEqual(result, {
+    ok: true,
+    plan: {
+      postgres: { kind: "managed", host: "127.0.0.1", port: 5432, database: "archive" },
+      queue: "redis",
+      cache: "redis",
+      redis: { enabled: true, kind: "managed", host: "127.0.0.1", port: 6379 },
+    },
+  });
+});
+
+test("a managed Native plan is blocked before host changes when its data provisioner is not wired", async () => {
+  const rec = recorder();
+  const { adapter } = buildNativeRuntime({
+    configuration: linuxConfig,
+    run: rec.run,
+    writeFile: rec.writeFile,
+    manifestStore: passingStore([]),
+    manifestRequest: { path: "m.json", input: {} },
+    dataPlan: {
+      postgres: { kind: "managed", host: "127.0.0.1", port: 5432, database: "archive" },
+      queue: "redis",
+      cache: "redis",
+      redis: { enabled: true, kind: "managed", host: "127.0.0.1", port: 6379 },
+    },
+    probes: okProbes,
+  });
+
+  const result = await adapter.install({ path: "m.json", input: {} });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "MANAGED_DATA_UNAVAILABLE");
+  assert.equal(rec.commands.length, 0);
+});
+
+test("a managed data provisioning failure stops a Native install before host changes", async () => {
+  const rec = recorder();
+  const { adapter } = buildNativeRuntime({
+    configuration: linuxConfig,
+    run: rec.run,
+    writeFile: rec.writeFile,
+    manifestStore: passingStore([]),
+    manifestRequest: { path: "m.json", input: {} },
+    dataPlan: {
+      postgres: { kind: "managed", host: "127.0.0.1", port: 5432, database: "archive" },
+      queue: "redis",
+      cache: "redis",
+      redis: { enabled: true, kind: "managed", host: "127.0.0.1", port: 6379 },
+    },
+    probes: okProbes,
+    startManagedData: async () => ({
+      ok: false,
+      code: "MANAGED_REDIS_LICENSE_REQUIRED",
+      message: "The licensed Redis-compatible installer is not available.",
+      details: {},
+      nextActions: ["Provide the licensed installer and retry."],
+    }),
+  });
+
+  const result = await adapter.install({ path: "m.json", input: {} });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "MANAGED_REDIS_LICENSE_REQUIRED");
   assert.equal(rec.commands.length, 0);
 });
 

@@ -49,13 +49,20 @@ export function nativeManifestInput(configuration, { version, installRoot }) {
   };
 }
 
-// The Native data plan. The declarative setup schema does not (yet) carry a
-// local/external PostgreSQL choice or an external endpoint, so the default is
-// the locally managed instance; an operator overrides via `dataPlanOverride`
-// (the same shape resolveNativeDataPlan accepts) until the schema grows the
-// field. Redis stays on the database baseline unless an endpoint is given.
+// The Native data plan is derived from the normalized declarative setup
+// configuration. An explicit environment override is retained for existing
+// unattended external-database deployments and takes precedence when present.
+// Configurations created before the managed-data choice existed retain their
+// local-managed PostgreSQL fallback.
 export function resolveNativeSetupDataPlan(configuration, dataPlanOverride) {
-  return resolveNativeDataPlan(dataPlanOverride || { postgres: { kind: "local-managed" } });
+  if (dataPlanOverride) return resolveNativeDataPlan(dataPlanOverride);
+  if (configuration?.dataServices?.postgres?.kind) {
+    return resolveNativeDataPlan({
+      postgres: configuration.dataServices.postgres,
+      redis: configuration.dataServices.redis,
+    });
+  }
+  return resolveNativeDataPlan({ postgres: { kind: "local-managed" } });
 }
 
 // This plan scopes Native installs to an external PostgreSQL/Redis endpoint
@@ -97,6 +104,7 @@ export function buildNativeRuntime({
   dataPlan,
   probes,
   startLocalPostgres,
+  startManagedData,
   appConfig,
 } = {}) {
   const family = nativePlatformFamily(configuration?.platform);
@@ -105,8 +113,10 @@ export function buildNativeRuntime({
   // No probes wired → an honest gate that reports the managed runtime / probe
   // wiring is not present, rather than silently skipping the safety check.
   const dataGate = probes
-    ? createNativeDataGate({ probes, startLocalPostgres })
-    : async (plan) => (plan?.postgres?.kind === "local-managed"
+    ? createNativeDataGate({ probes, startLocalPostgres, startManagedData })
+    : async (plan) => ((plan?.postgres?.kind === "managed" || plan?.redis?.kind === "managed")
+      ? { ok: false, code: "MANAGED_DATA_UNAVAILABLE", message: "The managed PostgreSQL and Redis-compatible services are not wired into this installer.", details: {}, nextActions: ["Choose external data services, or use a build that bundles the managed data services."] }
+      : plan?.postgres?.kind === "local-managed"
       ? { ok: false, code: "LOCAL_POSTGRES_UNAVAILABLE", message: "The locally managed PostgreSQL runtime is not bundled in this build.", details: {}, nextActions: ["Point the install at an external PostgreSQL endpoint, or use a build that bundles the managed instance."] }
       : { ok: false, code: "DATA_PROBES_UNAVAILABLE", message: "External data endpoints cannot be verified without probes wired into this build.", details: {}, nextActions: ["Use a build with data probes wired, or run a Docker install."] });
 

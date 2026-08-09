@@ -17,6 +17,18 @@ test("data plan resolves local-managed and external choices onto the database qu
   assert.equal(external.plan.redis.enabled, true);
 });
 
+test("data plan resolves managed PostgreSQL and Redis onto loopback endpoints", () => {
+  const managed = resolveWindowsDataPlan({ postgres: { kind: "managed" }, redis: { kind: "managed" } });
+
+  assert.equal(managed.ok, true);
+  assert.deepEqual(managed.plan, {
+    postgres: { kind: "managed", host: "127.0.0.1", port: 5432, database: "archive" },
+    queue: "redis",
+    cache: "redis",
+    redis: { enabled: true, kind: "managed", host: "127.0.0.1", port: 6379 },
+  });
+});
+
 test("data plan rejects a missing choice and endpoints carrying credentials or URLs", () => {
   assert.equal(resolveWindowsDataPlan({}).code, "DATA_POSTGRES_CHOICE_REQUIRED");
   assert.equal(resolveWindowsDataPlan({ postgres: { kind: "external", host: "user:pw@db", port: 5432, database: "archive" } }).code, "DATA_POSTGRES_ENDPOINT_INVALID");
