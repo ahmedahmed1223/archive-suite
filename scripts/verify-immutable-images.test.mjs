@@ -71,9 +71,14 @@ test("release workflow smoke-tests and vulnerability-scans both built images", (
   const release = read(".github/workflows/release.yml");
   for (const image of ["NEXT_IMAGE", "LARAVEL_IMAGE"]) {
     assert.match(release, new RegExp(`docker run[^\\n]+\\$\\{${image}\\}:\\$\\{\\{ steps\\.meta\\.outputs\\.version \\}\\}`));
-    assert.match(release, new RegExp(`aquasecurity/trivy-action[^]*image-ref: \\"?\\$\\{\\{ env\\.${image} \\}\\}:\\$\\{\\{ steps\\.meta\\.outputs\\.version \\}\\}`));
+    assert.match(
+      release,
+      new RegExp(`aquasec/trivy:0\\.65\\.0 image[^]*\\$\\{${image}\\}:\\$\\{\\{ steps\\.meta\\.outputs\\.version \\}\\}`)
+    );
   }
   assert.match(release, /docker run --rm --env ARCHIVE_SECURE_COOKIES=true "\$\{LARAVEL_IMAGE\}/);
-  assert.match(release, /severity:\s*["']?CRITICAL["']?/);
-  assert.match(release, /exit-code:\s*["']?1["']?/);
+  assert.match(release, /--severity CRITICAL/);
+  assert.match(release, /--ignore-unfixed/);
+  assert.match(release, /--exit-code 1/);
+  assert.match(release, /docker pull aquasec\/trivy:0\.65\.0/);
 });

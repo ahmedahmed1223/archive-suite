@@ -344,21 +344,42 @@ jobs:
         shell: bash
         run: docker run --rm --env ARCHIVE_SECURE_COOKIES=true "${LARAVEL_IMAGE}:${{ steps.meta.outputs.version }}" php artisan --version
 
+      - name: Pull pinned Trivy scanner with retries
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if docker pull aquasec/trivy:0.65.0; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              sleep "$((attempt * 10))"
+            fi
+          done
+          exit 1
+
       - name: Scan Next image (fail on fixable critical vulnerabilities)
-        uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          image-ref: "${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}"
-          severity: "CRITICAL"
-          ignore-unfixed: true
-          exit-code: "1"
+        shell: bash
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ runner.temp }}/trivy-cache:/root/.cache/trivy" \
+            aquasec/trivy:0.65.0 image \
+            --severity CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            "${NEXT_IMAGE}:${{ steps.meta.outputs.version }}"
 
       - name: Scan Laravel image (fail on fixable critical vulnerabilities)
-        uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          image-ref: "${{ env.LARAVEL_IMAGE }}:${{ steps.meta.outputs.version }}"
-          severity: "CRITICAL"
-          ignore-unfixed: true
-          exit-code: "1"
+        shell: bash
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ runner.temp }}/trivy-cache:/root/.cache/trivy" \
+            aquasec/trivy:0.65.0 image \
+            --severity CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            "${LARAVEL_IMAGE}:${{ steps.meta.outputs.version }}"
 
       # Immutable reference manifest: deploy by digest, not by mutable tag.
       - name: Write image digests manifest
