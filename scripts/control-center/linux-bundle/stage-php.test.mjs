@@ -5,6 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stagePhpRuntime, PHP_LINUX_SHA256, PHP_LINUX_URL } from "./stage-php.mjs";
 
+test("Linux PHP runtime uses a published immutable checksum", () => {
+  assert.match(PHP_LINUX_URL, /^https:\/\/github\.com\/ahmedahmed1223\/archive-suite\/releases\/download\/php-linux-8\.5\.8-custom\//);
+  assert.match(PHP_LINUX_SHA256, /^[a-f0-9]{64}$/);
+});
+
 test("stagePhpRuntime downloads the pinned tar.gz, verifies checksum, extracts, writes php.ini", async () => {
   const destDir = mkdtempSync(join(tmpdir(), "archive-php-stage-"));
   try {

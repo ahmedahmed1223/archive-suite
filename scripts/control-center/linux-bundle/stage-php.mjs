@@ -19,11 +19,8 @@ import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const PHP_VERSION = "8.5.8";
-// TODO: point at the published custom-build release once this org publishes
-// one (e.g. a GitHub Release on this repo) -- no artifact hosting is
-// available from an agent session, so this cannot be resolved unattended.
 export const PHP_LINUX_URL = "https://github.com/ahmedahmed1223/archive-suite/releases/download/php-linux-8.5.8-custom/php-8.5.8-linux-x86_64-custom.tar.gz";
-export const PHP_LINUX_SHA256 = "REPLACE_WITH_REAL_SHA256_ONCE_THE_CUSTOM_BUILD_IS_PUBLISHED";
+export const PHP_LINUX_SHA256 = "208b15993ecc9a741b487357c6b7d3154f418cfb67815701f190026db70a4b34";
 
 const REQUIRED_EXTENSIONS = ["curl", "ftp", "mbstring", "zip", "pdo", "pdo_pgsql", "pcntl"];
 

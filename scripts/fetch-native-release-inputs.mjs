@@ -38,7 +38,10 @@ function verify(bytes, expected, label) {
 
 function defaultExtractPgvector({ archive, destination }) {
   mkdirSync(destination, { recursive: true });
-  const result = spawnSync("tar", ["-xf", archive, "-C", destination], { stdio: "inherit", shell: false });
+  // The release input is a ZIP archive. GNU tar on ubuntu-latest does not
+  // support ZIP, even though Windows bsdtar often does, so use the format's
+  // canonical extractor on the Linux build runner.
+  const result = spawnSync("unzip", ["-q", archive, "-d", destination], { stdio: "inherit", shell: false });
   if (result.status !== 0) throw new Error(`pgvector archive extraction failed with exit code ${result.status}.`);
 }
 
