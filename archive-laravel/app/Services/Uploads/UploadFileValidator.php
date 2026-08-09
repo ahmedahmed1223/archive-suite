@@ -112,12 +112,11 @@ class UploadFileValidator
             throw new UploadContentMismatchException('Upload rejected: unable to inspect file content.');
         }
 
-        try {
-            $detected = finfo_buffer($finfo, $sampleBytes);
+        $detected = finfo_buffer($finfo, $sampleBytes);
 
-            return $detected !== false ? $detected : 'application/octet-stream';
-        } finally {
-            finfo_close($finfo);
-        }
+        // finfo objects are released automatically; finfo_close() is
+        // deprecated in PHP 8.5 and turns an otherwise clean release gate
+        // into a deprecation-bearing run.
+        return $detected !== false ? $detected : 'application/octet-stream';
     }
 }

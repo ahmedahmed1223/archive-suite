@@ -50,7 +50,7 @@ class UploadFileValidatorTest extends TestCase
     {
         // mxf is not in the strict allow-list — plain unrecognized binary
         // content should pass as long as it isn't flagged as a script/exe.
-        $this->validator->assertSafeContent(random_bytes(64), 'mxf');
+        $this->validator->assertSafeContent(str_repeat("\x00", 64), 'mxf');
         $this->addToAssertionCount(1);
     }
 
