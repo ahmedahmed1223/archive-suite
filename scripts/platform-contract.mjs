@@ -163,7 +163,7 @@ export function formatPlatformContractReport(contract, platforms) {
     lines.push(`  capabilities: ${platform.capabilities.map((id) => `${id} (${contract.capabilities[id].status})`).join(", ")}`);
     lines.push(`  data root: ${dataPaths.root}`);
     lines.push(`  resources: ${platform.resourceStatus}`);
-    if (platform.mode === "native") lines.push("  Native deployment is planned: no install or start action is available yet.");
+    if (platform.mode === "native") lines.push("  Native deployment is an officially supported target; see the Native support policy for operating requirements.");
   }
   lines.push("", `Ports: ${contract.ports.map((port) => `${port.id}:${port.port}/${port.protocol} (${port.exposure})`).join(", ")}`);
   lines.push(`Provisional resources: ${Object.entries(contract.resources).filter(([id]) => id !== "status").map(([id, value]) => `${id}=${value.cpu}, ${value.memory}, ${value.disk}`).join("; ")}`);

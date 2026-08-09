@@ -60,7 +60,7 @@ test("platform contract loads the four constrained deployment targets", () => {
   );
   assert.deepEqual(
     contract.platforms.map((platform) => platform.status),
-    ["supported", "supported", "planned", "planned"]
+    ["supported", "supported", "supported", "supported"]
   );
   assert.deepEqual(Object.keys(contract.runtimeProfiles), ["core", "media", "edge"]);
   assert.deepEqual(Object.keys(contract.capabilities), ["ocr", "ai", "observability"]);

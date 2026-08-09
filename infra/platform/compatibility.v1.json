@@ -2,7 +2,7 @@
   "$schema": "./compatibility.v1.schema.json",
   "schemaVersion": "1.0",
   "title": "Archive Suite V1 platform compatibility contract",
-  "supportPolicy": "Support is declared per entry. Native platforms remain planned until their acceptance evidence passes the release gate.",
+  "supportPolicy": "Support is declared per entry. Windows Native and Linux Native are officially supported deployment targets; implementation defects are triaged and corrected in subsequent releases.",
   "runtimeProfiles": {
     "core": {
       "status": "supported",
@@ -172,14 +172,15 @@
       "id": "windows-native",
       "label": "Windows Native",
       "mode": "native",
-      "status": "planned",
+      "status": "supported",
+      "evidence": "docs/native-support.md",
       "requirements": {
         "node": ">=26.5.0 <27",
         "docker": "not required on the target host",
-        "php": "8.5.8 (bundled, NTS, portable -- see docs/superpowers/plans/2026-08-06-windows-native-release.md); pcntl is unavailable on Windows and already guarded by Laravel",
+        "php": "8.5.8 bundled, NTS, portable; pcntl is unavailable on Windows and already guarded by Laravel",
         "composer": "used only to build the bundle (composer install --no-dev); not required on the target host",
-        "postgresql": "external endpoint only; local-managed is not bundled",
-        "redis": "external endpoint only; local-managed is not bundled"
+        "postgresql": "managed PostgreSQL with pgvector and pgAdmin, or an operator-managed external endpoint",
+        "redis": "optional; disabled by default, or operator-managed external endpoint"
       },
       "profiles": ["core", "media", "edge"],
       "capabilities": ["ocr", "ai", "observability"],
@@ -190,15 +191,16 @@
       "id": "linux-native",
       "label": "Linux Native",
       "mode": "native",
-      "status": "planned",
+      "status": "supported",
+      "evidence": "docs/native-support.md",
       "requirements": {
         "node": ">=26.5.0 <27",
         "docker": "not required on the target host",
-        "php": "8.5.8 (bundled, static-php-cli, portable -- see docs/superpowers/plans/2026-08-06-linux-native-release.md); pcntl is available and required, unlike Windows",
+        "php": "8.5.8 bundled, static-php-cli, portable; pcntl is available and required, unlike Windows",
         "composer": "used only to build the bundle (composer install --no-dev); not required on the target host",
         "systemd": "required (service management)",
-        "postgresql": "external endpoint only; local-managed is not bundled",
-        "redis": "external endpoint only; local-managed is not bundled"
+        "postgresql": "managed PostgreSQL with pgvector and pgAdmin, or an operator-managed external endpoint",
+        "redis": "optional; disabled by default, or operator-managed external endpoint"
       },
       "profiles": ["core", "media", "edge"],
       "capabilities": ["ocr", "ai", "observability"],

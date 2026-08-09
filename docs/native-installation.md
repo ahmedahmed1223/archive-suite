@@ -25,7 +25,10 @@ transferring the package to an installation host.
 ## Requirements
 
 - Windows 10 or 11, or Linux with `systemd`.
-- Reachable PostgreSQL and Redis services for the application data plane.
+- PostgreSQL with `pgvector` and pgAdmin, supplied by the managed Native
+  package or by an external operator-managed endpoint.
+- Redis is optional; the database cache and queue baseline needs no Redis
+  service.
 - Protected configuration for service credentials and the public application URL.
 
 The package manages its application services. Use the supported backup and

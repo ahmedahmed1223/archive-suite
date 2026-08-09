@@ -29,7 +29,7 @@ const CAPABILITY_ALIASES = Object.freeze({
 });
 
 export const WIZARD_RUNTIME_PROMPTS = Object.freeze({
-  mode: "Runtime mode (docker/native) — Docker is the supported release path; Native is planning-only for now",
+  mode: "Runtime mode (docker/native) — Docker and Native are supported deployment paths",
   platform: "Platform id — choose the contract platform matching your runtime mode and machine",
   source: "Deployment source (online/offline/local) — local builds this checkout; online downloads signed images; offline needs a verified bundle",
   access: "Access mode (local/intranet/public) — public requires edge/TLS, and edge is reserved for public access only",
