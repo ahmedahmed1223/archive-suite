@@ -102,8 +102,9 @@ for Docker deployment, environment variables, administrator credentials, and
 cloud-storage configuration.
 
 Direct-host operation (Native) is supported on Windows and Linux through
-platform bundles. See [Native installation](docs/native-installation.md) for
-build, transfer, service, and verification guidance.
+signed release assets. See [Native installation](docs/native-installation.md)
+for download, checksum, service, and verification guidance, and
+[Whisper transcription](docs/whisper.md) for CPU and GPU requirements.
 
 Supported storage includes local disk, `Dropbox`, `S3`, `Azure Blob`,
 `Google Drive`, `FTP/FTPS`, `SMB/CIFS`, `SFTP/SSH`, and `WebDAV`.

@@ -139,6 +139,17 @@ async function checkReleaseWorkflow() {
     assert.match(text, /^\s{2}publish:\s*$/m, `${file}: must define a top-level "publish" job`);
     assert.match(text, /needs:\s*verify\b/, `${file}: "publish" job must declare needs: verify`);
   }
+
+  const requiredDistributionPatterns = [
+    ["Windows Native build and acceptance", /windows-native(?:-build)?:[\s\S]*?bundle:windows-native[\s\S]*?windows-native-acceptance:[\s\S]*?native-acceptance\.mjs windows[\s\S]*?upload-artifact@v4/i],
+    ["Linux Native build and acceptance", /linux-native:[\s\S]*?bundle:linux-native[\s\S]*?native-acceptance\.mjs linux[\s\S]*?upload-artifact@v4/i],
+    ["Whisper release smoke", /whisper:[\s\S]*?smoke-whisper-release\.mjs/i],
+  ];
+  for (const [label, pattern] of requiredDistributionPatterns) {
+    assert.match(text, pattern, `${file}: missing required ${label}.`);
+  }
+  assert.match(text, /download-artifact@v4/i, `${file}: publish job must download verified distribution artifacts.`);
+  assert.match(text, /sha256sum\s+--check\s+SHA256SUMS/i, `${file}: publish job must verify SHA256SUMS before release creation.`);
 }
 
 // 5. Shared OpenAPI contract parses and has a version + non-empty paths.
@@ -185,6 +196,36 @@ function checkPlatformSupportEvidence() {
     0,
     `${file}: platform(s) claim "supported" without evidence: ${offenders.map((p) => p.id).join(", ")}`
   );
+  const missingEvidence = (contract.platforms ?? []).filter(
+    (platform) => platform.status === "supported" && platform.evidence && !exists(platform.evidence)
+  );
+  assert.equal(
+    missingEvidence.length,
+    0,
+    `${file}: evidence path does not exist for supported platform(s): ${missingEvidence.map((platform) => platform.id).join(", ")}`
+  );
+}
+
+function checkReleaseClaims() {
+  const version = rootPkg.version;
+  for (const file of [`docs/release-notes/v${version}.md`, `docs/release-notes/v${version}.ar.md`]) {
+    if (!exists(file)) continue;
+    const text = read(file);
+    assert.doesNotMatch(
+      text,
+      /(?:windows|linux|Windows|Linux).{0,80}(?:native|Native).{0,80}(?:remain|status|still|تظل|يبقى).{0,40}(?:planned|مخطط)/isu,
+      `${file}: contains an obsolete Native planned claim.`
+    );
+  }
+}
+
+function checkWhisperCoherence() {
+  const expected = "whisper-ctranslate2";
+  const files = ["archive-laravel/config/media.php", "infra/k8s/configmap.yaml"];
+  for (const file of files) {
+    if (!exists(file)) continue;
+    assert.match(read(file), new RegExp(escapeRegExp(expected)), `${file}: canonical Whisper binary must be ${expected}.`);
+  }
 }
 
 // 7. Every ${VAR:?...} required by docker-compose.yml has a line in .env.example.
@@ -311,6 +352,8 @@ await run("versioning-doc", checkVersioningDoc);
 await run("release-workflow", checkReleaseWorkflow);
 await run("openapi-contract", checkOpenApiContract);
 await run("platform-support-evidence", checkPlatformSupportEvidence);
+await run("release-claims", checkReleaseClaims);
+await run("whisper-coherence", checkWhisperCoherence);
 await run("env-example-completeness", checkEnvExampleCompleteness);
 await run("node-engine-coherence", checkNodeEngineCoherence);
 await run("script-wiring", checkScriptWiring);

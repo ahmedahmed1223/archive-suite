@@ -47,8 +47,11 @@ test("release inventories and enforces licenses for pnpm and Composer", () => {
 });
 
 test("release checksums every downloadable artifact and attaches them together", () => {
-  assert.match(release, /sha256sum[^]*release-images\.txt[^]*next-image\.spdx\.json[^]*laravel-image\.spdx\.json[^]*pnpm-licenses\.json[^]*composer-licenses\.json[^]*SHA256SUMS/);
-  assert.match(release, /gh release create[^]*release-images\.txt[^]*next-image\.spdx\.json[^]*laravel-image\.spdx\.json[^]*pnpm-licenses\.json[^]*composer-licenses\.json[^]*SHA256SUMS/);
+  assert.match(release, /artifacts=\(release-images\.txt next-image\.spdx\.json laravel-image\.spdx\.json pnpm-licenses\.json composer-licenses\.json[^\n]+native_assets/);
+  assert.match(release, /sha256sum "\$\{artifacts\[@\]\}" > SHA256SUMS/);
+  assert.match(release, /sha256sum --check SHA256SUMS/);
+  assert.match(release, /gh release create[^\n]+"\$\{artifacts\[@\]\}" SHA256SUMS/);
+  assert.match(release, /download-artifact@v4[^]*pattern: "\*-release\*"/);
 });
 
 test("release publish permissions are limited to required capabilities", () => {

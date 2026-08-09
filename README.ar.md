@@ -72,8 +72,9 @@ pnpm deploy
 ```
 
 يدعم المنتج كذلك التشغيل المباشر دون حاويات (Native) على Windows وLinux من
-خلال حزم المنصة. راجع [دليل Native](docs/native-installation.ar.md) للبناء
-والنقل وإدارة الخدمات والتحقق.
+خلال أصول الإصدار المتحقق منها. راجع [دليل Native](docs/native-installation.ar.md)
+للتنزيل والتحقق وإدارة الخدمات، و[دليل Whisper](docs/whisper.ar.md) لمتطلبات
+التشغيل على CPU وGPU.
 
 تشمل خيارات التخزين المدعومة القرص المحلي و`Dropbox` و`S3` و`Azure Blob`
 و`Google Drive` و`FTP/FTPS` و`SMB/CIFS` و`SFTP/SSH` و`WebDAV`.

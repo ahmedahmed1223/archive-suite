@@ -48,11 +48,138 @@ jobs:
       - name: Release gate (verify + security + readiness)
         run: pnpm run release:verify
 
+  windows-native-build:
+    name: Build Windows Native package
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: verify
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26.5.0"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate Windows data-service inputs
+        env:
+          POSTGRES_URL: ${{ vars.WINDOWS_POSTGRES_URL }}
+          POSTGRES_SHA256: ${{ vars.WINDOWS_POSTGRES_SHA256 }}
+          PGVECTOR_URL: ${{ vars.WINDOWS_PGVECTOR_URL }}
+          PGVECTOR_SHA256: ${{ vars.WINDOWS_PGVECTOR_SHA256 }}
+        run: node scripts/fetch-native-release-inputs.mjs windows --out native-inputs
+      - name: Build Windows Native package
+        run: pnpm bundle:windows-native -- --out native-windows --postgres-installer native-inputs/postgresql-installer.exe --pgvector-dir native-inputs/pgvector
+      - name: Verify and archive Windows Native package
+        shell: bash
+        run: |
+          node scripts/native-acceptance.mjs windows --bundle native-windows --verify-only --confirm-host-effects
+          tar -czf "archive-suite-${GITHUB_REF_NAME}-windows-native.tar.gz" -C native-windows .
+      - name: Upload Windows Native candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-candidate
+          path: archive-suite-${{ github.ref_name }}-windows-native.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  windows-native-acceptance:
+    name: Accept Windows Native package on a clean host
+    runs-on: [self-hosted, windows, x64, archive-native-release]
+    timeout-minutes: 60
+    needs: windows-native-build
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download Windows Native candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-native-candidate
+      - name: Extract candidate
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force native-windows | Out-Null
+          tar -xzf "archive-suite-${env:GITHUB_REF_NAME}-windows-native.tar.gz" -C native-windows
+      - name: Run Windows Native acceptance
+        shell: powershell
+        run: node scripts/native-acceptance.mjs windows --bundle native-windows --confirm-host-effects --run-id "win-${env:GITHUB_RUN_ID}" --evidence-out native-evidence
+      - name: Upload accepted Windows package and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-release
+          path: |
+            archive-suite-${{ github.ref_name }}-windows-native.tar.gz
+            native-evidence/
+          if-no-files-found: error
+
+  linux-native:
+    name: Build and accept Linux Native package
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: verify
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26.5.0"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build Linux Native package
+        run: pnpm bundle:linux-native -- --out native-linux
+      - name: Run Linux Native acceptance
+        run: node scripts/native-acceptance.mjs linux --bundle native-linux --run-id "lnx-${GITHUB_RUN_ID}" --evidence-out native-evidence
+      - name: Archive accepted Linux package
+        run: tar -czf "archive-suite-${GITHUB_REF_NAME}-linux-native.tar.gz" -C native-linux .
+      - name: Upload accepted Linux package and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-native-release
+          path: |
+            archive-suite-${{ github.ref_name }}-linux-native.tar.gz
+            native-evidence/
+          if-no-files-found: error
+
+  whisper:
+    name: Verify supported Whisper runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: verify
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build canonical worker image
+        run: docker build --tag archive-whisper-release --file archive-laravel/Dockerfile.worker archive-laravel
+      - name: Run bounded Whisper release smoke
+        run: node scripts/smoke-whisper-release.mjs --image archive-whisper-release --evidence whisper-evidence.json
+      - name: Upload Whisper evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-release-evidence
+          path: whisper-evidence.json
+          if-no-files-found: error
+
   publish:
     name: Publish images + GitHub Release
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: verify
+    needs: [verify, windows-native-acceptance, linux-native, whisper]
     permissions:
       contents: write
       packages: write
@@ -80,6 +207,13 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           composer install --working-dir=archive-laravel --no-dev --no-interaction --no-scripts
+
+      - name: Download verified distribution artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-release*"
+          path: native-release-assets
+          merge-multiple: true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -247,9 +381,10 @@ jobs:
           evidence_asset="v1-206-rehearsal-evidence.json"
           cp "${offline_bundle}" "${offline_asset}"
           cp "release-offline/${evidence_asset}" "${evidence_asset}"
-          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_asset}" "${evidence_asset}")
+          mapfile -t native_assets < <(find native-release-assets -type f -print | sort)
+          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_asset}" "${evidence_asset}" "${native_assets[@]}")
           sha256sum "${artifacts[@]}" > SHA256SUMS
           sha256sum --check SHA256SUMS
           flags=(--generate-notes --title "${GITHUB_REF_NAME}")
           [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]] && flags+=(--prerelease)
-          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json "${offline_asset}" "${evidence_asset}" SHA256SUMS
+          gh release create "${GITHUB_REF_NAME}" "${flags[@]}" "${artifacts[@]}" SHA256SUMS

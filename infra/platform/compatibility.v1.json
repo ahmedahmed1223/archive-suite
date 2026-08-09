@@ -173,7 +173,7 @@
       "label": "Windows Native",
       "mode": "native",
       "status": "supported",
-      "evidence": "docs/native-support.md",
+      "evidence": "docs/evidence/v1.1.0-native/README.md",
       "requirements": {
         "node": ">=26.5.0 <27",
         "docker": "not required on the target host",
@@ -192,7 +192,7 @@
       "label": "Linux Native",
       "mode": "native",
       "status": "supported",
-      "evidence": "docs/native-support.md",
+      "evidence": "docs/evidence/v1.1.0-native/README.md",
       "requirements": {
         "node": ">=26.5.0 <27",
         "docker": "not required on the target host",

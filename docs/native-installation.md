@@ -2,35 +2,57 @@
 
 [العربية](native-installation.ar.md) · [Documentation](README.md)
 
-Archive Suite supports native deployment on Windows and Linux in addition to Docker.
-Native packages run the same Laravel and Next.js services without a container
-runtime on the target host.
+Archive Suite `v1.1.0` provides supported Windows and Linux packages that run
+the canonical Laravel and Next.js services without Docker on the target host.
 
-## Build a package
+## Download and verify
 
-Build on a prepared build machine. Docker is used while assembling the portable
-Laravel runtime but is not required on the target host.
+Download the package for your platform, its acceptance evidence, and
+`SHA256SUMS` from the public `v1.1.0` GitHub Release. Verify the inventory before
+extracting or running any file:
 
 ```powershell
-pnpm bundle:windows-native -- --out=D:\MasarNative
+Get-FileHash .\archive-suite-v1.1.0-windows-native.tar.gz -Algorithm SHA256
 ```
 
 ```bash
-pnpm bundle:linux-native -- --out=/srv/masar-native
+sha256sum --check SHA256SUMS
 ```
 
-Keep the generated `SHA256SUMS` file with the package and verify it before
-transferring the package to an installation host.
+Compare the Windows value with the matching line in `SHA256SUMS`. Do not use a
+package when the checksum differs or when its platform acceptance evidence is
+absent.
 
 ## Requirements
 
-- Windows 10 or 11, or Linux with `systemd`.
-- PostgreSQL with `pgvector` and pgAdmin, supplied by the managed Native
-  package or by an external operator-managed endpoint.
-- Redis is optional; the database cache and queue baseline needs no Redis
-  service.
-- Protected configuration for service credentials and the public application URL.
+- Windows 10 or 11 with administrator approval for service registration, or a
+  Linux distribution using `systemd` with equivalent system privileges.
+- At least the resource baseline shown in [platform support](platform-parity.md).
+- A managed PostgreSQL installation supplied by the Windows package, or an
+  operator-managed PostgreSQL endpoint with `pgvector`. Redis is optional.
+- A protected data directory, application URL, and service credentials. Never
+  publish generated environment or secret files.
 
-The package manages its application services. Use the supported backup and
-restore workflow before maintenance. See [platform support](platform-parity.md)
-and [operations](ops/support.md).
+## Install and verify
+
+Extract the archive into a new directory, open Control Center from that
+directory, and choose `native` with the matching platform. Run the read-only
+preflight before allowing installation:
+
+```powershell
+node scripts/control-center.mjs doctor
+node scripts/control-center.mjs wizard
+```
+
+After installation, run `node scripts/control-center.mjs health` and confirm
+that the application, API, worker, scheduler, realtime service, PostgreSQL, and
+selected optional services report healthy. Keep the release archive and
+`SHA256SUMS` until the next verified backup.
+
+## Upgrade and recovery
+
+Create and verify a backup before updating. Keep the previous package until the
+new version passes health checks and a representative search, upload, and media
+operation. Use Control Center for update, rollback, backup, restore, and
+uninstall so cleanup remains limited to paths recorded in the installation
+manifest. See [operations](ops/support.md) and [Whisper](whisper.md).

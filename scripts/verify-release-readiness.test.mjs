@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -21,6 +21,10 @@ function baselineFixture(version = "1.2.3") {
   mkdirSync(join(dir, "docs", "release-notes"), { recursive: true });
   mkdirSync(join(dir, "docs", "api"), { recursive: true });
   mkdirSync(join(dir, "infra"), { recursive: true });
+  mkdirSync(join(dir, "infra", "platform"), { recursive: true });
+  mkdirSync(join(dir, "infra", "k8s"), { recursive: true });
+  mkdirSync(join(dir, "archive-laravel", "config"), { recursive: true });
+  mkdirSync(join(dir, "docs", "evidence"), { recursive: true });
   mkdirSync(join(dir, ".github", "workflows"), { recursive: true });
 
   writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "fixture", version, license: "MIT" }));
@@ -29,8 +33,8 @@ function baselineFixture(version = "1.2.3") {
     join(dir, "docs", "versioning.md"),
     "# Versioning\n\n| Line | Support |\n|------|---------|\n| latest | full support |\n"
   );
-  writeFileSync(join(dir, "docs", "release-notes", `v${version}.md`), `# ${version}\n`);
-  writeFileSync(join(dir, "docs", "release-notes", `v${version}.ar.md`), `# ${version}\n`);
+  writeFileSync(join(dir, "docs", "release-notes", `v${version}.md`), `# ${version}\n\nWindows Native and Linux Native are supported.\n`);
+  writeFileSync(join(dir, "docs", "release-notes", `v${version}.ar.md`), `# ${version}\n\nيدعم الإصدار التشغيل المباشر على Windows وLinux.\n`);
   writeFileSync(
     join(dir, "docs", "api", "archive-contract.openapi.json"),
     JSON.stringify({ info: { version: "1.0.0" }, paths: { "/x": {} } })
@@ -41,9 +45,18 @@ function baselineFixture(version = "1.2.3") {
     "services:\n  app:\n    environment:\n      FOO: ${FOO:?Set FOO in .env}\n"
   );
   writeFileSync(join(dir, "infra", ".env.example"), "FOO=bar\n");
+  writeFileSync(join(dir, "docs", "evidence", "native.md"), "# Native evidence\n");
+  writeFileSync(join(dir, "infra", "platform", "compatibility.v1.json"), JSON.stringify({
+    platforms: [
+      { id: "windows-native", mode: "native", status: "supported", evidence: "docs/evidence/native.md" },
+      { id: "linux-native", mode: "native", status: "supported", evidence: "docs/evidence/native.md" },
+    ],
+  }));
+  writeFileSync(join(dir, "archive-laravel", "config", "media.php"), "'whisper_binary' => env('WHISPER_BINARY', 'whisper-ctranslate2'),\n");
+  writeFileSync(join(dir, "infra", "k8s", "configmap.yaml"), 'WHISPER_BINARY: "whisper-ctranslate2"\n');
   writeFileSync(
     join(dir, ".github", "workflows", "release.yml"),
-    'on:\n  push:\n    tags:\n      - "v*"\njobs:\n  verify:\n    runs-on: ubuntu-latest\n  publish:\n    needs: verify\n    runs-on: ubuntu-latest\n'
+    'on:\n  push:\n    tags:\n      - "v*"\njobs:\n  verify:\n    runs-on: ubuntu-latest\n  windows-native:\n    needs: verify\n    runs-on: windows-latest\n    steps:\n      - run: pnpm bundle:windows-native\n      - run: node scripts/native-acceptance.mjs windows --bundle bundle --confirm-host-effects\n      - uses: actions/upload-artifact@v4\n  linux-native:\n    needs: verify\n    runs-on: ubuntu-latest\n    steps:\n      - run: pnpm bundle:linux-native\n      - run: node scripts/native-acceptance.mjs linux --bundle bundle\n      - uses: actions/upload-artifact@v4\n  whisper:\n    needs: verify\n    runs-on: ubuntu-latest\n    steps:\n      - run: node scripts/smoke-whisper-release.mjs\n  publish:\n    needs: [verify, windows-native, linux-native, whisper]\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/download-artifact@v4\n      - run: sha256sum --check SHA256SUMS\n      - run: gh release create "$GITHUB_REF_NAME"\n'
   );
   return dir;
 }
@@ -259,6 +272,58 @@ test("fails when release.yml has no publish job that needs verify", () => {
     const r = run({ READINESS_ROOT: dir });
     assert.notEqual(r.status, 0);
     assert.match(r.stderr, /publish" job must declare needs: verify/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("release mode fails when supported-platform evidence does not exist", () => {
+  const dir = baselineFixture();
+  try {
+    const contract = JSON.parse(readFileSync(join(dir, "infra", "platform", "compatibility.v1.json"), "utf8"));
+    contract.platforms[0].evidence = "docs/evidence/missing.md";
+    writeFileSync(join(dir, "infra", "platform", "compatibility.v1.json"), JSON.stringify(contract));
+    const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /evidence path does not exist.*windows-native/i);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("fails when the release workflow omits a supported Native distribution", () => {
+  const dir = baselineFixture();
+  try {
+    const workflow = readFileSync(join(dir, ".github", "workflows", "release.yml"), "utf8")
+      .replace(/  windows-native:[\s\S]*?(?=  linux-native:)/, "");
+    writeFileSync(join(dir, ".github", "workflows", "release.yml"), workflow);
+    const r = run({ READINESS_ROOT: dir });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /Windows Native build and acceptance/i);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("fails when current release notes retain the obsolete Native planned claim", () => {
+  const dir = baselineFixture();
+  try {
+    writeFileSync(join(dir, "docs", "release-notes", "v1.2.3.md"), "Windows Native remains planned.\n");
+    const r = run({ READINESS_ROOT: dir });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /obsolete Native planned claim/i);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("fails when Whisper runtime identifiers disagree", () => {
+  const dir = baselineFixture();
+  try {
+    writeFileSync(join(dir, "infra", "k8s", "configmap.yaml"), 'WHISPER_BINARY: "faster-whisper"\n');
+    const r = run({ READINESS_ROOT: dir });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /canonical Whisper binary.*whisper-ctranslate2/i);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

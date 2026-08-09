@@ -11,6 +11,7 @@ Laravel + Next.js product and its current operating paths.
 - [Deploy with Docker](../DEPLOYMENT.md)
 - [Install natively on Windows or Linux](native-installation.md)
 - [Native support policy](native-support.md)
+- [Whisper transcription](whisper.md)
 - [Install from an offline bundle](../infra/offline/README.md)
 - [Release notes for v1.1.0](release-notes/v1.1.0.md)
 - [Release notes for v1.0.0](release-notes/v1.0.0.md)
