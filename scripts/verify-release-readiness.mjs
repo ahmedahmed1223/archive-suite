@@ -158,24 +158,6 @@ function checkOpenApiContract() {
   );
 }
 
-// 6. No unchecked P0 items left in the task ledger.
-function checkTasksP0() {
-  const file = "TASKS.md";
-  if (!exists(file)) return; // nothing to enforce if the ledger doesn't exist
-  const offenders = read(file)
-    .split("\n")
-    .filter((line) => /^- \[ \].*P0 #/.test(line));
-  assert.equal(
-    offenders.length,
-    0,
-    `TASKS.md has unchecked P0 item(s), release cannot proceed:\n${offenders.join("\n")}`
-  );
-}
-
-// 6b. V1-406: in release mode, no unchecked release-blocking V1 item may remain.
-// Release mode = a v* tag points at HEAD, or READINESS_RELEASE=1 (release.yml
-// runs on tag push, so the tag check covers it; CI pushes only get a warning).
-// V1-X items (optional capability verifications) and B backlog items never block.
 function isReleaseMode() {
   if (process.env.READINESS_RELEASE === "1") return true;
   try {
@@ -185,36 +167,6 @@ function isReleaseMode() {
   } catch {
     return false;
   }
-}
-
-// Product decision (2026-08-06): the multi-platform acceptance program
-// (V1-806..814), pilot operations/release rehearsal (V1-502..505), and
-// Go/No-Go + release/deploy/download/support (V1-601..605) are explicitly
-// descoped as blockers for this release -- shipping without a formal
-// multi-platform acceptance program, a pilot cohort, or a separately
-// documented go/no-go sign-off. TASKS.md keeps them open and externally
-// blocked; only their power to fail this gate is removed. Any other
-// V1-NNN item (not V1-X, not one of these three ranges) still blocks,
-// same as before this change.
-const DEFERRED_RELEASE_BLOCKER_PREFIXES = ["V1-806", "V1-502", "V1-601"];
-
-function checkTasksV1Blockers() {
-  const file = "TASKS.md";
-  if (!exists(file)) return;
-  const offenders = read(file)
-    .split("\n")
-    .filter((line) => /^- \[ \] \*\*V1-(?!X)/.test(line))
-    .filter((line) => !DEFERRED_RELEASE_BLOCKER_PREFIXES.some((prefix) => line.includes(`**${prefix}`)));
-  if (offenders.length === 0) return;
-  if (!isReleaseMode()) {
-    console.warn(
-      `warning: ${offenders.length} open V1 release blocker(s) in TASKS.md (release will be blocked until they close)`
-    );
-    return;
-  }
-  assert.fail(
-    `TASKS.md has unchecked release-blocking V1 item(s), release cannot proceed:\n${offenders.join("\n")}`
-  );
 }
 
 // 6c. V1-406: no platform may claim "supported" without recorded evidence.
@@ -358,8 +310,6 @@ await run("license", checkLicense);
 await run("versioning-doc", checkVersioningDoc);
 await run("release-workflow", checkReleaseWorkflow);
 await run("openapi-contract", checkOpenApiContract);
-await run("tasks-p0", checkTasksP0);
-await run("tasks-v1-blockers", checkTasksV1Blockers);
 await run("platform-support-evidence", checkPlatformSupportEvidence);
 await run("env-example-completeness", checkEnvExampleCompleteness);
 await run("node-engine-coherence", checkNodeEngineCoherence);

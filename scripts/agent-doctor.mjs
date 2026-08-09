@@ -1,17 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-
-export function countTaskCheckboxes(source) {
-  const lines = String(source).split(/\r?\n/);
-  return {
-    open: lines.filter((line) => /^\s*- \[ \]/.test(line)).length,
-    completed: lines.filter((line) => /^\s*- \[[xX]\]/.test(line)).length,
-  };
-}
 
 function defaultRun(command, args) {
   return spawnSync(command, args, {
@@ -28,7 +20,6 @@ function successfulText(result) {
 export function collectAgentStatus({
   root = ROOT,
   run = defaultRun,
-  read = (file) => readFileSync(file, "utf8"),
   exists = existsSync,
 } = {}) {
   const pnpmInvocation = process.platform === "win32"
@@ -38,16 +29,12 @@ export function collectAgentStatus({
   const gitStatus = successfulText(run("git", ["-c", `safe.directory=${root.replaceAll("\\", "/")}`, "status", "--short"]));
   const dockerCliVersion = successfulText(run("docker", ["--version"]));
   const dockerServerVersion = successfulText(run("docker", ["info", "--format", "{{.ServerVersion}}"]));
-  const taskFile = path.join(root, "TASKS.md");
-  const tasks = exists(taskFile) ? countTaskCheckboxes(read(taskFile)) : { open: null, completed: null };
-
   return {
     runtime: { node: process.version, pnpm },
     repository: {
       clean: gitStatus === null ? null : gitStatus.length === 0,
       changedFiles: gitStatus === null || gitStatus.length === 0 ? 0 : gitStatus.split(/\r?\n/).length,
     },
-    tasks,
     contract: {
       openapi: exists(path.join(root, "docs", "api", "archive-contract.openapi.json")),
     },
@@ -67,7 +54,6 @@ export function formatAgentStatus(status) {
     `Node: ${status.runtime.node}`,
     `pnpm: ${status.runtime.pnpm ?? "unavailable"}`,
     `Git: ${clean}`,
-    `Tasks: ${status.tasks.open ?? "unknown"} open, ${status.tasks.completed ?? "unknown"} completed in TASKS.md`,
     `OpenAPI: ${status.contract.openapi ? "present" : "missing"}`,
     `Docker CLI: ${status.docker.installed ? status.docker.cliVersion : "not installed"}`,
     `Docker daemon: ${status.docker.daemonAvailable ? status.docker.serverVersion : "not available"}`,
