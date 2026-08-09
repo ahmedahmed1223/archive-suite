@@ -24,13 +24,19 @@ function healthy(result) {
   return result?.ok === true;
 }
 
+function resolveSecrets(secrets) {
+  const resolved = typeof secrets === "function" ? secrets() : secrets;
+  for (const name of ["dbOwnerPassword", "dbAppPassword", "redisPassword"]) {
+    if (typeof resolved?.[name] !== "string" || !resolved[name]) throw new Error(`Managed data provisioner requires ${name}.`);
+  }
+  return resolved;
+}
+
 export function createManagedDataProvisioner({ platform, effects, probes, secrets } = {}) {
   if (!NATIVE_PLATFORMS.has(platform)) throw new Error("Managed data provisioner requires a Native platform.");
   if (!effects || !probes || !secrets) throw new Error("Managed data provisioner requires effects, probes, and secrets.");
   for (const name of ["postgres", "pgvector", "redis"]) requireFunction(probes[name], `probes.${name}`);
-  for (const name of ["dbOwnerPassword", "dbAppPassword", "redisPassword"]) {
-    if (typeof secrets[name] !== "string" || !secrets[name]) throw new Error(`Managed data provisioner requires ${name}.`);
-  }
+  if (typeof secrets !== "function") resolveSecrets(secrets);
 
   return async function provision(plan = {}) {
     const postgresKind = plan?.postgres?.kind;
@@ -40,7 +46,9 @@ export function createManagedDataProvisioner({ platform, effects, probes, secret
       return fail("DATA_PLAN_INVALID", "Managed data provisioning requires PostgreSQL plus either a Redis mode or an explicit disabled Redis choice.", ["Choose managed or external PostgreSQL, then choose managed, external, or disabled Redis."]);
     }
 
-    const request = { platform, postgres: plan.postgres, redis: plan.redis, pgAdmin: plan.pgAdmin === true, secrets };
+    const needsManagedSecrets = postgresKind === "managed" || (redisEnabled && redisKind === "managed");
+    const managedSecrets = needsManagedSecrets ? resolveSecrets(secrets) : undefined;
+    const request = { platform, postgres: plan.postgres, redis: plan.redis, pgAdmin: plan.pgAdmin === true, secrets: managedSecrets };
     const requiredSteps = [];
     if (postgresKind === "managed") requiredSteps.push("installPostgres", "installPgvector", "createArchiveRoles");
     if (redisEnabled && redisKind === "managed") requiredSteps.push("installRedisCompatible");

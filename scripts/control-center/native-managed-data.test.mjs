@@ -75,6 +75,21 @@ test("external data performs probes without installing managed dependencies", as
   ]);
 });
 
+test("a deferred secret supplier is not invoked for an external data plan", async () => {
+  const calls = [];
+  const provision = createManagedDataProvisioner({
+    platform: "windows-native",
+    effects: effects(calls),
+    probes: readyProbes,
+    secrets: () => { throw new Error("managed secrets must not be created for external data"); },
+  });
+
+  const result = await provision({ postgres: { kind: "external" }, redis: { enabled: false }, pgAdmin: false });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls, []);
+});
+
 test("disabled Redis leaves cache services untouched while PostgreSQL, pgvector, and pgAdmin remain required", async () => {
   const calls = [];
   let redisProbed = false;
