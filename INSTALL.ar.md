@@ -3,8 +3,9 @@
 [English](INSTALL.md) · [فهرس التوثيق](docs/README.ar.md)
 
 استخدم هذا المسار عند العمل من نسخة محلية للمستودع. تعمل واجهة Next.js على
-الجهاز، وتعمل خدمة Laravel عبر Docker؛ لذلك لا يلزم تثبيت PHP أو Composer
-محليًا.
+الجهاز، وتعمل خدمة Laravel عبر Docker من خلال
+[`infra/docker-compose.yml`](infra/docker-compose.yml)؛ لذلك لا يلزم تثبيت PHP
+أو Composer محليًا.
 
 ## المتطلبات
 

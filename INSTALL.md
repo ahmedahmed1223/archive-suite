@@ -3,8 +3,9 @@
 [العربية](INSTALL.ar.md) · [Documentation](docs/README.md)
 
 Use this path when working from a clone of the repository. The supported
-development stack is Next.js on the host and Laravel in Docker; local PHP and
-Composer are not required.
+development stack is Next.js on the host and Laravel in Docker through
+[`infra/docker-compose.yml`](infra/docker-compose.yml); local PHP and Composer
+are not required.
 
 ## Requirements
 

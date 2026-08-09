@@ -43,7 +43,7 @@ Laravel**:
 - `docs/api/archive-contract.openapi.json` — shared `OpenAPI` contract
   shared by the frontend and backend.
 
-See [CLAUDE.md](CLAUDE.md) for workspace architecture and development workflows.
+See [the documentation index](docs/README.md) for workspace architecture and development workflows.
 
 ## Start here
 
@@ -87,7 +87,8 @@ Laravel and Next.js integration check.
 
 ## Deployment and configuration
 
-`Control Center` provides guided setup and operation. Docker deployment uses:
+`Control Center` provides guided setup and operation. Docker deployment uses the
+canonical [infra/docker-compose.yml](infra/docker-compose.yml):
 
 ```powershell
 pnpm setup
@@ -115,8 +116,8 @@ Supported storage includes local disk, `Dropbox`, `S3`, `Azure Blob`,
 - Run `pnpm verify` before opening a `Pull Request`.
 - Keep new product work in `archive-next/` and `archive-laravel/`.
 
-See [CLAUDE.md](CLAUDE.md) for architecture, testing, CI/CD, and contribution
-workflows.
+See [the documentation index](docs/README.md) for architecture, testing, CI/CD,
+and contribution workflows.
 
 ## Support
 
