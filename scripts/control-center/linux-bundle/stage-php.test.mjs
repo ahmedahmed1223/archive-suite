@@ -33,7 +33,7 @@ test("stagePhpRuntime downloads the pinned tar.gz, verifies checksum, extracts, 
     assert.equal(result.phpBinPath, join(destDir, "bin", "php"));
 
     const ini = readFileSync(join(destDir, "php.ini"), "utf8");
-    for (const ext of ["curl", "ftp", "mbstring", "zip", "pdo", "pdo_pgsql", "pcntl"]) {
+    for (const ext of ["curl", "dom", "ftp", "mbstring", "zip", "pdo", "pdo_pgsql", "pcntl"]) {
       assert.ok(ini.includes(`extension=${ext}`), `must enable extension=${ext}`);
     }
   } finally {

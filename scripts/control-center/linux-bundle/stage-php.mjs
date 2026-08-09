@@ -7,11 +7,10 @@
 // the separate cli/fpm bulk builds ship pdo_mysql/pgsql but not pdo_pgsql
 // (verified 2026-08-07 via `php -m` against the real 8.5.8 bulk tarball).
 // A custom build is required. Verified reproducible recipe (built and its
-// `php -m` output checked for curl/ftp/mbstring/pcntl/pdo_pgsql/zip, 2026-08-07):
-//   spc download --with-php=8.5.8 -e "curl,ftp,mbstring,zip,pdo,pdo_pgsql,pcntl" --prefer-pre-built
-//   spc build "curl,ftp,mbstring,zip,pdo,pdo_pgsql,pcntl" --build-cli --build-fpm
-// (spc: https://github.com/crazywhalecc/static-php-cli, run on Debian bookworm
-// with build-essential/autoconf/bison/re2c/cmake/libtool/pkg-config installed)
+// `php -m` output checked for curl/dom/ftp/mbstring/pcntl/pdo_pgsql/zip, 2026-08-09):
+//   spc download --with-php=8.5.8 -e "curl,dom,ftp,mbstring,zip,pdo,pdo_pgsql,pcntl" --prefer-pre-built
+//   spc build "curl,dom,ftp,mbstring,zip,pdo,pdo_pgsql,pcntl" --build-cli --build-fpm
+// (spc 2.8.5: https://github.com/crazywhalecc/static-php-cli, run on Alpine 3.22)
 // Produces buildroot/bin/{php,php-fpm} -- package as bin/php + sbin/php-fpm
 // to match this stager's expected layout, then publish and pin below.
 import { createHash } from "node:crypto";
@@ -20,9 +19,9 @@ import { join } from "node:path";
 
 export const PHP_VERSION = "8.5.8";
 export const PHP_LINUX_URL = "https://github.com/ahmedahmed1223/archive-suite/releases/download/php-linux-8.5.8-custom/php-8.5.8-linux-x86_64-custom.tar.gz";
-export const PHP_LINUX_SHA256 = "208b15993ecc9a741b487357c6b7d3154f418cfb67815701f190026db70a4b34";
+export const PHP_LINUX_SHA256 = "340e08254240b9594460a8c4b54482b62739fe3fa0cf57eff7b2b0493c2ee91f";
 
-const REQUIRED_EXTENSIONS = ["curl", "ftp", "mbstring", "zip", "pdo", "pdo_pgsql", "pcntl"];
+const REQUIRED_EXTENSIONS = ["curl", "dom", "ftp", "mbstring", "zip", "pdo", "pdo_pgsql", "pcntl"];
 
 function defaultSha256(bytes) { return createHash("sha256").update(bytes).digest("hex"); }
 async function defaultFetch(url) {
