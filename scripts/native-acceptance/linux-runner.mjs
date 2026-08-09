@@ -127,7 +127,8 @@ export async function runLinuxNativeAcceptance({
     progress("Installing the six Native services through the production Control Center path.");
     const installResult = docker(execArgs(names.systemd, ["/opt/archive-suite/runtime/node/bin/node", "/opt/archive-control/scripts/control-center.mjs", "install", "--config=/tmp/setup.json", "--skip-disk-check", "--json"], installEnv));
     if (installResult.status !== 0) {
-      throw new Error(`Linux Native acceptance failed during Native install. ${safeServiceDiagnostic(`${installResult.stdout}\n${installResult.stderr}`, dbPassword)}`);
+      const migration = docker(execArgs(names.systemd, ["/opt/archive-suite/runtime/php/bin/php", "/opt/archive-suite/app/laravel/artisan", "migrate", "--force"], installEnv));
+      throw new Error(`Linux Native acceptance failed during Native install. ${safeServiceDiagnostic(`${installResult.stdout}\n${installResult.stderr}\n${migration.stdout}\n${migration.stderr}`, dbPassword)}`);
     }
     scenarios.push({ name: "install", ok: true });
 

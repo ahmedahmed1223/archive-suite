@@ -194,9 +194,10 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
 
   const logs = () => {
     try {
-      const read = readLogTail || (() => readdirSync(servicesDir)
-        .filter((name) => name.endsWith(".out.log"))
-        .map((name) => `── ${name} ──\n${readFileSync(join(servicesDir, name), "utf8").split("\n").slice(-50).join("\n")}`)
+      const logsDir = join(installRoot, "logs");
+      const read = readLogTail || (() => readdirSync(logsDir)
+        .filter((name) => /\.(?:out|err|wrapper)\.log$/i.test(name))
+        .map((name) => `── ${name} ──\n${readFileSync(join(logsDir, name), "utf8").split("\n").slice(-50).join("\n")}`)
         .join("\n"));
       return { status: 0, stdout: read() };
     } catch { return { status: 1 }; }
