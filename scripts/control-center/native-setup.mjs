@@ -10,6 +10,7 @@ import { createLinuxHostEffects } from "./linux-host-effects.mjs";
 import { createLinuxNativeRuntimeAdapter, createLinuxServiceRemover } from "./linux-runtime-adapter.mjs";
 import { LINUX_SERVICES, LINUX_SERVICE_USER } from "./linux-services.mjs";
 import { createNativeDataGate, resolveNativeDataPlan } from "./native-data-services.mjs";
+import { createManagedDataProvisioner } from "./native-managed-data.mjs";
 import { createWindowsHostEffects } from "./windows-host-effects.mjs";
 import { createWindowsNativeRuntimeAdapter, createWindowsServiceRemover } from "./windows-runtime-adapter.mjs";
 import { WINDOWS_SERVICES } from "./windows-services.mjs";
@@ -99,6 +100,8 @@ export function buildNativeRuntime({
   run,
   writeFile,
   ensureDirectory,
+  copyFile,
+  readDataPackage,
   health,
   manifestStore,
   manifestRequest,
@@ -107,6 +110,7 @@ export function buildNativeRuntime({
   probes,
   startLocalPostgres,
   startManagedData,
+  managedDataSecrets,
   appConfig,
 } = {}) {
   const family = nativePlatformFamily(configuration?.platform);
@@ -123,7 +127,13 @@ export function buildNativeRuntime({
       : { ok: false, code: "DATA_PROBES_UNAVAILABLE", message: "External data endpoints cannot be verified without probes wired into this build.", details: {}, nextActions: ["Use a build with data probes wired, or run a Docker install."] });
 
   if (family === "windows") {
-    const effects = createWindowsHostEffects({ installRoot: root, storagePath: configuration.storage.path, run, writeFile, ensureDirectory });
+    const effects = createWindowsHostEffects({ installRoot: root, storagePath: configuration.storage.path, run, writeFile, ensureDirectory, copyFile, readDataPackage });
+    const managedProvisioner = managedDataSecrets
+      ? createManagedDataProvisioner({ platform: configuration.platform, effects, probes, secrets: managedDataSecrets })
+      : startManagedData;
+    const windowsDataGate = probes
+      ? createNativeDataGate({ probes, startLocalPostgres, startManagedData: managedProvisioner })
+      : dataGate;
     const adapter = createWindowsNativeRuntimeAdapter({
       serviceControl: effects.serviceControl,
       applyAcls: effects.applyAcls,
@@ -142,7 +152,7 @@ export function buildNativeRuntime({
       manifestStore,
       manifestRequest,
       preflight,
-      dataGate,
+      dataGate: windowsDataGate,
       dataPlan,
     });
     return { adapter, removeServices: createWindowsServiceRemover({ serviceControl: effects.serviceControl, removeFirewallRules: effects.removeFirewallRules }) };

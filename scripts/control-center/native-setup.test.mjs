@@ -77,6 +77,42 @@ test("a wired Native install runs the full step sequence through real host comma
   assert.equal(rec.commands.filter((cmd) => cmd[1] === "install").length, 6);
 });
 
+test("a Windows Native managed-data install wires verified PostgreSQL setup before application services", async () => {
+  const rec = recorder();
+  const steps = [];
+  const copies = [];
+  const { adapter } = buildNativeRuntime({
+    configuration: winConfig,
+    installRoot: "C:\\App",
+    run: rec.run,
+    writeFile: rec.writeFile,
+    ensureDirectory: rec.ensureDirectory,
+    copyFile: (source, destination) => copies.push({ source, destination }),
+    readDataPackage: () => ({
+      postgresInstaller: "C:\\App\\data-services\\postgresql-installer.exe",
+      pgvectorFiles: ["C:\\App\\data-services\\pgvector\\vector.dll", "C:\\App\\data-services\\pgvector\\vector.control"],
+      includesPgAdmin: true,
+    }),
+    health: async () => ({ status: 0 }),
+    manifestStore: passingStore(steps),
+    manifestRequest: { path: "m.json", input: {} },
+    dataPlan: { postgres: { kind: "managed", host: "127.0.0.1", port: 5432, database: "archive" }, queue: "database", cache: "database", redis: { enabled: false }, pgAdmin: true },
+    probes: { ...okProbes, pgvector: async () => ({ ok: true, code: "PGVECTOR_READY" }) },
+    managedDataSecrets: { dbOwnerPassword: "owner", dbAppPassword: "app", redisPassword: "cache" },
+  });
+
+  const result = await adapter.install({ path: "m.json", input: {} });
+
+  assert.equal(result.ok, true);
+  assert.ok(rec.commands.some((cmd) => cmd[0].endsWith("postgresql-installer.exe")));
+  assert.ok(rec.commands.some((cmd) => cmd[0].endsWith("postgres\\bin\\psql.exe")));
+  assert.deepEqual(copies, [
+    { source: "C:\\App\\data-services\\pgvector\\vector.dll", destination: "C:\\App\\runtime\\postgres\\lib\\vector.dll" },
+    { source: "C:\\App\\data-services\\pgvector\\vector.control", destination: "C:\\App\\runtime\\postgres\\share\\extension\\vector.control" },
+  ]);
+  assert.equal(rec.commands.findIndex((cmd) => cmd[0].endsWith("postgresql-installer.exe")) < rec.commands.findIndex((cmd) => cmd[1] === "install"), true);
+});
+
 test("a wired Linux install writes every app config before starting systemd services", async () => {
   const rec = recorder();
   const steps = [];
