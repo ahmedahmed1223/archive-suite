@@ -41,3 +41,17 @@ test("native external data rejects credentials embedded in endpoint hosts", () =
   assert.equal(result.ok, false);
   assert.equal(result.code, "CONFIG_INVALID");
 });
+
+test("native keeps PostgreSQL required while allowing the user to disable optional Redis", () => {
+  const setup = createSetupConfiguration({ loadPlatformContract });
+  const result = setup.importInput(nativeConfig({
+    postgres: { enabled: true, kind: "managed" },
+    redis: { enabled: false },
+  }));
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.details.dataServices, {
+    postgres: { enabled: true, kind: "managed" },
+    redis: { enabled: false },
+  });
+});

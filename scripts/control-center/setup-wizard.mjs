@@ -36,6 +36,13 @@ export const WIZARD_RUNTIME_PROMPTS = Object.freeze({
   storage: "Local storage path — do not use a URL or credentials; it will be recorded for install",
   profiles: "Optional runtime profiles — core is always enabled; media is for media/OCR, edge is for public TLS",
   capabilities: "Optional capabilities — ocr/ai/observability are not Compose profiles and don't enable services on their own",
+  nativePostgres: "PostgreSQL for Native (managed/external) — managed is the standard service with pgvector and pgAdmin",
+  nativeRedis: "Optional Redis for Native (none/managed/external) — none keeps cache and queue on PostgreSQL",
+  nativePostgresHost: "External PostgreSQL host (without credentials)",
+  nativePostgresPort: "External PostgreSQL port",
+  nativePostgresDatabase: "External PostgreSQL database",
+  nativeRedisHost: "External Redis host (without credentials)",
+  nativeRedisPort: "External Redis port",
 });
 
 const CHOICE_HELP = Object.freeze({
@@ -63,6 +70,44 @@ async function collectChoice({ ask, log, prompt, defaultValue, options, aliases,
     if (Array.isArray(parsed)) return parsed;
     log(`Choice not accepted: ${parsed.message}`);
   }
+}
+
+function nativeChoice(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+async function collectNativeDataServices({ ask, log }) {
+  let postgresMode;
+  do {
+    postgresMode = nativeChoice(await ask(WIZARD_RUNTIME_PROMPTS.nativePostgres, "managed"));
+    if (!["managed", "external"].includes(postgresMode)) log("Choose managed or external PostgreSQL.");
+  } while (!["managed", "external"].includes(postgresMode));
+  const postgres = postgresMode === "managed"
+    ? { enabled: true, kind: "managed" }
+    : {
+      enabled: true,
+      kind: "external",
+      host: await ask(WIZARD_RUNTIME_PROMPTS.nativePostgresHost, ""),
+      port: Number(await ask(WIZARD_RUNTIME_PROMPTS.nativePostgresPort, "5432")),
+      database: await ask(WIZARD_RUNTIME_PROMPTS.nativePostgresDatabase, "archive"),
+    };
+
+  let redisMode;
+  do {
+    redisMode = nativeChoice(await ask(WIZARD_RUNTIME_PROMPTS.nativeRedis, "none"));
+    if (!["none", "disabled", "managed", "external"].includes(redisMode)) log("Choose none, managed, or external Redis.");
+  } while (!["none", "disabled", "managed", "external"].includes(redisMode));
+  const redis = ["none", "disabled"].includes(redisMode)
+    ? { enabled: false }
+    : redisMode === "managed"
+      ? { enabled: true, kind: "managed" }
+      : {
+        enabled: true,
+        kind: "external",
+        host: await ask(WIZARD_RUNTIME_PROMPTS.nativeRedisHost, ""),
+        port: Number(await ask(WIZARD_RUNTIME_PROMPTS.nativeRedisPort, "6379")),
+      };
+  return { postgres, redis };
 }
 
 export async function requestWizardConfirmation({ ask, log = () => {} }) {
@@ -101,6 +146,9 @@ export async function collectWizardRuntimeChoices({ ask, log = () => {}, existin
     ask, log, prompt: WIZARD_RUNTIME_PROMPTS.capabilities, defaultValue: existing.ARCHIVE_CAPABILITIES || "none",
     options: CAPABILITY_CHOICES, aliases: CAPABILITY_ALIASES, help: CHOICE_HELP.capabilities,
   });
+  const dataServices = mode === "native"
+    ? await collectNativeDataServices({ ask, log })
+    : { postgres: { enabled: true }, redis: { enabled: true } };
   return {
     candidate: {
       schemaVersion: "1.0",
@@ -111,7 +159,7 @@ export async function collectWizardRuntimeChoices({ ask, log = () => {}, existin
       access,
       runtimeProfiles: ["core", ...optionalProfiles.filter((profile) => profile !== "core")],
       capabilities: optionalCapabilities,
-      dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
+      dataServices,
       storage: { driver: "local", path: storagePath },
     },
   };

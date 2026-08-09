@@ -35,14 +35,15 @@ export function createManagedDataProvisioner({ platform, effects, probes, secret
   return async function provision(plan = {}) {
     const postgresKind = plan?.postgres?.kind;
     const redisKind = plan?.redis?.kind;
-    if (!["managed", "external"].includes(postgresKind) || !["managed", "external"].includes(redisKind)) {
-      return fail("DATA_PLAN_INVALID", "Managed data provisioning requires explicit PostgreSQL and Redis modes.", ["Choose managed or external for each data service."]);
+    const redisEnabled = plan?.redis?.enabled === true || ["managed", "external"].includes(redisKind);
+    if (!["managed", "external"].includes(postgresKind) || (redisEnabled && !["managed", "external"].includes(redisKind))) {
+      return fail("DATA_PLAN_INVALID", "Managed data provisioning requires PostgreSQL plus either a Redis mode or an explicit disabled Redis choice.", ["Choose managed or external PostgreSQL, then choose managed, external, or disabled Redis."]);
     }
 
     const request = { platform, postgres: plan.postgres, redis: plan.redis, pgAdmin: plan.pgAdmin === true, secrets };
     const requiredSteps = [];
     if (postgresKind === "managed") requiredSteps.push("installPostgres", "installPgvector", "createArchiveRoles");
-    if (redisKind === "managed") requiredSteps.push("installRedisCompatible");
+    if (redisEnabled && redisKind === "managed") requiredSteps.push("installRedisCompatible");
     if (plan.pgAdmin === true) requiredSteps.push("installPgAdmin");
     for (const name of requiredSteps) {
       const operation = requireFunction(effects[name], `effects.${name}`);
@@ -53,7 +54,7 @@ export function createManagedDataProvisioner({ platform, effects, probes, secret
 
     if (!healthy(await probes.postgres())) return fail("POSTGRES_UNHEALTHY", "PostgreSQL did not pass its functional probe.", ["Verify PostgreSQL and retry setup."]);
     if (!healthy(await probes.pgvector())) return fail("PGVECTOR_UNHEALTHY", "The pgvector extension did not pass its functional probe.", ["Install or repair pgvector, then retry setup."]);
-    if (!healthy(await probes.redis())) return fail("REDIS_UNHEALTHY", "The Redis-compatible service did not pass its functional probe.", ["Verify the cache service and retry setup."]);
+    if (redisEnabled && !healthy(await probes.redis())) return fail("REDIS_UNHEALTHY", "The Redis-compatible service did not pass its functional probe.", ["Verify the cache service and retry setup."]);
 
     return {
       ok: true,
@@ -62,7 +63,7 @@ export function createManagedDataProvisioner({ platform, effects, probes, secret
       details: {},
       ownership: [
         { id: "postgres", ownership: postgresKind === "managed" ? "managed-owned" : "external" },
-        { id: "redis", ownership: redisKind === "managed" ? "managed-owned" : "external" },
+        { id: "redis", ownership: !redisEnabled ? "disabled" : redisKind === "managed" ? "managed-owned" : "external" },
       ],
       nextActions: [],
     };

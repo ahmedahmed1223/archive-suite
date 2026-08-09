@@ -55,14 +55,16 @@ export function nativeManifestInput(configuration, { version, installRoot }) {
 // Configurations created before the managed-data choice existed retain their
 // local-managed PostgreSQL fallback.
 export function resolveNativeSetupDataPlan(configuration, dataPlanOverride) {
-  if (dataPlanOverride) return resolveNativeDataPlan(dataPlanOverride);
-  if (configuration?.dataServices?.postgres?.kind) {
-    return resolveNativeDataPlan({
-      postgres: configuration.dataServices.postgres,
-      redis: configuration.dataServices.redis,
-    });
-  }
-  return resolveNativeDataPlan({ postgres: { kind: "local-managed" } });
+  const selected = dataPlanOverride
+    ? resolveNativeDataPlan(dataPlanOverride)
+    : configuration?.dataServices?.postgres?.kind
+      ? resolveNativeDataPlan({
+        postgres: configuration.dataServices.postgres,
+        redis: configuration.dataServices.redis,
+      })
+      : resolveNativeDataPlan({ postgres: { kind: "local-managed" } });
+  if (!selected.ok) return selected;
+  return { ...selected, plan: { ...selected.plan, pgAdmin: true } };
 }
 
 // This plan scopes Native installs to an external PostgreSQL/Redis endpoint

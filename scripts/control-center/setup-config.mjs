@@ -65,6 +65,12 @@ function requirePort(value, name) {
 
 function normalizeNativeDataService(value, name) {
   const service = requireObject(value, `dataServices.${name}`);
+  if (name === "redis" && service.enabled === false) {
+    if (Object.keys(service).some((key) => key !== "enabled")) {
+      throw new SetupConfigError("CONFIG_INVALID", "dataServices.redis.disabled contains unsupported fields.", { field: "dataServices.redis" });
+    }
+    return { enabled: false };
+  }
   if (service.enabled !== true) {
     throw new SetupConfigError("CONFIG_INVALID", `dataServices.${name}.enabled must remain true for Native installs.`, { field: `dataServices.${name}.enabled` });
   }

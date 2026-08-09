@@ -137,6 +137,7 @@ test("a normalized Native configuration resolves its managed data services to lo
       queue: "redis",
       cache: "redis",
       redis: { enabled: true, kind: "managed", host: "127.0.0.1", port: 6379 },
+      pgAdmin: true,
     },
   });
 });

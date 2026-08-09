@@ -74,3 +74,24 @@ test("external data performs probes without installing managed dependencies", as
     { id: "redis", ownership: "external" },
   ]);
 });
+
+test("disabled Redis leaves cache services untouched while PostgreSQL, pgvector, and pgAdmin remain required", async () => {
+  const calls = [];
+  let redisProbed = false;
+  const provision = createManagedDataProvisioner({
+    platform: "windows-native",
+    effects: effects(calls),
+    probes: { ...readyProbes, redis: async () => { redisProbed = true; return { ok: true }; } },
+    secrets: { dbOwnerPassword: "owner", dbAppPassword: "app", redisPassword: "cache" },
+  });
+
+  const result = await provision({ postgres: { kind: "managed" }, redis: { enabled: false }, pgAdmin: true });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(calls, ["installPostgres", "installPgvector", "createArchiveRoles", "installPgAdmin"]);
+  assert.equal(redisProbed, false);
+  assert.deepEqual(result.ownership, [
+    { id: "postgres", ownership: "managed-owned" },
+    { id: "redis", ownership: "disabled" },
+  ]);
+});
