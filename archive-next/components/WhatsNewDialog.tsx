@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Sparkles, Users } from "lucide-react";
+import { BookOpenCheck, Languages, MonitorCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
@@ -14,34 +14,34 @@ import {
 
 const arabicHighlights = [
   {
-    icon: Users,
-    title: "تنظيم العمل بين الأقسام",
-    description: "أصبح توجيه عناصر الوارد وتسليم المواد بين الأقسام أوضح، مع سجل يحفظ مسؤولية كل انتقال.",
+    icon: Languages,
+    title: "المساعدة والدليل باللغتين",
+    description: "اقرأ دليل المستخدم وصفحات المساعدة بالعربية أو الإنجليزية؛ ويتغير الدليل مع لغة الواجهة.",
   },
   {
-    icon: Sparkles,
-    title: "قوالب وتوصيفات أكثر ضبطًا",
-    description: "اعتمد القوالب المنشورة وقواعد الجودة وملكية الحقول حسب القسم قبل تطبيقها على المواد.",
+    icon: MonitorCheck,
+    title: "تشغيل Native مدعوم بالكامل",
+    description: "تتوفر حزم Native المدعومة لنظامي Windows وLinux، إلى جانب مسار Docker المعتمد.",
   },
   {
-    icon: Search,
-    title: "استيراد آمن وقابل للمراجعة",
-    description: "عاين استيراد CSV ودفعات المجلد المراقَب أولًا، ثم اعتمد ما اجتاز المراجعة.",
+    icon: BookOpenCheck,
+    title: "اختيار لغة الواجهة من الإعدادات",
+    description: "اضبط العربية أو الإنجليزية من الإعدادات، وستُحفظ اللغة المختارة لاستخدامك التالي.",
   },
 ] as const;
 
 const englishHighlights = [
-  { icon: Users, title: "Clearer handoffs between teams", description: "Route incoming items and hand off material between teams with a record of responsibility at every step." },
-  { icon: Sparkles, title: "More consistent templates and description", description: "Apply published templates, quality rules, and field ownership by department before working on material." },
-  { icon: Search, title: "Safer, reviewable imports", description: "Preview CSV imports and watched-folder batches first, then approve the items that pass review." },
+  { icon: Languages, title: "Bilingual Help and User Guide", description: "Read Help and the user guide in Arabic or English; the guide follows the interface language." },
+  { icon: MonitorCheck, title: "Fully supported native operation", description: "Supported native packages are available for Windows and Linux alongside the canonical Docker path." },
+  { icon: BookOpenCheck, title: "Choose the interface language in Settings", description: "Set Arabic or English in Settings, and your chosen language is saved for your next visit." },
 ] as const;
 
 export default function WhatsNewDialog() {
   const { locale } = useLocale();
   const copy = locale === "en" ? {
-    title: "What’s new in Archive Suite", description: "A summary of the July 31 update: clearer workflows, better description controls, and safer imports.", highlights: englishHighlights, next: "What should you do next?", steps: ["Review published templates and quality rules before applying them to your team’s material.", "Start by previewing a CSV import or watched-folder batch, then approve the reviewed results.", "Use material handoffs and inbox routing to document work moving between teams."], hide: "Do not show future what’s-new updates on this device", help: "Open What’s new in Help", start: "Start working",
+    title: "What’s new in Archive Suite 1.1", description: "This release improves how you start, learn, and run Archive Suite across supported platforms.", highlights: englishHighlights, next: "What should you do next?", steps: ["Choose your interface language in Settings.", "Open the Help chapter for your role and use its task-based guidance.", "Use the supported native package or Docker path that fits your environment."], hide: "Do not show future what’s-new updates on this device", help: "Open What’s new in Help", start: "Start working",
   } : {
-    title: "ما الجديد في مسار", description: "ملخص تحديثات 31 يوليو — تنظيم العمل، وضبط التوصيف، واستيراد أكثر أمانًا.", highlights: arabicHighlights, next: "ما الذي ينبغي عليك فعله الآن؟", steps: ["راجع القوالب المنشورة وقواعد الجودة قبل تطبيقها على مواد قسمك.", "ابدأ بمعاينة CSV أو دفعة المجلد المراقَب، ثم اعتمد النتائج بعد مراجعتها.", "استخدم تسليم المادة وتوجيه الوارد لتوثيق انتقال العمل بين الأقسام."], hide: "لا تعرض تحديثات ما الجديد مرة أخرى", help: "فتح ما الجديد في المساعدة", start: "ابدأ العمل",
+    title: "ما الجديد في مسار 1.1", description: "يركز هذا الإصدار على بدء استخدام أوضح، ومساعدة ثنائية اللغة، وتشغيل موثوق على المنصات المدعومة.", highlights: arabicHighlights, next: "ما الذي ينبغي عليك فعله الآن؟", steps: ["اختر لغة الواجهة من الإعدادات.", "افتح فصل المساعدة المناسب لدورك واتبع إرشاداته العملية.", "استخدم حزمة Native المدعومة أو مسار Docker المناسب لبيئتك."], hide: "لا تعرض تحديثات ما الجديد مرة أخرى", help: "فتح ما الجديد في المساعدة", start: "ابدأ العمل",
   };
   const [open, setOpen] = useState(false);
   const [permanentlyDismissed, setPermanentlyDismissed] = useState(false);

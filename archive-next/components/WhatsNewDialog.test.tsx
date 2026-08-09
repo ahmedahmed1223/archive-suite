@@ -17,8 +17,8 @@ describe("WhatsNewDialog", () => {
   it("opens once for a new release and records acknowledgement", async () => {
     render(<WhatsNewDialog />);
 
-    expect(await screen.findByRole("dialog", { name: "ما الجديد في مسار" })).toBeTruthy();
-    expect(screen.getByText("تنظيم العمل بين الأقسام")).toBeTruthy();
+    expect(await screen.findByRole("dialog", { name: "ما الجديد في مسار 1.1" })).toBeTruthy();
+    expect(screen.getByText("المساعدة والدليل باللغتين")).toBeTruthy();
     expect(screen.getByText("ما الذي ينبغي عليك فعله الآن؟")).toBeTruthy();
     expect(screen.getByRole("link", { name: "فتح ما الجديد في المساعدة" })).toHaveAttribute(
       "href",
@@ -28,20 +28,20 @@ describe("WhatsNewDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "ابدأ العمل" }));
 
     expect(window.localStorage.getItem(WHATS_NEW_STORAGE_KEY)).toBe(WHATS_NEW_RELEASE);
-    expect(screen.queryByRole("dialog", { name: "ما الجديد في مسار" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "ما الجديد في مسار 1.1" })).toBeNull();
   });
 
   it("stays closed after the current release was acknowledged", () => {
     window.localStorage.setItem(WHATS_NEW_STORAGE_KEY, WHATS_NEW_RELEASE);
     render(<WhatsNewDialog />);
 
-    expect(screen.queryByRole("dialog", { name: "ما الجديد في مسار" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "ما الجديد في مسار 1.1" })).toBeNull();
   });
 
   it("can permanently hide future whats-new dialogs on this device", async () => {
     render(<WhatsNewDialog />);
 
-    await screen.findByRole("dialog", { name: "ما الجديد في مسار" });
+    await screen.findByRole("dialog", { name: "ما الجديد في مسار 1.1" });
     fireEvent.click(screen.getByRole("checkbox", { name: "لا تعرض تحديثات ما الجديد مرة أخرى" }));
     fireEvent.click(screen.getByRole("button", { name: "ابدأ العمل" }));
 
