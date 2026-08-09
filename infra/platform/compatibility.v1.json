@@ -137,6 +137,7 @@
       "label": "Windows 10/11 with Docker Desktop",
       "mode": "docker",
       "status": "supported",
+      "evidence": "docs/evidence/v1.1.0-docker/README.md",
       "requirements": {
         "node": ">=26.5.0 <27 on host; baseline 26.5.0",
         "docker": "Docker Desktop with Docker Compose v2",
@@ -155,6 +156,7 @@
       "label": "Linux with Docker Engine",
       "mode": "docker",
       "status": "supported",
+      "evidence": "docs/evidence/v1.1.0-docker/README.md",
       "requirements": {
         "node": ">=26.5.0 <27 on host; baseline 26.5.0",
         "docker": "Docker Engine with Docker Compose v2",

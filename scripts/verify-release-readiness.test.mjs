@@ -61,8 +61,8 @@ function baselineFixture(version = "1.2.3") {
   return dir;
 }
 
-test("passes on the real repo", () => {
-  const r = run();
+test("passes on the real repo in release mode", () => {
+  const r = run({ READINESS_RELEASE: "1" });
   assert.equal(r.status, 0, r.stderr + r.stdout);
   assert.match(r.stdout, /ok - release readiness content verified/);
 });
