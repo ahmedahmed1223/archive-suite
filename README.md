@@ -43,7 +43,7 @@ Laravel**:
 - `docs/api/archive-contract.openapi.json` — shared `OpenAPI` contract
   shared by the frontend and backend.
 
-See [CLAUDE.md](CLAUDE.md) for workspace architecture and development workflows.
+See the [documentation index](docs/README.md) for architecture and development references.
 
 ## Start here
 
@@ -115,8 +115,8 @@ Supported storage includes local disk, `Dropbox`, `S3`, `Azure Blob`,
 - Run `pnpm verify` before opening a `Pull Request`.
 - Keep new product work in `archive-next/` and `archive-laravel/`.
 
-See [CLAUDE.md](CLAUDE.md) for architecture, testing, CI/CD, and contribution
-workflows.
+See the [documentation index](docs/README.md) for architecture, testing, CI/CD,
+and contribution references.
 
 ## Support
 

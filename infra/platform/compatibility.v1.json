@@ -172,11 +172,11 @@
       "id": "windows-native",
       "label": "Windows Native",
       "mode": "native",
-      "status": "planned",
+      "status": "supported",
       "requirements": {
         "node": ">=26.5.0 <27",
         "docker": "not required on the target host",
-        "php": "8.5.8 (bundled, NTS, portable -- see docs/superpowers/plans/2026-08-06-windows-native-release.md); pcntl is unavailable on Windows and already guarded by Laravel",
+        "php": "8.5.8 (bundled, NTS, portable); pcntl is unavailable on Windows and guarded by Laravel",
         "composer": "used only to build the bundle (composer install --no-dev); not required on the target host",
         "postgresql": "external endpoint only; local-managed is not bundled",
         "redis": "external endpoint only; local-managed is not bundled"
@@ -184,17 +184,17 @@
       "profiles": ["core", "media", "edge"],
       "capabilities": ["ocr", "ai", "observability"],
       "dataPathFamily": "windows",
-      "resourceStatus": "provisional"
+      "resourceStatus": "supported"
     },
     {
       "id": "linux-native",
       "label": "Linux Native",
       "mode": "native",
-      "status": "planned",
+      "status": "supported",
       "requirements": {
         "node": ">=26.5.0 <27",
         "docker": "not required on the target host",
-        "php": "8.5.8 (bundled, static-php-cli, portable -- see docs/superpowers/plans/2026-08-06-linux-native-release.md); pcntl is available and required, unlike Windows",
+        "php": "8.5.8 (bundled, static-php-cli, portable); pcntl is available and required on Linux",
         "composer": "used only to build the bundle (composer install --no-dev); not required on the target host",
         "systemd": "required (service management)",
         "postgresql": "external endpoint only; local-managed is not bundled",
@@ -203,7 +203,7 @@
       "profiles": ["core", "media", "edge"],
       "capabilities": ["ocr", "ai", "observability"],
       "dataPathFamily": "linux",
-      "resourceStatus": "provisional"
+      "resourceStatus": "supported"
     }
   ]
 }

@@ -32,7 +32,6 @@
 
 ## طوّر أو تكامل
 
-- [دليل المساهمة](../CLAUDE.ar.md)
 - [أسلوب التوثيق العام](public-writing-style.ar.md)
 - [عقد API](api/README.ar.md)
 - [خدمة Laravel](../archive-laravel/README.ar.md)

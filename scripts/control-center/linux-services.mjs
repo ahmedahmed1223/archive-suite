@@ -8,7 +8,7 @@ const COMMIT = /^[a-f0-9]{40}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const FORBIDDEN = /(password|secret|token|credential|authorization|cookie|dsn|connection|key)/i;
 
-// Decisions per docs/superpowers/specs/2026-07-15-v1-211-linux-native-decisions.md.
+// Linux service definitions for the supported native package.
 export const LINUX_SERVICE_USER = Object.freeze({ name: "archive", shell: "/usr/sbin/nologin", home: "/opt/archive-suite" });
 
 export const LINUX_SERVICES = Object.freeze([

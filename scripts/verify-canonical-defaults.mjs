@@ -49,10 +49,6 @@ assert.ok(
   "live Laravel/Next verification should be available as one command"
 );
 
-const claude = read("CLAUDE.md");
-assert.match(claude, /Frontend \(canonical\).*`archive-next`/);
-assert.match(claude, /Backend \(canonical\).*`archive-laravel`/);
-
 const readme = read("README.md");
 assert.match(readme, /`archive-next\/`/);
 assert.match(readme, /`archive-laravel\/`/);

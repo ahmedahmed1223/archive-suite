@@ -32,7 +32,6 @@ Laravel + Next.js product and its current operating paths.
 
 ## Develop and integrate
 
-- [Contributor workflow](../CLAUDE.md)
 - [Public documentation style](public-writing-style.md)
 - [API contract](api/README.md)
 - [Laravel backend](../archive-laravel/README.md)

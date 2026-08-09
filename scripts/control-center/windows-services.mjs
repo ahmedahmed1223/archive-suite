@@ -9,7 +9,7 @@ const COMMIT = /^[a-f0-9]{40}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const FORBIDDEN = /(password|secret|token|credential|authorization|cookie|dsn|connection|key)/i;
 
-// Pinned per docs/superpowers/specs/2026-07-15-v1-210-windows-native-decisions.md.
+// Windows service definitions for the supported native package.
 // The executable checksum is supplied at build time from the vendored binary.
 export const WINDOWS_SERVICE_WRAPPER = Object.freeze({ name: "winsw", version: "2.12.0", executable: "runtime\\winsw\\winsw-2.12.0.exe" });
 

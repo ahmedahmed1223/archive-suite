@@ -38,7 +38,7 @@ test("canonical toolchain pins are declared and consumed without floating runtim
     assert.match(platform.requirements.php, new RegExp(`^${toolchain.php.replaceAll(".", "\\.")} provided`));
     assert.match(platform.requirements.composer, new RegExp(`^${toolchain.composer.replaceAll(".", "\\.")} provided`));
   }
-  assert.ok(compatibility.platforms.filter(({ mode }) => mode === "native").every(({ status }) => status === "planned"));
+  assert.ok(compatibility.platforms.filter(({ mode }) => mode === "native").every(({ status }) => status === "supported"));
 });
 
 test("root frozen install and reproducibility verification are canonical gates", () => {
@@ -47,7 +47,6 @@ test("root frozen install and reproducibility verification are canonical gates",
     "README.md",
     "INSTALL.md",
     "DEPLOYMENT.md",
-    "CLAUDE.md",
     "infra/deploy/hostinger-vps.md"
   ].map(read);
   const controlCenterOperations = read("scripts/control-center/operations.mjs");

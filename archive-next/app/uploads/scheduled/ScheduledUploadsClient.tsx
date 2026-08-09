@@ -41,7 +41,7 @@ function matchesTab(status: ScheduledUploadStatus, tab: StatusTab): boolean {
   return status === tab;
 }
 
-// ponytail: 10s/60s poll backoff is the plan's spec, not a guessed value — see docs/agents/v1-712-scheduled-upload-implementation.md Task 7.
+// Use a short initial poll interval, then back off while the schedule is idle.
 const POLL_BASE_MS = 10_000;
 const POLL_MAX_MS = 60_000;
 const FETCH_LIMIT = 200;
