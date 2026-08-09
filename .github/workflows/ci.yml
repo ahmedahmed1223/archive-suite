@@ -6,6 +6,9 @@ on:
     branches:
       - master
       - main
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -54,8 +57,17 @@ jobs:
       - name: Verify API contracts
         run: pnpm run verify:api-contracts
 
+      - name: Verify generated API types
+        run: pnpm run verify:api-generated
+
+      - name: Verify service extraction thresholds
+        run: pnpm run verify:service-thresholds
+
       - name: Typecheck Next.js
         run: pnpm run typecheck:next
+
+      - name: Run Next.js unit tests
+        run: pnpm run test:next
 
       - name: Build Next.js
         run: pnpm run build:next
@@ -110,6 +122,60 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-live-integration
+          path: |
+            archive-next/playwright-report/
+            archive-next/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  nightly-e2e:
+    name: Nightly extended Playwright coverage
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "true"
+      # Specs that live-integration's default set (verify-next-laravel-live.mjs)
+      # does not cover on every PR — run nightly instead of blocking merges.
+      ARCHIVE_E2E_SPECS: >-
+        e2e/route-inventory.spec.ts,
+        e2e/accessibility-authenticated.authed.spec.ts,
+        e2e/keyboard-navigation.spec.ts,
+        e2e/keyboard-navigation-authenticated.authed.spec.ts,
+        e2e/acceptance-smoke.authed.spec.ts,
+        e2e/bulk-macro-recorder.authed.spec.ts,
+        e2e/dropbox-folder-picker.authed.spec.ts,
+        e2e/performance-baseline.authed.spec.ts,
+        e2e/safety-preview.spec.ts,
+        e2e/visual-regression.spec.ts,
+        e2e/visual-regression-authenticated.authed.spec.ts
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26.5.0"
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm --filter @archive/next exec playwright install --with-deps chromium
+
+      - name: Run nightly Laravel/Next integration
+        run: pnpm run verify:laravel-next:live
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-nightly-e2e
           path: |
             archive-next/playwright-report/
             archive-next/test-results/

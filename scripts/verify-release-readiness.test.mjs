@@ -103,19 +103,6 @@ test("fails when release notes for the current version are missing", () => {
   }
 });
 
-test.skip("legacy task-ledger gate", () => {
-  const dir = baselineFixture();
-  try {
-    writeFileSync(join(dir, "TASKS.md"), "- [ ] still broken **(P0 #2)**\n");
-    const r = run({ READINESS_ROOT: dir });
-    assert.notEqual(r.status, 0);
-    assert.match(r.stderr, /unchecked P0 item/);
-    assert.match(r.stderr, /P0 #2/);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
 test("fails when .env.example is missing a required compose variable", () => {
   const dir = baselineFixture();
   try {
@@ -143,22 +130,6 @@ test("fails when the OpenAPI contract has no paths", () => {
   }
 });
 
-test.skip("legacy release blocker gate", () => {
-  const dir = baselineFixture();
-  try {
-    writeFileSync(
-      join(dir, "TASKS.md"),
-      "- [ ] **V1-999 open blocker** — pending\n- [x] **V1-100 done** — done\n"
-    );
-    const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
-    assert.notEqual(r.status, 0);
-    assert.match(r.stderr, /release-blocking V1 item/);
-    assert.match(r.stderr, /V1-999/);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
 test("release mode ignores optional V1-X items and backlog B items", () => {
   const dir = baselineFixture();
   try {
@@ -168,28 +139,6 @@ test("release mode ignores optional V1-X items and backlog B items", () => {
     );
     const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
     assert.doesNotMatch(r.stderr, /release-blocking V1 item/, r.stderr);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test.skip("legacy deferred task ranges", () => {
-  const dir = baselineFixture();
-  try {
-    writeFileSync(
-      join(dir, "TASKS.md"),
-      "- [ ] **V1-806–V1-814** acceptance program\n" +
-        "- [ ] **V1-502–V1-505** pilot rehearsal\n" +
-        "- [ ] **V1-601–V1-605** go/no-go and release\n" +
-        "- [ ] **V1-999 open blocker** — pending\n"
-    );
-    const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
-    assert.notEqual(r.status, 0);
-    assert.match(r.stderr, /release-blocking V1 item/);
-    assert.match(r.stderr, /V1-999/);
-    assert.doesNotMatch(r.stderr, /V1-806/);
-    assert.doesNotMatch(r.stderr, /V1-502/);
-    assert.doesNotMatch(r.stderr, /V1-601/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -206,18 +155,6 @@ test("release mode passes when only the three deferred ranges remain open", () =
     );
     const r = run({ READINESS_ROOT: dir, READINESS_RELEASE: "1" });
     assert.doesNotMatch(r.stderr, /release-blocking V1 item/, r.stderr);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test.skip("legacy task warning", () => {
-  const dir = baselineFixture();
-  try {
-    writeFileSync(join(dir, "TASKS.md"), "- [ ] **V1-999 open blocker** — pending\n");
-    const r = run({ READINESS_ROOT: dir });
-    assert.doesNotMatch(r.stderr, /release-blocking V1 item/, r.stderr);
-    assert.match(r.stdout + r.stderr, /V1 release blocker/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

@@ -121,11 +121,12 @@ const commands = {
   ],
   artisan: ["php", "artisan", ...rest],
   composer: ["composer", ...rest],
+  lint: ["composer", "pint:test", ...rest],
   serve: ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000", ...rest],
 };
 
 if (!mode || !commands[mode]) {
-  console.error("Usage: node scripts/laravel-docker.mjs <test|migrate-fresh-integration|artisan> [args...]");
+  console.error("Usage: node scripts/laravel-docker.mjs <test|lint|migrate-fresh-integration|artisan> [args...]");
   process.exit(2);
 }
 
