@@ -78,6 +78,9 @@ jobs:
       - name: Verify infrastructure config
         run: pnpm run verify:infra
 
+      - name: Lint Laravel (Pint)
+        run: pnpm run lint:laravel
+
       - name: Run Laravel tests
         run: pnpm run verify:laravel
 
