@@ -33,7 +33,7 @@ function execArgs(container, command, env = {}) {
   return ["exec", ...Object.entries(env).flatMap(([key, value]) => ["-e", `${key}=${value}`]), container, ...command];
 }
 
-function setupConfiguration() {
+function setupConfiguration(names) {
   return {
     schemaVersion: "1.0",
     mode: "native",
@@ -43,7 +43,10 @@ function setupConfiguration() {
     access: "local",
     runtimeProfiles: ["core"],
     capabilities: [],
-    dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
+    dataServices: {
+      postgres: { enabled: true, kind: "external", host: names.postgres, port: 5432, database: "archive" },
+      redis: { enabled: true, kind: "external", host: names.redis, port: 6379 },
+    },
     storage: { driver: "local", path: "/srv/archive" },
   };
 }
@@ -83,7 +86,7 @@ export async function runLinuxNativeAcceptance({
   };
   const scratch = mkdtempSync(join(tmpdir(), `archive-native-${runId}-`));
   const configPath = join(scratch, "setup.json");
-  writeFileSync(configPath, `${JSON.stringify(setupConfiguration(), null, 2)}\n`, { mode: 0o600 });
+  writeFileSync(configPath, `${JSON.stringify(setupConfiguration(names), null, 2)}\n`, { mode: 0o600 });
   const dbPassword = passwordFactory();
   const label = `archive.acceptance.run=${runId}`;
   const scenarios = [];
@@ -122,7 +125,10 @@ export async function runLinuxNativeAcceptance({
       ARCHIVE_NATIVE_REDIS_HOST: names.redis,
     };
     progress("Installing the six Native services through the production Control Center path.");
-    requireOk(docker, execArgs(names.systemd, ["/opt/archive-suite/runtime/node/bin/node", "/opt/archive-control/scripts/control-center.mjs", "install", "--config=/tmp/setup.json", "--json"], installEnv), "Native install");
+    const installResult = docker(execArgs(names.systemd, ["/opt/archive-suite/runtime/node/bin/node", "/opt/archive-control/scripts/control-center.mjs", "install", "--config=/tmp/setup.json", "--json"], installEnv));
+    if (installResult.status !== 0) {
+      throw new Error(`Linux Native acceptance failed during Native install. ${safeServiceDiagnostic(`${installResult.stdout}\n${installResult.stderr}`, dbPassword)}`);
+    }
     scenarios.push({ name: "install", ok: true });
 
     const systemdState = docker(["exec", names.systemd, "systemctl", "is-system-running", "--wait"]);

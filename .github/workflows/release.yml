@@ -77,10 +77,10 @@ jobs:
       - name: Build Windows Native package
         run: pnpm bundle:windows-native -- --out native-windows --postgres-installer native-inputs/postgresql-installer.exe --pgvector-dir native-inputs/pgvector
       - name: Verify and archive Windows Native package
-        shell: bash
+        shell: powershell
         run: |
           node scripts/native-acceptance.mjs windows --bundle native-windows --verify-only --confirm-host-effects
-          tar -czf "archive-suite-${GITHUB_REF_NAME}-windows-native.tar.gz" -C native-windows .
+          tar -czf "archive-suite-${env:GITHUB_REF_NAME}-windows-native.tar.gz" -C native-windows .
       - name: Upload Windows Native candidate
         uses: actions/upload-artifact@v4
         with:

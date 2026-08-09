@@ -26,7 +26,7 @@ async function waitFor(check, operation, attempts = 90) {
   throw new Error(`Windows Native acceptance timed out during ${operation}.`);
 }
 
-function setupConfiguration(storagePath) {
+function setupConfiguration(storagePath, { postgresPort, redisPort }) {
   return {
     schemaVersion: "1.0",
     mode: "native",
@@ -36,7 +36,10 @@ function setupConfiguration(storagePath) {
     access: "local",
     runtimeProfiles: ["core"],
     capabilities: [],
-    dataServices: { postgres: { enabled: true }, redis: { enabled: true } },
+    dataServices: {
+      postgres: { enabled: true, kind: "external", host: "127.0.0.1", port: postgresPort, database: "archive" },
+      redis: { enabled: true, kind: "external", host: "127.0.0.1", port: redisPort },
+    },
     storage: { driver: "local", path: storagePath },
   };
 }
@@ -76,7 +79,6 @@ export function createWindowsAcceptanceEffects({ bundlePath, repoRoot, runId, pr
     },
     async startDependencies({ databasePassword }) {
       mkdirSync(storagePath, { recursive: true });
-      writeFileSync(configPath, `${JSON.stringify(setupConfiguration(storagePath), null, 2)}\n`, { mode: 0o600 });
       requireOk(docker(["network", "create", "--label", label, names.network]), "Docker network creation");
       requireOk(docker(["run", "-d", "--name", names.postgres, "--network", names.network, "--label", label, "-p", "127.0.0.1::5432", "-e", "POSTGRES_DB=archive", "-e", "POSTGRES_USER=archive", "-e", `POSTGRES_PASSWORD=${databasePassword}`, "pgvector/pgvector:0.8.5-pg18@sha256:12a379b47ad65289572ea0756efc11b7c241a6662833e8af7038cd3b73d647e0"]), "PostgreSQL start");
       requireOk(docker(["run", "-d", "--name", names.redis, "--network", names.network, "--label", label, "-p", "127.0.0.1::6379", "redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005", "redis-server", "--appendonly", "no"]), "Redis start");
@@ -84,6 +86,7 @@ export function createWindowsAcceptanceEffects({ bundlePath, repoRoot, runId, pr
       await waitFor(() => docker(["exec", names.redis, "redis-cli", "ping"]).status === 0, "Redis readiness");
       const postgresPort = parsePublishedPort(requireOk(docker(["port", names.postgres, "5432/tcp"]), "PostgreSQL port lookup").stdout);
       const redisPort = parsePublishedPort(requireOk(docker(["port", names.redis, "6379/tcp"]), "Redis port lookup").stdout);
+      writeFileSync(configPath, `${JSON.stringify(setupConfiguration(storagePath, { postgresPort, redisPort }), null, 2)}\n`, { mode: 0o600 });
       return { postgresPort, redisPort };
     },
     async install({ environment }) {
