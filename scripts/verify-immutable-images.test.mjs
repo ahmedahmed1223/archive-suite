@@ -38,6 +38,12 @@ test("production Dockerfile base images use readable tags pinned by sha256 diges
   }
 });
 
+test("Next runtime image excludes package-manager tooling", () => {
+  const dockerfile = read("archive-next/Dockerfile");
+  assert.match(dockerfile, /rm -rf \/usr\/local\/lib\/node_modules\/npm/);
+  assert.match(dockerfile, /rm -f \/usr\/local\/bin\/npm \/usr\/local\/bin\/npx/);
+});
+
 test("OCR image uses a Python version supported by its pinned NumPy dependency", () => {
   assert.match(read("infra/ocr-service/Dockerfile"), /^FROM python:3\.12\.\d+-slim@sha256:[a-f0-9]{64}$/m);
   const requirements = read("infra/ocr-service/requirements.txt");
