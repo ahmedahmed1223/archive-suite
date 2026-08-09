@@ -43,7 +43,7 @@ test("Linux acceptance always installs, verifies six services and HTTP, uninstal
   assert.equal(result.ok, true);
   const flattened = calls.map((args) => args.join(" ")).join("\n");
   assert.match(flattened, /network create --label archive\.acceptance\.run=unit1234 archive-native-net-unit1234/);
-  assert.match(flattened, /control-center\.mjs install --config=\/tmp\/setup\.json --json/);
+  assert.match(flattened, /control-center\.mjs install --config=\/tmp\/setup\.json --skip-disk-check --json/);
   for (const service of ["archive-http", "archive-next", "archive-php-fpm", "archive-worker", "archive-reverb", "archive-scheduler"]) {
     assert.match(flattened, new RegExp(`systemctl is-active ${service}`));
   }

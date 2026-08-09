@@ -68,7 +68,7 @@ export function createWindowsAcceptanceEffects({ bundlePath, repoRoot, runId, pr
 
   const serviceExists = (service) => run("sc.exe", ["query", service]).status === 0;
   const docker = (args) => run("docker", args);
-  const controlCenter = (action, environment) => run(process.execPath, [join(repoRoot, "scripts", "control-center.mjs"), action, ...(action === "install" ? [`--config=${configPath}`] : ["--yes"]), "--json"], {
+  const controlCenter = (action, environment) => run(process.execPath, [join(repoRoot, "scripts", "control-center.mjs"), action, ...(action === "install" ? [`--config=${configPath}`, "--skip-disk-check"] : ["--yes"]), "--json"], {
     cwd: repoRoot,
     env: { ...process.env, ...environment },
   });
