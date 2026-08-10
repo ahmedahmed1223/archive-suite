@@ -1,0 +1,22 @@
+export const dataCenter = {
+  hub: "Data center",
+  description: "A single place for uploads, ingest, backups, status, and settings, with the key links and summaries together.",
+  connected: "Metrics connected",
+  checking: "Checking",
+  review: "Needs review",
+  refresh: "Refresh summary",
+  forbidden: "Metrics are available to administrators only",
+  forbiddenDescription: "You can still use the links below to open each section directly.",
+  error: "Could not load the summary",
+  summary: "Data-center summary",
+  memory: "Memory",
+  disk: "Disk",
+  queues: "Background queues",
+  backup: "Latest backup",
+  available: "Available",
+  none: "None",
+  queuesHealth: "Background queue health",
+  paths: "Operational paths",
+  pathsDescription: "Each card opens a workspace for a specific data operation.",
+  pathsCount: "paths"
+} as const;

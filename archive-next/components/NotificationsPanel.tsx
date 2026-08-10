@@ -71,12 +71,8 @@ function NotificationItem({ notification, onRead, onDelete, locale }: {
 }
 
 export function NotificationsPanel() {
-  const { locale } = useLocale();
-  const copy = locale === "en" ? {
-    open: "Open notifications", title: "Notifications", close: "Close", enable: "Enable browser alerts", markAll: "Mark all as read", loading: "Loading notifications…", empty: "No notifications",
-  } : {
-    open: "فتح الإشعارات", title: "الإشعارات", close: "إغلاق", enable: "تفعيل تنبيهات المتصفح", markAll: "وضع الكل كمقروء", loading: "جارٍ تحميل الإشعارات…", empty: "لا توجد إشعارات",
-  };
+  const { locale, t } = useLocale();
+  const copy = t.pages.notificationsPanel;
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [alertsGranted, setAlertsGranted] = useState(false);

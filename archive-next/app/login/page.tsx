@@ -34,7 +34,7 @@ function LoginFallback() {
 }
 
 function LoginPageContent() {
-  const { locale, t } = useLocale();
+  const { t } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = useAuthSession();
@@ -77,7 +77,7 @@ function LoginPageContent() {
             <div className="login-hero__mark">
               <img src={BRAND.markPath} alt="" width={64} height={64} />
             </div>
-            <span className="badge">{locale === "en" ? "Archive and media management" : BRAND.descriptor}</span>
+            <span className="badge">{t.pages.login.descriptor}</span>
             <div className="login-hero__copy">
               <h1 id="login-title">{t.auth.login.heading}</h1>
               <p>{t.auth.login.description}</p>

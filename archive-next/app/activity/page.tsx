@@ -108,11 +108,7 @@ function restoreDecision(entry: RecordHistoryEntry) {
 
 export default function ActivityPage() {
   const { locale, t } = useLocale();
-  const copy = locale === "en" ? {
-    eyebrow: "Activity log", title: "Activity and history", description: "An authenticated activity log backed by the server audit trail, with filters for event, result, resource, and recovery decisions when sufficient metadata is available.", events: "events", failed: "failed", rejected: "rejected", reviewable: "reviewable", refresh: "Refresh", errors: "Errors", status: "Status", filters: "Activity-log filters", eventFilter: "Event filter", resourceFilter: "Resource-type filter", outcomeFilter: "Outcome filter", resourceId: "Resource ID", loading: "Loading the activity log…", loadError: "Could not load activity", errorHelp: "Check the filters and your access, then try again.", emptyTitle: "No matching activity.", emptyDescription: "Change the filters or perform a tracked change to see it here.", log: "Activity log", general: "General", openContext: "Open context", filterResource: "Filter resource", loadingMore: "Loading…", loadMore: "Load more",
-  } : {
-    eyebrow: "سجل النشاط", title: "النشاط والتاريخ", description: "سجل نشاط مصادق ومسنود من سجل التدقيق في الخادم، مع فلاتر حسب الحدث والنتيجة والمورد وقرارات استعادة عند توفر metadata كافية.", events: "حدث", failed: "فاشلة", rejected: "مرفوضة", reviewable: "قابلة للمراجعة", refresh: "تحديث", errors: "الأخطاء", status: "الحالة", filters: "فلاتر سجل النشاط", eventFilter: "فلتر الحدث", resourceFilter: "فلتر نوع المورد", outcomeFilter: "فلتر النتيجة", resourceId: "معرف المورد", loading: "جارٍ تحميل سجل النشاط…", loadError: "تعذر تحميل النشاط", errorHelp: "تحقق من الفلاتر والصلاحية ثم أعد المحاولة.", emptyTitle: "لا يوجد نشاط مطابق.", emptyDescription: "غيّر الفلاتر أو نفّذ تعديلاً موثقاً ليظهر هنا.", log: "سجل النشاط", general: "عام", openContext: "فتح السياق", filterResource: "تصفية المورد", loadingMore: "جارٍ التحميل…", loadMore: "تحميل المزيد",
-  };
+  const copy = t.pages.activity;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<ActivityState>({ status: "loading" });
   const [filters, setFilters] = useState<ActivityFilters>({ limit: 100 });

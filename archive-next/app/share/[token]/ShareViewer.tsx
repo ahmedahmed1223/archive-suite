@@ -11,12 +11,8 @@ type ShareState =
   | { status: "error"; message: string };
 
 export function ShareViewer({ token }: { token: string }) {
-  const { locale } = useLocale();
-  const copy = locale === "en" ? {
-    loading: "Loading shared content", loadingDescription: "Retrieving the records allowed by this link.", error: "Could not load the shared content", content: "Shared content", notice: "This is a limited public view. It includes only records allowed by the link and has no administrative controls.", permission: "Permission", records: "Records", empty: "There are no records in this share.", record: "record",
-  } : {
-    loading: "جارٍ تحميل المشاركة", loadingDescription: "يتم جلب السجلات المسموحة لهذا الرابط.", error: "تعذر تحميل المشاركة", content: "محتوى المشاركة", notice: "عارض عام محدود: لا تظهر إلا السجلات التي يسمح بها الرابط، ولا تتوفر هنا إجراءات إدارية.", permission: "الصلاحية", records: "عدد السجلات", empty: "لا توجد سجلات في هذه المشاركة.", record: "سجل",
-  };
+  const { t } = useLocale();
+  const copy = t.pages.shareViewer;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<ShareState>({ status: "loading" });
 

@@ -9,12 +9,8 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 /** Header popover listing recently viewed and favorited records (V1-773). */
 export default function RecentFavoritesMenu() {
-  const { locale } = useLocale();
-  const copy = locale === "en" ? {
-    trigger: "Recent and favorite items", title: "Recent and favorites", favorites: "Favorites", recent: "Recent", noFavorites: "No favorite items yet.", noRecent: "You have not opened any records yet.",
-  } : {
-    trigger: "العناصر الأخيرة والمفضّلة", title: "الأخيرة والمفضّلة", favorites: "المفضّلة", recent: "الأخيرة", noFavorites: "لا توجد عناصر مفضّلة بعد.", noRecent: "لم تفتح أي سجل بعد.",
-  };
+  const { t } = useLocale();
+  const copy = t.pages.recentFavoritesMenu;
   const [isOpen, setIsOpen] = useState(false);
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);

@@ -11,12 +11,8 @@ type ReviewLinkState =
   | { status: "error"; message: string };
 
 export function ReviewLinkViewer({ token }: { token: string }) {
-  const { locale } = useLocale();
-  const copy = locale === "en" ? {
-    loading: "Loading review link", loadingDescription: "Retrieving the comments and data allowed by this link.", error: "Could not load the review link", content: "Review link content", notice: "This public review link does not allow asset management or permission changes.", asset: "Asset", permission: "Permission", expires: "Expires", expiryEstimate: "Access estimate", expiryHint: "A local estimate based on the stated date; enforcement is handled by the server.", empty: "There are no comments available through this link.",
-  } : {
-    loading: "جارٍ تحميل رابط المراجعة", loadingDescription: "يتم جلب التعليقات والبيانات المسموحة لهذا الرابط.", error: "تعذر تحميل رابط المراجعة", content: "محتوى رابط المراجعة", notice: "رابط مراجعة عام؛ لا يتيح إدارة الأصل أو تغيير صلاحياته.", asset: "المادة", permission: "الصلاحية", expires: "ينتهي", expiryEstimate: "تقدير الصلاحية", expiryHint: "تقدير محلي حسب التاريخ المعلن؛ الإنفاذ بالخادم.", empty: "لا توجد تعليقات متاحة لهذا الرابط.",
-  };
+  const { locale, t } = useLocale();
+  const copy = t.pages.reviewLinkViewer;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<ReviewLinkState>({ status: "loading" });
 

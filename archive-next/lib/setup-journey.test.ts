@@ -61,9 +61,11 @@ describe("deriveSetupJourney", () => {
 describe("first-run expert skip wiring", () => {
   it("offers an explicit locally persisted expert settings-review skip", () => {
     const source = readFileSync(new URL("../app/first-run/page.tsx", import.meta.url), "utf8");
+    // V2-302: page copy moved out of page.tsx into the shared dictionary.
+    const dictionary = readFileSync(new URL("../lib/i18n/dictionaries/ar/pages/firstRun.ts", import.meta.url), "utf8");
 
     expect(source).toContain('const EXPERT_SKIP_STORAGE_KEY = "masar:first-run:expert-skip:v1"');
-    expect(source).toContain("تخطي مراجعة الإعدادات للمستخدم الخبير");
+    expect(dictionary).toContain("تخطي مراجعة الإعدادات للمستخدم الخبير");
     expect(source).toContain("window.localStorage.setItem(EXPERT_SKIP_STORAGE_KEY");
     expect(source).toContain("skipGuidedSetup: expertSkip");
     expect(source).not.toContain('skipGuidedSetup: preset === "advanced" && isComplete');
@@ -83,13 +85,15 @@ describe("first-run server progress wiring", () => {
 
   it("keeps login contextual and provides a copyable interactive-test feedback note", () => {
     const source = readFileSync(new URL("../app/first-run/page.tsx", import.meta.url), "utf8");
+    // V2-302: page copy moved out of page.tsx into the shared dictionary.
+    const dictionary = readFileSync(new URL("../lib/i18n/dictionaries/ar/pages/firstRun.ts", import.meta.url), "utf8");
 
     expect(source).toContain('aria-label={copy.selectedSteps}');
     expect(source).toContain("currentPreset.steps.map");
     expect(source).not.toContain('<a className="button button-primary" href="/login">تسجيل الدخول</a>');
-    expect(source).toContain("ملاحظات الفحص التفاعلي");
+    expect(dictionary).toContain("ملاحظات الفحص التفاعلي");
     expect(source).toContain("INTERACTIVE_TEST_FEEDBACK_STORAGE_KEY");
-    expect(source).toContain("نسخ ملاحظات الفحص");
+    expect(dictionary).toContain("نسخ ملاحظات الفحص");
   });
 
   it("uses responsive page grids for the dashboard and first-run workspace", () => {

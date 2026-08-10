@@ -20,7 +20,7 @@ export function openCommandPalette() {
 }
 
 export default function CommandPalette() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -76,7 +76,7 @@ export default function CommandPalette() {
     action();
   }
 
-  const copy = locale === "en" ? { aria: "Archive Suite command palette", placeholder: "Search for a page or action…", empty: "No matching results.", quick: "Quick actions", focusOn: "Turn on focus mode", focusOff: "Leave focus mode", densityComfortable: "Switch to comfortable density", densityCompact: "Switch to compact density" } : { aria: "لوحة أوامر مسار", placeholder: "ابحث عن صفحة أو إجراء...", empty: "لا توجد نتيجة مطابقة.", quick: "إجراءات سريعة", focusOn: "تفعيل وضع التركيز", focusOff: "إنهاء وضع التركيز", densityComfortable: "تبديل إلى كثافة مريحة", densityCompact: "تبديل إلى كثافة مضغوطة" };
+  const copy = t.pages.commandPalette;
   const quickActions = [
     {
       id: "toggle-focus-mode",

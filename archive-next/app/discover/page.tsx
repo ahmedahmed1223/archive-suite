@@ -59,7 +59,7 @@ function DiscoverCard({ record, locale }: Readonly<{ record: ArchiveRecord; loca
 
 export default function DiscoverPage() {
   const { locale, t } = useLocale();
-  const copy = locale === "en" ? { loadError: "Could not load discovery paths.", feedbackError: "Could not save suggestion feedback.", eyebrow: "Discovery paths", title: "Discover", description: "Explore popular, random, active, forgotten, or incomplete material so the archive is more than a long list.", paths: "paths", items: "items shown", refresh: "Refresh", loading: "Loading discovery paths…", error: "Could not load discovery", suggestions: "Suggested archive improvements", emptyTitle: "Not enough material to discover", emptyDescription: "Add records or open the archive to work with the current material.", openArchive: "Open archive", total: "total", noItems: "No items are currently shown in this path." } : { loadError: "تعذر تحميل مسارات الاكتشاف.", feedbackError: "تعذر حفظ تقييم الاقتراح.", eyebrow: "مسارات الاكتشاف", title: "الاكتشاف", description: "استعرض مواد رائجة، عشوائية، نشطة، منسية، أو ناقصة البيانات حتى لا يبقى الأرشيف مجرد قائمة طويلة.", paths: "مسارات", items: "عنصر ظاهر", refresh: "تحديث", loading: "جارٍ تحميل مسارات الاكتشاف…", error: "تعذر تحميل الاكتشاف", suggestions: "تحسينات مقترحة للأرشيف", emptyTitle: "لا توجد مواد كافية للاكتشاف", emptyDescription: "أضف سجلات أو افتح الأرشيف للعمل على المواد الحالية.", openArchive: "فتح الأرشيف", total: "إجمالي", noItems: "لا توجد عناصر ظاهرة في هذا المسار حالياً." };
+  const copy = t.pages.discover;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<DiscoverState>({ status: "loading" });
   const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);

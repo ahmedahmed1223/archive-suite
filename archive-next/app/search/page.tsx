@@ -82,8 +82,8 @@ function facetLabel(items: SearchFacetBucket[] | undefined, value: string) {
 }
 
 export default function SearchPage() {
-  const { locale } = useLocale();
-  const copy = locale === "en" ? { title: "Advanced search", loading: "Loading search…" } : { title: "بحث متقدم", loading: "جارٍ تحميل البحث…" };
+  const { t } = useLocale();
+  const copy = t.pages.search;
   return (
     <Suspense fallback={(
       <AppShell subtitle={copy.title}>
@@ -98,12 +98,8 @@ export default function SearchPage() {
 }
 
 function SearchPageContent() {
-  const { locale } = useLocale();
-  const searchCopy = locale === "en" ? {
-    title: "Advanced search", workspace: "Search workspace", description: "Search records, apply server-provided classifications, save recurring searches, and preview results without leaving the page.", keywords: "Keywords", search: "Search", advanced: "Advanced filters", store: "Storage location", type: "Type", tag: "Tag", from: "From date", to: "To date", save: "Save search", reset: "Reset", loading: "Searching…", results: "Search results", empty: "Start by entering a search term.", emptyDescription: "Search records, then save a recurring search for later.", unavailable: "Search could not be completed", noResults: "No records found.",
-  } : {
-    title: "بحث متقدم", workspace: "مساحة البحث", description: "بحث موحد في السجلات مع تصنيفات من الخادم، وحفظ بحث دائم، ومعاينة سريعة للنتائج دون مغادرة الصفحة.", keywords: "الكلمات المفتاحية", search: "بحث", advanced: "تصفية متقدمة", store: "المخزن", type: "النوع", tag: "الوسم", from: "من التاريخ", to: "إلى التاريخ", save: "حفظ البحث", reset: "تصفير", loading: "جارٍ البحث…", results: "نتائج البحث", empty: "ابدأ بكتابة كلمة بحث.", emptyDescription: "استخدم البحث العام للوصول إلى السجلات، ثم احفظ البحث في الخادم إذا كان يتكرر في عملك اليومي.", unavailable: "تعذر تنفيذ البحث", noResults: "لم يتم العثور على سجلات.",
-  };
+  const { t } = useLocale();
+  const searchCopy = t.pages.searchResults;
   const pageTitle = searchCopy.title;
   const dialogs = useConfirmDialog();
   const router = useRouter();

@@ -1,0 +1,21 @@
+export const searchResults = {
+  title: "Advanced search",
+  workspace: "Search workspace",
+  description: "Search records, apply server-provided classifications, save recurring searches, and preview results without leaving the page.",
+  keywords: "Keywords",
+  search: "Search",
+  advanced: "Advanced filters",
+  store: "Storage location",
+  type: "Type",
+  tag: "Tag",
+  from: "From date",
+  to: "To date",
+  save: "Save search",
+  reset: "Reset",
+  loading: "Searching…",
+  results: "Search results",
+  empty: "Start by entering a search term.",
+  emptyDescription: "Search records, then save a recurring search for later.",
+  unavailable: "Search could not be completed",
+  noResults: "No records found."
+} as const;
