@@ -48,7 +48,10 @@ class AppServiceProvider extends ServiceProvider
             fn () => new SymfonyProcessRunner(config('media.process_timeout_seconds')),
         );
 
-        $this->app->bind(OdbcConnectionFactory::class, NativeOdbcConnectionFactory::class);
+        $this->app->bind(
+            OdbcConnectionFactory::class,
+            fn () => new NativeOdbcConnectionFactory(config('odbc.dialect', 'sqlserver')),
+        );
         $this->app->bind(
             OdbcConnectionProbe::class,
             fn ($app) => new OdbcConnectionProbe(

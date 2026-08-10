@@ -35,16 +35,42 @@ RUN for i in 1 2 3; do \
         nginx \
         procps \
         supervisor \
+        unixodbc \
+        unixodbc-dev \
+        odbc-postgresql \
+        odbc-mariadb \
       && break || { echo "apt-get attempt $i failed, retrying..."; sleep 5; }; \
     done \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && docker-php-ext-install curl ftp mbstring zip pdo pdo_pgsql pcntl \
+    # V2-201: ext/odbc's config.m4 defaults to the DB2 CLI backend and dies on a
+    # missing db2inst1 header unless PHP_ALWAYS_SHARED is pre-defined empty,
+    # which forces --with-unixODBC to pick the unixODBC backend instead
+    # (docker-php-ext-configure alone doesn't do this — docker-library/php#103).
+    # Same recipe already validated in Dockerfile.odbc-acceptance.
+    && docker-php-source extract \
+    && { echo 'AC_DEFUN([PHP_ALWAYS_SHARED],[])dnl'; echo; cat /usr/src/php/ext/odbc/config.m4; } > /tmp/odbc.m4 \
+    && mv /tmp/odbc.m4 /usr/src/php/ext/odbc/config.m4 \
+    && docker-php-ext-configure odbc --with-unixODBC=shared,/usr \
+    && docker-php-ext-install odbc \
+    && docker-php-source delete \
+    && php -r "exit(function_exists('odbc_connect') ? 0 : 1);" \
     && rm -f /etc/nginx/sites-enabled/default \
     && mkdir -p /var/lib/nginx/body /var/lib/nginx/fastcgi /var/lib/nginx/proxy \
     && chown -R www-data:www-data /var/lib/nginx /var/log/nginx \
     && sed -i 's#pid /run/nginx.pid;#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf \
+    && apt-get purge -y unixodbc-dev \
+    && apt-get autoremove -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# V2-201: ships unixODBC + open-source PostgreSQL/MariaDB(MySQL) drivers by
+# default (small, no license friction). SQL Server support (dialect logic
+# exists in App\Services\Odbc\Dialect\SqlServerDialect) requires Microsoft's
+# proprietary msodbcsql driver -- deliberately NOT bundled here (EULA
+# acceptance + ~200MB extra per image for a backend most deployments don't
+# use); operators needing it extend this image with the msodbcsql18 package.
+# See docs/known-limitations.md.
 
 # nginx front config for the laravel-fpm split (see V1-202 note above).
 COPY docker/nginx/laravel.conf /etc/nginx/conf.d/laravel.conf

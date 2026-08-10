@@ -2,10 +2,13 @@
 
 namespace App\Services\Odbc;
 
+use App\Services\Odbc\Dialect\SqlDialectFactory;
 use RuntimeException;
 
 class NativeOdbcConnectionFactory implements OdbcConnectionFactory
 {
+    public function __construct(private readonly string $dialect = 'sqlserver') {}
+
     /**
      * @return string[]
      */
@@ -42,6 +45,6 @@ class NativeOdbcConnectionFactory implements OdbcConnectionFactory
             throw new RuntimeException($message !== '' ? $message : 'Unable to connect to ODBC DSN.');
         }
 
-        return new NativeOdbcConnection($connection);
+        return new NativeOdbcConnection($connection, SqlDialectFactory::make($this->dialect));
     }
 }

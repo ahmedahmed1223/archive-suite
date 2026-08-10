@@ -2,9 +2,18 @@
 
 namespace App\Services\Odbc;
 
+use App\Services\Odbc\Dialect\SqlDialect;
+use App\Services\Odbc\Dialect\SqlServerDialect;
+use RuntimeException;
+
 class NativeOdbcConnection implements OdbcConnection
 {
-    public function __construct(private readonly mixed $connection) {}
+    private ?string $lastOdbcWarning = null;
+
+    public function __construct(
+        private readonly mixed $connection,
+        private readonly SqlDialect $dialect = new SqlServerDialect,
+    ) {}
 
     public function __destruct()
     {
@@ -41,6 +50,11 @@ class NativeOdbcConnection implements OdbcConnection
 
     /**
      * @return array<int, array<string, mixed>>
+     *
+     * @throws RuntimeException if the query fails to execute. Callers must not
+     *   treat a caught exception the same as an empty result set -- a prior
+     *   version returned [] for both, which made a broken query on a
+     *   non-configured dialect indistinguishable from a genuinely empty table.
      */
     public function readRows(string $table, int $offset, int $limit): array
     {
@@ -49,10 +63,14 @@ class NativeOdbcConnection implements OdbcConnection
         }
 
         // Table name is validated against a fixed allowlist before this method is called.
-        $query = "SELECT * FROM [{$table}] OFFSET {$offset} ROWS FETCH NEXT {$limit} ROWS ONLY";
-        $result = @odbc_exec($this->connection, $query);
+        $query = $this->dialect->buildPagedSelect($table, $offset, $limit);
+        $result = $this->callOdbc(fn () => odbc_exec($this->connection, $query));
         if ($result === false) {
-            return [];
+            throw new RuntimeException(sprintf(
+                'ODBC query failed for table "%s": %s',
+                $table,
+                $this->lastOdbcWarning ?? $this->odbcErrorMessage(),
+            ));
         }
 
         $rows = [];
@@ -66,11 +84,11 @@ class NativeOdbcConnection implements OdbcConnection
     public function insertRow(string $table, array $values): int
     {
         $columns = array_keys($values);
-        $columnSql = implode(', ', array_map($this->quoteIdentifier(...), $columns));
+        $columnSql = implode(', ', array_map($this->dialect->quoteIdentifier(...), $columns));
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
 
         return $this->executePrepared(
-            sprintf('INSERT INTO %s (%s) VALUES (%s)', $this->quoteIdentifier($table), $columnSql, $placeholders),
+            sprintf('INSERT INTO %s (%s) VALUES (%s)', $this->dialect->quoteIdentifier($table), $columnSql, $placeholders),
             array_values($values),
         );
     }
@@ -78,16 +96,16 @@ class NativeOdbcConnection implements OdbcConnection
     public function updateRow(string $table, string $keyColumn, mixed $keyValue, array $values): int
     {
         $assignments = implode(', ', array_map(
-            fn (string $column): string => sprintf('%s = ?', $this->quoteIdentifier($column)),
+            fn (string $column): string => sprintf('%s = ?', $this->dialect->quoteIdentifier($column)),
             array_keys($values),
         ));
 
         return $this->executePrepared(
             sprintf(
                 'UPDATE %s SET %s WHERE %s = ?',
-                $this->quoteIdentifier($table),
+                $this->dialect->quoteIdentifier($table),
                 $assignments,
-                $this->quoteIdentifier($keyColumn),
+                $this->dialect->quoteIdentifier($keyColumn),
             ),
             [...array_values($values), $keyValue],
         );
@@ -98,16 +116,11 @@ class NativeOdbcConnection implements OdbcConnection
         return $this->executePrepared(
             sprintf(
                 'DELETE FROM %s WHERE %s = ?',
-                $this->quoteIdentifier($table),
-                $this->quoteIdentifier($keyColumn),
+                $this->dialect->quoteIdentifier($table),
+                $this->dialect->quoteIdentifier($keyColumn),
             ),
             [$keyValue],
         );
-    }
-
-    private function quoteIdentifier(string $identifier): string
-    {
-        return '['.str_replace(']', ']]', $identifier).']';
     }
 
     /**
@@ -119,12 +132,12 @@ class NativeOdbcConnection implements OdbcConnection
             return 0;
         }
 
-        $statement = @odbc_prepare($this->connection, $query);
+        $statement = $this->callOdbc(fn () => odbc_prepare($this->connection, $query));
         if ($statement === false) {
             return 0;
         }
 
-        $success = @odbc_execute($statement, $params);
+        $success = $this->callOdbc(fn () => odbc_execute($statement, $params));
         if ($success === false) {
             return 0;
         }
@@ -137,5 +150,38 @@ class NativeOdbcConnection implements OdbcConnection
         }
 
         return 1;
+    }
+
+    /**
+     * Runs an ODBC call without @-suppression: a temporary error handler
+     * captures the PHP warning odbc_* functions emit on failure (into
+     * $lastOdbcWarning for readRows()'s exception message) instead of
+     * silently discarding it, then restores the previous handler either way.
+     */
+    private function callOdbc(callable $fn): mixed
+    {
+        $this->lastOdbcWarning = null;
+        set_error_handler(function (int $errno, string $errstr): bool {
+            $this->lastOdbcWarning = $errstr;
+
+            return true;
+        });
+
+        try {
+            return $fn();
+        } finally {
+            restore_error_handler();
+        }
+    }
+
+    private function odbcErrorMessage(): string
+    {
+        if (! function_exists('odbc_errormsg')) {
+            return 'unknown ODBC error';
+        }
+
+        $message = (string) odbc_errormsg($this->connection);
+
+        return $message !== '' ? $message : 'unknown ODBC error';
     }
 }

@@ -53,7 +53,12 @@ class SystemController extends Controller
         }
 
         $limit = (int) $request->query('limit', config('odbc.table_limit', 25));
-        $rows = $repository->readRows($table, $limit);
+
+        try {
+            $rows = $repository->readRows($table, $limit);
+        } catch (\RuntimeException $e) {
+            return response()->json(ApiError::envelope($e->getMessage(), 502), 502);
+        }
 
         return response()->json([
             'ok' => true,
