@@ -4,6 +4,7 @@ import "./settings.css";
 import { useEffect, useState } from "react";
 import { Activity, AlertTriangle, CheckCircle2, DatabaseZap, Eye, Fingerprint, Info, KeyRound, LifeBuoy, MinusCircle, RefreshCw, Settings, ShieldCheck, Users, XCircle } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import DropboxFolderPicker from "@/components/DropboxFolderPicker";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
@@ -159,6 +160,7 @@ function formatPreviewValue(value: unknown) {
 }
 
 export default function SettingsPage() {
+  const { t } = useLocale();
   const [settings, setSettings] = useState<SecuritySettings | null>(null);
   const [whisperSaveState, setWhisperSaveState] = useState<{ status: "idle" | "saving" | "success" | "error"; message?: string }>({ status: "idle" });
   const [isLoading, setIsLoading] = useState(true);
@@ -436,7 +438,7 @@ export default function SettingsPage() {
   const canPreviewOdbc = odbc?.status === "connected";
 
   return (
-    <AppShell subtitle="مركز الإعدادات" contentClassName="settings-content" tipsPage="settings">
+    <AppShell subtitle={t.pageTitles.settingsCenter} contentClassName="settings-content" tipsPage="settings">
       <PageToolbar
         icon={<Settings size={24} />}
         eyebrow={<span className="badge">مركز الإعدادات</span>}
@@ -621,7 +623,7 @@ export default function SettingsPage() {
                   <option value="cuda">GPU عبر CUDA</option>
                 </select>
               </label>
-              <p className="helper-text">يتطلب خيار GPU بيئة Whisper مجهزة بـ CUDA وبطاقة رسومية متوافقة.</p>
+              <p className="helper-text">يتطلب خيار GPU عامل <code>laravel-worker-gpu</code> يعمل مع CUDA وNVIDIA Container Toolkit. حفظ الخيار لا يثبت توفر GPU تلقائيًا؛ ستفشل المهمة برسالة واضحة إن لم يكن العامل جاهزًا.</p>
               {whisperSaveState.status !== "idle" && whisperSaveState.status !== "saving" && (
                 <p className={`form-status ${whisperSaveState.status === "error" ? "status-error" : "status-success"}`} role={whisperSaveState.status === "error" ? "alert" : undefined}>
                   {whisperSaveState.message}

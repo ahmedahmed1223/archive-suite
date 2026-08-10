@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Filter, GitBranch, Link2, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
@@ -366,6 +367,7 @@ function RelationForm({
 }
 
 export default function GraphPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const canEditRelations = useCapability("records.edit");
   const [state, setState] = useState<GraphState>({ status: "loading" });
@@ -469,7 +471,7 @@ export default function GraphPage() {
   };
 
   return (
-    <AppShell subtitle="خريطة العلاقات" navLabel="العلاقات" tipsPage="graph">
+    <AppShell subtitle={t.pageTitles.relationshipMap} navLabel={t.pageTitles.relationships} tipsPage="graph">
       <PageToolbar
         eyebrow={<span className="badge">خريطة العلاقات</span>}
         title="خريطة العلاقات"

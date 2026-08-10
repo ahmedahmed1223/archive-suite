@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
@@ -63,6 +64,7 @@ function daysUntil(value?: string | null): number | null {
 }
 
 export default function RightsPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<RightsState>({ status: "loading" });
   const [days, setDays] = useState("365");
@@ -193,7 +195,7 @@ export default function RightsPage() {
   };
 
   return (
-    <AppShell subtitle="حقوق الاستخدام" navLabel="الحقوق" contentClassName="observability-content" tipsPage="rights">
+    <AppShell subtitle={t.pageTitles.usageRights} navLabel={t.pageTitles.rights} contentClassName="observability-content" tipsPage="rights">
       <PageToolbar
         eyebrow={<span className="badge">إدارة الحقوق</span>}
         title="حقوق الاستخدام والتراخيص"

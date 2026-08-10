@@ -34,6 +34,16 @@ constraint and, where relevant, the path to lifting it.
   server components instead — roughly half of all component files carry the
   directive, some of it likely more than the component actually needs.
 
+## Dependencies
+
+- **`leaflet` is pinned to `^1.9.4`**, one major version behind upstream.
+  The nine `@ai-sdk/*` packages (`anthropic`, `deepseek`, `google`, `groq`,
+  `mistral`, `openai`, `openai-compatible`, `xai`) are kept in lockstep on
+  the same `4.0.x`/`3.0.x` line by design — they share one internal
+  provider interface, so they are upgraded together, not independently.
+  No upgrade is scheduled; bump either group only after checking upstream
+  breaking-change notes for the new major/minor line.
+
 ## Backend
 
 - **`embeddings:sync`** retries transient network failures by silently

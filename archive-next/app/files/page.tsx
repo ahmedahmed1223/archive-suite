@@ -18,6 +18,7 @@ import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query"
 import { Skeleton } from "@/components/ui/Skeleton";
 import StorageBrowser, { type StorageCapability, type StorageEntry, type StorageProvider } from "@/components/StorageBrowser";
 import StorageOperationPanel, { type StorageOperationView } from "@/components/StorageOperationPanel";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type FileState =
   | { status: "loading" }
@@ -179,6 +180,7 @@ function getInitialFileViewMode(): FileViewMode {
 }
 
 export default function FilesPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const canIngest = useCapability("ingest.manage");
   const canShare = useCapability("shares.manage");
@@ -525,7 +527,7 @@ export default function FilesPage() {
   );
 
   return (
-    <AppShell subtitle="مستعرض الملفات" contentClassName="files-content" tipsPage="files">
+    <AppShell subtitle={t.pageTitles.fileBrowser} contentClassName="files-content" tipsPage="files">
       <PageToolbar
         icon={<Files size={24} />}
         eyebrow={<span className="badge">عمليات الملفات</span>}

@@ -16,6 +16,7 @@ import { toastError, toastSuccess } from "@/lib/toast";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { iconRegistry } from "@/lib/icon-registry";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type LoadState =
   | { status: "loading" }
@@ -29,6 +30,7 @@ type CollectionsLoadState =
 
 
 export default function CollectionsPage() {
+  const { t } = useLocale();
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -174,7 +176,7 @@ export default function CollectionsPage() {
   }
 
   return (
-    <AppShell subtitle="المجموعات" contentClassName="local-list-content" tipsPage="collections">
+    <AppShell subtitle={t.pageTitles.groups} contentClassName="local-list-content" tipsPage="collections">
       <PageToolbar
         eyebrow={<span className="badge">تنظيم</span>}
         title="المجموعات"

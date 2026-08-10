@@ -18,6 +18,7 @@ import {
 import { GripVertical } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { ReactNode } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
@@ -135,6 +136,7 @@ function SortableKanbanCard({
 }
 
 export default function KanbanPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const canEditRecords = useCapability("records.edit");
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -230,7 +232,7 @@ export default function KanbanPage() {
   }
 
   return (
-    <AppShell subtitle="كانبان" contentClassName="local-list-content" tipsPage="kanban">
+    <AppShell subtitle={t.pageTitles.kanban} contentClassName="local-list-content" tipsPage="kanban">
       <PageToolbar
         eyebrow={<span className="badge">سير العمل</span>}
         title="لوحة كانبان"

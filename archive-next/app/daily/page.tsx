@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Bell, Clock3, Hourglass, Inbox as InboxIcon, ListCh
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import { useAuthSession } from "@/lib/auth-session";
 import { createArchiveApiClient, type InboxItem } from "@/lib/archive-api";
@@ -25,6 +26,7 @@ const todayLabel = () =>
   new Intl.DateTimeFormat("ar", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date());
 
 export default function DailyPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const auth = useAuthSession();
   const { notifications, isLoading: notificationsLoading } = useNotifications();
@@ -131,7 +133,7 @@ export default function DailyPage() {
   const displayName = auth.user?.name || auth.user?.email || "";
 
   return (
-    <AppShell subtitle="يومي">
+    <AppShell subtitle={t.pageTitles.daily}>
       <header className="dashboard-greeting">
         <div className="dashboard-greeting__intro">
           <h1>{displayName ? `يومك، ${displayName}` : "يومك"}</h1>

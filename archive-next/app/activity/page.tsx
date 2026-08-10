@@ -107,7 +107,7 @@ function restoreDecision(entry: RecordHistoryEntry) {
 }
 
 export default function ActivityPage() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const copy = locale === "en" ? {
     eyebrow: "Activity log", title: "Activity and history", description: "An authenticated activity log backed by the server audit trail, with filters for event, result, resource, and recovery decisions when sufficient metadata is available.", events: "events", failed: "failed", rejected: "rejected", reviewable: "reviewable", refresh: "Refresh", errors: "Errors", status: "Status", filters: "Activity-log filters", eventFilter: "Event filter", resourceFilter: "Resource-type filter", outcomeFilter: "Outcome filter", resourceId: "Resource ID", loading: "Loading the activity log…", loadError: "Could not load activity", errorHelp: "Check the filters and your access, then try again.", emptyTitle: "No matching activity.", emptyDescription: "Change the filters or perform a tracked change to see it here.", log: "Activity log", general: "General", openContext: "Open context", filterResource: "Filter resource", loadingMore: "Loading…", loadMore: "Load more",
   } : {
@@ -158,7 +158,7 @@ export default function ActivityPage() {
   }, [entries]);
 
   return (
-    <AppShell subtitle="النشاط" contentClassName="observability-content" tipsPage="activity">
+    <AppShell subtitle={t.pageTitles.activity} contentClassName="observability-content" tipsPage="activity">
       <PageToolbar
         eyebrow={<span className="badge">{copy.eyebrow}</span>}
         title={copy.title}

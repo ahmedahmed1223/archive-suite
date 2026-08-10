@@ -13,6 +13,7 @@ import {
   type CollaborationParticipant,
   type ReviewComment
 } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 function formatClock(date: Date) {
   return new Intl.DateTimeFormat("ar-EG", {
@@ -35,6 +36,7 @@ function sortComments(comments: ReviewComment[]) {
 }
 
 export default function BroadcastSimulationPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [mediaPath, setMediaPath] = useState("media-123");
   const [roomKey, setRoomKey] = useState("broadcast-main");
@@ -203,7 +205,7 @@ export default function BroadcastSimulationPage() {
   };
 
   return (
-    <AppShell subtitle="محاكاة البث" navLabel="البث" contentClassName="broadcast-content" tipsPage="broadcast">
+    <AppShell subtitle={t.pageTitles.broadcastSimulation} navLabel={t.pageTitles.broadcast} contentClassName="broadcast-content" tipsPage="broadcast">
       <PageToolbar
         eyebrow={<span className="badge">محاكاة محلية</span>}
         title="غرفة بث ومراجعة تشغيلية"

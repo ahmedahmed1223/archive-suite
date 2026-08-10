@@ -1,5 +1,8 @@
+"use client";
+
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { Link2, PlusCircle } from "lucide-react";
 import { ImportFromUrlForm } from "./ImportFromUrlForm";
 import { IntakeTemplatesPanel } from "./IntakeTemplatesPanel";
@@ -8,8 +11,9 @@ import { UploadLinksPanel } from "./UploadLinksPanel";
 import { FilelessRecordForm } from "./FilelessRecordForm";
 
 export default function UploadsPage() {
+  const { t } = useLocale();
   return (
-    <AppShell subtitle="إضافة أرشيف" contentClassName="stack" tipsPage="uploads">
+    <AppShell subtitle={t.pageTitles.addArchive} contentClassName="stack" tipsPage="uploads">
       <PageToolbar
         icon={<PlusCircle size={24} strokeWidth={2} />}
         eyebrow={<span className="badge">مساحة الإضافة</span>}

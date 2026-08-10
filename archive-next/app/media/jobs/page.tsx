@@ -1,13 +1,17 @@
+"use client";
+
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { FileVideo, FolderSearch, ListChecks } from "lucide-react";
 import { MediaJobLookup } from "./MediaJobLookup";
 import { MediaJobsList } from "./MediaJobsList";
 import styles from "./jobs.module.css";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export default function MediaJobsPage() {
+  const { t } = useLocale();
   return (
-    <AppShell subtitle="مسار الوسائط" contentClassName={`stack ${styles.jobsContent}`} tipsPage="media-jobs">
+    <AppShell subtitle={t.pageTitles.mediaWorkflow} contentClassName={`stack ${styles.jobsContent}`} tipsPage="media-jobs">
       <PageToolbar
         icon={<FileVideo size={24} />}
         title="مهام الوسائط"

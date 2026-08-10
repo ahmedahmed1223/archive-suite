@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -15,6 +16,7 @@ function formatLocalDate(value?: string) {
 }
 
 export default function SharesPage() {
+  const { t } = useLocale();
   const dialogs = useConfirmDialog();
   const [links, setLinks] = useState<MintedLink[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export default function SharesPage() {
   };
 
   return (
-    <AppShell subtitle="روابط المشاركة" navLabel="المشاركات" contentClassName="local-list-content" tipsPage="shares">
+    <AppShell subtitle={t.pageTitles.shareLinks} navLabel={t.pageTitles.shares} contentClassName="local-list-content" tipsPage="shares">
       <PageToolbar
         eyebrow={<span className="badge">محلي على الجهاز</span>}
         title="روابط المشاركة"

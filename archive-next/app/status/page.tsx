@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ApiEnvelope, type DrProbe, type SystemMetrics } from "@/lib/archive-api";
 
@@ -129,6 +130,7 @@ function HealthMetric({
 }
 
 export default function StatusPage() {
+  const { t } = useLocale();
   const [state, setState] = useState<StatusState>({
     status: "loading",
     health: null,
@@ -213,7 +215,7 @@ export default function StatusPage() {
   const statusTone = isOnline ? "success" : state.status === "loading" ? "accent" : "danger";
 
   return (
-    <AppShell subtitle="حالة النظام" navLabel="حالة النظام" contentClassName="observability-content" tipsPage="status">
+    <AppShell subtitle={t.pageTitles.systemStatus} navLabel={t.pageTitles.systemStatus} contentClassName="observability-content" tipsPage="status">
       <PageToolbar
         eyebrow={<span className="badge">مراقبة تشغيلية</span>}
         title="حالة النظام"

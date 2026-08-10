@@ -28,7 +28,7 @@ function formatDate(value: string | null | undefined, locale: "ar" | "en") {
 }
 
 export default function PublicCatalogPage() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const copy = locale === "en" ? {
     publishedOnly: "Published only", title: "Public catalogue", description: "Published records for public viewing with limited fields. Files, internal notes, and operational data are excluded.", records: "records", readOnly: "Read only", filters: "Catalogue filters", search: "Search", searchPlaceholder: "Title, description, type, or tag", type: "Type", tag: "Tag", apply: "Apply", clear: "Clear", loadError: "Could not load the catalogue", loading: "Loading catalogue", loadingDescription: "Only published records are being retrieved.", emptyTitle: "No published records", emptyDescription: "Change the filters or publish records from the workspace to show them here.", publishedRecords: "Published records", untitled: "Untitled", record: "record", tags: "Record tags", loadingMore: "Loading…", loadMore: "Load more",
   } : {
@@ -103,7 +103,7 @@ export default function PublicCatalogPage() {
   return (
     <main className="shell">
       <WorkspacePositionRestorer />
-      <PublicHeader subtitle="الكتالوج العام" />
+      <PublicHeader subtitle={t.pageTitles.publicCatalogue} />
 
       <section className="content public-content" aria-label={copy.title}>
         <PageToolbar

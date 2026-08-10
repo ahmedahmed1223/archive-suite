@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
@@ -58,6 +59,7 @@ function SectionHeader({
 }
 
 export default function CollaborationPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [roomKey, setRoomKey] = useState("review-1");
   const [resourceId, setResourceId] = useState("media-123");
@@ -330,7 +332,7 @@ export default function CollaborationPage() {
   };
 
   return (
-    <AppShell subtitle="التعاون الحي" navLabel="التعاون الحي" contentClassName="collaboration-content" tipsPage="collaboration">
+    <AppShell subtitle={t.pageTitles.liveCollaboration} navLabel={t.pageTitles.liveCollaboration} contentClassName="collaboration-content" tipsPage="collaboration">
       <PageToolbar
         eyebrow={<span className="badge">{isSyncing ? "جار المزامنة" : "مزامنة نشطة"}</span>}
         title="التعاون الحي"

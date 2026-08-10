@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { Cloud, FolderSearch, KeyRound, Network, RadioTower, Server, ShieldCheck } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type WatchedIngestBatch } from "@/lib/archive-api";
@@ -64,6 +65,7 @@ function ResultBanner({ label, state }: Readonly<{ label: string; state: Operati
 }
 
 export default function IngestPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageIngest = useCapability("ingest.manage");
 
@@ -182,7 +184,7 @@ export default function IngestPage() {
   };
 
   return (
-    <AppShell subtitle="استيراد المحتوى" navLabel="الاستيراد" contentClassName="observability-content" tipsPage="ingest">
+    <AppShell subtitle={t.pageTitles.importContent} navLabel={t.pageTitles.import} contentClassName="observability-content" tipsPage="ingest">
       <PageToolbar
         icon={<RadioTower size={24} />}
         eyebrow={<span className="badge">عمليات الاستيراد</span>}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
@@ -54,6 +55,7 @@ function formatDate(value?: string) {
 }
 
 export default function BackupPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [listState, setListState] = useState<BackupListState>({ status: "loading" });
   const [runState, setRunState] = useState<RunState>({ status: "idle" });
@@ -146,7 +148,7 @@ export default function BackupPage() {
   const freshness = buildBackupFreshness(backups.map((backup) => backup.createdAt));
 
   return (
-    <AppShell subtitle="مركز البيانات" navLabel="النسخ الاحتياطي" contentClassName="observability-content" tipsPage="backup">
+    <AppShell subtitle={t.pageTitles.dataCenter} navLabel={t.pageTitles.backups} contentClassName="observability-content" tipsPage="backup">
       <PageToolbar
         eyebrow={<span className="badge">مركز البيانات</span>}
         title="النسخ الاحتياطي والاستعادة"

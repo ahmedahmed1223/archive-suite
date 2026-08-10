@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
@@ -61,6 +62,7 @@ function formatDate(value?: string) {
 }
 
 export default function SharedWithMePage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
   const [input, setInput] = useState("");
@@ -124,7 +126,7 @@ export default function SharedWithMePage() {
   }
 
   return (
-    <AppShell subtitle="مشاركات واردة" navLabel="المشاركات الواردة" contentClassName="local-list-content" tipsPage="shares-with-me">
+    <AppShell subtitle={t.pageTitles.incomingSharesSubtitle} navLabel={t.pageTitles.incomingShares} contentClassName="local-list-content" tipsPage="shares-with-me">
       <PageToolbar
         eyebrow={<span className="badge">مشاركات واردة</span>}
         title="المشاركات الواردة"

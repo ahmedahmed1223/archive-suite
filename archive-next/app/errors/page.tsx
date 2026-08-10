@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Bug, Clock3, Filter, Info, Repeat2, Sparkles, Trash2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import DataTable from "@/components/ui/DataTable";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
@@ -36,6 +37,7 @@ function severityClass(severity: ClientErrorSeverity) {
 }
 
 export default function ErrorsPage() {
+  const { t } = useLocale();
   const dialogs = useConfirmDialog();
   const [errors, setErrors] = useState<ClientErrorLogEntry[]>([]);
   const [severityFilter, setSeverityFilter] = useState<ClientErrorSeverity | "">("");
@@ -149,7 +151,7 @@ export default function ErrorsPage() {
   };
 
   return (
-    <AppShell subtitle="سجل الأخطاء" navLabel="سجل الأخطاء" contentClassName="observability-content" tipsPage="errors">
+    <AppShell subtitle={t.pageTitles.errorLog} navLabel={t.pageTitles.errorLog} contentClassName="observability-content" tipsPage="errors">
       <PageToolbar
         icon={<Bug size={24} />}
         eyebrow={<span className="badge">سجل الأخطاء</span>}

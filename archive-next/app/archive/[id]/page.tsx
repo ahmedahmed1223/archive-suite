@@ -12,6 +12,7 @@ import MentionTextarea from "@/components/MentionTextarea";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import GeotagPanel from "./GeotagPanel";
 import MediaDerivativesTree from "./MediaDerivativesTree";
 import { RecordDescribeForm, type RecordDescribePatch } from "./RecordDescribeForm";
@@ -1069,6 +1070,7 @@ function RecordReadinessPanel({
 }
 
 export default function ArchiveDetailPage() {
+  const { t } = useLocale();
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
 
@@ -1469,8 +1471,8 @@ export default function ArchiveDetailPage() {
 
   return (
     <AppShell
-      subtitle="تفاصيل السجل"
-      navLabel="تفاصيل السجل"
+      subtitle={t.pageTitles.recordDetails}
+      navLabel={t.pageTitles.recordDetails}
       contentClassName="archive-content"
       breadcrumbExtra={[{ label: state.status === "ready" ? state.record.title || "بدون عنوان" : "تفاصيل السجل" }]}
     >

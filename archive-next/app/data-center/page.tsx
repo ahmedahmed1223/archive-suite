@@ -76,7 +76,7 @@ const HUB_LINKS = [
 ] as const;
 
 export default function DataCenterPage() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const copy = locale === "en" ? { hub: "Data center", description: "A single place for uploads, ingest, backups, status, and settings, with the key links and summaries together.", connected: "Metrics connected", checking: "Checking", review: "Needs review", refresh: "Refresh summary", forbidden: "Metrics are available to administrators only", forbiddenDescription: "You can still use the links below to open each section directly.", error: "Could not load the summary", summary: "Data-center summary", memory: "Memory", disk: "Disk", queues: "Background queues", backup: "Latest backup", available: "Available", none: "None", queuesHealth: "Background queue health", paths: "Operational paths", pathsDescription: "Each card opens a workspace for a specific data operation.", pathsCount: "paths" } : { hub: "مركز البيانات", description: "نقطة تجميع لعمليات الرفع، الاستيراد، النسخ الاحتياطي، الحالة، والإعدادات — كل الروابط والملخصات المهمة في مكان واحد.", connected: "المقاييس متصلة", checking: "جارٍ الفحص", review: "يتطلب مراجعة", refresh: "تحديث الملخص", forbidden: "ملخص المقاييس متاح للمشرفين فقط", forbiddenDescription: "يمكنك مع ذلك استخدام الروابط أدناه للانتقال إلى كل قسم مباشرة.", error: "تعذر تحميل الملخص", summary: "ملخص مركز البيانات", memory: "الذاكرة", disk: "القرص", queues: "الطوابير الخلفية", backup: "آخر نسخة", available: "موجودة", none: "لا توجد", queuesHealth: "صحة الطوابير الخلفية", paths: "مسارات التشغيل", pathsDescription: "كل بطاقة تفتح مساحة عمل مرتبطة بعملية بيانات محددة.", pathsCount: "مسارات" };
   const [summary, setSummary] = useState<SummaryState>({ status: "loading" });
   const apiRef = useRef(createArchiveApiClient());
@@ -116,7 +116,7 @@ export default function DataCenterPage() {
       : { status: "healthy" as QueueStatus, queues: [] };
 
   return (
-    <AppShell subtitle="مركز البيانات" navLabel="مركز البيانات" contentClassName="observability-content" tipsPage="data-center">
+    <AppShell subtitle={t.pageTitles.dataCenter} navLabel={t.pageTitles.dataCenter} contentClassName="observability-content" tipsPage="data-center">
       <PageToolbar
         icon={<Database size={24} />}
         eyebrow={<span className="badge">{copy.hub}</span>}

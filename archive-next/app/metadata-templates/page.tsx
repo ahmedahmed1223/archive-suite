@@ -9,6 +9,7 @@ import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type DepartmentFieldOwner, type DepartmentTemplateMetrics, type MetadataTemplate, type MetadataTemplateVersion } from "@/lib/archive-api";
 import { previewTemplateApplication } from "@/lib/metadata-template-apply";
 import DepartmentQualityPanel from "@/components/DepartmentQualityPanel";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const roles = ["viewer", "editor", "admin"] as const;
 type Role = (typeof roles)[number];
@@ -18,6 +19,7 @@ function fieldsText(template?: MetadataTemplate): string {
 }
 
 export default function MetadataTemplatesPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageTemplates = useCapability("templates.manage");
   const canPublishTemplates = useCapability("users.manage");
@@ -109,7 +111,7 @@ export default function MetadataTemplatesPage() {
   const preview = editing ? previewTemplateApplication({ description: "", type: "", tags: [], metadata: {} }, editing) : null;
 
   return (
-    <AppShell subtitle="قوالب الأقسام" contentClassName="local-list-content" tipsPage="settings">
+    <AppShell subtitle={t.pageTitles.departmentTemplates} contentClassName="local-list-content" tipsPage="settings">
       <PageToolbar eyebrow={<span className="badge">إدارة مركزية</span>} title="مكتبة قوالب الأقسام" description="قوالب قابلة لإعادة الاستخدام حسب القسم، مع أدوار استخدام وإصدارات محفوظة. تعديل قالب لا يغيّر أي مادة محفوظة سابقًا." actions={<a className="button button-secondary" href="/settings">الإعدادات</a>}>
         <label><span>تصفية القسم</span><input className="search-input" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} placeholder="مثال: news" /></label>
       </PageToolbar>

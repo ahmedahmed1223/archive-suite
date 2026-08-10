@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
 import EmptyState from "@/components/EmptyState";
 import { createArchiveApiClient, type Project, type ProjectTask, type ProjectTaskStatus } from "@/lib/archive-api";
@@ -14,6 +15,7 @@ function formatDueDate(value: string | null) {
 }
 
 export default function ProjectTasksPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
@@ -47,7 +49,7 @@ export default function ProjectTasksPage() {
     setTasks((current) => current.map((item) => item.id === task.id ? response.task : item));
   }
 
-  return <AppShell subtitle="مهام المشاريع" contentClassName="stack">
+  return <AppShell subtitle={t.pageTitles.projectTasks} contentClassName="stack">
     <PageToolbar title="لوحة مهام المشاريع" description="مهام مستقلة مرتبطة بمشروع، مع مكلّف واستحقاق وتاريخ تحديث وربط اختياري بسجل أرشيفي." actions={<a className="button button-secondary" href="/kanban">كانبان السجلات</a>} />
     <form className="panel archive-toolbar-grid" onSubmit={create}>
       <label>المشروع<select value={projectId} onChange={(event) => setProjectId(event.target.value)} required><option value="">اختر مشروعاً</option>{projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}</select></label>

@@ -9,12 +9,14 @@ import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
 import styles from "./compare.module.css";
 import "../media.css";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type SyncMode = "off" | "on";
 
 const TIME_THRESHOLD = 0.3;
 
 export default function ComparePage() {
+  const { t } = useLocale();
   const [pathA, setPathA] = useState("");
   const [pathB, setPathB] = useState("");
   const [syncMode, setSyncMode] = useState<SyncMode>("off");
@@ -47,7 +49,7 @@ export default function ComparePage() {
   const isValidPaths = pathA.trim() && pathB.trim();
 
   return (
-    <AppShell subtitle="مقارنة الوسائط" contentClassName={styles.compareContent} tipsPage="media-compare">
+    <AppShell subtitle={t.pageTitles.mediaComparison} contentClassName={styles.compareContent} tipsPage="media-compare">
       <PageToolbar
         eyebrow={<span className="badge">مقارنة جنبًا إلى جنب</span>}
         title="مقارنة الوسائط"

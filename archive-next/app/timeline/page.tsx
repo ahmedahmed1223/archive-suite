@@ -8,6 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import styles from "./timeline.module.css";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 function IconCalendar() {
   return (
@@ -128,6 +129,7 @@ function granularityLabel(granularity: Granularity): string {
 }
 
 export default function TimelinePage() {
+  const { t } = useLocale();
   const [state, setState] = useState<LoadState>({
     status: "loading",
     records: [],
@@ -180,7 +182,7 @@ export default function TimelinePage() {
   const recordCount = state.records.length;
 
   return (
-    <AppShell subtitle="الخط الزمني" navLabel="الخط الزمني" contentClassName="timeline-content" tipsPage="timeline">
+    <AppShell subtitle={t.pageTitles.timeline} navLabel={t.pageTitles.timeline} contentClassName="timeline-content" tipsPage="timeline">
       <PageToolbar
         eyebrow={<span className="badge">ترتيب زمني</span>}
         title="الخط الزمني"

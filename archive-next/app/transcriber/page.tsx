@@ -10,6 +10,7 @@ import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { parseSubtitles, formatCueTime, type Cue } from "@/lib/media/subtitles";
 import styles from "./transcriber.module.css";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -33,6 +34,7 @@ function extractTranscriptText(job: MediaJob): string {
 }
 
 export default function TranscriberPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
@@ -94,7 +96,6 @@ export default function TranscriberPage() {
     const sourcePath = String(data.get("sourcePath") ?? "").trim();
     const disk = String(data.get("disk") ?? "").trim();
     const language = String(data.get("language") ?? "ar").trim() || "ar";
-    const device = String(data.get("device") ?? "cpu").trim() || "cpu";
 
     // Collect selected output formats
     const outputFormats: string[] = [];
@@ -119,7 +120,7 @@ export default function TranscriberPage() {
       recordId,
       operation: "transcription",
       sourcePath,
-      options: { language, device, outputFormats, ...(disk ? { disk } : {}) }
+      options: { language, outputFormats, ...(disk ? { disk } : {}) }
     });
 
     if (!response.ok) {
@@ -215,7 +216,7 @@ export default function TranscriberPage() {
   }
 
   return (
-    <AppShell subtitle="التفريغ الصوتي" contentClassName={`stack ${styles.transcriberContent}`} tipsPage="transcriber">
+    <AppShell subtitle={t.pageTitles.transcription} contentClassName={`stack ${styles.transcriberContent}`} tipsPage="transcriber">
       <PageToolbar
         title="التفريغ الصوتي"
         description="أنشئ مهمة تفريغ صوتي عبر مهام الوسائط وتابع تقدّمها حتى اكتمال النص بالطوابع الزمنية."
@@ -282,14 +283,7 @@ export default function TranscriberPage() {
               <input name="language" type="text" defaultValue="ar" />
             </label>
 
-            <label>
-              نوع المعالج
-              <select name="device" defaultValue="cpu">
-                <option value="cpu">CPU (أسرع تحميل)</option>
-                <option value="gpu">GPU (أسرع معالجة)</option>
-                <option value="auto">تلقائي</option>
-              </select>
-            </label>
+            <p className="helper-text">يعتمد الجهاز على إعداد Whisper العام. اختر GPU من الإعدادات فقط بعد تشغيل عامل CUDA.</p>
 
             <fieldset className="stack" style={{ gap: '0.5rem' }}>
               <legend>صيغ الإخراج</legend>

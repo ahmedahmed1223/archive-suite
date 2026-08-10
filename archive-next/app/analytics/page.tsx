@@ -16,6 +16,7 @@ import {
   YAxis
 } from "recharts";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
@@ -114,6 +115,7 @@ function rangeLabel(range: TimeRange) {
 }
 
 export default function AnalyticsPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
   const recordsQuery = useQuery({
@@ -178,7 +180,7 @@ export default function AnalyticsPage() {
   const isEmpty = analytics.totalCount === 0;
 
   return (
-    <AppShell subtitle="تحليلات الأرشيف" navLabel="التحليلات" contentClassName="observability-content" tipsPage="analytics">
+    <AppShell subtitle={t.pageTitles.archiveAnalytics} navLabel={t.pageTitles.analytics} contentClassName="observability-content" tipsPage="analytics">
       <PageToolbar
         eyebrow={<span className="badge">تحليل تشغيلي</span>}
         title="تحليلات الأرشيف"

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
@@ -54,6 +55,7 @@ function downloadText(content: string, filename: string, type: string): void {
 }
 
 export default function ProjectsPage() {
+  const { t } = useLocale();
   const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [projects, setProjects] = useState<MontageProject[]>([]);
@@ -253,7 +255,7 @@ export default function ProjectsPage() {
   }
 
   return (
-    <AppShell subtitle="المشاريع" contentClassName="local-list-content" tipsPage="projects">
+    <AppShell subtitle={t.pageTitles.projects} contentClassName="local-list-content" tipsPage="projects">
       <PageToolbar
         eyebrow={<span className="badge">المونتاج</span>}
         title="المشاريع / المونتاج"

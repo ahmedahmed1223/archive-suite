@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArchiveRestore, LockKeyhole, RefreshCw, ServerCog, ShieldCheck, Trash2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/Dialog";
@@ -51,6 +52,7 @@ function gateLabel(status: GateState["status"]) {
 }
 
 export default function SystemControlPage() {
+  const { t } = useLocale();
   const [gate, setGate] = useState<GateState>({ status: "loading" });
   const [actionState, setActionState] = useState<ActionState>({ status: "idle" });
   const [isClearCacheConfirmOpen, setIsClearCacheConfirmOpen] = useState(false);
@@ -119,7 +121,7 @@ export default function SystemControlPage() {
   };
 
   return (
-    <AppShell subtitle="التحكم بالنظام" navLabel="التحكم بالنظام" contentClassName="observability-content" tipsPage="system-control">
+    <AppShell subtitle={t.pageTitles.systemControl} navLabel={t.pageTitles.systemControl} contentClassName="observability-content" tipsPage="system-control">
       <PageToolbar
         icon={<ServerCog size={24} />}
         eyebrow={<span className="badge badge-danger">إجراء عالي الخطورة</span>}

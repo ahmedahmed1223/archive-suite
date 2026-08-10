@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useCapability } from "@/components/RoleGate";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { createArchiveApiClient, type PaginationMeta, type TrashEntry, type TrashFilters } from "@/lib/archive-api";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
@@ -31,6 +32,7 @@ function formatDate(value: string | null): string {
 
 /** V1-731 (B07): سلة مهملات مستقلة قابلة للتصفح والاستعادة. */
 export default function TrashPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialog = useConfirmDialog();
   const canRestore = useCapability("trash.restore");
@@ -180,7 +182,7 @@ export default function TrashPage() {
   const pagination = state.status === "ready" ? state.pagination : undefined;
 
   return (
-    <AppShell subtitle="سلة المهملات" tipsPage="trash">
+    <AppShell subtitle={t.pageTitles.trash} tipsPage="trash">
       <PageToolbar
         eyebrow={<span className="badge">سلة المهملات</span>}
         title="سلة المهملات"

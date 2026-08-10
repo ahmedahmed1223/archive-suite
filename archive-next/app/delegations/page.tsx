@@ -12,6 +12,7 @@ import {
   type DelegatedAccess,
   type MentionableUser
 } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type Direction = "granted" | "received";
 
@@ -35,6 +36,7 @@ function formatDate(value?: string | null) {
 }
 
 export default function DelegationsPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
   const canManageDelegations = useCapability("delegations.manage");
@@ -118,7 +120,7 @@ export default function DelegationsPage() {
   const delegations = state.status === "ready" ? state.delegations : [];
 
   return (
-    <AppShell subtitle="تفويض الوصول المؤقت" navLabel="التفويضات" contentClassName="observability-content">
+    <AppShell subtitle={t.pageTitles.temporaryAccessDelegation} navLabel={t.pageTitles.delegations} contentClassName="observability-content">
       <PageToolbar
         eyebrow={<span className="badge">تفويض مؤقت</span>}
         title="تفويض وصول مؤقت لزميل"

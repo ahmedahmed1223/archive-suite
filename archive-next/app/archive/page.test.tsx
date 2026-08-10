@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 const searchMock = vi.fn();
 const savedSearchesMock = vi.fn();
@@ -52,11 +53,34 @@ function fileDataTransfer(files: File[], types: string[] = ["Files"]) {
   return { types, files };
 }
 
+function renderPage() {
+  return render(
+    <LocaleProvider initialLocale="ar" hasLocaleCookie={false}>
+      <ArchivePage />
+    </LocaleProvider>
+  );
+}
+
 beforeEach(() => {
   searchMock.mockResolvedValue({ ok: true, records: [], facets: undefined });
   savedSearchesMock.mockResolvedValue({ ok: true, searches: [] });
   uploadFileMock.mockReset();
   bulkRecordsMock.mockReset();
+
+  const values = new Map<string, string>();
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: {
+      get length() {
+        return values.size;
+      },
+      clear: () => values.clear(),
+      getItem: (key: string) => values.get(key) ?? null,
+      key: (index: number) => [...values.keys()][index] ?? null,
+      removeItem: (key: string) => values.delete(key),
+      setItem: (key: string, value: string) => values.set(key, value),
+    } satisfies Storage,
+  });
 });
 
 afterEach(() => {
@@ -72,7 +96,7 @@ describe("archive page drop-anywhere upload (V1-716)", () => {
     });
     bulkRecordsMock.mockResolvedValue({ ok: true, count: 1 });
 
-    render(<ArchivePage />);
+    renderPage();
     const dropzone = screen.getByTestId("archive-drop-zone");
     const file = new File(["content"], "clip.mp4", { type: "video/mp4" });
 
@@ -92,7 +116,7 @@ describe("archive page drop-anywhere upload (V1-716)", () => {
     );
     bulkRecordsMock.mockResolvedValue({ ok: true, count: 1 });
 
-    render(<ArchivePage />);
+    renderPage();
     const dropzone = screen.getByTestId("archive-drop-zone");
     const fileA = new File(["a"], "a.txt", { type: "text/plain" });
     const fileB = new File(["b"], "b.txt", { type: "text/plain" });
@@ -103,7 +127,7 @@ describe("archive page drop-anywhere upload (V1-716)", () => {
   });
 
   test("shows a visual drag-active overlay while a file is dragged over the page, cleared on drag-leave", () => {
-    render(<ArchivePage />);
+    renderPage();
     const dropzone = screen.getByTestId("archive-drop-zone");
 
     fireEvent.dragOver(dropzone, { dataTransfer: fileDataTransfer([]) });
@@ -114,7 +138,7 @@ describe("archive page drop-anywhere upload (V1-716)", () => {
   });
 
   test("ignores non-file drags so a future in-page drag interaction would not collide", () => {
-    render(<ArchivePage />);
+    renderPage();
     const dropzone = screen.getByTestId("archive-drop-zone");
 
     fireEvent.dragOver(dropzone, { dataTransfer: fileDataTransfer([], ["text/plain"]) });
@@ -125,7 +149,7 @@ describe("archive page drop-anywhere upload (V1-716)", () => {
   test("shows an error toast and does not crash when the upload fails", async () => {
     uploadFileMock.mockResolvedValue({ ok: false, error: "تعذر الرفع" });
 
-    render(<ArchivePage />);
+    renderPage();
     const dropzone = screen.getByTestId("archive-drop-zone");
     const file = new File(["content"], "broken.mp4", { type: "video/mp4" });
 

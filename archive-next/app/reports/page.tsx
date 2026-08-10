@@ -5,6 +5,7 @@ import { Download, FileBarChart, RefreshCw, ShieldCheck, TriangleAlert } from "l
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import {
   createArchiveApiClient,
   type ComplianceReportEntry,
@@ -73,6 +74,7 @@ function formatForecastDate(iso: string | null): string {
 }
 
 export default function ReportsPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [filters, setFilters] = useState<ComplianceReportFilters>({ limit: 100 });
   const [appliedFilters, setAppliedFilters] = useState<ComplianceReportFilters>({ limit: 100 });
@@ -142,7 +144,7 @@ export default function ReportsPage() {
   const exportPreview = buildExportPreview({ total: summary?.total ?? 0, format: "CSV", limit: 10000 });
 
   return (
-    <AppShell subtitle="التقارير" navLabel="التقارير" contentClassName="observability-content" tipsPage="reports">
+    <AppShell subtitle={t.pageTitles.reports} navLabel={t.pageTitles.reports} contentClassName="observability-content" tipsPage="reports">
       <PageToolbar
         icon={<FileBarChart size={24} />}
         eyebrow={<span className="badge">امتثال تشغيلي</span>}

@@ -7,8 +7,10 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type SavedSearch } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export default function SavedSearchesPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [searches, setSearches] = useState<SavedSearch[]>([]);
   const [name, setName] = useState("");
@@ -85,7 +87,7 @@ export default function SavedSearchesPage() {
   }
 
   return (
-    <AppShell subtitle="البحوث المحفوظة" contentClassName="stack" tipsPage="search-saved">
+    <AppShell subtitle={t.pageTitles.savedSearches} contentClassName="stack" tipsPage="search-saved">
       <PageToolbar
         title="مدير البحوث والعروض المحفوظة"
         description="احفظ عمليات بحث أو عروض أرشيف متكررة وشغّلها لاحقًا دون إعادة كتابة الاستعلام والفلاتر."

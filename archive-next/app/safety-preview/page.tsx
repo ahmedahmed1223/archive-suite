@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import MetricStrip from "@/components/MetricStrip";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
@@ -36,6 +37,7 @@ function resultDetail(result: SafetyPreviewRun["results"][number]) {
 }
 
 export default function SafetyPreviewPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const { user, accessToken } = useAuthSession();
   const [scenarioState, setScenarioState] = useState<ScenarioState>({ status: "loading" });
@@ -93,7 +95,7 @@ export default function SafetyPreviewPage() {
   const disabled = !canRun || scenarioState.status !== "ready" || runState.status === "running";
 
   return (
-    <AppShell subtitle="معاينة السلامة" navLabel="معاينة السلامة" contentClassName="observability-content">
+    <AppShell subtitle={t.pageTitles.safetyPreview} navLabel={t.pageTitles.safetyPreview} contentClassName="observability-content">
       <PageToolbar
         eyebrow={<span className="badge">محاكاة تجريبية</span>}
         title="مساحة معاينة السلامة"

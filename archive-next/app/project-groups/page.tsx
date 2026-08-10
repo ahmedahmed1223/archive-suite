@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type Project } from "@/lib/archive-api";
 import { useCapability } from "@/components/RoleGate";
 
 export default function ProjectGroupsPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManage = useCapability("collections.manage");
   const [projects, setProjects] = useState<Project[]>([]);
@@ -65,7 +67,7 @@ export default function ProjectGroupsPage() {
     setRecordIds(response.recordIds); setStatus("حُفظ ترتيب المواد.");
   }
 
-  return <AppShell subtitle="مشاريع العمل" contentClassName="stack" tipsPage="projects">
+  return <AppShell subtitle={t.pageTitles.workProjects} contentClassName="stack" tipsPage="projects">
     <PageToolbar title="مشاريع العمل" description="حقائب عمل مستقلة تجمع المواد مع ملاحظات وترتيب محفوظ للخادم." meta={<span className="badge">{projects.length} مشاريع</span>} />
     {canManage ? <form className="panel auth-form" onSubmit={create}><label>اسم المشروع<input value={name} onChange={(event) => setName(event.target.value)} required /></label><label>ملاحظات المشروع<textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} /></label><button className="button button-primary">إنشاء مشروع</button></form> : null}
     {status ? <p className="form-status" role="status">{status}</p> : null}

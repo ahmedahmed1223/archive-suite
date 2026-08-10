@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
 import DataTable from "@/components/ui/DataTable";
 import { FieldError } from "@/components/ui/Form";
@@ -39,6 +40,7 @@ const inviteSchema = z.object({
 type InviteFormValues = z.input<typeof inviteSchema>;
 
 export default function UsersSettingsPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageUsers = useCapability("users.manage");
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -177,7 +179,7 @@ export default function UsersSettingsPage() {
   );
 
   return (
-    <AppShell subtitle="المستخدمون والأدوار" contentClassName="stack" tipsPage="settings-users">
+    <AppShell subtitle={t.pageTitles.usersAndRoles} contentClassName="stack" tipsPage="settings-users">
       <PageToolbar
         title="المستخدمون والأدوار"
         description="إدارة أعضاء الفريق وأدوارهم، ودعوة أعضاء جدد بالبريد الإلكتروني. مقتصر على المدراء."

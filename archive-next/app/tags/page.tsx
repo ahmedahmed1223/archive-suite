@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
@@ -26,6 +27,7 @@ type TagsLoadState =
   | { status: "error"; message: string };
 
 export default function TagsPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageTags = useCapability("tags.manage");
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
@@ -161,7 +163,7 @@ export default function TagsPage() {
   }
 
   return (
-    <AppShell subtitle="الوسوم" contentClassName="local-list-content" tipsPage="tags">
+    <AppShell subtitle={t.pageTitles.tags} contentClassName="local-list-content" tipsPage="tags">
       <PageToolbar
         eyebrow={<span className="badge">الوسوم</span>}
         title="الوسوم الهرمية"

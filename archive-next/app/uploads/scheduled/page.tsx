@@ -1,11 +1,15 @@
+"use client";
+
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { CalendarClock } from "lucide-react";
 import ScheduledUploadsClient from "./ScheduledUploadsClient";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export default function ScheduledUploadsPage() {
+  const { t } = useLocale();
   return (
-    <AppShell subtitle="الرفعات المجدولة" navLabel="الرفعات المجدولة" contentClassName="stack">
+    <AppShell subtitle={t.pageTitles.scheduledUploads} navLabel={t.pageTitles.scheduledUploads} contentClassName="stack">
       <PageToolbar
         icon={<CalendarClock size={24} />}
         title="الرفعات المجدولة"

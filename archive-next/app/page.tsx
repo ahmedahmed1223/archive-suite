@@ -44,7 +44,7 @@ const todayLabel = () =>
   new Intl.DateTimeFormat("ar", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date());
 
 export default function HomeDashboard() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const localizedNavigation = getLocalizedNavigation(locale).items;
   const en = locale === "en";
   const copy = useMemo(() => (en ? {
@@ -97,7 +97,7 @@ export default function HomeDashboard() {
   const roleLabel = copy.roles[role as keyof typeof copy.roles] ?? copy.roles.viewer;
 
   return (
-    <AppShell subtitle="لوحة المتابعة" tipsPage="dashboard">
+    <AppShell subtitle={t.pageTitles.dashboard} tipsPage="dashboard">
       <header className="dashboard-greeting">
         <div className="dashboard-greeting__intro">
           <h1>{greeting}</h1>

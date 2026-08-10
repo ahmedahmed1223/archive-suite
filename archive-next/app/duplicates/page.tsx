@@ -32,7 +32,7 @@ function titleKey(record: ArchiveRecord) {
 }
 
 export default function DuplicatesPage() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const copy = locale === "en" ? { loadError: "Could not load records.", checksumReason: "Matching checksum", titleReason: "Similar normalized title", eyebrow: "Quality", title: "Duplicate detection", description: "An initial duplicate scan based on a checksum when available or title similarity. Merging and deletion remain manual decisions until a dedicated API endpoint is available.", groups: "groups", recordsChecked: "records checked", openArchive: "Open archive", byChecksum: "By checksum", byTitle: "By title", loading: "Scanning records for duplicates…", error: "Could not scan for duplicates", retry: "Try again", emptyTitle: "No visible duplicates.", emptyDescription: "There are no matching groups with the current scan method.", groupsLabel: "Duplicate groups", items: "items", unspecified: "Unspecified", open: "Open", preview: "Preview only: merging and deletion are unavailable until a reviewable server operation is provided.", impactEntity: "similar records" } : { loadError: "تعذر تحميل السجلات.", checksumReason: "تطابق checksum", titleReason: "تشابه عنوان بعد التطبيع", eyebrow: "الجودة", title: "كشف المكررات", description: "كشف مبدئي للمكررات اعتماداً على checksum عند توفره أو تشابه العنوان. الدمج والحذف يبقيان قراراً يدوياً حتى تتوفر نقطة نهاية API مخصصة.", groups: "مجموعة", recordsChecked: "سجل مفحوص", openArchive: "فتح الأرشيف", byChecksum: "حسب checksum", byTitle: "حسب العنوان", loading: "جارٍ فحص السجلات بحثاً عن مكررات…", error: "تعذر فحص المكررات", retry: "إعادة المحاولة", emptyTitle: "لا توجد مكررات ظاهرة.", emptyDescription: "لا توجد مجموعات مطابقة ضمن طريقة الفحص الحالية.", groupsLabel: "مجموعات المكررات", items: "عنصر", unspecified: "غير محدد", open: "فتح", preview: "هذه معاينة فقط: لا يوجد دمج أو حذف مفعّل حتى تتوفر عملية خادم قابلة للمراجعة.", impactEntity: "السجلات المتشابهة" };
   const api = useMemo(() => createArchiveApiClient(), []);
   const [recordsState, setRecordsState] = useState<RecordsState>({ status: "loading" });
@@ -71,7 +71,7 @@ export default function DuplicatesPage() {
   }, [copy.checksumReason, copy.titleReason, mode, records]);
 
   return (
-    <AppShell subtitle="المكررات" contentClassName="local-list-content" tipsPage="duplicates">
+    <AppShell subtitle={t.pageTitles.duplicates} contentClassName="local-list-content" tipsPage="duplicates">
       <PageToolbar
         eyebrow={<span className="badge">{copy.eyebrow}</span>}
         title={copy.title}

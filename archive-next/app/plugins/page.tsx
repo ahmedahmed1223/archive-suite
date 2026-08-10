@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
@@ -186,6 +187,7 @@ function PluginCard({ plugin }: Readonly<{ plugin: PluginCatalogItem }>) {
 }
 
 export default function PluginsPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [status, setStatus] = useState<PluginStatus | "">("");
   const [category, setCategory] = useState<PluginCategory | "">("");
@@ -227,7 +229,7 @@ export default function PluginsPage() {
   const highRiskCount = permissionScopes.filter((scope) => scope.risk === "high").length;
 
   return (
-    <AppShell subtitle="الإضافات" navLabel="الإضافات" contentClassName="stack" tipsPage="plugins">
+    <AppShell subtitle={t.pageTitles.plugins} navLabel={t.pageTitles.plugins} contentClassName="stack" tipsPage="plugins">
       <PageToolbar
         eyebrow={<span className="badge">كتالوج آمن</span>}
         title="سوق الإضافات ومراجعة الصلاحيات"

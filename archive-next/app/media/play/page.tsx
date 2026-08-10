@@ -13,8 +13,10 @@ import { createArchiveApiClient, type RecordNote } from "@/lib/archive-api";
 import { bookmarkNotes, formatBookmarkTime } from "@/lib/timestamp-bookmarks";
 import styles from "./play.module.css";
 import "../media.css";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export default function MediaPlayPage() {
+  const { t } = useLocale();
   const [pathInput, setPathInput] = useState("");
   const [diskInput, setDiskInput] = useState("");
   const [path, setPath] = useState("");
@@ -134,7 +136,7 @@ export default function MediaPlayPage() {
   }
 
   return (
-    <AppShell subtitle="مشغل الوسائط" contentClassName={styles.playContent} tipsPage="media-play">
+    <AppShell subtitle={t.pageTitles.mediaPlayer} contentClassName={styles.playContent} tipsPage="media-play">
       <PageToolbar
         eyebrow={<span className="badge">تشغيل الوسائط</span>}
         title="تشغيل المادة"

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 const client = vi.hoisted(() => ({
   dropboxConnection: vi.fn(),
@@ -24,6 +25,31 @@ vi.mock("@/lib/contextual-tips", () => ({ isTipsEnabledGlobally: () => true, set
 
 import SettingsPage from "./page";
 
+function renderPage() {
+  return render(
+    <LocaleProvider initialLocale="ar" hasLocaleCookie={false}>
+      <SettingsPage />
+    </LocaleProvider>
+  );
+}
+
+beforeEach(() => {
+  const values = new Map<string, string>();
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: {
+      get length() {
+        return values.size;
+      },
+      clear: () => values.clear(),
+      getItem: (key: string) => values.get(key) ?? null,
+      key: (index: number) => [...values.keys()][index] ?? null,
+      removeItem: (key: string) => values.delete(key),
+      setItem: (key: string, value: string) => values.set(key, value),
+    } satisfies Storage,
+  });
+});
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -46,7 +72,7 @@ describe("SettingsPage", () => {
     });
     client.odbcStatus.mockResolvedValue({ ok: false, error: "العنصر غير موجود.", code: "NOT_FOUND" });
 
-    render(<SettingsPage />);
+    renderPage();
 
     const heading = await screen.findByRole("heading", { name: "ODBC للأنظمة القديمة" });
     const bridge = heading.closest("article");
@@ -84,7 +110,7 @@ describe("SettingsPage", () => {
       }
     });
 
-    render(<SettingsPage />);
+    renderPage();
 
     const processor = await screen.findByLabelText("المعالج");
     fireEvent.change(processor, { target: { value: "cuda" } });

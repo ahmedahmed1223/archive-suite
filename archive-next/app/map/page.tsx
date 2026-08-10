@@ -27,7 +27,7 @@ const MAX_PAGES = 25;
 const PAGE_LIMIT = 200;
 
 export default function MapPage() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const copy = locale === "en" ? { loadError: "Could not load records.", eyebrow: "Library", title: "Map", description: "All records with saved geographic locations on one map.", geotagged: "geotagged records", error: "Could not load the map", emptyTitle: "No geotagged records yet", emptyDescription: "Add a geographic location from a record’s details page to show it here.", capped: "Only the first {count} geotagged records are displayed due to the page safety limit; additional records may not have loaded.", list: "Geotagged records", openOsm: "Open in OpenStreetMap" } : { loadError: "تعذر تحميل السجلات.", eyebrow: "المكتبة", title: "الخريطة", description: "كل السجلات ذات الموقع الجغرافي المسجَّل على خريطة واحدة.", geotagged: "سجل موقَّع", error: "تعذر تحميل الخريطة", emptyTitle: "لا توجد سجلات موقَّعة جغرافياً بعد", emptyDescription: "أضف موقعاً جغرافياً لسجل من صفحة تفاصيله ليظهر هنا.", capped: "عُرضت أول {count} سجلاً موقَّعاً فقط (حد أمان الصفحات)؛ قد توجد سجلات إضافية لم تُحمَّل.", list: "قائمة السجلات الموقَّعة", openOsm: "فتح في OpenStreetMap" };
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -65,7 +65,7 @@ export default function MapPage() {
   }, [api, copy.loadError]);
 
   return (
-    <AppShell subtitle="المكتبة" navLabel="الخريطة" contentClassName="map-page-content">
+    <AppShell subtitle={t.pageTitles.library} navLabel={t.pageTitles.map} contentClassName="map-page-content">
       <PageToolbar
         eyebrow={<span className="badge">{copy.eyebrow}</span>}
         title={copy.title}

@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 interface ReadingListItem {
   recordId: string;
@@ -47,6 +48,7 @@ function formatDate(value?: string) {
 }
 
 export default function ReadingListsPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
   const [recordsError, setRecordsError] = useState("");
@@ -136,7 +138,7 @@ export default function ReadingListsPage() {
   }
 
   return (
-    <AppShell subtitle="قوائم القراءة" navLabel="قوائم القراءة" contentClassName="local-list-content" tipsPage="reading-lists">
+    <AppShell subtitle={t.pageTitles.readingLists} navLabel={t.pageTitles.readingLists} contentClassName="local-list-content" tipsPage="reading-lists">
       <PageToolbar
         eyebrow={<span className="badge">قوائم القراءة</span>}
         title="قوائم القراءة"

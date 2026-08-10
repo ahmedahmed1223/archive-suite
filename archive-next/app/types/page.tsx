@@ -6,6 +6,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { Button } from "@/components/ui/Button";
 import { createArchiveApiClient, type ArchiveType } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { selectMissingDefaults } from "@/lib/default-taxonomy";
 import TypesList from "./_components/TypesList";
@@ -19,6 +20,7 @@ type TypesState =
   | { status: "error"; types: ArchiveType[]; message: string };
 
 export default function TypesPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
   const [state, setState] = useState<TypesState>({ status: "loading", types: [] });
@@ -154,7 +156,7 @@ export default function TypesPage() {
   }
 
   return (
-    <AppShell subtitle="الأنواع" contentClassName="types-content" tipsPage="types">
+    <AppShell subtitle={t.pageTitles.types} contentClassName="types-content" tipsPage="types">
       <PageToolbar
         eyebrow={<span className="badge">تنظيم البيانات</span>}
         title="الأنواع"

@@ -26,6 +26,7 @@ import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERE
 import styles from "./archive.module.css";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { movePinnedFilter, orderPinnedFilters } from "@/lib/pinned-filters";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 // V1-732B: one entry per bulk-delete batch, so several consecutive deletes
 // are each independently undoable/redoable via lib/undo-stack.ts, not just
@@ -294,6 +295,7 @@ function savedArchiveViewFromSearch(search: SavedSearch): SavedArchiveView {
 }
 
 function ArchivePageContent() {
+  const { t } = useLocale();
   const dialogs = useConfirmDialog();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1104,7 +1106,7 @@ function ArchivePageContent() {
   );
 
   return (
-    <AppShell subtitle="مركز السجلات" contentClassName="archive-content" tipsPage="archive">
+    <AppShell subtitle={t.pageTitles.recordsCenter} contentClassName="archive-content" tipsPage="archive">
     <div
       className={styles.archiveDropzone}
       data-testid="archive-drop-zone"
@@ -1386,9 +1388,10 @@ function ArchivePageContent() {
 }
 
 export default function ArchivePage() {
+  const { t } = useLocale();
   return (
     <Suspense fallback={(
-      <AppShell subtitle="مركز السجلات" contentClassName="archive-content">
+      <AppShell subtitle={t.pageTitles.recordsCenter} contentClassName="archive-content">
         <div className="panel panel-compact" role="status">
           <p className="form-status">جار تجهيز الأرشيف...</p>
         </div>

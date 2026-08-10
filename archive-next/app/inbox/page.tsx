@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
@@ -25,6 +26,7 @@ type InboxLoadState =
   | { status: "error"; message: string };
 
 export default function InboxPage() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loadState, setLoadState] = useState<InboxLoadState>({ status: "loading" });
@@ -172,7 +174,7 @@ export default function InboxPage() {
   }
 
   return (
-    <AppShell subtitle="صندوق الوارد" contentClassName="local-list-content" tipsPage="inbox">
+    <AppShell subtitle={t.pageTitles.inbox} contentClassName="local-list-content" tipsPage="inbox">
       <PageToolbar
         eyebrow={<span className="badge">التقاط سريع</span>}
         title="صندوق الوارد"

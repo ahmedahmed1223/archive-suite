@@ -5,6 +5,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
@@ -53,6 +54,7 @@ interface LinkedRecordContext {
 }
 
 function CopilotPageContent() {
+  const { t } = useLocale();
   const [phase, setPhase] = useState<StatusPhase>("loading");
   const [status, setStatus] = useState<CopilotStatus | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -166,7 +168,7 @@ function CopilotPageContent() {
         : "غير مهيأ";
 
   return (
-    <AppShell subtitle="مساعد الأرشيف" navLabel="مسارات مساعد الأرشيف" contentClassName="copilot-content" tipsPage="copilot">
+    <AppShell subtitle={t.pageTitles.archiveAssistant} navLabel={t.pageTitles.archiveAssistantTours} contentClassName="copilot-content" tipsPage="copilot">
       <PageToolbar
         icon={<BotMessageSquare size={24} strokeWidth={1.8} />}
         eyebrow={<span className="badge">مساحة آمنة</span>}
