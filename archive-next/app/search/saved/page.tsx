@@ -27,7 +27,7 @@ export default function SavedSearchesPage() {
 
   useEffect(() => {
     void refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh is redefined every render; this effect should run once on mount only
   }, []);
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {

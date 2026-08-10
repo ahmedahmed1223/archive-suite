@@ -279,7 +279,7 @@ function SearchPageContent() {
     if (initialQuery || initialStore || initialType !== "all" || initialTag) {
       void search(initialQuery, initialStore, initialPage, initialType, initialTag);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restores from URL/local state once on mount; search is redefined every render and would retrigger this
   }, []);
 
   const facets = state.status === "ready" ? state.facets : undefined;

@@ -79,7 +79,6 @@ export default function GeoMap({
     };
     // points identity changes each fetch; re-mounting the map per fetch is
     // acceptable here (an admin-facing view, not a hot path).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [points]);
 
   return <div ref={containerRef} className="geo-map" role="img" aria-label="خريطة السجلات ذات الموقع الجغرافي" />;

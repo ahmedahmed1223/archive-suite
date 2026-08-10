@@ -65,7 +65,7 @@ export default function CollectionsPage() {
       const response = await api.search({ limit: 1000 });
       setState(response.ok ? { status: "ready", records: response.records } : { status: "error", message: response.error });
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshCollections and the inline search callback are redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
   const records = state.status === "ready" ? state.records : [];

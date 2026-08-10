@@ -74,7 +74,6 @@ export function RecordDescribeForm({
     target.focus();
     target.scrollIntoView({ behavior: "smooth", block: "center" });
     setRestoredField(position.field);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record.id]);
 
   function handleFieldFocus(field: string) {

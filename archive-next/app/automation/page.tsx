@@ -80,7 +80,7 @@ export default function AutomationPage() {
       if (response.ok) setRecords(response.records);
       else setError(response.error);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshAutomation and the inline search callback are redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
   const types = useMemo(() => Array.from(new Set(records.map((record) => record.type).filter(Boolean))) as string[], [records]);

@@ -81,7 +81,7 @@ export default function TagsPage() {
 
   useEffect(() => {
     void loadTags();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadTags is redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
   const nodeByTag = useMemo(() => new Map(nodes.map((node) => [node.tag, node])), [nodes]);

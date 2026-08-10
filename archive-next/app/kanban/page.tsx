@@ -154,7 +154,7 @@ export default function KanbanPage() {
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load is redefined every render; this effect should run once on mount only
   }, []);
 
   const records = state.status === "ready" ? state.records : [];

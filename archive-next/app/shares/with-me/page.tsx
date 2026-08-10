@@ -76,7 +76,7 @@ export default function SharedWithMePage() {
       setInput(token);
       void openShare(token, storedHistory);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reads the share token from the URL once on mount; openShare is redefined every render and would retrigger this
   }, []);
 
   async function openShare(rawToken: string, baseHistory = history) {

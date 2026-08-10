@@ -55,7 +55,7 @@ export default function InboxPage() {
 
   useEffect(() => {
     void refreshInbox();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshInbox is redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
   const visibleItems = useMemo(() => {

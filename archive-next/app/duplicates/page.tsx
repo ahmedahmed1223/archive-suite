@@ -48,7 +48,7 @@ export default function DuplicatesPage() {
 
   useEffect(() => {
     void loadRecords();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadRecords is redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
   const records = recordsState.status === "ready" ? recordsState.records : [];

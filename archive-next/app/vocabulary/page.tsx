@@ -156,7 +156,7 @@ export default function VocabularyPage() {
 
   useEffect(() => {
     void loadVocabulary();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadVocabulary is redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
   const discovered = useMemo(() => {
