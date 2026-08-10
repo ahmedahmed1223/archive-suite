@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ApplyCspPolicy;
 use App\Http\Middleware\AuditArchiveApiRequest;
 use App\Http\Middleware\AuthenticateArchiveApiRequest;
 use App\Http\Middleware\CorrelateRequest;
@@ -27,22 +28,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(CorrelateRequest::class);
-        // V2-402: archive.security.csp_policy was exposed read-only in the
-        // settings UI as if it were the effective policy, but nothing ever
-        // sent it as a header -- dead config that looked active. Next.js's
-        // own pages now enforce a real nonce-based CSP (V2-401) independent
-        // of this value; this covers Laravel's own responses (API JSON,
-        // any HTML Laravel renders directly) so the displayed setting is
-        // genuinely in effect for the surface Laravel controls.
-        $middleware->append(function (Request $request, \Closure $next) {
-            $response = $next($request);
-            $policy = (string) config('archive.security.csp_policy', '');
-            if ($policy !== '') {
-                $response->headers->set('Content-Security-Policy', $policy);
-            }
-
-            return $response;
-        });
+        // V2-402: makes the displayed-but-dead csp_policy setting real for
+        // Laravel's own responses. See ApplyCspPolicy's docblock.
+        $middleware->append(ApplyCspPolicy::class);
         $middleware->encryptCookies(except: [
             'va_refresh',
         ]);
