@@ -50,11 +50,10 @@ export default function SyncPage() {
     void loadSync();
   }, [loadSync]);
 
-  const entries = state.status === "ready" ? state.entries : [];
-  const filteredEntries = useMemo(
-    () => entries.filter((entry) => filter === "all" || entry.status === filter),
-    [entries, filter]
-  );
+  const filteredEntries = useMemo(() => {
+    const entries = state.status === "ready" ? state.entries : [];
+    return entries.filter((entry) => filter === "all" || entry.status === filter);
+  }, [state, filter]);
   const selectedEntry = useMemo(
     () => filteredEntries.find((entry) => `${entry.store}:${entry.uid}` === selectedKey) ?? filteredEntries[0] ?? null,
     [filteredEntries, selectedKey]

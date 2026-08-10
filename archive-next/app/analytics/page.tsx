@@ -127,7 +127,7 @@ export default function AnalyticsPage() {
       return response.records;
     }
   });
-  const records = recordsQuery.data || [];
+  const records = useMemo(() => recordsQuery.data || [], [recordsQuery.data]);
   const isLoading = recordsQuery.isLoading;
   const loadError = recordsQuery.error instanceof Error ? recordsQuery.error.message : null;
 

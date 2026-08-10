@@ -91,23 +91,29 @@ export default function UsersSettingsPage() {
     void load();
   });
 
-  async function handleRoleChange(user: ManagedUser, role: ManagedUserRole) {
-    const response = await api.updateUserRole(user.id, { role });
-    if (!response.ok) {
-      setActionState({ status: "error", message: response.error });
-      return;
-    }
-    void load();
-  }
+  const handleRoleChange = useCallback(
+    async (user: ManagedUser, role: ManagedUserRole) => {
+      const response = await api.updateUserRole(user.id, { role });
+      if (!response.ok) {
+        setActionState({ status: "error", message: response.error });
+        return;
+      }
+      void load();
+    },
+    [api, load]
+  );
 
-  async function handleDelete(user: ManagedUser) {
-    const response = await api.deleteUser(user.id);
-    if (!response.ok) {
-      setActionState({ status: "error", message: response.error });
-      return;
-    }
-    void load();
-  }
+  const handleDelete = useCallback(
+    async (user: ManagedUser) => {
+      const response = await api.deleteUser(user.id);
+      if (!response.ok) {
+        setActionState({ status: "error", message: response.error });
+        return;
+      }
+      void load();
+    },
+    [api, load]
+  );
   const userColumns = useMemo<Array<ColumnDef<ManagedUser, unknown>>>(
     () => [
       {
@@ -147,7 +153,7 @@ export default function UsersSettingsPage() {
         enableSorting: false
       }
     ],
-    [canManageUsers]
+    [canManageUsers, handleDelete, handleRoleChange]
   );
   const invitationColumns = useMemo<Array<ColumnDef<PendingInvitation, unknown>>>(
     () => [

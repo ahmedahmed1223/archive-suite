@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
@@ -40,7 +40,7 @@ export default function InboxPage() {
   const [routingBusyId, setRoutingBusyId] = useState<string | null>(null);
   const canRouteInbox = useCapability("records.edit");
 
-  async function refreshInbox() {
+  const refreshInbox = useCallback(async () => {
     setLoadState({ status: "loading" });
     const response = await api.inboxItems();
     if (response.ok) {
@@ -51,12 +51,11 @@ export default function InboxPage() {
       setLoadState({ status: "error", message });
       setStatusMessage(message);
     }
-  }
+  }, [api]);
 
   useEffect(() => {
     void refreshInbox();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshInbox is redefined every render; api is the only stable dependency and is already listed
-  }, [api]);
+  }, [refreshInbox]);
 
   const visibleItems = useMemo(() => {
     return filter === "all" ? items : items.filter((item) => item.status === filter);
@@ -72,6 +71,16 @@ export default function InboxPage() {
   useEffect(() => {
     setActiveIndex((current) => Math.min(current, Math.max(0, visibleItems.length - 1)));
   }, [visibleItems.length]);
+
+  const updateStatus = useCallback(async (id: string, status: InboxStatus) => {
+    const response = await api.updateInboxItem(id, { status });
+    if (!response.ok) {
+      const message = response.error || "تعذر تحديث الحالة.";
+      setStatusMessage(message);
+      toastError(message);
+    }
+    await refreshInbox();
+  }, [api, refreshInbox]);
 
   useEffect(() => {
     if (!triageMode) return;
@@ -96,7 +105,7 @@ export default function InboxPage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeIndex, triageMode, visibleItems]);
+  }, [activeIndex, triageMode, visibleItems, updateStatus]);
 
   async function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -114,16 +123,6 @@ export default function InboxPage() {
     setTitle("");
     setSource("");
     setNote("");
-    await refreshInbox();
-  }
-
-  async function updateStatus(id: string, status: InboxStatus) {
-    const response = await api.updateInboxItem(id, { status });
-    if (!response.ok) {
-      const message = response.error || "تعذر تحديث الحالة.";
-      setStatusMessage(message);
-      toastError(message);
-    }
     await refreshInbox();
   }
 

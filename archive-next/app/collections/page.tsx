@@ -68,7 +68,10 @@ export default function CollectionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshCollections and the inline search callback are redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
-  const records = state.status === "ready" ? state.records : [];
+  const records = useMemo(
+    () => (state.status === "ready" ? state.records : []),
+    [state]
+  );
   const types = useMemo(() => uniqueSorted(records.map((record) => record.type)), [records]);
   const tags = useMemo(() => uniqueSorted(records.flatMap((record) => record.tags || [])), [records]);
   const smartSuggestions = useMemo(() => {

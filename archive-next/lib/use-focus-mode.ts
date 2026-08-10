@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { isFocusMode, setFocusMode } from "./focus-mode";
 
 export function useFocusMode() {
@@ -10,6 +10,14 @@ export function useFocusMode() {
   useEffect(() => {
     setIsFocus(isFocusMode());
     setIsHydrated(true);
+  }, []);
+
+  const toggleFocusMode = useCallback(() => {
+    setIsFocus((prev) => {
+      const next = !prev;
+      setFocusMode(next);
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -23,13 +31,7 @@ export function useFocusMode() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFocus]);
-
-  const toggleFocusMode = () => {
-    const newState = !isFocus;
-    setIsFocus(newState);
-    setFocusMode(newState);
-  };
+  }, [toggleFocusMode]);
 
   return {
     isFocusMode: isFocus,

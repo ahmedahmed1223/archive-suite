@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
@@ -24,13 +24,13 @@ export default function ProjectTasksPage() {
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [projectResponse, taskResponse] = await Promise.all([api.projects(), api.projectTasks()]);
     if (projectResponse.ok) setProjects(projectResponse.projects);
     if (taskResponse.ok) setTasks(taskResponse.tasks);
-  };
+  }, [api]);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [load]);
 
   async function create(event: FormEvent) {
     event.preventDefault();

@@ -47,11 +47,11 @@ export default function HomeDashboard() {
   const { locale } = useLocale();
   const localizedNavigation = getLocalizedNavigation(locale).items;
   const en = locale === "en";
-  const copy = en ? {
+  const copy = useMemo(() => (en ? {
     add: "Add material", loading: "Loading dashboard data…", error: "Unable to load dashboard data.", errorTitle: "Dashboard unavailable", openArchive: "Open archive", metrics: "Archive metrics", quick: "Quick actions", recent: "Recently added", all: "View all", empty: "No records yet", emptyDescription: "Start by adding your first item to the archive.", untitled: "Untitled", total: "Total records", types: "Types", tags: "Tags", stores: "Storage locations", most: "Most common", roles: { admin: "Archive manager", editor: "Media editor", viewer: "Viewer / researcher" }, greetings: { admin: "Welcome back — manage your archive with confidence", editor: "Welcome back — let’s continue describing materials", viewer: "Welcome back — discover what is new" },
   } : {
     add: "إضافة مادة", loading: "جارٍ تحميل بيانات اللوحة…", error: "تعذر تحميل بيانات اللوحة.", errorTitle: "تعذر تحميل اللوحة", openArchive: "فتح الأرشيف", metrics: "مؤشرات الأرشيف", quick: "مهام سريعة", recent: "أُضيف حديثاً", all: "عرض الكل", empty: "لا توجد سجلات بعد", emptyDescription: "ابدأ بإضافة أول مادة إلى الأرشيف.", untitled: "بدون عنوان", total: "إجمالي السجلات", types: "الأنواع", tags: "الوسوم", stores: "المخازن", most: "الأكثر", roles: roleLabels, greetings: roleGreetings,
-  };
+  }), [en]);
   const api = useMemo(() => createArchiveApiClient(), []);
   const auth = useAuthSession();
   const [state, setState] = useState<LoadState>({ status: "loading" });

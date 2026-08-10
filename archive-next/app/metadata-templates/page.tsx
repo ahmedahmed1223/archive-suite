@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
@@ -37,13 +37,13 @@ export default function MetadataTemplatesPage() {
   const [ownerAssignee, setOwnerAssignee] = useState("");
   const [metrics, setMetrics] = useState<DepartmentTemplateMetrics | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     const response = await api.metadataTemplates({ departmentId: departmentId || undefined, includeDisabled: canManageTemplates });
     if (response.ok) { setTemplates(response.templates); setError(""); }
     else setError(response.error || "تعذر تحميل مكتبة القوالب.");
-  }
+  }, [api, canManageTemplates, departmentId]);
 
-  useEffect(() => { void load(); }, [api, canManageTemplates, departmentId]);
+  useEffect(() => { void load(); }, [load]);
   useEffect(() => { if (!departmentId) { setFieldOwners([]); return; } void api.departmentFieldOwners(departmentId).then((response) => { if (response.ok) setFieldOwners(response.owners); }); }, [api, departmentId]);
   useEffect(() => { if (!departmentId) { setMetrics(null); return; } void api.departmentTemplateMetrics(departmentId).then((response) => { if (response.ok) setMetrics(response.metrics); }); }, [api, departmentId]);
 

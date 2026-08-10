@@ -235,7 +235,7 @@ export default function FilesPage() {
     }
   }, [viewMode, browserPath, workspaceProviderId, loadBrowser]);
 
-  const files = state.status === "ready" ? state.files : [];
+  const files = useMemo(() => (state.status === "ready" ? state.files : []), [state]);
   const stores = useMemo(() => getUniqueStores(files), [files]);
   const browserEntries = useMemo(
     () =>
@@ -299,12 +299,12 @@ export default function FilesPage() {
     );
   };
 
-  const toggleSelectAllVisible = () => {
+  const toggleSelectAllVisible = useCallback(() => {
     setSelectedKeys((current) => {
       const allVisibleSelected = visibleFiles.length > 0 && visibleFiles.every((file) => current.includes(file.key));
       return allVisibleSelected ? [] : visibleFiles.map((file) => file.key);
     });
-  };
+  }, [visibleFiles]);
 
   const handleOpenShareChecklist = () => {
     if (selectedKeys.length === 0) return;
@@ -510,7 +510,7 @@ export default function FilesPage() {
         enableSorting: false
       }
     ],
-    [selectedKeySet, visibleFiles]
+    [selectedKeySet, visibleFiles, toggleSelectAllVisible]
   );
 
   return (

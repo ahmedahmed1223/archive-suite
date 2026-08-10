@@ -169,7 +169,7 @@ function SearchPageContent() {
     } catch {
       // Local preferences are optional.
     }
-  }, [currentPage, previewId, query, store, tagFilter, typeFilter, viewMode]);
+  }, [currentPage, previewId, query, searchParams, store, tagFilter, typeFilter, viewMode]);
 
   const updateParams = useCallback(
     (q: string, s: string, page: number, type: string, tag: string, mode: SearchMode = searchMode) => {

@@ -25,7 +25,7 @@ function RunDetails({ entry, heading }: { entry: BulkMacroRun; heading: string }
 }
 
 export function BulkMacroRecorder({ api, targets, accessToken }: Props) {
-  const auth = accessToken ? { accessToken } : undefined;
+  const auth = useMemo(() => (accessToken ? { accessToken } : undefined), [accessToken]);
   const [macros, setMacros] = useState<BulkMacro[]>([]);
   const [macroId, setMacroId] = useState("");
   const [name, setName] = useState("");
@@ -49,7 +49,7 @@ export function BulkMacroRecorder({ api, targets, accessToken }: Props) {
   const canPreview = Boolean(macroId && targets.length && !dirty && !saving && !previewing && !running);
   const canRun = Boolean(preview && !previewExpired && !dirty && !saving && !previewing && !running);
 
-  useEffect(() => { void (async () => { const response = await api.bulkMacros(auth); if (response.ok) setMacros(response.macros); else setMessage(response.error); })(); }, []);
+  useEffect(() => { void (async () => { const response = await api.bulkMacros(auth); if (response.ok) setMacros(response.macros); else setMessage(response.error); })(); }, [api, auth]);
   useEffect(() => { setPreview(null); setRun(null); }, [targetKey, macroId, definition]);
   useEffect(() => {
     if (!preview) return;

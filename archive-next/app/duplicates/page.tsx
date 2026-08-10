@@ -51,7 +51,7 @@ export default function DuplicatesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loadRecords is redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
-  const records = recordsState.status === "ready" ? recordsState.records : [];
+  const records = useMemo(() => (recordsState.status === "ready" ? recordsState.records : []), [recordsState]);
 
   const groups = useMemo<DuplicateGroup[]>(() => {
     const buckets = new Map<string, ArchiveRecord[]>();

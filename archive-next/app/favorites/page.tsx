@@ -25,7 +25,7 @@ export default function FavoritesPage() {
       if (response.ok) setFavorites(response.favorites);
       else setError(response.error || copy.loadError);
     });
-  }, [api]);
+  }, [api, copy.loadError]);
 
   const handleRemove = async (favorite: SavedFavorite) => {
     const response = await api.removeFavorite(favorite.recordId, favorite.store);

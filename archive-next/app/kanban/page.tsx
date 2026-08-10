@@ -157,7 +157,10 @@ export default function KanbanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load is redefined every render; this effect should run once on mount only
   }, []);
 
-  const records = state.status === "ready" ? state.records : [];
+  const records = useMemo(
+    () => (state.status === "ready" ? state.records : []),
+    [state]
+  );
   const grouped = useMemo(() => {
     const map = new Map<WorkflowStatus, ArchiveRecord[]>();
     WORKFLOW_STATES.forEach((status) => map.set(status, []));

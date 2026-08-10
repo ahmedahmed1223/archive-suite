@@ -147,7 +147,7 @@ export default function ActivityPage() {
     void loadActivity(filters);
   }, [filters, loadActivity]);
 
-  const entries = state.status === "ready" ? state.entries : [];
+  const entries = useMemo(() => (state.status === "ready" ? state.entries : []), [state]);
   const pagination = state.status === "ready" ? state.pagination : undefined;
   const stats = useMemo(() => {
     const failed = entries.filter((entry) => entry.outcome === "failed").length;

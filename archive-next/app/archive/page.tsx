@@ -461,7 +461,7 @@ function ArchivePageContent() {
     router.replace(next ? `/archive?${next}` : "/archive", { scroll: false });
   }, [incompleteOnly, itemSize, query, router, sortDirection, sortField, store, type, viewMode, workflowStatus]);
 
-  const records = state.status === "ready" ? state.records : [];
+  const records = useMemo(() => (state.status === "ready" ? state.records : []), [state]);
   const facets = state.status === "ready" ? state.facets : undefined;
   const storeOptions = useMemo(() => facets?.stores?.map((item) => item.value) ?? getUniqueValues(records, "store"), [facets?.stores, records]);
   const typeOptions = useMemo(() => facets?.types?.map((item) => item.value) ?? getUniqueValues(records, "type"), [facets?.types, records]);
@@ -597,7 +597,7 @@ function ArchivePageContent() {
   // the contiguous range (in current visual order) between the anchor and the
   // clicked record; ctrl/cmd+click toggles the clicked record without
   // disturbing the rest of the selection.
-  const handleSelectClick = (recordId: string, modifiers: SelectClickModifiers) => {
+  const handleSelectClick = useCallback((recordId: string, modifiers: SelectClickModifiers) => {
     const { selectedIds: nextSelected, anchorId: nextAnchor } = resolveGridSelectionClick(
       visibleRecords.map((record) => record.id),
       selectedIds,
@@ -607,7 +607,7 @@ function ArchivePageContent() {
     );
     setSelectedIds(nextSelected);
     setSelectionAnchorId(nextAnchor);
-  };
+  }, [visibleRecords, selectedIds, selectionAnchorId]);
 
   // V1-745: rubber-band drag-select. Starts only on a mousedown over empty
   // surface space (not on a card, so plain/shift/ctrl clicks on cards keep
@@ -669,12 +669,12 @@ function ArchivePageContent() {
     ? dragSelectRect.right - dragSelectRect.left >= DRAG_SELECT_THRESHOLD_PX || dragSelectRect.bottom - dragSelectRect.top >= DRAG_SELECT_THRESHOLD_PX
     : false;
 
-  const toggleSelectAllVisible = () => {
+  const toggleSelectAllVisible = useCallback(() => {
     setSelectedIds((current) => {
       const allVisibleSelected = visibleRecords.length > 0 && visibleRecords.every((record) => current.includes(record.id));
       return allVisibleSelected ? [] : visibleRecords.map((record) => record.id);
     });
-  };
+  }, [visibleRecords]);
   const archiveColumns = useMemo<Array<ColumnDef<ArchiveRecord, unknown>>>(
     () => [
       {
@@ -744,7 +744,7 @@ function ArchivePageContent() {
         enableSorting: false
       }
     ],
-    [selectedIdSet, visibleRecords]
+    [selectedIdSet, visibleRecords, handleSelectClick, toggleSelectAllVisible]
   );
 
   const resetFilters = () => {

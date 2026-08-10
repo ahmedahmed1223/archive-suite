@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { createArchiveApiClient } from "@/lib/archive-api";
 
@@ -9,8 +9,8 @@ export default function RecordSourceReplacementPanel({ recordId, canEdit }: Read
   const [state, setState] = useState<"idle" | "saving" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [versions, setVersions] = useState<{ id: string; createdAt: string; fileName: string }[]>([]);
-  const api = createArchiveApiClient();
-  useEffect(() => { void api.recordSourceVersions(recordId).then((result) => { if (result.ok) setVersions(result.versions); }); }, [recordId]);
+  const api = useMemo(() => createArchiveApiClient(), []);
+  useEffect(() => { void api.recordSourceVersions(recordId).then((result) => { if (result.ok) setVersions(result.versions); }); }, [api, recordId]);
   const replace = async () => {
     const file = input.current?.files?.[0];
     if (!file) return setMessage("اختر ملف المصدر البديل أولاً.");

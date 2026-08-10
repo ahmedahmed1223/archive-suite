@@ -407,8 +407,8 @@ export default function GraphPage() {
   }, [loadGraph]);
 
   const graph = state.status === "ready" ? state.graph : null;
-  const allNodes = graph?.nodes ?? [];
-  const allEdges = graph?.edges ?? [];
+  const allNodes = useMemo(() => graph?.nodes ?? [], [graph]);
+  const allEdges = useMemo(() => graph?.edges ?? [], [graph]);
 
   const graphLenses = useMemo(() => buildGraphLenses(allNodes), [allNodes]);
 
