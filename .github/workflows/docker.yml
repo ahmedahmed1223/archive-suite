@@ -52,7 +52,55 @@ jobs:
         run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml config
 
       - name: Build Next image from default Compose
-        run: docker compose --env-file infra/.env.example -f infra/docker-compose.yml build next
+        id: next_image
+        run: |
+          docker compose --env-file infra/.env.example -f infra/docker-compose.yml build next
+          echo "tag=$(docker compose --env-file infra/.env.example -f infra/docker-compose.yml config --images next)" >> "${GITHUB_OUTPUT}"
+
+      - name: Build Laravel worker image
+        run: docker build -f archive-laravel/Dockerfile.worker -t masar-laravel:pr archive-laravel
+
+      # V2-406: release.yml already scans at CRITICAL/--exit-code 1 before
+      # publish, but that's the last gate before a tag ships -- nothing
+      # caught fixable HIGH vulnerabilities earlier, at PR time, when
+      # they're cheapest to fix. This mirrors that scan at HIGH,CRITICAL
+      # on every PR instead.
+      - name: Pull pinned Trivy scanner with retries
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if docker pull aquasec/trivy:0.65.0; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              sleep "$((attempt * 10))"
+            fi
+          done
+          exit 1
+
+      - name: Scan Next image (fail on fixable high/critical vulnerabilities)
+        shell: bash
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ runner.temp }}/trivy-cache:/root/.cache/trivy" \
+            aquasec/trivy:0.65.0 image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            "${{ steps.next_image.outputs.tag }}"
+
+      - name: Scan Laravel image (fail on fixable high/critical vulnerabilities)
+        shell: bash
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ runner.temp }}/trivy-cache:/root/.cache/trivy" \
+            aquasec/trivy:0.65.0 image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            masar-laravel:pr
 
   publish:
     name: Publish images to GHCR (manual only — releases go through release.yml)

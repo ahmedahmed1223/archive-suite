@@ -223,3 +223,7 @@ jobs:
 
       - name: Composer audit (Laravel)
         run: node scripts/laravel-docker.mjs composer audit
+
+      # V2-405: no static analysis existed for the PHP side at all.
+      - name: PHPStan (Laravel)
+        run: node scripts/laravel-docker.mjs composer phpstan
