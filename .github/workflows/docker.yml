@@ -8,7 +8,6 @@ on:
       - "archive-next/**"
       - "archive-laravel/**"
       - "scripts/**"
-      - "infra/Dockerfile.whisper"
       - "infra/ocr-service/**"
       - "infra/platform/**"
       - "infra/offline/**"
