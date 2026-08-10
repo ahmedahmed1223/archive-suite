@@ -41,9 +41,12 @@
 		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "interest-cohort=()"
-		# CSP in Report-Only mode first. Next.js still needs inline runtime style
-		# support; tighten this once nonce/hash coverage is added end to end.
-		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' ws: wss: http: https:; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
+		# V2-401: Next.js (proxy.ts) now sets its own enforcing, per-request
+		# nonce-based Content-Security-Policy header directly on page responses
+		# -- this Report-Only header is a monitoring backstop for anything Caddy
+		# serves that Next.js doesn't (static assets, non-Next upstreams).
+		# unsafe-eval removed now that nonce coverage exists end to end.
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' ws: wss: http: https:; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
 		# Caddy already sets Server: header; remove it to reduce fingerprinting.
 		-Server
 	}

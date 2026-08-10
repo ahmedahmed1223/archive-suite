@@ -27,7 +27,10 @@ use App\Services\Security\SecuritySettingsService;
 use AzureOss\Storage\Blob\BlobServiceClient;
 use AzureOss\Storage\BlobFlysystem\AzureBlobStorageAdapter;
 use Google\Cloud\Storage\StorageClient;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
 use League\Flysystem\Filesystem;
@@ -180,6 +183,25 @@ class AppServiceProvider extends ServiceProvider
             $adapter = new DropboxAdapter($client, $config['prefix'] ?? '');
 
             return new FilesystemAdapter(new Filesystem($adapter, $config), $adapter, $config);
+        });
+
+        // V2-403: SecuritySettingsService::getSettings()['perUserRateLimit'] was
+        // exposed and updatable but no RateLimiter definition ever read it, so
+        // only the 8 routes with an explicit throttle:N,1 middleware literal had
+        // any cap. This ties a real 'api' limiter to the configured/overridable
+        // value and applies it globally via $middleware->throttleApi() in
+        // bootstrap/app.php. Disabled under testing: the suite fires far more
+        // than any sane per-minute cap through the same test client IP within a
+        // single fast run, which isn't the traffic pattern the limit exists for.
+        RateLimiter::for('api', function (Request $request) {
+            if ($this->app->environment('testing')) {
+                return Limit::none();
+            }
+
+            $perMinute = max(1, (int) $this->app->make(SecuritySettingsService::class)
+                ->getSettings()['perUserRateLimit']);
+
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?? $request->ip());
         });
     }
 

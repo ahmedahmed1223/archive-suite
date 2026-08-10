@@ -27,9 +27,30 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(CorrelateRequest::class);
+        // V2-402: archive.security.csp_policy was exposed read-only in the
+        // settings UI as if it were the effective policy, but nothing ever
+        // sent it as a header -- dead config that looked active. Next.js's
+        // own pages now enforce a real nonce-based CSP (V2-401) independent
+        // of this value; this covers Laravel's own responses (API JSON,
+        // any HTML Laravel renders directly) so the displayed setting is
+        // genuinely in effect for the surface Laravel controls.
+        $middleware->append(function (Request $request, \Closure $next) {
+            $response = $next($request);
+            $policy = (string) config('archive.security.csp_policy', '');
+            if ($policy !== '') {
+                $response->headers->set('Content-Security-Policy', $policy);
+            }
+
+            return $response;
+        });
         $middleware->encryptCookies(except: [
             'va_refresh',
         ]);
+        // V2-403: applies the 'api' RateLimiter defined in
+        // AppServiceProvider::boot() (backed by SecuritySettingsService's
+        // configurable perUserRateLimit) to every api/* route, not just the 8
+        // routes that already had an explicit throttle:N,1 literal.
+        $middleware->throttleApi();
 
         $middleware->alias([
             'archive.audit' => AuditArchiveApiRequest::class,
