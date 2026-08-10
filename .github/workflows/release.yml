@@ -252,8 +252,6 @@ jobs:
           tags: ${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}
           build-args: |
             ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1
-            SENTRY_ENVIRONMENT=production
-            SENTRY_RELEASE=${{ steps.meta.outputs.version }}
 
       - name: Build and push Laravel image
         id: push_laravel

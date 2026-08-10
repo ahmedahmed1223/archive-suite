@@ -46,21 +46,40 @@ export function proxy(request: NextRequest) {
   });
   requestHeaders.set("x-archive-locale", locale);
   requestHeaders.set("x-archive-locale-cookie", localeCookie === locale ? "1" : "0");
-  console.log(JSON.stringify({ timestamp: new Date().toISOString(), level: "info", service: "archive-next", request_id: requestId, method: request.method, pathname }));
+
+  // V2-503: was a single fixed-shape line with no way to tell an API pass-
+  // through from a login redirect from an authenticated page load. `outcome`
+  // makes that queryable; hasSession/locale are logged as facts, never the
+  // cookie value itself.
+  const logRequest = (outcome: "api" | "public-or-authenticated" | "redirect-to-login") =>
+    console.log(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: "info",
+      service: "archive-next",
+      request_id: requestId,
+      method: request.method,
+      pathname,
+      outcome,
+      locale,
+      has_session: request.cookies.has(sessionCookieName),
+    }));
 
   if (pathname.startsWith("/api/v1")) {
+    logRequest("api");
     const response = NextResponse.next({ request: { headers: requestHeaders } });
     response.headers.set("X-Request-ID", requestId);
     return response;
   }
 
   if (isPublicPath(pathname) || request.cookies.has(sessionCookieName)) {
+    logRequest("public-or-authenticated");
     const response = NextResponse.next({ request: { headers: requestHeaders } });
     response.headers.set("X-Request-ID", requestId);
     response.headers.set("Content-Security-Policy", csp);
     return response;
   }
 
+  logRequest("redirect-to-login");
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = "/login";
   loginUrl.search = "";

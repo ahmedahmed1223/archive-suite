@@ -24,11 +24,6 @@ jobs:
     timeout-minutes: 45
     env:
       CI: "true"
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_RELEASE: ${{ github.sha }}
-      SENTRY_ENVIRONMENT: ci
     steps:
       - name: Checkout
         uses: actions/checkout@v4
