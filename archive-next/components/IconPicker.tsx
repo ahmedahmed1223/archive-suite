@@ -1,11 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { searchIcons } from "@/lib/icon-catalog";
-
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
+import { resolveIcon } from "@/lib/icon-registry";
 
 type Props = {
   value?: string;
@@ -37,7 +34,7 @@ export default function IconPicker({ value, onChange, label = "اختر أيقو
         }}
       >
         {results.map((name) => {
-          const Icon = iconRegistry[name] || Icons.Circle;
+          const Icon = resolveIcon(name);
           const isSelected = name === value;
           return (
             <button

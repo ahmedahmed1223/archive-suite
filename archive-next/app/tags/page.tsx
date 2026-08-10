@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
@@ -14,8 +12,7 @@ import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { Skeleton } from "@/components/ui/Skeleton";
-
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
+import { resolveIcon } from "@/lib/icon-registry";
 
 interface ParentChange {
   tag: string;
@@ -230,7 +227,7 @@ export default function TagsPage() {
             {tagRows.map((row) => {
               const node = nodeByTag.get(row.tag);
               const rowIcon = node?.icon ?? undefined;
-              const RowIcon = rowIcon ? iconRegistry[rowIcon] || Icons.Circle : null;
+              const RowIcon = rowIcon ? resolveIcon(rowIcon) : null;
               return (
                 <div className="analytics-tag-row" key={row.tag} style={node?.color ? { borderLeft: `4px solid ${node.color}` } : {}}>
                   <span>

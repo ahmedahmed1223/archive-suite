@@ -1,14 +1,13 @@
 "use client";
 
 import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { getPageTips, type PageKey, type Tip } from "@/lib/contextual-tips";
 import { useAuthSession } from "@/lib/auth-session";
 import { useContextualTips } from "@/lib/use-contextual-tips";
+import { resolveIcon } from "@/lib/icon-registry";
 
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
-const getTipIcon = (name?: string) => iconRegistry[name || "Lightbulb"] || Icons.Lightbulb;
+const getTipIcon = (name?: string) => resolveIcon(name || "Lightbulb", Icons.Lightbulb);
 
 export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
   const { isDismissed, isEnabled, handleDismiss, handleDismissSession, isHydrated } = useContextualTips(page);

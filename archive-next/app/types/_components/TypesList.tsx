@@ -1,12 +1,9 @@
 "use client";
 
-import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import EmptyState from "@/components/EmptyState";
 import type { ArchiveType } from "@/lib/archive-api";
-
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
+import { iconRegistry } from "@/lib/icon-registry";
 
 type TypesListProps = {
   types: ArchiveType[];

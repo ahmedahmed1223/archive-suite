@@ -88,11 +88,22 @@ const capabilityMap: Record<string, StorageCapability> = { create_folder: "creat
 function mapProvider(provider: StorageWorkspaceProvider): StorageProvider { return { ...provider, status: provider.status === "available" ? "ready" : "offline", capabilities: provider.capabilities.map((item) => capabilityMap[item]).filter((item): item is StorageCapability => Boolean(item)) }; }
 function mapOperation(operation: StorageWorkspaceOperation): StorageOperationView { const completed = operation.items.filter((item) => item.status === "completed" || item.status === "skipped").length; return { id: operation.id, type: operation.action, status: operation.status === "queued" || operation.status === "paused" ? "running" : operation.status, completedItems: completed, totalItems: operation.items.length, message: operation.items.find((item) => item.errorCode) ?.errorCode ?? undefined, retryable: operation.status === "failed" }; }
 
-function getFileExtension(file: ArchiveFile) {
+// V2-605: ArchiveFile and FileBrowserEntry are two separate interfaces that
+// both happen to carry `key` plus a `[key: string]: unknown` catch-all --
+// structurally incompatible for direct assignment (an index signature typed
+// `unknown` doesn't satisfy an explicit `mimeType?: string`), which is why
+// call sites reached for `as unknown as ArchiveFile`. These helpers only
+// ever read `key`/`mimeType`/`store`, defensively type-narrowed already, so
+// they accept the common shape both real types satisfy without any cast.
+interface FileLike extends Record<string, unknown> {
+  key: string;
+}
+
+function getFileExtension(file: FileLike) {
   return file.key.split(".").pop()?.toLowerCase() ?? "";
 }
 
-function isPlayableFile(file: ArchiveFile): boolean {
+function isPlayableFile(file: FileLike): boolean {
   const mimeType = typeof file.mimeType === "string" ? file.mimeType : "";
   if (mimeType.startsWith("audio/") || mimeType.startsWith("video/")) {
     return true;
@@ -101,7 +112,7 @@ function isPlayableFile(file: ArchiveFile): boolean {
   return PLAYABLE_EXTENSIONS.has(getFileExtension(file));
 }
 
-function getFileKind(file: ArchiveFile): Exclude<FileKind, "all"> {
+function getFileKind(file: FileLike): Exclude<FileKind, "all"> {
   const mimeType = typeof file.mimeType === "string" ? file.mimeType : "";
   const ext = getFileExtension(file);
 
@@ -123,10 +134,10 @@ function kindLabel(kind: FileKind) {
   return labels[kind];
 }
 
-function mediaPlayHref(file: ArchiveFile): string {
+function mediaPlayHref(file: FileLike): string {
   const params = new URLSearchParams({ path: file.key });
 
-  if (file.store) {
+  if (typeof file.store === "string" && file.store) {
     params.set("disk", file.store);
   }
 
@@ -412,7 +423,7 @@ export default function FilesPage() {
       {
         accessorKey: "kind",
         header: "النوع",
-        cell: ({ row }) => row.original.kind === "folder" ? "مجلد" : kindLabel(getFileKind(row.original as unknown as ArchiveFile))
+        cell: ({ row }) => row.original.kind === "folder" ? "مجلد" : kindLabel(getFileKind(row.original))
       },
       {
         accessorKey: "size",
@@ -439,8 +450,8 @@ export default function FilesPage() {
             );
           }
 
-          return isPlayableFile(entry as unknown as ArchiveFile) ? (
-            <a href={mediaPlayHref(entry as unknown as ArchiveFile)} className="button button-secondary button-sm">تشغيل</a>
+          return isPlayableFile(entry) ? (
+            <a href={mediaPlayHref(entry)} className="button button-secondary button-sm">تشغيل</a>
           ) : null;
         },
         enableSorting: false

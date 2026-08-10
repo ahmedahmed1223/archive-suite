@@ -3,7 +3,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { Command } from "cmdk";
 import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getLocalizedNavigation, primaryNav } from "@/lib/navigation";
@@ -11,10 +10,10 @@ import { getShortcut, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
 import { useFocusMode } from "@/lib/use-focus-mode";
 import { useDensity } from "@/lib/use-density";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { resolveIcon } from "@/lib/icon-registry";
 
 const commandEventName = "masar:open-command-palette";
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
-const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
+const navIcon = (name: string) => resolveIcon(name, Icons.Circle);
 
 export function openCommandPalette() {
   window.dispatchEvent(new Event(commandEventName));

@@ -1,7 +1,6 @@
 "use client";
 
 import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { getLocalizedNavigation, isActivePath } from "@/lib/navigation";
 import Link from "next/link";
@@ -18,9 +17,9 @@ import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
 import { useTheme } from "@/components/ThemeProvider";
 import { filterGuideChapters, getGuideChapterForPath } from "@/lib/in-app-guide";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { resolveIcon } from "@/lib/icon-registry";
 
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
-const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
+const navIcon = (name: string) => resolveIcon(name, Icons.Circle);
 
 const LIGHT_PRESET = "neutral-light";
 const DARK_PRESET = "cinematic-dark";

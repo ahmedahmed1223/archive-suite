@@ -5,8 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import IconPicker from "@/components/IconPicker";
 import { useCapability } from "@/components/RoleGate";
@@ -17,6 +15,7 @@ import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-u
 import { toastError, toastSuccess } from "@/lib/toast";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { iconRegistry } from "@/lib/icon-registry";
 
 type LoadState =
   | { status: "loading" }
@@ -28,7 +27,6 @@ type CollectionsLoadState =
   | { status: "ready" }
   | { status: "error"; message: string };
 
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 
 export default function CollectionsPage() {
   const dialogs = useConfirmDialog();
