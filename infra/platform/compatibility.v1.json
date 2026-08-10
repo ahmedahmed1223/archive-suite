@@ -29,6 +29,10 @@
     "observability": {
       "status": "supported",
       "description": "Local structured logs, diagnostics, and health/readiness reporting."
+    },
+    "odbc": {
+      "status": "conditional",
+      "description": "Legacy-database ODBC bridge supports sqlserver, postgresql, and mysql dialects (ODBC_DIALECT). PostgreSQL and MySQL/MariaDB drivers ship in the worker image by default; SQL Server requires an operator-added msodbcsql driver layer. Oracle is explicitly out of scope."
     }
   },
   "ports": [

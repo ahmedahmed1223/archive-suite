@@ -1,20 +1,21 @@
 <section>
   <h2>Outcome</h2>
-  <p>Understand the key improvements in version 1.1 and choose the best place to begin.</p>
+  <p>Understand the key improvements in version 1.2 and choose the best place to begin.</p>
   <h2>Before you begin</h2>
   <p>Sign in and confirm your account role because some capabilities and chapters are available only to Editors or Administrators.</p>
-  <h2>Included in version 1.1</h2>
+  <h2>Included in version 1.2</h2>
   <ul>
-    <li>Help and a user guide in Arabic and English that follow the interface language.</li>
-    <li>Fully supported native packages for Windows and Linux, alongside the Docker path.</li>
-    <li>Choose the interface language in Settings, with your choice saved for your next visit.</li>
+    <li>Stronger security protections: real content-security enforcement, request rate limiting, and cross-origin controls are now active, not just displayed as settings.</li>
+    <li>More reliable encrypted backups: encrypted backups now stream instead of loading the whole archive into memory, so large archives back up and restore reliably.</li>
+    <li>The legacy-database (ODBC) bridge now works correctly against SQL Server, PostgreSQL, and MySQL, and reports real errors instead of looking empty when something fails.</li>
+    <li>The application now reports its actual connection health to the backend, so operators can tell the difference between "running" and "actually working".</li>
   </ul>
   <h2>Procedure</h2>
   <ol>
-    <li>Select the interface language in <a href="/settings">Settings</a>.</li>
+    <li>Review <a href="/settings">Settings</a> for any security configuration your deployment relies on (rate limits, allowed origins).</li>
     <li>Open the chapter for your task and follow its verification steps.</li>
     <li>Review <a href="/status">System status</a> if an operation does not complete as expected.</li>
   </ol>
   <h2>Verify</h2>
-  <p>Confirm that the interface and guide use the same language and that your selected path suits your environment and account permissions.</p>
+  <p>Confirm that the interface behaves as expected and that any encrypted backups you rely on restore correctly.</p>
 </section>
