@@ -8,6 +8,8 @@ class WhisperTranscriber
 {
     private readonly MediaPathGuard $pathGuard;
 
+    private readonly CudaCapabilityChecker $cudaCapability;
+
     public function __construct(
         private readonly ProcessRunner $runner,
         private readonly string $whisperBinary = 'whisper-ctranslate2',
@@ -20,28 +22,29 @@ class WhisperTranscriber
         private readonly string $hfToken = '',
         ?MediaPathGuard $pathGuard = null,
         private readonly ?SecuritySettingsService $securitySettings = null,
+        ?CudaCapabilityChecker $cudaCapability = null,
     ) {
         $this->pathGuard = $pathGuard ?? new MediaPathGuard;
+        $this->cudaCapability = $cudaCapability ?? new CudaCapabilityChecker($runner);
     }
 
     /**
      * Build and run a whisper-ctranslate2 transcription command.
-     * Per-job device and output format selection override global config.
+     * The global security setting is the source of truth for the device.
      * Throws on non-zero exit.
      *
-     * @param  array{device?: string, computeType?: string, outputFormats?: string[]}  $jobOptions
+     * @param  array{outputFormats?: string[]}  $jobOptions
      * @return array<int, array{kind: string, key: string, url: null}>
      */
     public function transcribe(string $inputPath, string $recordId, array $jobOptions = []): array
     {
         $selectedDevice = $this->securitySettings?->getSettings()['whisperDevice'] ?? null;
-        $device = $jobOptions['device'] ?? $selectedDevice ?? $this->whisperDevice;
-        $computeType = $jobOptions['computeType']
-            ?? match ($device) {
-                'cpu' => 'int8',
-                'cuda' => 'float16',
-                default => $this->whisperComputeType,
-            };
+        $device = $selectedDevice ?? $this->whisperDevice;
+        $computeType = match ($device) {
+            'cpu' => 'int8',
+            'cuda' => 'float16',
+            default => $this->whisperComputeType,
+        };
         $outputFormats = $jobOptions['outputFormats'] ?? ['srt', 'vtt', 'ttml'];
 
         // Normalize formats: always include 'vtt' for TTML derivation
@@ -53,6 +56,10 @@ class WhisperTranscriber
         // storage root and creates it. Artifact keys stay relative to recordId
         // (unchanged API contract) — only the on-disk path is absolute.
         $outputDir = $this->pathGuard->resolveOutputDir($recordId, 'transcription output');
+
+        if ($device === 'cuda') {
+            $this->cudaCapability->assertAvailable();
+        }
 
         $command = [
             $this->whisperBinary,

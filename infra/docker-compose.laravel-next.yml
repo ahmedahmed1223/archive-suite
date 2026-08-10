@@ -205,6 +205,28 @@ services:
     networks:
       - archive
 
+  # Optional CUDA worker. Enable explicitly with `--profile gpu`; it consumes
+  # only the gpu queue, while laravel-worker continues CPU/default work.
+  laravel-worker-gpu:
+    profiles: ["gpu"]
+    extends:
+      service: laravel-worker
+    build:
+      context: ../archive-laravel
+      dockerfile: Dockerfile.worker-gpu
+    command: ["php", "artisan", "queue:work", "--queue=gpu", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"]
+    environment:
+      WHISPER_DEVICE: cuda
+      WHISPER_COMPUTE_TYPE: float16
+    gpus: all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
   # V1-712 Task 8: runs Laravel's own cron loop (uploads:dispatch-scheduled everyMinute,
   # uploads:recover-scheduled everyFiveMinutes, uploads:cleanup-scheduled hourly — see
   # archive-laravel/routes/console.php) so scheduled uploads actually get claimed and

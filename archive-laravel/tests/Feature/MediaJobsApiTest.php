@@ -6,6 +6,7 @@ use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaJob;
 use App\Models\User;
 use App\Services\Media\MediaJobExecutor;
+use App\Services\Security\SecuritySettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\AuthenticatesArchiveRequests;
@@ -43,6 +44,33 @@ class MediaJobsApiTest extends TestCase
             ->assertJsonPath('job.contractVersion', 1);
 
         Queue::assertPushed(ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $jobId);
+    }
+
+    public function test_cpu_transcriptions_stay_on_the_default_queue(): void
+    {
+        Queue::fake();
+
+        $response = $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-cpu',
+            'operation' => 'transcription',
+            'sourcePath' => 'archive/media-record-cpu.wav',
+        ], $this->authHeaders())->assertAccepted();
+
+        Queue::assertPushedOn('default', ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $response->json('job.id'));
+    }
+
+    public function test_cuda_transcriptions_are_routed_to_the_gpu_queue(): void
+    {
+        Queue::fake();
+        app(SecuritySettingsService::class)->updateWhisperDevice('cuda');
+
+        $response = $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-gpu',
+            'operation' => 'transcription',
+            'sourcePath' => 'archive/media-record-gpu.wav',
+        ], $this->authHeaders())->assertAccepted();
+
+        Queue::assertPushedOn('gpu', ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $response->json('job.id'));
     }
 
     public function test_it_reads_media_workflow_status(): void

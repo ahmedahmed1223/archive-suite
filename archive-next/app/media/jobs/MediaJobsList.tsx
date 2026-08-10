@@ -43,7 +43,6 @@ const mediaJobFormSchema = z
     operation: z.string().trim().min(1, "اختر نوع العملية."),
     sourcePath: z.string().trim().optional().transform((value) => value || undefined),
     atSec: z.coerce.number().min(0, "الثانية لا يمكن أن تكون سالبة.").max(86400, "الحد الأقصى 86400 ثانية.").default(0),
-    device: z.string().default("cpu"),
     formatSrt: z.boolean().optional().default(true),
     formatVtt: z.boolean().optional().default(true),
     formatTtml: z.boolean().optional().default(true),
@@ -114,7 +113,6 @@ export function MediaJobsList() {
       operation: "",
       sourcePath: "",
       atSec: 0,
-      device: "cpu",
       formatSrt: true,
       formatVtt: true,
       formatTtml: true,
@@ -200,7 +198,6 @@ export function MediaJobsList() {
     }
 
     if (operation === "transcription") {
-      options.device = String(data.device ?? "cpu");
       const formats: string[] = [];
       if (data.formatSrt) formats.push("srt");
       if (data.formatVtt) formats.push("vtt");
@@ -339,14 +336,7 @@ export function MediaJobsList() {
 
           {selectedOperation === "transcription" && (
             <div className="state-banner">
-              <label>
-                نوع المعالج
-                <select {...createForm.register("device")}>
-                  <option value="cpu">CPU (أسرع تحميل)</option>
-                  <option value="gpu">GPU (أسرع معالجة)</option>
-                  <option value="auto">تلقائي</option>
-                </select>
-              </label>
+              <p className="helper-text">يُختار معالج Whisper من إعدادات النظام ويُطبّق على جميع مهام التفريغ الجديدة.</p>
 
               <div className="helper-row">
                 <strong>صيغ الإخراج</strong>

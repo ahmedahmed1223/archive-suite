@@ -219,6 +219,30 @@ class WhisperTranscriberTest extends TestCase
         $this->assertContains('float16', $command);
     }
 
+    public function test_cuda_requires_a_healthy_nvidia_runtime(): void
+    {
+        $this->runner->setResponse('cuda-capability', [
+            'exitCode' => 1,
+            'stdout' => '',
+            'stderr' => 'NVIDIA-SMI has failed because it could not communicate with the NVIDIA driver.',
+        ]);
+
+        $transcriber = new WhisperTranscriber(
+            $this->runner,
+            'whisper-ctranslate2',
+            'large-v3',
+            'ar',
+            'vtt',
+            'cuda',
+            'float16'
+        );
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('CUDA transcription requires a GPU worker');
+
+        $transcriber->transcribe('archive/audio.mp3', 'record-gpu');
+    }
+
     public function test_real_processor_delegates_to_transcriber(): void
     {
         $job = new MediaJob;

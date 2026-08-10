@@ -25,10 +25,20 @@ WHISPER_DIARIZE=false
 
 ## GPU operation
 
-CUDA operation requires a compatible NVIDIA driver, CUDA runtime, GPU-enabled
-Python dependencies, and sufficient device memory for the selected model. Use
-`WHISPER_DEVICE=cuda` and `WHISPER_COMPUTE_TYPE=float16` only after the GPU
-acceptance check succeeds. A CPU installation does not require GPU components.
+CUDA operation is supplied by the separate `laravel-worker-gpu` image. It
+requires a compatible NVIDIA driver, NVIDIA Container Toolkit, and sufficient
+device memory for the selected model. Enable the optional Compose profile only
+on the GPU host:
+
+```bash
+docker compose -f infra/docker-compose.laravel-next.yml --profile gpu up -d laravel-worker-gpu
+```
+
+That worker consumes only the `gpu` queue. Set the system Whisper device to
+`cuda`; new transcription jobs are routed there and always use `float16`.
+The default CPU worker remains on the `default` queue with `int8`. If CUDA is
+selected without a healthy GPU worker, the job fails with an operational error;
+it never falls back silently to CPU.
 
 ## Speaker diarization and safety
 

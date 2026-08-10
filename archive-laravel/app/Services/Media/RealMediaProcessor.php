@@ -121,18 +121,7 @@ class RealMediaProcessor implements MediaProcessor
     {
         $preprocessor = $this->audioPreprocessor ?? new AudioPreprocessor($this->runner, $this->ffmpegPath, pathGuard: $this->pathGuard);
         $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
-        $device = $job->options['device'] ?? 'cpu';
         $outputFormats = $job->options['outputFormats'] ?? ['srt', 'vtt', 'ttml'];
-
-        // Resolve 'auto' device to 'cpu' (GPU detection deferred)
-        if ($device === 'auto') {
-            $device = 'cpu';
-        }
-
-        $computeType = match ($device) {
-            'gpu' => 'float16',
-            default => 'int8',
-        };
 
         $job->update([
             'progress_stage' => 'preprocessing',
@@ -163,8 +152,6 @@ class RealMediaProcessor implements MediaProcessor
             ]);
 
             return $this->transcriber->transcribe($audioPath, $job->record_id, [
-                'device' => $device,
-                'computeType' => $computeType,
                 'outputFormats' => $outputFormats,
             ]);
         }
@@ -201,8 +188,6 @@ class RealMediaProcessor implements MediaProcessor
             $segmentRecordId = "{$job->record_id}/segments/{$index}";
             $this->pathGuard->resolveOutputDir($segmentRecordId, 'segment transcript directory');
             $segmentArtifacts = $this->transcriber->transcribe($segmentPath, $segmentRecordId, [
-                'device' => $device,
-                'computeType' => $computeType,
                 'outputFormats' => $outputFormats,
             ]);
 

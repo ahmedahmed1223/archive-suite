@@ -12,6 +12,7 @@ use App\Services\Ingest\IngestTransport;
 use App\Services\Ingest\PhpFtpClient;
 use App\Services\Ingest\SmbIngestTransport;
 use App\Services\Media\FakeMediaProcessor;
+use App\Services\Media\CudaCapabilityChecker;
 use App\Services\Media\LocalMediaJobExecutor;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaProcessor;
@@ -78,6 +79,7 @@ class AppServiceProvider extends ServiceProvider
                 config('media.whisper_hf_token'),
                 null,
                 $app->make(SecuritySettingsService::class),
+                new CudaCapabilityChecker($app->make(ProcessRunner::class)),
             )
         );
 

@@ -7,6 +7,13 @@ The supported application runtime is deployed with Docker or direct-host
 operation (Native) on Windows and Linux; these manifests do not deploy the
 Laravel or Next.js application services.
 
+For a Kubernetes application overlay that has NVIDIA GPU nodes, use
+`whisper-gpu-worker-deployment.example.yaml` as the dedicated Whisper worker
+template. Replace `IMAGE_REFERENCE` with a signed immutable image built from
+`archive-laravel/Dockerfile.worker-gpu`, then include the copied manifest in
+that application overlay. It requests `nvidia.com/gpu: 1`, targets nodes
+labeled `nvidia.com/gpu.present=true`, and consumes only the `gpu` queue.
+
 The kustomization contains pinned PostgreSQL 17 and Redis 7 images. Before
 applying it, replace every `CHANGE_ME` value in `secret.yaml` with a value from
 your secret store.

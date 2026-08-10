@@ -206,6 +206,29 @@ services:
     networks:
       - archive
 
+  # Optional CUDA worker. Enable explicitly with `--profile gpu`; it consumes
+  # only the gpu queue, while laravel-worker continues CPU/default work.
+  laravel-worker-gpu:
+    profiles: ["gpu"]
+    extends:
+      service: laravel-worker
+    build:
+      context: ../archive-laravel
+      dockerfile: Dockerfile.worker-gpu
+    container_name: archive-ln-laravel-worker-gpu
+    command: ["php", "artisan", "queue:work", "--queue=gpu", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"]
+    environment:
+      WHISPER_DEVICE: cuda
+      WHISPER_COMPUTE_TYPE: float16
+    gpus: all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
   ocr:
     # V1-208A: OCR is a capability gated by the `media` runtime profile, never
     # an independent Docker Compose profile. laravel-fpm/laravel-worker keep OCR_SERVICE_URL

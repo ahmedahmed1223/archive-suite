@@ -38,6 +38,11 @@ class FakeProcessRunner implements ProcessRunner
                 'stdout' => '',
                 'stderr' => '',
             ],
+            'cuda-capability' => [
+                'exitCode' => 0,
+                'stdout' => 'NVIDIA Test GPU',
+                'stderr' => '',
+            ],
         ];
     }
 
@@ -65,6 +70,10 @@ class FakeProcessRunner implements ProcessRunner
     public function run(array $command, ?callable $onProgress = null): array
     {
         $this->lastCommand = $command;
+
+        if (($command[0] ?? null) === 'nvidia-smi') {
+            return $this->responses['cuda-capability'];
+        }
 
         // For testing: match against common patterns in the command
         $key = 'default';

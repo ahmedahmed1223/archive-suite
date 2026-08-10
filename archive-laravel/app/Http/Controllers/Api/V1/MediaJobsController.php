@@ -7,6 +7,7 @@ use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaJob;
 use App\Models\User;
 use App\Services\Media\MediaJobExecutor;
+use App\Services\Media\MediaJobQueueRouter;
 use App\Services\Media\MediaPathGuard;
 use App\Support\ApiError;
 use Closure;
@@ -51,7 +52,8 @@ class MediaJobsController extends Controller
             'queued_at' => now(),
         ]);
 
-        ProcessMediaWorkflow::dispatch($mediaJob->id);
+        ProcessMediaWorkflow::dispatch($mediaJob->id)
+            ->onQueue(app(MediaJobQueueRouter::class)->queueFor($mediaJob->operation));
 
         return response()->json([
             'ok' => true,
