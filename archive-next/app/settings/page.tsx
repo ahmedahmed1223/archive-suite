@@ -728,7 +728,7 @@ export default function SettingsPage() {
                   <option value="cuda">{settingsCopy.whisper.cudaOption}</option>
                 </select>
               </label>
-              <p className="helper-text">{settingsCopy.whisper.gpuHelperBefore} <code>laravel-worker-gpu</code> {settingsCopy.whisper.gpuHelperAfter}</p>
+              <p className="helper-text">{settingsCopy.whisper.gpuHelperBefore} <code dir="ltr">laravel-worker-gpu</code> {settingsCopy.whisper.gpuHelperAfter}</p>
               {whisperSaveState.status !== "idle" && whisperSaveState.status !== "saving" && (
                 <p className={`form-status ${whisperSaveState.status === "error" ? "status-error" : "status-success"}`} role={whisperSaveState.status === "error" ? "alert" : undefined}>
                   {whisperSaveState.message}

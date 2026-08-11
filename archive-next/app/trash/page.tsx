@@ -258,7 +258,7 @@ export default function TrashPage() {
                   <td>
                     <strong>{recordTitle(entry)}</strong>
                     <br />
-                    <code>{entry.uid}</code>
+                    <code dir="ltr">{entry.uid}</code>
                   </td>
                   <td>{entry.store}</td>
                   <td>{formatDate(entry.deletedAt, locale)}</td>

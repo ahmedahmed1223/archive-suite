@@ -847,6 +847,31 @@
   overflow-x: auto;
 }
 
+/* V2-802: .topbar-session--inline stays `contents` (invisible to layout) so
+   the existing tablet/desktop topbar-actions rules keep working unchanged;
+   .topbar-more is the mobile-only duplicate, toggled in 08-foundation.css. */
+.topbar-session--inline {
+  display: contents;
+}
+
+.topbar-more {
+  display: none;
+  position: relative;
+}
+
+.topbar-more > summary {
+  list-style: none;
+}
+
+.topbar-more__panel {
+  position: absolute;
+  inset-block-start: 100%;
+  inset-inline-end: 0;
+  margin-block-start: var(--space-2);
+  display: grid;
+  gap: var(--space-2);
+}
+
 .session-chip {
   display: inline-flex;
   min-width: 0;

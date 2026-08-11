@@ -243,3 +243,11 @@
     --duration-slow: 1ms;
   }
 }
+
+/* V2-803: Arabic body text must be at least 16px on mobile for readability;
+   the 14px desktop base (--font-size-base) is too small at phone widths. */
+@media (max-width: 767px) {
+  :root {
+    --font-size-base: 1rem;
+  }
+}

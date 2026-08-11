@@ -8,6 +8,7 @@ export const shell = {
   closeNavigation: "Close navigation",
   routes: "Navigation",
   interfaceTools: "Interface tools",
+  moreActions: "More actions",
   pageHelp: "How this page works",
   addMaterial: "Add material",
   signOut: "Sign out",

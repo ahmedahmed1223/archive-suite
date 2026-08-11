@@ -5,6 +5,7 @@ export const shell = {
   closeNavigation: "إغلاق التنقل",
   routes: "المسارات",
   interfaceTools: "أدوات الواجهة",
+  moreActions: "إجراءات إضافية",
   pageHelp: "كيف تعمل هذه الصفحة؟",
   addMaterial: "إضافة مادة",
   signOut: "تسجيل الخروج",

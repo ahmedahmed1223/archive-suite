@@ -182,22 +182,47 @@ export default function AppHeader({
             <NotificationsPanel />
           </>
         )}
-        {auth.status === "authenticated" ? (
-          <div className="session-chip" title={userLabel}>
-            <Icons.UserCircle aria-hidden="true" size={18} strokeWidth={2} />
-            <span>{userLabel}</span>
-            <button type="button" onClick={handleLogout} aria-label={t.shell.signOut}>
-              <Icons.LogOut aria-hidden="true" size={16} strokeWidth={2} />
-            </button>
+        <div className="topbar-session topbar-session--inline">
+          {auth.status === "authenticated" ? (
+            <div className="session-chip" title={userLabel}>
+              <Icons.UserCircle aria-hidden="true" size={18} strokeWidth={2} />
+              <span>{userLabel}</span>
+              <button type="button" onClick={handleLogout} aria-label={t.shell.signOut}>
+                <Icons.LogOut aria-hidden="true" size={16} strokeWidth={2} />
+              </button>
+            </div>
+          ) : (
+            <Link className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
+              <Icons.LogIn aria-hidden="true" size={18} strokeWidth={2} />
+              <span>{t.shell.signIn}</span>
+            </Link>
+          )}
+          <DensityToggle />
+          <FocusModeToggle />
+        </div>
+        <details className="topbar-more">
+          <summary className="icon-action" aria-label={t.shell.moreActions} title={t.shell.moreActions}>
+            <Icons.MoreVertical aria-hidden="true" size={18} strokeWidth={2} />
+          </summary>
+          <div className="topbar-more__panel ui-dropdown-content" role="menu">
+            {auth.status === "authenticated" ? (
+              <div className="session-chip" title={userLabel}>
+                <Icons.UserCircle aria-hidden="true" size={18} strokeWidth={2} />
+                <span>{userLabel}</span>
+                <button type="button" onClick={handleLogout} aria-label={t.shell.signOut}>
+                  <Icons.LogOut aria-hidden="true" size={16} strokeWidth={2} />
+                </button>
+              </div>
+            ) : (
+              <Link className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
+                <Icons.LogIn aria-hidden="true" size={18} strokeWidth={2} />
+                <span>{t.shell.signIn}</span>
+              </Link>
+            )}
+            <DensityToggle />
+            <FocusModeToggle />
           </div>
-        ) : (
-          <Link className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
-            <Icons.LogIn aria-hidden="true" size={18} strokeWidth={2} />
-            <span>{t.shell.signIn}</span>
-          </Link>
-        )}
-        <DensityToggle />
-        <FocusModeToggle />
+        </details>
         <button
           type="button"
           className="icon-action command-trigger"
