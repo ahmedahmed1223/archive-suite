@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { ArchiveRecord } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { clearEditDraftPosition, getEditDraftPosition, saveEditDraftPosition } from "@/lib/edit-draft-position";
 import { missingDescribeFields } from "@/lib/record-status";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
@@ -45,6 +46,7 @@ export function RecordDescribeForm({
   record: ArchiveRecord;
   onSave: (patch: RecordDescribePatch) => Promise<void>;
 }>) {
+  const { t } = useLocale();
   const initialSnapshot: FormSnapshot = {
     title: record.title || "",
     description: record.description || "",
@@ -146,7 +148,7 @@ export function RecordDescribeForm({
     // it just returned silently, so the button looked broken. Keep the block,
     // say why. Every other gap is reported after the save, never blocking it.
     if (!title.trim()) {
-      setStatus("العنوان حقل إلزامي: أضف عنوانًا قبل الحفظ.");
+      setStatus(t.pages.recordDescribeForm.titleRequiredError);
       return;
     }
 
@@ -167,11 +169,15 @@ export function RecordDescribeForm({
         type: type.trim(),
         tags: parsedTags
       });
-      setStatus(missing.length ? `تم حفظ التوصيف. ما زال ينقصه: ${missing.join("، ")}.` : "تم حفظ التوصيف.");
+      setStatus(
+        missing.length
+          ? t.pages.recordDescribeForm.savedWithMissingFields.replace("{fields}", missing.join("، "))
+          : t.pages.recordDescribeForm.savedSuccess
+      );
       clearEditDraftPosition();
       setRestoredField(null);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "تعذر حفظ التوصيف.");
+      setStatus(error instanceof Error ? error.message : t.pages.recordDescribeForm.saveError);
     } finally {
       setBusy(false);
     }
@@ -181,16 +187,16 @@ export function RecordDescribeForm({
     <article className="panel">
       <div className="panel-section-header panel-title-row">
         <div>
-          <h2>تحرير التوصيف</h2>
-          <p className="helper-text">عدّل العنوان والوصف والنوع والوسوم واحفظها في الأرشيف مباشرة.</p>
+          <h2>{t.pages.recordDescribeForm.title}</h2>
+          <p className="helper-text">{t.pages.recordDescribeForm.description}</p>
           {restoredField ? (
-            <p className="helper-text">استؤنف التحرير من آخر حقل تركته دون تغيير أي محتوى.</p>
+            <p className="helper-text">{t.pages.recordDescribeForm.resumedEditingNotice}</p>
           ) : null}
         </div>
       </div>
       <form id="record-describe-form" className="auth-form" onSubmit={handleSubmit}>
         <label>
-          العنوان
+          {t.pages.recordDescribeForm.titleLabel}
           <input
             ref={(node) => { fieldRefs.current.title = node; }}
             value={title}
@@ -200,7 +206,7 @@ export function RecordDescribeForm({
           />
         </label>
         <label>
-          الوصف
+          {t.pages.recordDescribeForm.descriptionLabel}
           <textarea
             ref={(node) => { fieldRefs.current.description = node; }}
             value={description}
@@ -208,12 +214,12 @@ export function RecordDescribeForm({
             onFocus={() => handleFieldFocus("description")}
             onBlur={commitCheckpoint}
             rows={4}
-            placeholder="وصف موجز للمادة يظهر في التفاصيل والبحث."
+            placeholder={t.pages.recordDescribeForm.descriptionPlaceholder}
           />
         </label>
         <div className="field-row">
           <label>
-            النوع
+            {t.pages.recordDescribeForm.typeLabel}
             <input
               ref={(node) => { fieldRefs.current.type = node; }}
               value={type}
@@ -226,7 +232,7 @@ export function RecordDescribeForm({
             />
           </label>
           <label>
-            الفرع
+            {t.pages.recordDescribeForm.subtypeLabel}
             <input
               ref={(node) => { fieldRefs.current.subtype = node; }}
               value={subtype}
@@ -240,7 +246,7 @@ export function RecordDescribeForm({
           </label>
         </div>
         <label>
-          الوسوم
+          {t.pages.recordDescribeForm.tagsLabel}
           <input
             id="record-tags-input"
             ref={(node) => { fieldRefs.current.tags = node; }}
@@ -248,7 +254,7 @@ export function RecordDescribeForm({
             onChange={(event) => setTags(event.target.value)}
             onFocus={() => handleFieldFocus("tags")}
             onBlur={commitCheckpoint}
-            placeholder="أرشيف، مقابلات، 2026"
+            placeholder={t.pages.recordDescribeForm.tagsPlaceholder}
           />
         </label>
         <datalist id="record-type-options">
@@ -267,7 +273,7 @@ export function RecordDescribeForm({
         </datalist>
         <div className="record-form-actions">
           <button type="submit" className="button button-primary" disabled={busy || !title.trim()}>
-            {busy ? "جار الحفظ..." : "حفظ التوصيف"}
+            {busy ? t.pages.recordDescribeForm.savingButton : t.pages.recordDescribeForm.saveButton}
           </button>
           <button
             type="button"
@@ -275,7 +281,7 @@ export function RecordDescribeForm({
             disabled={!canUndo(history) && snapshotsEqual(currentSnapshot(), lastCommittedRef.current)}
             onClick={handleUndo}
           >
-            تراجع{history.past.length > 0 ? ` (${history.past.length})` : ""}
+            {t.pages.recordDescribeForm.undoButton}{history.past.length > 0 ? ` (${history.past.length})` : ""}
           </button>
           <button
             type="button"
@@ -283,7 +289,7 @@ export function RecordDescribeForm({
             disabled={!canRedo(history)}
             onClick={handleRedo}
           >
-            إعادة{history.future.length > 0 ? ` (${history.future.length})` : ""}
+            {t.pages.recordDescribeForm.redoButton}{history.future.length > 0 ? ` (${history.future.length})` : ""}
           </button>
           {status ? <p className="form-status">{status}</p> : null}
         </div>

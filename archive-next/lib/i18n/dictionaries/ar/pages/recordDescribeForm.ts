@@ -1,0 +1,20 @@
+export const recordDescribeForm = {
+  title: "تحرير التوصيف",
+  description: "عدّل العنوان والوصف والنوع والوسوم واحفظها في الأرشيف مباشرة.",
+  resumedEditingNotice: "استؤنف التحرير من آخر حقل تركته دون تغيير أي محتوى.",
+  titleLabel: "العنوان",
+  descriptionLabel: "الوصف",
+  descriptionPlaceholder: "وصف موجز للمادة يظهر في التفاصيل والبحث.",
+  typeLabel: "النوع",
+  subtypeLabel: "الفرع",
+  tagsLabel: "الوسوم",
+  tagsPlaceholder: "أرشيف، مقابلات، 2026",
+  savingButton: "جار الحفظ...",
+  saveButton: "حفظ التوصيف",
+  undoButton: "تراجع",
+  redoButton: "إعادة",
+  titleRequiredError: "العنوان حقل إلزامي: أضف عنوانًا قبل الحفظ.",
+  savedWithMissingFields: "تم حفظ التوصيف. ما زال ينقصه: {fields}.",
+  savedSuccess: "تم حفظ التوصيف.",
+  saveError: "تعذر حفظ التوصيف."
+} as const;

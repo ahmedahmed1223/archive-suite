@@ -14,5 +14,8 @@
   "search.exclude": {
     "**/vendor": true,
     "**/node_modules": true
-  }
+  },
+  "github-actions.workflows.pinned.workflows": [
+    ".github/workflows/release.yml"
+  ]
 }

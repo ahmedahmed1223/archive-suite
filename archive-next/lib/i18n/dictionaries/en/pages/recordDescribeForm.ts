@@ -1,0 +1,20 @@
+export const recordDescribeForm = {
+  title: "Edit description",
+  description: "Edit the title, description, type, and tags, and save them directly to the archive.",
+  resumedEditingNotice: "Resumed editing from the last field you left, without changing any content.",
+  titleLabel: "Title",
+  descriptionLabel: "Description",
+  descriptionPlaceholder: "A brief description of the item shown in details and search.",
+  typeLabel: "Type",
+  subtypeLabel: "Subtype",
+  tagsLabel: "Tags",
+  tagsPlaceholder: "archive, interviews, 2026",
+  savingButton: "Saving...",
+  saveButton: "Save description",
+  undoButton: "Undo",
+  redoButton: "Redo",
+  titleRequiredError: "Title is required: add a title before saving.",
+  savedWithMissingFields: "Description saved. Still missing: {fields}.",
+  savedSuccess: "Description saved.",
+  saveError: "Could not save the description."
+} as const;
