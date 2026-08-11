@@ -150,6 +150,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-inline-size: var(--control-height);
+  min-block-size: var(--control-height);
   padding: 4px;
   background: none;
   border: none;

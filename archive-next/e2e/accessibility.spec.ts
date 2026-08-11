@@ -5,6 +5,8 @@ import { WHATS_NEW_RELEASE, WHATS_NEW_STORAGE_KEY } from '../lib/whats-new';
 
 // V1-303/V1-401: automated axe-core gate for the canonical routes, at the
 // project's required breakpoints (375/768/1280).
+// V2-806/V2-807: wcag22aa adds the target-size rule (24x24px minimum touch
+// target, WCAG 2.5.8) on top of the existing 2.x AA checks.
 
 for (const viewport of VIEWPORTS) {
   test.describe(`a11y @ ${viewport.name}`, () => {
@@ -15,7 +17,7 @@ for (const viewport of VIEWPORTS) {
         await gotoPublicRoute(page, route);
 
         const results = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa'])
+          .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
           .analyze();
 
         const seriousOrWorse = results.violations.filter(
@@ -42,7 +44,7 @@ for (const viewport of VIEWPORTS) {
       await expect(commandEntry).toBeVisible();
 
       const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa'])
+        .withTags(['wcag2a', 'wcag2aa', 'wcag22aa'])
         .analyze();
       const seriousOrWorse = results.violations.filter(
         (violation) => violation.impact === 'serious' || violation.impact === 'critical',
