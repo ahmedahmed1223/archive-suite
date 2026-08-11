@@ -1,121 +1,64 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
-const client = vi.hoisted(() => ({
-  dropboxConnection: vi.fn(),
-  getSecuritySettings: vi.fn(),
-  updateSecuritySettings: vi.fn(),
-  odbcStatus: vi.fn()
-}));
-
-vi.mock("@/lib/archive-api", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
-  return { ...actual, createArchiveApiClient: () => client };
-});
-vi.mock("@/components/AppShell", () => ({ default: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
-vi.mock("@/components/MetricStrip", () => ({ default: () => null }));
-vi.mock("@/components/PageToolbar", () => ({ default: () => null }));
-vi.mock("@/components/ShortcutsSettings", () => ({ default: () => null }));
-vi.mock("@/components/AppearanceSettings", () => ({ default: () => null }));
-vi.mock("@/components/LanguageSettings", () => ({ default: () => null }));
-vi.mock("@/components/DropboxFolderPicker", () => ({ default: () => null }));
-vi.mock("@/lib/contextual-tips", () => ({ isTipsEnabledGlobally: () => true, setTipsEnabledGlobally: vi.fn() }));
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import SettingsPage from "./page";
 
-function renderPage() {
-  return render(
-    <LocaleProvider initialLocale="ar" hasLocaleCookie={false}>
-      <SettingsPage />
-    </LocaleProvider>
-  );
-}
+const displaySettings = { timeZone: "Europe/Istanbul", dateFormat: "DD/MM/YYYY" as const, timeFormat: "24h" as const, showSeconds: false };
 
-beforeEach(() => {
-  const values = new Map<string, string>();
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value: {
-      get length() {
-        return values.size;
-      },
-      clear: () => values.clear(),
-      getItem: (key: string) => values.get(key) ?? null,
-      key: (index: number) => [...values.keys()][index] ?? null,
-      removeItem: (key: string) => values.delete(key),
-      setItem: (key: string, value: string) => values.set(key, value),
-    } satisfies Storage,
-  });
+vi.mock("@/components/AppShell", () => ({ default: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
+vi.mock("@/components/DropboxFolderPicker", () => ({ default: () => null }));
+vi.mock("@/components/MetricStrip", () => ({ default: () => null }));
+vi.mock("@/components/PageToolbar", () => ({ default: ({ title }: { title: string }) => <h1>{title}</h1> }));
+vi.mock("@/components/ShortcutsSettings", () => ({ default: () => null }));
+vi.mock("@/components/AppearanceSettings", () => ({ default: () => null }));
+vi.mock("@/components/LanguageSettings", () => ({ default: () => null }));
+vi.mock("@/lib/contextual-tips", () => ({ isTipsEnabledGlobally: () => true, setTipsEnabledGlobally: vi.fn() }));
+vi.mock("@/lib/auth-session", () => ({ useAuthSession: () => ({ user: { role: "admin" } }) }));
+vi.mock("@/lib/display-settings-context", () => ({
+  useDisplaySettings: () => ({
+    settings: displaySettings,
+    status: "ready",
+    error: null,
+    replaceSettings: vi.fn()
+  })
+}));
+vi.mock("@/lib/archive-api", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
+  return {
+    ...actual,
+    createArchiveApiClient: () => ({
+      dropboxConnection: vi.fn().mockResolvedValue({ ok: false }),
+      getSecuritySettings: vi.fn().mockResolvedValue({ ok: false, error: "" }),
+      odbcStatus: vi.fn().mockResolvedValue({ ok: false, code: "NOT_FOUND" }),
+      updateDisplaySettings: vi.fn().mockImplementation(async (settings) => ({ ok: true, settings }))
+    })
+  };
 });
 
-afterEach(() => {
-  cleanup();
-  vi.clearAllMocks();
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await vi.importActual<typeof import("@/lib/i18n/dictionaries")>("@/lib/i18n/dictionaries");
+  return { useLocale: () => ({ locale: "ar", t: getDictionary("ar") }) };
 });
 
-describe("SettingsPage", () => {
-  test("describes a feature-gated ODBC bridge as disabled", async () => {
-    client.dropboxConnection.mockResolvedValue({ ok: false });
-    client.getSecuritySettings.mockResolvedValue({
-      ok: true,
-      settings: {
-        accessTokenTtlMinutes: 60,
-        perUserRateLimit: 60,
-        webhookUrlAllowlist: [],
-        legacyPasswordUpgrade: true,
-        whisperDevice: "cpu",
-        cspPolicy: "default-src 'self'",
-        corsOrigins: []
-      }
-    });
-    client.odbcStatus.mockResolvedValue({ ok: false, error: "العنصر غير موجود.", code: "NOT_FOUND" });
+describe("SettingsPage display settings", () => {
+  afterEach(cleanup);
 
-    renderPage();
+  it("shows the central date and time section to an administrator", () => {
+    render(<SettingsPage />);
 
-    const heading = await screen.findByRole("heading", { name: "ODBC للأنظمة القديمة" });
-    const bridge = heading.closest("article");
-    expect(bridge).not.toBeNull();
-
-    await waitFor(() => expect(within(bridge!).getAllByText("معطل").length).toBeGreaterThan(0));
-    expect(within(bridge!).queryByText("خطأ: العنصر غير موجود.")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "التاريخ والوقت" })).toBeInTheDocument();
   });
 
-  test("saves the selected Whisper processor", async () => {
-    client.dropboxConnection.mockResolvedValue({ ok: false });
-    client.getSecuritySettings.mockResolvedValue({
-      ok: true,
-      settings: {
-        accessTokenTtlMinutes: 60,
-        perUserRateLimit: 60,
-        webhookUrlAllowlist: [],
-        legacyPasswordUpgrade: true,
-        whisperDevice: "cpu",
-        cspPolicy: "default-src 'self'",
-        corsOrigins: []
-      }
-    });
-    client.odbcStatus.mockResolvedValue({ ok: false, error: "العنصر غير موجود.", code: "NOT_FOUND" });
-    client.updateSecuritySettings.mockResolvedValue({
-      ok: true,
-      settings: {
-        accessTokenTtlMinutes: 60,
-        perUserRateLimit: 60,
-        webhookUrlAllowlist: [],
-        legacyPasswordUpgrade: true,
-        whisperDevice: "cuda",
-        cspPolicy: "default-src 'self'",
-        corsOrigins: []
-      }
-    });
+  it("previews and saves the selected central date format", async () => {
+    render(<SettingsPage />);
 
-    renderPage();
+    fireEvent.change(screen.getByLabelText("تنسيق التاريخ"), { target: { value: "MM/DD/YYYY" } });
 
-    const processor = await screen.findByLabelText("المعالج");
-    fireEvent.change(processor, { target: { value: "cuda" } });
+    expect(screen.getByText("معاينة: 07/21/2026 09:05")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "حفظ إعداد التاريخ والوقت" }));
 
-    await waitFor(() => expect(client.updateSecuritySettings).toHaveBeenCalledWith({ whisperDevice: "cuda" }));
-    expect(await screen.findByText("تم حفظ إعداد Whisper. سيُطبق على مهام التفريغ الجديدة.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("تم حفظ إعداد التاريخ والوقت لجميع المستخدمين.")).toBeInTheDocument());
   });
 });

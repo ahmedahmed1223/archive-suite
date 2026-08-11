@@ -28,6 +28,7 @@ type TagsLoadState =
 
 export default function TagsPage() {
   const { t } = useLocale();
+  const copy = t.pages.tags;
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageTags = useCapability("tags.manage");
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
@@ -44,7 +45,7 @@ export default function TagsPage() {
       ? await api.updateTagNode(existing.id, { icon: iconName })
       : await api.createTagNode({ tag, parent: "", icon: iconName });
     if (!response.ok) {
-      setError(response.error || "تعذر حفظ أيقونة الوسم.");
+      setError(response.error || copy.saveIconFailed);
       return;
     }
     setIconEditingTag(null);
@@ -54,7 +55,7 @@ export default function TagsPage() {
   async function refreshNodes() {
     const response = await api.tagNodes();
     if (response.ok) setNodes(response.nodes);
-    else setError(response.error || "تعذر تحميل الوسوم.");
+    else setError(response.error || copy.loadFailed);
   }
 
   async function loadTags() {
@@ -63,10 +64,9 @@ export default function TagsPage() {
     const [nodesResponse, recordsResponse] = await Promise.all([api.tagNodes(), api.search({ limit: 1000 })]);
     if (!nodesResponse.ok || !recordsResponse.ok) {
       const message = !nodesResponse.ok
-        ? nodesResponse.error || "تعذر تحميل الوسوم."
+        ? nodesResponse.error || copy.loadFailed
         : !recordsResponse.ok
-          ? recordsResponse.error || "تعذر تحميل السجلات."
-          : "تعذر تحميل بيانات الوسوم.";
+          ? recordsResponse.error || copy.loadRecordsFailed : copy.loadDataFailed;
       setLoadState({
         status: "error",
         message
@@ -120,7 +120,7 @@ export default function TagsPage() {
       return;
     }
     if (!response.ok) {
-      setError(response.error || "تعذر حفظ الوسم.");
+      setError(response.error || copy.saveFailed);
       await refreshNodes();
       return;
     }
@@ -146,58 +146,54 @@ export default function TagsPage() {
 
   async function updateColor(tagId: string, color: string | null) {
     const response = await api.updateTagNode(tagId, { color: color || undefined });
-    if (!response.ok) setError(response.error || "تعذر تحديث اللون.");
+    if (!response.ok) setError(response.error || copy.updateColorFailed);
     else await refreshNodes();
   }
 
   async function mergeTags(sourceId: string, targetId: string) {
     const response = await api.mergeTagNodes(sourceId, targetId);
-    if (!response.ok) setError(response.error || "تعذر دمج الوسوم.");
+    if (!response.ok) setError(response.error || copy.mergeFailed);
     else await refreshNodes();
   }
 
   async function moveTag(tagId: string, newParent: string, deleteChildren: boolean = false) {
     const response = await api.moveTagNode(tagId, newParent, deleteChildren);
-    if (!response.ok) setError(response.error || "تعذر نقل الوسم.");
+    if (!response.ok) setError(response.error || copy.moveFailed);
     else await refreshNodes();
   }
 
   return (
     <AppShell subtitle={t.pageTitles.tags} contentClassName="local-list-content" tipsPage="tags">
       <PageToolbar
-        eyebrow={<span className="badge">الوسوم</span>}
-        title="الوسوم الهرمية"
-        description="إدارة يومية للوسوم: أعداد الاستخدام، آباء هرمية، ومؤشرات تكرار عربية. آباء الوسوم محفوظة في الخادم لكل مستخدم."
+        eyebrow={<span className="badge">{copy.eyebrow}</span>} title={copy.title} description={copy.description}
         meta={(
           <>
-            <span className="badge">{tagRows.length} وسم</span>
-            <span className="badge">{duplicateGroups.length} تشابه محتمل</span>
+            <span className="badge">{copy.tagCount.replace("{count}", String(tagRows.length))}</span><span className="badge">{copy.possibleDuplicates.replace("{count}", String(duplicateGroups.length))}</span>
           </>
         )}
-        actions={<a className="button button-secondary" href="/vocabulary">فتح المفردات</a>}
+        actions={<a className="button button-secondary" href="/vocabulary">{copy.openVocabulary}</a>}
       >
         <div className="archive-toolbar-grid">
           <label>
-            <span>بحث في الوسوم</span>
-            <input className="search-input" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="وسم أو أب" />
+            <span>{copy.searchLabel}</span><input className="search-input" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder={copy.searchPlaceholder} />
           </label>
         </div>
       </PageToolbar>
 
       {loadState.status === "loading" ? (
-        <div className="panel panel-compact"><Skeleton label="جار تحميل الوسوم والسجلات..." /></div>
+        <div className="panel panel-compact"><Skeleton label={copy.loading} /></div>
       ) : null}
 
       {loadState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل الوسوم</strong>
+          <strong>{copy.loadError}</strong>
           <span className="helper-text">{loadState.message}</span>
-          <div><button className="button button-secondary button-sm" type="button" onClick={() => void loadTags()}>إعادة المحاولة</button></div>
+          <div><button className="button button-secondary button-sm" type="button" onClick={() => void loadTags()}>{copy.retry}</button></div>
         </div>
       ) : null}
 
       {error && loadState.status === "ready" ? (
-        <div className="state-banner state-banner-error" role="alert"><strong>تعذر حفظ تغيير الوسم</strong><span className="helper-text">{error}</span></div>
+        <div className="state-banner state-banner-error" role="alert"><strong>{copy.saveError}</strong><span className="helper-text">{error}</span></div>
       ) : null}
 
       {canManageTags && (canUndo(parentStack) || canRedo(parentStack)) ? (
@@ -208,7 +204,7 @@ export default function TagsPage() {
             disabled={!canUndo(parentStack)}
             onClick={() => void handleUndoParent()}
           >
-            تراجع عن تغيير الأب{parentStack.past.length > 0 ? ` (${parentStack.past.length})` : ""}
+            {copy.undoParent}{parentStack.past.length > 0 ? ` (${parentStack.past.length})` : ""}
           </button>
           <button
             type="button"
@@ -216,15 +212,15 @@ export default function TagsPage() {
             disabled={!canRedo(parentStack)}
             onClick={() => void handleRedoParent()}
           >
-            إعادة تغيير الأب{parentStack.future.length > 0 ? ` (${parentStack.future.length})` : ""}
+            {copy.redoParent}{parentStack.future.length > 0 ? ` (${parentStack.future.length})` : ""}
           </button>
         </div>
       ) : null}
 
       {loadState.status === "ready" && tagRows.length === 0 ? (
-        <EmptyState title="لا توجد وسوم بعد." description="أضف وسوماً إلى السجلات من الأرشيف لتظهر هنا." />
+        <EmptyState title={copy.empty} description={copy.emptyDescription} />
       ) : (
-        <section className="panel" aria-label="قائمة الوسوم">
+        <section className="panel" aria-label={copy.list}>
           <div className="analytics-tag-list">
             {tagRows.map((row) => {
               const node = nodeByTag.get(row.tag);
@@ -234,7 +230,7 @@ export default function TagsPage() {
                 <div className="analytics-tag-row" key={row.tag} style={node?.color ? { borderLeft: `4px solid ${node.color}` } : {}}>
                   <span>
                     <strong>{row.tag}</strong>
-                    {row.parent ? <small className="helper-text"> · ضمن {row.parent}</small> : null}
+                    {row.parent ? <small className="helper-text"> · {copy.within} {row.parent}</small> : null}
                   </span>
                   <div className="button-row">
                     <strong>{row.count}</strong>
@@ -242,11 +238,11 @@ export default function TagsPage() {
                       <button
                         type="button"
                         className="button button-secondary button-sm"
-                        aria-label={`أيقونة الوسم ${row.tag}`}
+                        aria-label={copy.iconLabel.replace("{tag}", row.tag)}
                         aria-pressed={iconEditingTag === row.tag}
                         onClick={() => setIconEditingTag(iconEditingTag === row.tag ? null : row.tag)}
                       >
-                        {RowIcon ? <RowIcon aria-hidden="true" size={16} strokeWidth={2} /> : "أيقونة"}
+                        {RowIcon ? <RowIcon aria-hidden="true" size={16} strokeWidth={2} /> : copy.icon}
                       </button>
                     ) : (
                       RowIcon && <RowIcon aria-hidden="true" size={16} strokeWidth={2} />
@@ -256,25 +252,24 @@ export default function TagsPage() {
                         type="color"
                         value={node.color || "#808080"}
                         onChange={(event) => void updateColor(node.id, event.target.value)}
-                        aria-label={`لون الوسم ${row.tag}`}
+                        aria-label={copy.colorLabel.replace("{tag}", row.tag)}
                         style={{ width: "2.5rem", height: "2.5rem", cursor: "pointer" }}
                       />
                     )}
                     {canManageTags ? (
-                      <select value={row.parent} onChange={(event) => void updateParent(row.tag, event.target.value)} aria-label={`أب الوسم ${row.tag}`}>
-                        <option value="">بلا أب</option>
+                      <select value={row.parent} onChange={(event) => void updateParent(row.tag, event.target.value)} aria-label={copy.parentLabel.replace("{tag}", row.tag)}><option value="">{copy.noParent}</option>
                         {tagRows.filter((item) => item.tag !== row.tag).map((item) => (
                           <option key={item.tag} value={item.tag}>{item.tag}</option>
                         ))}
                       </select>
                     ) : row.parent ? null : (
-                      <span className="badge">بلا أب</span>
+                      <span className="badge">{copy.noParent}</span>
                     )}
-                    <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(row.tag)}`}>بحث</a>
+                    <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(row.tag)}`}>{copy.search}</a>
                   </div>
-                  {canManageTags && <p className="helper-text">تغيير الأب هيكلي فقط ولا يعدّل أي سجل؛ يمكن التراجع عنه من الزر أعلاه.</p>}
+                  {canManageTags && <p className="helper-text">{copy.parentHelp}</p>}
                   {canManageTags && iconEditingTag === row.tag ? (
-                    <IconPicker value={rowIcon} onChange={(iconName) => handleSetIcon(row.tag, iconName)} label={`اختر أيقونة الوسم ${row.tag}`} />
+                    <IconPicker value={rowIcon} onChange={(iconName) => handleSetIcon(row.tag, iconName)} label={copy.chooseIcon.replace("{tag}", row.tag)} />
                   ) : null}
                 </div>
               );
@@ -286,16 +281,13 @@ export default function TagsPage() {
       {loadState.status === "ready" && duplicateGroups.length > 0 ? (
         <section className="page-section">
           <div className="toolbar-row toolbar-start">
-            <h2 className="section-heading">تشابهات تحتاج مراجعة</h2>
-            <span className="badge badge-warning">تطبيع عربي</span>
+            <h2 className="section-heading">{copy.duplicatesTitle}</h2><span className="badge badge-warning">{copy.arabicNormalization}</span>
           </div>
           <div className="dense-grid">
             {duplicateGroups.map((group) => (
               <article className="panel" key={group.join("|")}>
                 <h3>{group[0]}</h3>
-                <p>وسوم متقاربة بعد التطبيع: {group.join("، ")}</p>
-                <ChangeImpactPreview impact={buildChangeImpact({ action: "merge", entity: "الوسوم المتقاربة", affectedCount: records.filter((record) => (record.tags || []).some((tag) => group.includes(tag))).length })} />
-                <p className="helper-text">الدمج غير معروض هنا قبل توفير نقطة نهاية تدعم المعاينة؛ راجع السجلات أولاً.</p>
+                <p>{copy.duplicateDescription.replace("{tags}", group.join("، "))}</p><ChangeImpactPreview impact={buildChangeImpact({ action: "merge", entity: copy.mergeEntity, affectedCount: records.filter((record) => (record.tags || []).some((tag) => group.includes(tag))).length })} /><p className="helper-text">{copy.mergeHelp}</p>
               </article>
             ))}
           </div>

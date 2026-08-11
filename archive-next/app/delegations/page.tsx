@@ -13,6 +13,8 @@ import {
   type MentionableUser
 } from "@/lib/archive-api";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useDisplaySettings } from "@/lib/display-settings-context";
+import { formatDateTime } from "@/lib/display-settings";
 
 type Direction = "granted" | "received";
 
@@ -23,20 +25,18 @@ type ListState =
 
 type FormState = { status: "idle" } | { status: "saving" } | { status: "error"; message: string };
 
-function statusLabel(status: DelegatedAccess["status"]): string {
-  if (status === "active") return "نشطة";
-  if (status === "revoked") return "أُلغيت";
-  return "منتهية";
+function statusLabel(status: DelegatedAccess["status"], labels: Record<DelegatedAccess["status"], string>): string {
+  return labels[status];
 }
 
-function formatDate(value?: string | null) {
+function formatDate(value: string | null | undefined, settings: import("@/lib/display-settings").DisplaySettings, locale: import("@/lib/i18n/types").AppLocale) {
   if (!value) return "-";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("ar-SA");
+  return formatDateTime(value, settings, locale, value);
 }
 
 export default function DelegationsPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const { settings: displaySettings } = useDisplaySettings();
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
   const canManageDelegations = useCapability("delegations.manage");
@@ -57,12 +57,12 @@ export default function DelegationsPage() {
       if (response.ok) {
         setState({ status: "ready", delegations: response.delegations });
       } else {
-        setState({ status: "error", message: response.error || "تعذر تحميل التفويضات." });
+        setState({ status: "error", message: response.error || t.pages.delegations.loadErrorMessage });
       }
     } catch (error) {
-      setState({ status: "error", message: error instanceof Error ? error.message : "تعذر تحميل التفويضات." });
+      setState({ status: "error", message: error instanceof Error ? error.message : t.pages.delegations.loadErrorMessage });
     }
-  }, [api]);
+  }, [api, t]);
 
   useEffect(() => {
     void load(direction);
@@ -80,7 +80,7 @@ export default function DelegationsPage() {
     const parsedItemIds = itemIds.split(",").map((value) => value.trim()).filter(Boolean);
 
     if (!parsedGranteeId || parsedItemIds.length === 0 || !expiresAt) {
-      setFormState({ status: "error", message: "اختر الزميل، وأدخل معرّف مادة واحدة على الأقل، وتاريخ انتهاء." });
+      setFormState({ status: "error", message: t.pages.delegations.requiredFieldsMessage });
       return;
     }
 
@@ -98,18 +98,18 @@ export default function DelegationsPage() {
         setExpiresAt("");
         if (direction === "granted") await load("granted");
       } else {
-        setFormState({ status: "error", message: response.error || "تعذر إنشاء التفويض." });
+        setFormState({ status: "error", message: response.error || t.pages.delegations.createErrorTitle });
       }
     } catch (error) {
-      setFormState({ status: "error", message: error instanceof Error ? error.message : "تعذر إنشاء التفويض." });
+      setFormState({ status: "error", message: error instanceof Error ? error.message : t.pages.delegations.createErrorTitle });
     }
   };
 
   const handleRevoke = async (delegation: DelegatedAccess) => {
     const confirmed = await dialogs.confirm({
-      title: "إلغاء التفويض",
-      message: `إلغاء وصول ${delegation.grantee.name || delegation.grantee.id} الآن بدل انتظار انتهائه تلقائياً؟`,
-      confirmLabel: "إلغاء الوصول",
+      title: t.pages.delegations.revokeDialogTitle,
+      message: t.pages.delegations.revokeDialogMessage.replace("{name}", String(delegation.grantee.name || delegation.grantee.id)),
+      confirmLabel: t.pages.delegations.revokeConfirmLabel,
       destructive: true
     });
     if (!confirmed) return;
@@ -122,12 +122,12 @@ export default function DelegationsPage() {
   return (
     <AppShell subtitle={t.pageTitles.temporaryAccessDelegation} navLabel={t.pageTitles.delegations} contentClassName="observability-content">
       <PageToolbar
-        eyebrow={<span className="badge">تفويض مؤقت</span>}
-        title="تفويض وصول مؤقت لزميل"
-        description="امنح زميلاً صلاحية تعديل مؤقتة على مواد محددة، تنتهي تلقائياً في الموعد الذي تحدده دون تغيير دوره العام."
+        eyebrow={<span className="badge">{t.pages.delegations.eyebrow}</span>}
+        title={t.pages.delegations.title}
+        description={t.pages.delegations.description}
         meta={
           <>
-            <span className="badge">{delegations.length} تفويض</span>
+            <span className="badge">{delegations.length} {t.pages.delegations.countSuffix}</span>
           </>
         }
         actions={
@@ -137,50 +137,50 @@ export default function DelegationsPage() {
               className={`button ${direction === "granted" ? "" : "button-secondary"} button-sm`}
               onClick={() => setDirection("granted")}
             >
-              الممنوحة مني
+              {t.pages.delegations.grantedByMe}
             </button>
             <button
               type="button"
               className={`button ${direction === "received" ? "" : "button-secondary"} button-sm`}
               onClick={() => setDirection("received")}
             >
-              الممنوحة لي
+              {t.pages.delegations.grantedToMe}
             </button>
           </div>
         }
       />
 
       {direction === "granted" ? (
-        <section className="panel" aria-label="منح تفويض جديد">
+        <section className="panel" aria-label={t.pages.delegations.grantFormAriaLabel}>
           <div className="panel-title-row">
             <div>
-              <h2>منح تفويض جديد</h2>
-              <p>يحصل الزميل على صلاحية تعديل هذه المواد فقط، حتى موعد الانتهاء المحدد.</p>
+              <h2>{t.pages.delegations.grantFormTitle}</h2>
+              <p>{t.pages.delegations.grantFormDescription}</p>
             </div>
           </div>
           {canManageDelegations ? (
             <form className="form-grid" onSubmit={handleCreate}>
               <label>
-                الزميل
+                {t.pages.delegations.colleagueLabel}
                 <select value={granteeId} onChange={(event) => setGranteeId(event.target.value)} required>
-                  <option value="">اختر زميلاً</option>
+                  <option value="">{t.pages.delegations.colleaguePlaceholder}</option>
                   {colleagues.map((user) => (
                     <option key={user.id} value={user.id}>{user.name}</option>
                   ))}
                 </select>
               </label>
               <label>
-                معرّفات المواد (مفصولة بفواصل)
+                {t.pages.delegations.itemIdsLabel}
                 <input
                   type="text"
                   value={itemIds}
                   onChange={(event) => setItemIds(event.target.value)}
-                  placeholder="item-1, item-2"
+                  placeholder={t.pages.delegations.itemIdsPlaceholder}
                   required
                 />
               </label>
               <label>
-                تاريخ ووقت الانتهاء
+                {t.pages.delegations.expiresAtLabel}
                 <input
                   type="datetime-local"
                   value={expiresAt}
@@ -190,33 +190,33 @@ export default function DelegationsPage() {
               </label>
               {formState.status === "error" ? <p className="form-error">{formState.message}</p> : null}
               <button type="submit" className="button" disabled={formState.status === "saving"}>
-                {formState.status === "saving" ? "جارٍ المنح..." : "منح التفويض"}
+                {formState.status === "saving" ? t.pages.delegations.granting : t.pages.delegations.grantAccess}
               </button>
             </form>
           ) : (
-            <p className="helper-text">لا تملك صلاحية منح تفويضات وصول جديدة.</p>
+            <p className="helper-text">{t.pages.delegations.noPermission}</p>
           )}
         </section>
       ) : null}
 
       {state.status === "error" ? (
-        <EmptyState title="تعذر تحميل التفويضات" description={state.message} />
+        <EmptyState title={t.pages.delegations.loadErrorTitle} description={state.message} />
       ) : delegations.length === 0 && state.status === "ready" ? (
         <EmptyState
-          title={direction === "granted" ? "لم تمنح أي تفويض بعد" : "لا توجد تفويضات ممنوحة لك"}
-          description="تظهر هنا التفويضات المؤقتة بمجرد إنشائها."
+          title={direction === "granted" ? t.pages.delegations.emptyGrantedTitle : t.pages.delegations.emptyReceivedTitle}
+          description={t.pages.delegations.emptyDescription}
         />
       ) : (
-        <section className="panel" aria-label="قائمة التفويضات">
+        <section className="panel" aria-label={t.pages.delegations.listAriaLabel}>
           <div className="scroll-x desktop-table-wrap">
-            <table className="data-table" role="grid" aria-label="قائمة تفويضات الوصول">
+            <table className="data-table" role="grid" aria-label={t.pages.delegations.tableAriaLabel}>
               <thead>
                 <tr>
-                  <th>{direction === "granted" ? "الزميل" : "منحها"}</th>
-                  <th>المواد</th>
-                  <th>الحالة</th>
-                  <th>الانتهاء</th>
-                  {direction === "granted" ? <th className="data-table-sticky-end">الإجراءات</th> : null}
+                  <th>{direction === "granted" ? t.pages.delegations.colColleague : t.pages.delegations.colGrantedBy}</th>
+                  <th>{t.pages.delegations.colItems}</th>
+                  <th>{t.pages.delegations.colStatus}</th>
+                  <th>{t.pages.delegations.colExpiry}</th>
+                  {direction === "granted" ? <th className="data-table-sticky-end">{t.pages.delegations.colActions}</th> : null}
                 </tr>
               </thead>
               <tbody>
@@ -224,13 +224,13 @@ export default function DelegationsPage() {
                   <tr key={delegation.id}>
                     <td>{direction === "granted" ? (delegation.grantee.name || delegation.grantee.id) : (delegation.grantor.name || delegation.grantor.id)}</td>
                     <td className="mono-text">{(delegation.scope.itemIds || []).join(", ")}</td>
-                    <td><span className={`badge ${delegation.status === "active" ? "" : "badge-danger"}`}>{statusLabel(delegation.status)}</span></td>
-                    <td className="mono-text">{formatDate(delegation.expiresAt)}</td>
+                    <td><span className={`badge ${delegation.status === "active" ? "" : "badge-danger"}`}>{statusLabel(delegation.status, t.pages.delegations.status)}</span></td>
+                    <td className="mono-text">{formatDate(delegation.expiresAt, displaySettings, locale)}</td>
                     {direction === "granted" ? (
                       <td className="data-table-sticky-end">
                         {delegation.status === "active" ? (
                           <button type="button" className="button button-danger button-sm" onClick={() => void handleRevoke(delegation)}>
-                            إلغاء
+                            {t.pages.delegations.revoke}
                           </button>
                         ) : (
                           <span className="helper-text">-</span>

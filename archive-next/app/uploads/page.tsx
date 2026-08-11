@@ -16,37 +16,37 @@ export default function UploadsPage() {
     <AppShell subtitle={t.pageTitles.addArchive} contentClassName="stack" tipsPage="uploads">
       <PageToolbar
         icon={<PlusCircle size={24} strokeWidth={2} />}
-        eyebrow={<span className="badge">مساحة الإضافة</span>}
-        title="إضافة مادة"
-        description="مسار واضح لإنشاء مادة أرشيف: ملفات، بيانات وصفية، وسوم، مراجعة، ثم إنشاء بدون فقدان أدوات الاستيراد والقوالب."
+        eyebrow={<span className="badge">{t.pages.uploads.eyebrow}</span>}
+        title={t.pages.uploads.title}
+        description={t.pages.uploads.description}
         meta={
           <>
-            <span className="badge">معالج خطوة بخطوة</span>
-            <span className="badge">رفع متعدد</span>
-            <span className="badge">بيانات وصفية</span>
-            <span className="badge">حتى 600MB</span>
+            <span className="badge">{t.pages.uploads.badgeWizard}</span>
+            <span className="badge">{t.pages.uploads.badgeMultiUpload}</span>
+            <span className="badge">{t.pages.uploads.badgeMetadata}</span>
+            <span className="badge">{t.pages.uploads.badgeMaxSize}</span>
           </>
         }
         actions={
           <>
-            <a className="button button-secondary" href="/archive">فتح الأرشيف</a>
-            <a className="button button-secondary" href="/media/jobs">مهام الوسائط</a>
+            <a className="button button-secondary" href="/archive">{t.pages.uploads.openArchiveAction}</a>
+            <a className="button button-secondary" href="/media/jobs">{t.pages.uploads.mediaJobsAction}</a>
           </>
         }
       />
 
-      <section className="add-workspace" aria-label="إضافة مادة للأرشيف">
+      <section className="add-workspace" aria-label={t.pages.uploads.sectionAriaLabel}>
         <div className="add-workspace__primary">
           <FilelessRecordForm />
           <UploadForm />
         </div>
-        <details className="add-workspace__support" aria-label="أدوات الإضافة المساندة">
+        <details className="add-workspace__support" aria-label={t.pages.uploads.supportAriaLabel}>
           <summary className="add-workspace__support-header">
             <div>
-              <h2>أدوات مساندة</h2>
-              <p>افتح عند الحاجة لاستيراد رابط أو إدارة القوالب وروابط الفريق.</p>
+              <h2>{t.pages.uploads.supportHeading}</h2>
+              <p>{t.pages.uploads.supportDescription}</p>
             </div>
-            <span className="badge"><Link2 aria-hidden="true" size={14} /> أدوات</span>
+            <span className="badge"><Link2 aria-hidden="true" size={14} /> {t.pages.uploads.supportBadge}</span>
           </summary>
           <div className="add-workspace__support-grid">
             <ImportFromUrlForm />

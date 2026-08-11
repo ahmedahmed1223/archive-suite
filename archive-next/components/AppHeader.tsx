@@ -31,7 +31,7 @@ export default function AppHeader({
 }: Readonly<{
   subtitle: string;
   navLabel?: string;
-  /** عناصر إضافية تُلحق بمسار التنقل الأساسي (مثل اسم العنصر المفتوح حاليًا). */
+  /** Extra items appended to the main navigation trail, such as the open item's name. */
   breadcrumbExtra?: BreadcrumbItem[];
 }>) {
   const { locale, t } = useLocale();

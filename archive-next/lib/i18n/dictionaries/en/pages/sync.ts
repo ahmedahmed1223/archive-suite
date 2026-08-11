@@ -10,6 +10,7 @@ export const sync = {
   filter: "Filter sync log",
   all: "All",
   conflict: "Conflict",
+  statusLabels: { synced: "Synced", conflict: "Needs sync" },
   summary: "Sync summary",
   total: "Total records",
   last200: "Within the last 200 entries",

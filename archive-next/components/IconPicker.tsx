@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { searchIcons } from "@/lib/icon-catalog";
 import { resolveIcon } from "@/lib/icon-registry";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type Props = {
   value?: string;
@@ -10,7 +11,9 @@ type Props = {
   label?: string;
 };
 
-export default function IconPicker({ value, onChange, label = "اختر أيقونة" }: Props) {
+export default function IconPicker({ value, onChange, label }: Props) {
+  const { t } = useLocale();
+  const copy = t.shared.iconPicker;
   const [query, setQuery] = useState("");
   const results = useMemo(() => searchIcons(query), [query]);
 
@@ -18,14 +21,14 @@ export default function IconPicker({ value, onChange, label = "اختر أيقو
     <div className="icon-picker">
       <input
         type="search"
-        aria-label="بحث عن أيقونة"
-        placeholder="بحث..."
+        aria-label={copy.search}
+        placeholder={copy.search}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
       />
       <div
         role="group"
-        aria-label={label}
+        aria-label={label ?? copy.choose}
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(2.5rem, 1fr))",

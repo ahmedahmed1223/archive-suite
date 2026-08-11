@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { UploadCloud } from "lucide-react";
 import { createArchiveApiClient, type ArchiveRecord, type IntakeTemplate, type UploadedRecord } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { clearScheduledUploadResumeEntry, uploadFileForSchedule, uploadFileInChunks } from "@/lib/chunked-upload";
 import { scheduleSummary, scheduledUploadProgress, validateScheduleTime, type ScheduledUploadStage } from "@/lib/scheduled-upload";
 import {
@@ -30,12 +31,6 @@ type UploadState =
   | { status: "idle" }
   | { status: "uploading"; current: string; stage?: ScheduledUploadStage }
   | { status: "complete"; results: UploadResult[] };
-
-const steps: Array<{ key: WizardStep; label: string }> = [
-  { key: "files", label: "الملفات" },
-  { key: "metadata", label: "البيانات" },
-  { key: "review", label: "المراجعة" }
-];
 
 /** V1-711: files at or above this size go through the resumable chunked
  * upload path instead of a single multipart POST (which the server caps at
@@ -91,6 +86,13 @@ function probeVideoMetadata(file: File): Promise<{ durationSeconds?: number; res
 }
 
 export function UploadForm() {
+  const { t, locale } = useLocale();
+  const listSeparator = locale === "en" ? ", " : "، ";
+  const steps: Array<{ key: WizardStep; label: string }> = [
+    { key: "files", label: t.pages.uploadForm.stepFiles },
+    { key: "metadata", label: t.pages.uploadForm.stepMetadata },
+    { key: "review", label: t.pages.uploadForm.stepReview }
+  ];
   const api = useMemo(() => createArchiveApiClient(), []);
   const { accessToken } = useAuthSession();
   const [files, setFiles] = useState<File[]>([]);
@@ -369,7 +371,7 @@ export function UploadForm() {
       return {
         status: "error",
         fileName: file.name,
-        message: `تم الرفع لكن تعذر حفظ metadata: ${update.error}`
+        message: t.pages.uploadForm.uploadMetadataError.replace("{error}", update.error)
       };
     }
 
@@ -412,7 +414,7 @@ export function UploadForm() {
     );
 
     if (!created.ok) {
-      return { status: "error", fileName: file.name, message: `تم رفع الملف لكن تعذر إنشاء الجدولة: ${created.error}` };
+      return { status: "error", fileName: file.name, message: t.pages.uploadForm.scheduleCreateError.replace("{error}", created.error) };
     }
 
     clearScheduledUploadResumeEntry(file, effectiveFolder);
@@ -497,20 +499,20 @@ export function UploadForm() {
     <article className="panel upload-wizard">
       <div className="panel-section-header panel-title-row">
         <div>
-          <h2>مسار إضافة أرشيف</h2>
-          <p className="field-note">رفع متعدد الملفات مع قوالب وmetadata وحقول فيديو قبل إنشاء السجلات.</p>
+          <h2>{t.pages.uploadForm.heading}</h2>
+          <p className="field-note">{t.pages.uploadForm.subheading}</p>
         </div>
-        <div className="view-switcher" role="group" aria-label="وضع الإضافة">
+        <div className="view-switcher" role="group" aria-label={t.pages.uploadForm.modeGroupAriaLabel}>
           <button type="button" className="view-switcher__button" aria-pressed={mode === "guided"} onClick={() => setMode("guided")}>
-            موجه
+            {t.pages.uploadForm.modeGuided}
           </button>
           <button type="button" className="view-switcher__button" aria-pressed={mode === "quick"} onClick={() => setMode("quick")}>
-            سريع
+            {t.pages.uploadForm.modeQuick}
           </button>
         </div>
       </div>
 
-      <div className="wizard-steps" aria-label="خطوات إضافة الأرشيف">
+      <div className="wizard-steps" aria-label={t.pages.uploadForm.stepsAriaLabel}>
         {steps.map((item) => (
           <button
             key={item.key}
@@ -528,19 +530,19 @@ export function UploadForm() {
       <form className="auth-form" onSubmit={handleSubmit}>
         {draftRecovered ? (
           <div className="state-banner state-banner-info" role="status" aria-live="polite" aria-atomic="true">
-            <strong>تمت استعادة مسودة الإضافة</strong>
-            <span className="helper-text">أعد اختيار الملفات فقط؛ بيانات الأرشفة والخطوة السابقة محفوظتان على هذا الجهاز.</span>
-            <button type="button" className="button button-secondary button-sm" onClick={() => setDraftRecovered(false)}>حسناً</button>
+            <strong>{t.pages.uploadForm.draftRecoveredTitle}</strong>
+            <span className="helper-text">{t.pages.uploadForm.draftRecoveredHelper}</span>
+            <button type="button" className="button button-secondary button-sm" onClick={() => setDraftRecovered(false)}>{t.pages.uploadForm.draftRecoveredDismiss}</button>
           </div>
         ) : null}
         {step === "files" ? (
-          <section className="wizard-pane" aria-label="اختيار الملفات">
+          <section className="wizard-pane" aria-label={t.pages.uploadForm.filesStepAriaLabel}>
             <div
               className="upload-dropzone"
               data-drag={dragActive ? "true" : undefined}
               role="button"
               tabIndex={0}
-              aria-label="اسحب الملفات هنا أو انقر للاختيار"
+              aria-label={t.pages.uploadForm.dropzoneLabel}
               onClick={openFileDialog}
               onKeyDown={handleDropzoneKey}
               onDragOver={(event) => {
@@ -551,8 +553,8 @@ export function UploadForm() {
               onDrop={handleDrop}
             >
               <UploadCloud aria-hidden="true" size={28} />
-              <strong>اسحب الملفات هنا أو انقر للاختيار</strong>
-              <span className="helper-text">فيديو، صوت، صور أو مستندات · حتى 600MB للملف · مدة الفيديو ودقته تُقرأ تلقائياً</span>
+              <strong>{t.pages.uploadForm.dropzoneLabel}</strong>
+              <span className="helper-text">{t.pages.uploadForm.dropzoneHelper}</span>
               <input
                 ref={inputRef}
                 type="file"
@@ -578,30 +580,30 @@ export function UploadForm() {
                       </span>
                     </div>
                     <button type="button" className="button button-secondary button-sm" onClick={() => removeFile(file.name)}>
-                      إزالة
+                      {t.pages.uploadForm.removeFileButton}
                     </button>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="helper-text">اختر ملفاً أو أكثر. في الوضع السريع يمكن المتابعة مباشرة للمراجعة.</p>
+              <p className="helper-text">{t.pages.uploadForm.noFilesHelper}</p>
             )}
             {duplicateFiles.length ? (
               <div className="state-banner state-banner-warning" role="alert">
-                <strong>ملفات مكررة في القائمة</strong>
-                <span className="helper-text">تحقق قبل المتابعة: {duplicateFiles.join("، ")}</span>
+                <strong>{t.pages.uploadForm.duplicateFilesTitle}</strong>
+                <span className="helper-text">{t.pages.uploadForm.duplicateFilesHelper.replace("{files}", duplicateFiles.join(listSeparator))}</span>
               </div>
             ) : null}
           </section>
         ) : null}
 
         {step === "metadata" ? (
-          <section className="wizard-pane" aria-label="بيانات الأرشفة">
+          <section className="wizard-pane" aria-label={t.pages.uploadForm.metadataStepAriaLabel}>
             {templates.length > 0 ? (
               <label>
-                قالب الإدخال
+                {t.pages.uploadForm.templateLabel}
                 <select value={templateId} onChange={(event) => applyTemplate(event.target.value)} disabled={state.status === "uploading"}>
-                  <option value="">بدون قالب</option>
+                  <option value="">{t.pages.uploadForm.noTemplateOption}</option>
                   {templates.map((template) => (
                     <option key={template.id} value={template.id}>
                       {template.name}
@@ -613,15 +615,15 @@ export function UploadForm() {
 
             <div className="field-row">
               <label>
-                عنوان أو بادئة عنوان
-                <input value={titlePrefix} onChange={(event) => setTitlePrefix(event.target.value)} placeholder="مثال: مقابلة الأرشيف" />
+                {t.pages.uploadForm.titlePrefixLabel}
+                <input value={titlePrefix} onChange={(event) => setTitlePrefix(event.target.value)} placeholder={t.pages.uploadForm.titlePrefixPlaceholder} />
               </label>
               <label>
-                النوع
+                {t.pages.uploadForm.typeLabel}
                 <input value={type} onChange={(event) => setType(event.target.value)} placeholder={inferredType || "video"} dir="ltr" list="intake-type-options" />
               </label>
               <label>
-                النوع الفرعي
+                {t.pages.uploadForm.subtypeLabel}
                 <input value={subtype} onChange={(event) => setSubtype(event.target.value)} placeholder="interview / raw / report" dir="ltr" list="intake-subtype-options" />
               </label>
             </div>
@@ -641,17 +643,17 @@ export function UploadForm() {
             </datalist>
 
             <label>
-              وسوم
-              <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="أرشيف, مقابلات, 2026" />
+              {t.pages.uploadForm.tagsLabel}
+              <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder={t.pages.uploadForm.tagsPlaceholder} />
             </label>
 
             <label>
-              وصف مختصر
+              {t.pages.uploadForm.summaryLabel}
               <textarea value={summary} onChange={(event) => setSummary(event.target.value)} rows={4} />
             </label>
 
             <label>
-              مجلد الوجهة
+              {t.pages.uploadForm.folderLabel}
               <input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder="campaigns/2026" dir="ltr" />
             </label>
 
@@ -659,25 +661,25 @@ export function UploadForm() {
               <div className="section-divider">
                 <div className="panel-title-row">
                   <div>
-                    <h3>حقول الفيديو</h3>
-                    <p className="field-note">المدة والدقة تُملأ تلقائياً من الملف — عدّلها عند الحاجة. تُحفظ داخل metadata.video لاستخدامها في التفريغ والمراجعة.</p>
+                    <h3>{t.pages.uploadForm.videoFieldsHeading}</h3>
+                    <p className="field-note">{t.pages.uploadForm.videoFieldsHelper}</p>
                   </div>
                 </div>
                 <div className="field-row">
                   <label>
-                    اللغة
+                    {t.pages.uploadForm.videoLanguageLabel}
                     <input value={videoLanguage} onChange={(event) => setVideoLanguage(event.target.value)} placeholder="ar" dir="ltr" />
                   </label>
                   <label>
-                    المدة بالثواني
+                    {t.pages.uploadForm.videoDurationLabel}
                     <input inputMode="numeric" value={videoDuration} onChange={(event) => setVideoDuration(event.target.value)} placeholder="3600" />
                   </label>
                   <label>
-                    الدقة
+                    {t.pages.uploadForm.videoResolutionLabel}
                     <input value={videoResolution} onChange={(event) => setVideoResolution(event.target.value)} placeholder="1920x1080" dir="ltr" />
                   </label>
                   <label>
-                    معدل الإطارات
+                    {t.pages.uploadForm.videoFrameRateLabel}
                     <input value={videoFrameRate} onChange={(event) => setVideoFrameRate(event.target.value)} placeholder="25" dir="ltr" />
                   </label>
                 </div>
@@ -687,9 +689,9 @@ export function UploadForm() {
         ) : null}
 
         {step === "review" ? (
-          <section className="wizard-pane" aria-label="مراجعة الإضافة">
+          <section className="wizard-pane" aria-label={t.pages.uploadForm.reviewStepAriaLabel}>
             <fieldset className="schedule-choice">
-              <legend>وقت المعالجة</legend>
+              <legend>{t.pages.uploadForm.processingTimeLegend}</legend>
               {(["now", "scheduled"] as const).map((value) => (
                 <label key={value} className="schedule-choice-card">
                   <input
@@ -700,7 +702,7 @@ export function UploadForm() {
                     onChange={() => setProcessingMode(value)}
                     disabled={state.status === "uploading"}
                   />
-                  <strong>{value === "now" ? "المعالجة الآن" : "جدولة المعالجة"}</strong>
+                  <strong>{value === "now" ? t.pages.uploadForm.processNowOption : t.pages.uploadForm.processScheduledOption}</strong>
                 </label>
               ))}
             </fieldset>
@@ -708,7 +710,7 @@ export function UploadForm() {
             {processingMode === "scheduled" ? (
               <div className="field-row">
                 <label>
-                  موعد المعالجة
+                  {t.pages.uploadForm.scheduleDateLabel}
                   <input
                     type="datetime-local"
                     value={scheduleLocalValue}
@@ -717,7 +719,7 @@ export function UploadForm() {
                   />
                 </label>
                 <div className="kv-item">
-                  <strong>المنطقة الزمنية المكتشفة</strong>
+                  <strong>{t.pages.uploadForm.detectedZoneLabel}</strong>
                   <span dir="ltr">{detectedZone}</span>
                 </div>
               </div>
@@ -725,7 +727,7 @@ export function UploadForm() {
 
             {processingMode === "scheduled" && scheduleLocalValue ? (
               scheduleValidation?.valid ? (
-                <p className="helper-text" role="status" aria-live="polite" aria-atomic="true">{scheduleSummary(scheduleLocalValue, detectedZone, "ar-SA")}</p>
+                <p className="helper-text" role="status" aria-live="polite" aria-atomic="true">{scheduleSummary(scheduleLocalValue, detectedZone, locale === "en" ? "en-US" : "ar-SA")}</p>
               ) : (
                 <div className="state-banner state-banner-warning" role="alert">
                   <strong>{scheduleValidation && !scheduleValidation.valid ? scheduleValidation.message : ""}</strong>
@@ -735,25 +737,25 @@ export function UploadForm() {
 
             <div className="kv-grid">
               <div className="kv-item">
-                <strong>عدد الملفات</strong>
+                <strong>{t.pages.uploadForm.fileCountLabel}</strong>
                 <span>{files.length}</span>
               </div>
               <div className="kv-item">
-                <strong>الحجم الإجمالي</strong>
+                <strong>{t.pages.uploadForm.totalSizeLabel}</strong>
                 <span>{formatBytes(totalSize)}</span>
               </div>
               <div className="kv-item">
-                <strong>النوع</strong>
+                <strong>{t.pages.uploadForm.typeLabel}</strong>
                 <span>{effectiveType}</span>
               </div>
               <div className="kv-item">
-                <strong>الوسوم</strong>
-                <span>{tagList.length ? tagList.join("، ") : "بدون وسوم"}</span>
+                <strong>{t.pages.uploadForm.tagsLabel}</strong>
+                <span>{tagList.length ? tagList.join(listSeparator) : t.pages.uploadForm.noTagsValue}</span>
               </div>
             </div>
 
             {mode === "quick" ? (
-              <p className="helper-text">الوضع السريع يستخدم اسم كل ملف كعنوان ويحفظ metadata الأساسية فقط.</p>
+              <p className="helper-text">{t.pages.uploadForm.quickModeHelper}</p>
             ) : null}
           </section>
         ) : null}
@@ -761,12 +763,12 @@ export function UploadForm() {
         <div className="button-row">
           {step !== "files" ? (
             <button type="button" className="button button-secondary" onClick={previousStep} disabled={state.status === "uploading"}>
-              السابق
+              {t.pages.uploadForm.previousButton}
             </button>
           ) : null}
           {step !== "review" ? (
             <button type="button" className="button button-primary" onClick={nextStep} disabled={files.length === 0 || state.status === "uploading"}>
-              التالي
+              {t.pages.uploadForm.nextButton}
             </button>
           ) : (
             <button
@@ -781,14 +783,14 @@ export function UploadForm() {
               {state.status === "uploading"
                 ? state.stage
                   ? `${scheduledUploadProgress(state.stage)}: ${state.current}`
-                  : `جار رفع ${state.current}...`
+                  : t.pages.uploadForm.uploadingFile.replace("{file}", state.current)
                 : processingMode === "scheduled"
-                  ? "رفع وجدولة"
-                  : "إنشاء السجلات"}
+                  ? t.pages.uploadForm.uploadAndScheduleButton
+                  : t.pages.uploadForm.createRecordsButton}
             </button>
           )}
           <button type="button" className="button button-secondary" onClick={resetWizard} disabled={state.status === "uploading"}>
-            مسح
+            {t.pages.uploadForm.clearButton}
           </button>
         </div>
 
@@ -796,14 +798,14 @@ export function UploadForm() {
           <div className={progressSummary.failed ? "state-banner state-banner-warning" : "state-banner state-banner-success"}>
             <strong>
               {progressSummary.failed
-                ? "اكتملت الإضافة جزئياً"
+                ? t.pages.uploadForm.completePartialTitle
                 : hasScheduledResults
-                  ? "تمت جدولة المعالجة"
-                  : "اكتملت عملية الإضافة"}
+                  ? t.pages.uploadForm.completeScheduledTitle
+                  : t.pages.uploadForm.completeSuccessTitle}
             </strong>
             <span className="helper-text">
-              نجح {progressSummary.succeeded} من {progressSummary.total}.
-              {hasScheduledResults ? null : ` الخطوة التالية: ${nextAction.label}.`}
+              {t.pages.uploadForm.completeSummary.replace("{succeeded}", String(progressSummary.succeeded)).replace("{total}", String(progressSummary.total))}
+              {hasScheduledResults ? null : t.pages.uploadForm.nextActionSuffix.replace("{label}", nextAction.label)}
             </span>
             <ul className="compact-list">
               {state.results.map((result) => (
@@ -811,20 +813,20 @@ export function UploadForm() {
                   {result.status === "success" ? (
                     <>
                       <a className="text-accent" href={`/archive/${encodeURIComponent(result.record.id)}`}>{result.fileName}</a>
-                      <span className="helper-text"> - سجل {result.record.id}</span>
+                      <span className="helper-text">{t.pages.uploadForm.resultRecordSuffix.replace("{id}", result.record.id)}</span>
                     </>
                   ) : result.status === "scheduled" ? (
-                    <span>{result.fileName} - تمت الجدولة</span>
+                    <span>{t.pages.uploadForm.resultScheduledSuffix.replace("{file}", result.fileName)}</span>
                   ) : (
-                    <span className="status-error">{result.fileName}: {result.message}</span>
+                    <span className="status-error">{t.pages.uploadForm.resultErrorFormat.replace("{file}", result.fileName).replace("{message}", result.message)}</span>
                   )}
                 </li>
               ))}
             </ul>
             <div className="button-row">
-              {progressSummary.failed ? <button type="button" className="button button-primary" onClick={retryFailedFiles}>إعادة محاولة المتعثر</button> : null}
+              {progressSummary.failed ? <button type="button" className="button button-primary" onClick={retryFailedFiles}>{t.pages.uploadForm.retryFailedButton}</button> : null}
               {hasScheduledResults ? (
-                <a className="button button-primary" href="/uploads/scheduled">عرض الرفعات المجدولة</a>
+                <a className="button button-primary" href="/uploads/scheduled">{t.pages.uploadForm.viewScheduledLink}</a>
               ) : "href" in nextAction ? (
                 <a className="button button-primary" href={nextAction.href}>{nextAction.label}</a>
               ) : null}

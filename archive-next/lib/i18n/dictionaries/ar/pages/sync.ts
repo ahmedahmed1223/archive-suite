@@ -10,6 +10,7 @@ export const sync = {
   filter: "فلترة سجل المزامنة",
   all: "الكل",
   conflict: "تعارض",
+  statusLabels: { synced: "متزامن", conflict: "يحتاج مزامنة" },
   summary: "ملخص المزامنة",
   total: "إجمالي السجلات",
   last200: "ضمن آخر 200 إدخال",

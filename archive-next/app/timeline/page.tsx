@@ -44,41 +44,17 @@ interface LoadState {
   error: string | null;
 }
 
-const granularityOptions: Array<DataViewOption<Granularity>> = [
-  { value: "day", label: "يوم" },
-  { value: "month", label: "شهر" },
-  { value: "year", label: "سنة" }
-];
-
 function parseDate(dateStr: string | undefined): Date {
   return dateStr ? new Date(dateStr) : new Date();
 }
 
-function getMonthName(month: number): string {
-  const months = [
-    "يناير",
-    "فبراير",
-    "مارس",
-    "أبريل",
-    "مايو",
-    "يونيو",
-    "يوليو",
-    "أغسطس",
-    "سبتمبر",
-    "أكتوبر",
-    "نوفمبر",
-    "ديسمبر"
-  ];
-  return months[month] || "";
-}
-
-function formatPeriodLabel(date: Date, granularity: Granularity): string {
+function formatPeriodLabel(date: Date, granularity: Granularity, months: readonly string[]): string {
   const year = date.getFullYear();
   const month = date.getMonth();
   const day = date.getDate();
 
-  if (granularity === "day") return `${day} ${getMonthName(month)} ${year}`;
-  if (granularity === "month") return `${getMonthName(month)} ${year}`;
+  if (granularity === "day") return `${day} ${months[month] || ""} ${year}`;
+  if (granularity === "month") return `${months[month] || ""} ${year}`;
   return `${year}`;
 }
 
@@ -92,7 +68,7 @@ function getPeriodKey(date: Date, granularity: Granularity): string {
   return `${year}`;
 }
 
-function groupRecordsByPeriod(records: ArchiveRecord[], granularity: Granularity): TimelineGroup[] {
+function groupRecordsByPeriod(records: ArchiveRecord[], granularity: Granularity, months: readonly string[]): TimelineGroup[] {
   const groups = new Map<string, ArchiveRecord[]>();
 
   records.forEach((record) => {
@@ -116,7 +92,7 @@ function groupRecordsByPeriod(records: ArchiveRecord[], granularity: Granularity
 
       return {
         key,
-        period: formatPeriodLabel(date, granularity),
+        period: formatPeriodLabel(date, granularity, months),
         records: groupRecords.sort(
           (a, b) => parseDate(b.createdAt || b.updatedAt).getTime() - parseDate(a.createdAt || a.updatedAt).getTime()
         )
@@ -124,12 +100,11 @@ function groupRecordsByPeriod(records: ArchiveRecord[], granularity: Granularity
     });
 }
 
-function granularityLabel(granularity: Granularity): string {
-  return granularityOptions.find((option) => option.value === granularity)?.label || "شهر";
-}
-
 export default function TimelinePage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const copy = t.pages.timeline;
+  const granularityOptions: Array<DataViewOption<Granularity>> = [{ value: "day", label: copy.day }, { value: "month", label: copy.month }, { value: "year", label: copy.year }];
+  const granularityLabel = (value: Granularity) => granularityOptions.find((option) => option.value === value)?.label || copy.month;
   const [state, setState] = useState<LoadState>({
     status: "loading",
     records: [],
@@ -161,22 +136,22 @@ export default function TimelinePage() {
 
       setState({ status: "success", records: allRecords, error: null });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "خطأ غير معروف";
+      const message = err instanceof Error ? err.message : copy.unknownError;
       setState({
         status: "error",
         records: [],
-        error: `فشل تحميل السجلات: ${message}`
+        error: copy.loadFailed.replace("{message}", message)
       });
     }
-  }, [api]);
+  }, [api, copy]);
 
   useEffect(() => {
     void loadRecords();
   }, [loadRecords]);
 
   const groupedRecords = useMemo(
-    () => groupRecordsByPeriod(state.records, granularity),
-    [state.records, granularity]
+    () => groupRecordsByPeriod(state.records, granularity, copy.months),
+    [state.records, granularity, copy.months]
   );
 
   const recordCount = state.records.length;
@@ -184,44 +159,41 @@ export default function TimelinePage() {
   return (
     <AppShell subtitle={t.pageTitles.timeline} navLabel={t.pageTitles.timeline} contentClassName="timeline-content" tipsPage="timeline">
       <PageToolbar
-        eyebrow={<span className="badge">ترتيب زمني</span>}
-        title="الخط الزمني"
-        description="عرض السجلات حسب تاريخ الإنشاء أو التحديث، مع تغيير دقة التجميع بين اليوم والشهر والسنة."
+        eyebrow={<span className="badge">{copy.eyebrow}</span>}
+        title={copy.title}
+        description={copy.description}
         meta={
           <>
-            <span className="badge">{recordCount} سجل</span>
-            <span className="badge">{groupedRecords.length} فترة</span>
-            <span className="badge">النطاق: {granularityLabel(granularity)}</span>
+            <span className="badge">{copy.recordCount.replace("{count}", String(recordCount))}</span>
+            <span className="badge">{copy.periodCount.replace("{count}", String(groupedRecords.length))}</span>
+            <span className="badge">{copy.range.replace("{value}", granularityLabel(granularity))}</span>
           </>
         }
         actions={
           <button className="button button-secondary" type="button" onClick={() => void loadRecords()} disabled={state.status === "loading"}>
-            تحديث
+            {copy.refresh}
           </button>
         }
       >
-        <DataViewSwitcher value={granularity} options={granularityOptions} onChange={setGranularity} label="دقة التجميع" />
+        <DataViewSwitcher value={granularity} options={granularityOptions} onChange={setGranularity} label={copy.granularity} />
       </PageToolbar>
 
       {state.status === "loading" ? (
         <section className="state-banner" role="status" aria-live="polite">
-          <strong>جار تحميل السجلات</strong>
-          <p>يتم جلب السجلات من الخادم وتجهيزها للعرض الزمني.</p>
+          <strong>{copy.loading}</strong><p>{copy.loadingDescription}</p>
         </section>
       ) : null}
 
       {state.error ? (
         <section className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل الخط الزمني</strong>
+          <strong>{copy.loadError}</strong>
           <p>{state.error}</p>
         </section>
       ) : null}
 
       {state.status === "success" && recordCount === 0 ? (
         <EmptyState
-          title="لا توجد سجلات حتى الآن"
-          description="أضف سجلات إلى الأرشيف لعرضها هنا مرتبة على الخط الزمني."
-          actions={<a className="button button-secondary" href="/archive">فتح الأرشيف</a>}
+          title={copy.noRecords} description={copy.noRecordsDescription} actions={<a className="button button-secondary" href="/archive">{copy.openArchive}</a>}
         />
       ) : null}
 
@@ -233,25 +205,25 @@ export default function TimelinePage() {
                 <IconCalendar />
               </div>
               <div className="health-metric__body">
-                <span>إجمالي السجلات</span>
+                <span>{copy.totalRecords}</span>
                 <strong>{recordCount}</strong>
               </div>
             </article>
             <article className="health-metric">
               <div className="health-metric__body">
-                <span>الفترات</span>
+                <span>{copy.periods}</span>
                 <strong>{groupedRecords.length}</strong>
               </div>
             </article>
             <article className="health-metric">
               <div className="health-metric__body">
-                <span>دقة العرض</span>
+                <span>{copy.displayGranularity}</span>
                 <strong>{granularityLabel(granularity)}</strong>
               </div>
             </article>
           </div>
 
-          <section className={styles.timelineContainer} aria-label="مجموعات الخط الزمني">
+          <section className={styles.timelineContainer} aria-label={copy.groups}>
             {groupedRecords.map((group) => (
               <div key={group.key} className={styles.timelineGroup}>
                 <div className={styles.timelineNode} aria-hidden="true">
@@ -263,7 +235,7 @@ export default function TimelinePage() {
                   <header className={styles.groupHeader}>
                     <div>
                       <h2>{group.period}</h2>
-                      <p>{group.records.length} {group.records.length === 1 ? "سجل" : "سجلات"}</p>
+                      <p>{group.records.length} {group.records.length === 1 ? copy.record : copy.records}</p>
                     </div>
                     <span className="badge">{group.key}</span>
                   </header>
@@ -282,8 +254,8 @@ export default function TimelinePage() {
                           <strong>{record.title || record.id}</strong>
                           {record.description ? <span>{record.description}</span> : null}
                           <span className={styles.recordMeta}>
-                            {record.type || "بدون نوع"}
-                            {record.createdAt ? ` · ${new Date(record.createdAt).toLocaleDateString("ar-SA")}` : ""}
+                            {record.type || copy.untitledType}
+                            {record.createdAt ? ` · ${new Date(record.createdAt).toLocaleDateString(locale === "en" ? "en-US" : "ar-SA")}` : ""}
                           </span>
                         </span>
                       </Link>

@@ -12,10 +12,13 @@ import {
 } from "@/lib/keyboard-shortcuts";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type RecordingKey = ShortcutKey | null;
 
 export default function ShortcutsSettings() {
+  const { t } = useLocale();
+  const copy = t.settings.shortcuts;
   const dialogs = useConfirmDialog();
   const [shortcuts, setShortcuts] = useState<ReturnType<typeof getAllShortcuts> | null>(null);
   const [recordingKey, setRecordingKey] = useState<RecordingKey>(null);
@@ -75,9 +78,9 @@ export default function ShortcutsSettings() {
 
   const handleReset = async () => {
     const confirmed = await dialogs.confirm({
-      title: "إعادة تعيين الاختصارات",
-      message: "إعادة تعيين جميع اختصارات لوحة المفاتيح إلى الافتراضية؟ ستفقد أي اختصارات خصصتها.",
-      confirmLabel: "إعادة تعيين",
+      title: copy.resetDialogTitle,
+      message: copy.resetDialogMessage,
+      confirmLabel: copy.resetButton,
       destructive: true
     });
     if (!confirmed) return;
@@ -89,11 +92,11 @@ export default function ShortcutsSettings() {
 
   if (!shortcuts) {
     return (
-      <article className="workspace-panel" aria-label="إعدادات اختصارات لوحة المفاتيح">
+      <article className="workspace-panel" aria-label={copy.panelAriaLabel}>
         <div className="workspace-panel__header">
           <div>
-            <h2>اختصارات لوحة المفاتيح</h2>
-            <Skeleton label="جاري تحميل الاختصارات..." lines={2} />
+            <h2>{copy.title}</h2>
+            <Skeleton label={copy.loading} lines={2} />
           </div>
         </div>
       </article>
@@ -101,27 +104,28 @@ export default function ShortcutsSettings() {
   }
 
   return (
-    <article className="workspace-panel" aria-label="إعدادات اختصارات لوحة المفاتيح">
+    <article className="workspace-panel" aria-label={copy.panelAriaLabel}>
       <div className="workspace-panel__header">
         <div>
-          <h2>اختصارات لوحة المفاتيح</h2>
-          <p>خصص اختصارات لوحة المفاتيح لتسريع سير عملك. اضغط على الاختصار لإعادة تعيين المفاتيح.</p>
+          <h2>{copy.title}</h2>
+          <p>{copy.description}</p>
         </div>
         <button
           type="button"
           className="button button-secondary"
           onClick={handleReset}
-          title="إعادة تعيين جميع الاختصارات إلى الافتراضية"
+          title={copy.resetTitle}
         >
           <RotateCcw size={16} aria-hidden="true" />
-          إعادة تعيين
+          {copy.resetButton}
         </button>
       </div>
 
       <div className="stack">
-        <div className="shortcuts-list" aria-label="قائمة الاختصارات">
-          {Object.entries(shortcuts).map(([key, { label, binding }]) => {
+        <div className="shortcuts-list" aria-label={copy.shortcutsListAriaLabel}>
+          {Object.entries(shortcuts).map(([key, { binding }]) => {
             const isRecording = recordingKey === key;
+            const label = copy.labels[key as ShortcutKey];
 
             return (
               <div key={key} className="shortcut-item">
@@ -136,11 +140,11 @@ export default function ShortcutsSettings() {
                     onKeyDown={handleKeyDown}
                     tabIndex={0}
                     role="region"
-                    aria-label="مسجل الاختصار"
+                    aria-label={copy.recorderAriaLabel}
                   >
                     <div className="recorder-prompt">
                       <Keyboard size={16} aria-hidden="true" />
-                      <span>اضغط على المفاتيح...</span>
+                      <span>{copy.recorderPrompt}</span>
                     </div>
 
                     {recordedBinding && (
@@ -152,14 +156,14 @@ export default function ShortcutsSettings() {
                             className="button button-primary"
                             onClick={handleConfirmBinding}
                           >
-                            حفظ
+                            {copy.saveButton}
                           </button>
                           <button
                             type="button"
                             className="button button-secondary"
                             onClick={handleCancelRecording}
                           >
-                            إلغاء
+                            {copy.cancelButton}
                           </button>
                         </div>
                       </div>
@@ -171,7 +175,7 @@ export default function ShortcutsSettings() {
                         className="button button-secondary"
                         onClick={handleCancelRecording}
                       >
-                        إلغاء
+                        {copy.cancelButton}
                       </button>
                     )}
                   </div>
@@ -180,7 +184,7 @@ export default function ShortcutsSettings() {
                     type="button"
                     className="shortcut-badge"
                     onClick={() => handleStartRecording(key as ShortcutKey)}
-                    title="انقر لإعادة تعيين"
+                    title={copy.changeShortcutTitle}
                   >
                     {formatShortcutDisplay(binding)}
                   </button>
@@ -191,7 +195,7 @@ export default function ShortcutsSettings() {
         </div>
 
         <div className="helper-text">
-          💡 لا يمكن حفظ الاختصارات إلا عندما تتضمن مفتاح تعديل واحد على الأقل (Ctrl أو Cmd أو Shift أو Alt).
+          {copy.modifierHint}
         </div>
       </div>
     </article>

@@ -38,6 +38,13 @@ describe("validateChatMessages", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("returns validation errors in the requested locale", () => {
+    expect(validateChatMessages({ messages: [] }, "en")).toEqual({
+      ok: false,
+      error: "An empty conversation cannot be sent."
+    });
+  });
+
   it("rejects empty message content", () => {
     const result = validateChatMessages({ messages: [{ role: "user", content: "   " }] });
     expect(result.ok).toBe(false);
@@ -119,6 +126,11 @@ describe("buildRecordContext", () => {
   it("omits empty fields instead of printing empty lines", () => {
     const context = buildRecordContext({ title: "سجل بلا تفاصيل" });
     expect(context).toBe("العنوان: سجل بلا تفاصيل");
+  });
+
+  it("localizes record field labels", () => {
+    const context = buildRecordContext({ title: "Interview", type: "video", tags: ["history"] }, "en");
+    expect(context).toBe("Title: Interview\nType: video\nTags: history");
   });
 
   it("truncates an overly long description", () => {

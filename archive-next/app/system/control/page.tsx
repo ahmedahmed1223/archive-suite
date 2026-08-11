@@ -22,37 +22,29 @@ type ActionState =
   | { status: "success"; action: SystemControlAction; result: SystemControlResult }
   | { status: "error"; action: SystemControlAction; message: string };
 
-const ACTIONS: { id: SystemControlAction; label: string; description: string; audit: string; icon: typeof Trash2 }[] = [
-  {
-    id: "clear-cache",
-    label: "تفريغ ذاكرة التخزين المؤقت",
-    description: "يفرّغ ذاكرة التخزين المؤقت وإعدادات الخادم المخبأة.",
-    audit: "يسجل محاولة system_control.allowed أو blocked",
-    icon: Trash2
-  },
-  {
-    id: "run-backup",
-    label: "تشغيل نسخة احتياطية فورية",
-    description: "يُنشئ نسخة احتياطية جديدة فورًا (مطابق لزر النسخ الاحتياطي).",
-    audit: "يرتبط بسجل النسخ الاحتياطي والتدقيق",
-    icon: ArchiveRestore
-  }
-];
-
-function gateLabel(status: GateState["status"]) {
-  const labels: Record<GateState["status"], string> = {
-    loading: "جار التحقق",
-    enabled: "مفعلة للمشرف",
-    disabled: "معطلة من الخادم",
-    forbidden: "صلاحية مرفوضة",
-    error: "تعذر الفحص"
-  };
-
-  return labels[status];
-}
-
 export default function SystemControlPage() {
   const { t } = useLocale();
+  const ACTIONS: { id: SystemControlAction; label: string; description: string; audit: string; icon: typeof Trash2 }[] = [
+    {
+      id: "clear-cache",
+      label: t.pages.systemControl.actions.clearCache.label,
+      description: t.pages.systemControl.actions.clearCache.description,
+      audit: t.pages.systemControl.actions.clearCache.audit,
+      icon: Trash2
+    },
+    {
+      id: "run-backup",
+      label: t.pages.systemControl.actions.runBackup.label,
+      description: t.pages.systemControl.actions.runBackup.description,
+      audit: t.pages.systemControl.actions.runBackup.audit,
+      icon: ArchiveRestore
+    }
+  ];
+
+  function gateLabel(status: GateState["status"]) {
+    return t.pages.systemControl.gateStatusLabels[status];
+  }
+
   const [gate, setGate] = useState<GateState>({ status: "loading" });
   const [actionState, setActionState] = useState<ActionState>({ status: "idle" });
   const [isClearCacheConfirmOpen, setIsClearCacheConfirmOpen] = useState(false);
@@ -73,7 +65,7 @@ export default function SystemControlPage() {
           setGate({ status: "forbidden" });
           return;
         }
-        setGate({ status: "error", message: response.error || "تعذر التحقق من حالة النظام." });
+        setGate({ status: "error", message: response.error || t.pages.systemControl.statusCheckFallbackError });
         return;
       }
       // systemStatus succeeding only confirms admin access; the actual
@@ -81,9 +73,9 @@ export default function SystemControlPage() {
       // since there is no separate "is control enabled" read endpoint.
       setGate({ status: "enabled" });
     } catch (error) {
-      setGate({ status: "error", message: error instanceof Error ? error.message : "خطأ غير معروف" });
+      setGate({ status: "error", message: error instanceof Error ? error.message : t.pages.systemControl.unknownError });
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadGate();
@@ -100,12 +92,12 @@ export default function SystemControlPage() {
         if (response.code === "SYSTEM_CONTROL_DISABLED" || response.error === "System control actions are disabled.") {
           setGate({ status: "disabled" });
         }
-        setActionState({ status: "error", action, message: response.error || "تعذر تنفيذ الإجراء." });
+        setActionState({ status: "error", action, message: response.error || t.pages.systemControl.actionRunFallbackError });
         return;
       }
       setActionState({ status: "success", action, result: response.result });
     } catch (error) {
-      setActionState({ status: "error", action, message: error instanceof Error ? error.message : "خطأ غير معروف" });
+      setActionState({ status: "error", action, message: error instanceof Error ? error.message : t.pages.systemControl.unknownError });
     }
   };
 
@@ -124,31 +116,31 @@ export default function SystemControlPage() {
     <AppShell subtitle={t.pageTitles.systemControl} navLabel={t.pageTitles.systemControl} contentClassName="observability-content" tipsPage="system-control">
       <PageToolbar
         icon={<ServerCog size={24} />}
-        eyebrow={<span className="badge badge-danger">إجراء عالي الخطورة</span>}
-        title="التحكم بالنظام"
-        description="إجراءات تؤثر مباشرة على المضيف. معطّلة تمامًا افتراضيًا؛ يجب تفعيلها صراحة من متغير بيئة على الخادم (SYSTEM_CONTROL_ENABLED)، وهي متاحة للمشرفين فقط، وكل محاولة (ناجحة أو مرفوضة) تُسجَّل في سجل التدقيق."
+        eyebrow={<span className="badge badge-danger">{t.pages.systemControl.highRiskBadge}</span>}
+        title={t.pages.systemControl.pageTitle}
+        description={t.pages.systemControl.pageDescription}
         meta={
           <>
             <span className={gate.status === "enabled" ? "badge badge-success" : "badge badge-warning"}>{gateLabel(gate.status)}</span>
-            <span className="badge">التدقيق مفروض</span>
+            <span className="badge">{t.pages.systemControl.auditEnforcedBadge}</span>
           </>
         }
         actions={
           <button type="button" className="button button-secondary" onClick={() => void loadGate()} disabled={gate.status === "loading"}>
             <RefreshCw size={16} aria-hidden="true" />
-            تحديث الحالة
+            {t.pages.systemControl.refreshButton}
           </button>
         }
       />
 
-      <section className="control-gate-grid" aria-label="حالة التحكم بالنظام">
+      <section className="control-gate-grid" aria-label={t.pages.systemControl.gateStatusSectionLabel}>
         <article className="system-health-strip" data-tone={gate.status === "enabled" ? "success" : "danger"}>
           <span className="system-health-strip__icon" aria-hidden="true">
             {gate.status === "enabled" ? <ShieldCheck size={20} /> : <LockKeyhole size={20} />}
           </span>
           <div>
             <strong>{gateLabel(gate.status)}</strong>
-            <p>{gate.status === "enabled" ? "الصلاحية متاحة، لكن كل إجراء لا يزال يتحقق من الخادم." : "الأزرار تبقى مقيدة حتى يسمح الخادم بذلك."}</p>
+            <p>{gate.status === "enabled" ? t.pages.systemControl.gateAvailableNote : t.pages.systemControl.gateRestrictedNote}</p>
           </div>
         </article>
         <article className="system-health-strip" data-tone="danger">
@@ -156,57 +148,57 @@ export default function SystemControlPage() {
             <AlertTriangle size={20} />
           </span>
           <div>
-            <strong>نطاق حساس</strong>
-            <p>لا توجد محاكاة في الواجهة؛ التنفيذ الحقيقي يمر عبر الخادم فقط.</p>
+            <strong>{t.pages.systemControl.sensitiveScopeTitle}</strong>
+            <p>{t.pages.systemControl.sensitiveScopeNote}</p>
           </div>
         </article>
       </section>
 
       {gate.status === "forbidden" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>هذه الصفحة للمشرفين فقط</strong>
-          <p>لا تملك صلاحية الوصول إلى إجراءات التحكم بالنظام.</p>
+          <strong>{t.pages.systemControl.forbiddenTitle}</strong>
+          <p>{t.pages.systemControl.forbiddenNote}</p>
         </div>
       ) : null}
 
       {gate.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر التحقق من حالة النظام</strong>
+          <strong>{t.pages.systemControl.statusErrorTitle}</strong>
           <p>{gate.message}</p>
         </div>
       ) : null}
 
       {isDisabledGate ? (
         <div className="state-banner state-banner-error" role="alert" data-testid="system-control-disabled-banner">
-          <strong>إجراءات التحكم بالنظام معطّلة</strong>
-          <p>لم يتم تفعيل SYSTEM_CONTROL_ENABLED على الخادم. جميع الأزرار أدناه غير فعّالة حتى يُفعَّل المتغير صراحة من إعدادات النشر.</p>
+          <strong>{t.pages.systemControl.disabledTitle}</strong>
+          <p>{t.pages.systemControl.disabledNote}</p>
         </div>
       ) : null}
 
       {actionState.status === "success" ? (
         <div className="state-banner state-banner-success" role="status">
-          <strong>تم تنفيذ الإجراء: {actionState.result.action}</strong>
+          <strong>{t.pages.systemControl.successTitle.replace("{action}", actionState.result.action)}</strong>
           <pre className="mono-text text-sm wrap-anywhere">{JSON.stringify(actionState.result.detail, null, 2)}</pre>
           <div className="button-row">
-            <a className="button button-secondary" href="/status">تحقق من نتيجة الإجراء</a>
-            <a className="button button-secondary" href="/first-run">متابعة رحلة الإعداد</a>
+            <a className="button button-secondary" href="/status">{t.pages.systemControl.checkResultLink}</a>
+            <a className="button button-secondary" href="/first-run">{t.pages.systemControl.continueOnboardingLink}</a>
           </div>
         </div>
       ) : null}
 
       {actionState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تنفيذ الإجراء</strong>
+          <strong>{t.pages.systemControl.actionErrorTitle}</strong>
           <p>{actionState.message}</p>
-          <a className="button button-secondary" href="/status">راجع حالة النظام وخطوات الإصلاح</a>
+          <a className="button button-secondary" href="/status">{t.pages.systemControl.reviewStatusLink}</a>
         </div>
       ) : null}
 
-      <section className="panel" aria-label="إجراءات التحكم">
+      <section className="panel" aria-label={t.pages.systemControl.actionsSectionLabel}>
         <div className="panel-title-row">
           <div>
-            <h2>الإجراءات المتاحة</h2>
-            <p>كل إجراء يتحقق من التفعيل والصلاحية على الخادم قبل التنفيذ، بصرف النظر عن حالة هذه الواجهة.</p>
+            <h2>{t.pages.systemControl.availableActionsHeading}</h2>
+            <p>{t.pages.systemControl.availableActionsNote}</p>
           </div>
         </div>
         <div className="system-action-grid">
@@ -228,9 +220,9 @@ export default function SystemControlPage() {
                   className="button button-primary"
                   onClick={() => requestAction(action.id)}
                   disabled={disallowed}
-                  title={isDisabledGate ? "غير مفعّل من إعدادات الخادم" : action.label}
+                  title={isDisabledGate ? t.pages.systemControl.disabledButtonTitle : action.label}
                 >
-                  {isRunning ? "جاري التنفيذ..." : "تنفيذ"}
+                  {isRunning ? t.pages.systemControl.runningLabel : t.pages.systemControl.executeLabel}
                 </button>
               </article>
             );
@@ -241,14 +233,14 @@ export default function SystemControlPage() {
       <Dialog open={isClearCacheConfirmOpen} onOpenChange={setIsClearCacheConfirmOpen}>
         <DialogContent
           className="system-control-confirmation"
-          title="تأكيد تفريغ الذاكرة المؤقتة"
-          description="سيتم تنفيذ الإجراء مباشرة على الخادم وتسجيله في سجل التدقيق. قد تتأخر الاستجابة التالية مؤقتًا أثناء إعادة بناء الإعدادات المخبأة."
+          title={t.pages.systemControl.confirmDialogTitle}
+          description={t.pages.systemControl.confirmDialogDescription}
         >
           <div className="system-control-confirmation__body">
-            <p>تأكد من أنك تريد متابعة الإجراء في بيئة الإنتاج.</p>
+            <p>{t.pages.systemControl.confirmDialogBody}</p>
             <div className="system-control-confirmation__actions">
               <DialogClose asChild>
-                <Button type="button" variant="secondary">إلغاء</Button>
+                <Button type="button" variant="secondary">{t.pages.systemControl.cancelButton}</Button>
               </DialogClose>
               <Button
                 type="button"
@@ -260,7 +252,7 @@ export default function SystemControlPage() {
                 }}
               >
                 <Trash2 size={16} aria-hidden="true" />
-                تأكيد التفريغ
+                {t.pages.systemControl.confirmClearButton}
               </Button>
             </div>
           </div>

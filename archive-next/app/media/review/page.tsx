@@ -60,6 +60,7 @@ function normalizeReviewComments(comments: ReviewComment[]): ReviewComment[] {
 
 export default function ReviewPage() {
   const { t } = useLocale();
+  const copy = t.pages.mediaReview;
   const api = useMemo(() => createArchiveApiClient(), []);
   const playerRef = useRef<HTMLMediaElement | null>(null);
 
@@ -91,12 +92,12 @@ export default function ReviewPage() {
         setComments(normalizeReviewComments(result.comments));
         setCommentsState({ status: "ready" });
       } else {
-        setCommentsState({ status: "error", message: result.error || "تعذر تحميل تعليقات المراجعة." });
+        setCommentsState({ status: "error", message: result.error || copy.errors.loadComments });
       }
     } catch (err) {
-      setCommentsState({ status: "error", message: err instanceof Error ? err.message : "تعذر تحميل تعليقات المراجعة." });
+      setCommentsState({ status: "error", message: err instanceof Error ? err.message : copy.errors.loadComments });
     }
-  }, [api, currentMediaUid]);
+  }, [api, copy.errors.loadComments, currentMediaUid]);
 
   useEffect(() => {
     void fetchComments();
@@ -153,7 +154,7 @@ export default function ReviewPage() {
         setError(result.error);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر إضافة التعليق.");
+      setError(err instanceof Error ? err.message : copy.errors.addComment);
     } finally {
       setIsSubmitting(false);
     }
@@ -168,7 +169,7 @@ export default function ReviewPage() {
         setError(result.error);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تحديث التعليق.");
+      setError(err instanceof Error ? err.message : copy.errors.updateComment);
     }
   };
 
@@ -184,42 +185,42 @@ export default function ReviewPage() {
   return (
     <AppShell subtitle={t.pageTitles.visualReview} contentClassName={styles.reviewContent} tipsPage="media-review">
       <PageToolbar
-        eyebrow={<span className="badge">مراجعة اللقطات</span>}
-        title="مراجعة مرئية بتعليقات زمنية"
-        description="شغّل المادة، واقفز إلى ترميز زمني محدد، وارسم مستطيلاً فوق الإطار عند الحاجة لتوثيق الملاحظة بدقة."
+        eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={(
           <>
-            <span className="badge">{comments.length} تعليق</span>
+            <span className="badge">{copy.toolbar.commentCount.replace("{count}", String(comments.length))}</span>
             <span className={`badge ${styles.statusIndicator}`} data-status={drawMode ? "editing" : "reviewing"}>
-              {drawMode ? "وضع الرسم" : "عرض التعليقات"}
+              {drawMode ? copy.toolbar.drawingMode : copy.toolbar.reviewMode}
             </span>
           </>
         )}
       />
 
-      <OperationalSafetyPanel action="إضافة تعليق مراجعة" confidence={88} auditHref="/activity" />
+      <OperationalSafetyPanel action={copy.safetyAction} confidence={88} auditHref="/activity" />
 
       {error && (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر إكمال العملية</strong>
+          <strong>{copy.errors.operationFailed}</strong>
           <p className="helper-text">{error}</p>
         </div>
       )}
 
       <div className={`media-review-layout ${styles.mediaReviewLayout}`}>
-          <section className={`stack ${styles.playerSection}`} aria-label="المشغل ونموذج التعليق">
+          <section className={`stack ${styles.playerSection}`} aria-label={copy.media.ariaLabel}>
             <article className="panel auth-form">
               <label>
-                مسار المادة أو معرف جلسة المراجعة
+                {copy.media.sourceLabel}
                 <input
                   type="text"
                   value={mediaUid}
                   onChange={(event) => setMediaUid(event.target.value)}
-                  placeholder="media/file.mp4"
+                  placeholder={copy.media.sourcePlaceholder}
                   dir="ltr"
-                  aria-label="مسار المادة أو معرف جلسة المراجعة"
+                  aria-label={copy.media.sourceLabel}
                 />
-                <p className="helper-text">يستخدم نفس الحقل لتشغيل المادة وربط تعليقات المراجعة.</p>
+                <p className="helper-text">{copy.media.sourceDescription}</p>
               </label>
             </article>
 
@@ -252,26 +253,26 @@ export default function ReviewPage() {
                       setActiveCommentId(null);
                     }}
                   >
-                    {drawMode ? "إيقاف الرسم" : "رسم ملاحظة على الإطار"}
+                    {drawMode ? copy.media.stopDrawing : copy.media.drawAnnotation}
                   </button>
                   {drawMode && draftRects.length > 0 ? (
                     <button type="button" className="button button-secondary" onClick={() => setDraftRects([])}>
-                      مسح الرسم ({draftRects.length})
+                      {copy.media.clearDrawing.replace("{count}", String(draftRects.length))}
                     </button>
                   ) : null}
                 </div>
               </article>
             ) : (
               <EmptyState
-                title="أدخل مسار مادة لبدء المراجعة."
-                description="استخدم نفس الحقل أعلاه لتشغيل المادة وربط تعليقات المراجعة الخاصة بها."
+                title={copy.media.emptyTitle}
+                description={copy.media.emptyDescription}
               />
             )}
 
             <form className={`panel auth-form ${styles.commentForm}`} onSubmit={handleAddComment}>
               <div className={styles.commentFormHeader}>
-                <h2>إضافة تعليق</h2>
-                {useCurrentTime ? <span className="badge">من وقت التشغيل</span> : <span className="badge">وقت يدوي</span>}
+                <h2>{copy.form.title}</h2>
+                {useCurrentTime ? <span className="badge">{copy.form.playbackTime}</span> : <span className="badge">{copy.form.manualTime}</span>}
               </div>
 
               <label className="checkbox-row">
@@ -280,12 +281,12 @@ export default function ReviewPage() {
                   checked={useCurrentTime}
                   onChange={(event) => setUseCurrentTime(event.target.checked)}
                 />
-                استخدام وقت التشغيل الحالي
+                {copy.form.currentPlaybackTime}
               </label>
 
               {!useCurrentTime && (
                 <label className={styles.timecodeInput}>
-                  Timecode بالثواني
+                  {copy.form.timecodeSeconds}
                   <input
                     type="number"
                     value={timecode}
@@ -297,33 +298,33 @@ export default function ReviewPage() {
               )}
 
               <label>
-                التعليق
+                {copy.form.comment}
                 <textarea
                   value={body}
                   onChange={(event) => setBody(event.target.value)}
-                  placeholder="اكتب الملاحظة هنا"
+                  placeholder={copy.form.commentPlaceholder}
                   rows={4}
                 />
               </label>
 
               <button type="submit" className="button button-primary" disabled={!body.trim() || !currentMediaUid || isSubmitting}>
-                {isSubmitting ? "جار الإضافة" : "إضافة التعليق"}
+                {isSubmitting ? copy.form.adding : copy.form.addComment}
               </button>
             </form>
           </section>
 
-          <aside className={`panel ${styles.commentsAside}`} aria-label="تعليقات المراجعة">
+          <aside className={`panel ${styles.commentsAside}`} aria-label={copy.comments.ariaLabel}>
             <div className={styles.commentsHeader}>
               <div className={styles.commentsHeaderInfo}>
-                <h2>التعليقات</h2>
+                <h2>{copy.comments.title}</h2>
                 <p>
                   {commentsState.status === "loading"
-                    ? "جار تحميل التعليقات..."
+                    ? copy.comments.loadingDescription
                     : commentsState.status === "ready" && comments.length
-                      ? "مرتبة حسب الزمن داخل المادة."
+                      ? copy.comments.orderedDescription
                       : commentsState.status === "error"
-                        ? "تعذر تحميل التعليقات."
-                        : "لا توجد تعليقات بعد."}
+                        ? copy.comments.errorDescription
+                        : copy.comments.emptyDescription}
                 </p>
               </div>
               <span className="badge">{comments.length}</span>
@@ -331,17 +332,17 @@ export default function ReviewPage() {
 
             <div className={`review-comments-rail ${styles.commentsList}`}>
               {commentsState.status === "loading" ? (
-                <div className="panel panel-compact"><Skeleton label="جار تحميل التعليقات..." /></div>
+                <div className="panel panel-compact"><Skeleton label={copy.comments.loadingDescription} /></div>
               ) : commentsState.status === "error" ? (
                 <div className="state-banner state-banner-error" role="alert">
-                  <strong>تعذر تحميل التعليقات</strong>
+                  <strong>{copy.comments.errorDescription}</strong>
                   <span className="helper-text">{commentsState.message}</span>
-                  <div><button type="button" className="button button-secondary button-sm" onClick={() => void fetchComments()}>إعادة المحاولة</button></div>
+                  <div><button type="button" className="button button-secondary button-sm" onClick={() => void fetchComments()}>{copy.comments.retry}</button></div>
                 </div>
               ) : commentsState.status === "ready" && comments.length === 0 ? (
                 <EmptyState
-                  title="لا توجد تعليقات بعد."
-                  description="ابدأ بإضافة أول تعليق من النموذج المجاور للمشغل."
+                  title={copy.comments.emptyTitle}
+                  description={copy.comments.emptyStateDescription}
                 />
               ) : commentsState.status === "ready" ? (
                 comments.map((comment) => (
@@ -360,7 +361,7 @@ export default function ReviewPage() {
                         type="button"
                         onClick={() => void handleToggleResolved(comment.id, comment.resolved)}
                       >
-                        {comment.resolved ? "إعادة فتح" : "حل"}
+                        {comment.resolved ? copy.comments.reopen : copy.comments.resolve}
                       </button>
                     </div>
                     <p className={styles.commentBody}>{comment.body}</p>

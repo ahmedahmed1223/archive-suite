@@ -20,29 +20,28 @@ import {
 import { getRecordWorkflowStatus, recordMatches } from "@/lib/record-utils";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-const triggerLabels: Record<AutomationRuleTrigger, string> = {
-  "record.created": "عند إنشاء سجل",
-  "record.updated": "عند تحديث سجل",
-  "media.failed": "عند فشل مهمة وسائط",
-  "schedule.daily": "تشغيل يومي"
-};
-
-const actionLabels: Record<AutomationRuleAction, string> = {
-  "add-tag": "إضافة وسم",
-  "set-review": "إرسال للمراجعة",
-  "notify-admin": "تنبيه المدير",
-  "create-inbox-item": "إنشاء عنصر وارد"
-};
-
-function formatDate(value?: string | null) {
+function formatDate(value: string | null | undefined, locale: "ar" | "en") {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("ar-SA");
+  return date.toLocaleString(locale === "en" ? "en-US" : "ar-SA");
 }
 
 export default function AutomationPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const copy = t.pages.automation;
+  const triggerLabels: Record<AutomationRuleTrigger, string> = {
+    "record.created": copy.triggers.recordCreated,
+    "record.updated": copy.triggers.recordUpdated,
+    "media.failed": copy.triggers.mediaFailed,
+    "schedule.daily": copy.triggers.scheduleDaily
+  };
+  const actionLabels: Record<AutomationRuleAction, string> = {
+    "add-tag": copy.actions.addTag,
+    "set-review": copy.actions.setReview,
+    "notify-admin": copy.actions.notifyAdmin,
+    "create-inbox-item": copy.actions.createInboxItem
+  };
   const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
@@ -93,7 +92,7 @@ export default function AutomationPage() {
     event.preventDefault();
     if (!name.trim()) return;
 
-    setStatusMessage("جار حفظ القاعدة...");
+    setStatusMessage(copy.feedback.saving);
     const response = await api.createAutomationRule({
       name: name.trim(),
       trigger,
@@ -107,7 +106,7 @@ export default function AutomationPage() {
     });
 
     if (!response.ok) {
-      setStatusMessage(response.error || "تعذر حفظ القاعدة.");
+      setStatusMessage(response.error || copy.feedback.saveError);
       return;
     }
 
@@ -118,32 +117,32 @@ export default function AutomationPage() {
     setStatus("all");
     setDepartmentId("");
     setAction("notify-admin");
-    setStatusMessage("تم حفظ القاعدة في الخادم.");
+    setStatusMessage(copy.feedback.saved);
     await refreshAutomation();
   }
 
   async function toggleRule(rule: AutomationRule) {
     setBusyId(rule.id);
     const response = await api.updateAutomationRule(rule.id, { enabled: !rule.enabled });
-    if (!response.ok) setStatusMessage(response.error || "تعذر تحديث القاعدة.");
-    else setStatusMessage(rule.enabled ? "تم إيقاف القاعدة." : "تم تفعيل القاعدة.");
+    if (!response.ok) setStatusMessage(response.error || copy.feedback.updateError);
+    else setStatusMessage(rule.enabled ? copy.feedback.stopped : copy.feedback.enabled);
     await refreshAutomation();
     setBusyId(null);
   }
 
   async function deleteRule(rule: AutomationRule) {
     const confirmed = await dialogs.confirm({
-      title: "حذف القاعدة",
-      message: `سيتم حذف القاعدة "${rule.name}" ولن تعمل تلقائيًا بعد الآن. هل تريد المتابعة؟`,
-      confirmLabel: "حذف",
+      title: copy.deleteDialog.title,
+      message: copy.deleteDialog.message.replace("{name}", rule.name),
+      confirmLabel: copy.deleteDialog.confirm,
       destructive: true
     });
     if (!confirmed) return;
 
     setBusyId(rule.id);
     const response = await api.deleteAutomationRule(rule.id);
-    if (!response.ok) setStatusMessage(response.error || "تعذر حذف القاعدة.");
-    else setStatusMessage("تم حذف القاعدة.");
+    if (!response.ok) setStatusMessage(response.error || copy.feedback.deleteError);
+    else setStatusMessage(copy.feedback.deleted);
     await refreshAutomation();
     setBusyId(null);
   }
@@ -152,9 +151,9 @@ export default function AutomationPage() {
     setBusyId(rule.id);
     const response = await api.runAutomationRule(rule.id, { dryRun });
     if (!response.ok) {
-      setStatusMessage(response.error || "تعذر تشغيل القاعدة.");
+      setStatusMessage(response.error || copy.feedback.runError);
     } else {
-      setStatusMessage(`${dryRun ? "Dry-run" : "تشغيل فعلي"}: ${response.run.message || "اكتمل التشغيل."}`);
+      setStatusMessage(`${dryRun ? copy.feedback.dryRun : copy.feedback.liveRun}: ${response.run.message || copy.feedback.runCompleted}`);
     }
     await refreshAutomation();
     setBusyId(null);
@@ -167,120 +166,120 @@ export default function AutomationPage() {
   return (
     <AppShell subtitle={t.pageTitles.automation} contentClassName="local-list-content" tipsPage="automation">
       <PageToolbar
-        eyebrow={<span className="badge">محرك القواعد</span>}
-        title="محرّك القواعد"
-        description="قواعد محفوظة في الخادم مع dry-run، تشغيل فعلي محدود، وسجل تنفيذ قابل للمراجعة."
+        eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={(
           <>
-            <span className="badge">{rules.length} قاعدة</span>
-            <span className="badge">{rules.filter((rule) => rule.enabled).length} مفعّلة</span>
-            <span className="badge">{runs.length} تشغيل</span>
+            <span className="badge">{copy.toolbar.ruleCount.replace("{count}", String(rules.length))}</span>
+            <span className="badge">{copy.toolbar.enabledCount.replace("{count}", String(rules.filter((rule) => rule.enabled).length))}</span>
+            <span className="badge">{copy.toolbar.runCount.replace("{count}", String(runs.length))}</span>
           </>
         )}
-        actions={<a className="button button-secondary" href="/activity">سجل النشاط</a>}
+        actions={<a className="button button-secondary" href="/activity">{copy.toolbar.activityLink}</a>}
       >
         {canManageAutomation ? (
           <form className="archive-toolbar-grid" onSubmit={addRule}>
             <label>
-              <span>اسم القاعدة</span>
+              <span>{copy.form.nameLabel}</span>
               <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} />
             </label>
             <label>
-              <span>المشغّل</span>
+              <span>{copy.form.triggerLabel}</span>
               <select value={trigger} onChange={(event) => setTrigger(event.target.value as AutomationRuleTrigger)}>
                 {(Object.keys(triggerLabels) as AutomationRuleTrigger[]).map((item) => <option key={item} value={item}>{triggerLabels[item]}</option>)}
               </select>
             </label>
             <label>
-              <span>بحث</span>
-              <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="شرط نصي اختياري" />
+              <span>{copy.form.queryLabel}</span>
+              <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.form.queryPlaceholder} />
             </label>
             <label>
-              <span>نوع</span>
+              <span>{copy.form.typeLabel}</span>
               <select value={type} onChange={(event) => setType(event.target.value)}>
-                <option value="all">كل الأنواع</option>
+                <option value="all">{copy.form.allTypes}</option>
                 {types.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
             <label>
-              <span>وسم</span>
+              <span>{copy.form.tagLabel}</span>
               <select value={tag} onChange={(event) => setTag(event.target.value)}>
-                <option value="all">كل الوسوم</option>
+                <option value="all">{copy.form.allTags}</option>
                 {tags.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
             <label>
-              <span>حالة</span>
+              <span>{copy.form.statusLabel}</span>
               <select value={status} onChange={(event) => setStatus(event.target.value)}>
-                <option value="all">كل الحالات</option>
+                <option value="all">{copy.form.allStatuses}</option>
                 {statuses.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
             <label>
-              <span>الإجراء</span>
+              <span>{copy.form.actionLabel}</span>
               <select value={action} onChange={(event) => setAction(event.target.value as AutomationRuleAction)}>
                 {(Object.keys(actionLabels) as AutomationRuleAction[]).map((item) => <option key={item} value={item}>{actionLabels[item]}</option>)}
               </select>
             </label>
             {action === "create-inbox-item" ? <label>
-              <span>القسم المستهدف</span>
-              <input className="search-input" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} placeholder="اختياري" />
+              <span>{copy.form.departmentLabel}</span>
+              <input className="search-input" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} placeholder={copy.form.optional} />
             </label> : null}
             <div className="archive-toolbar-actions">
-              <button type="submit" className="button button-primary" disabled={!name.trim()}>حفظ القاعدة</button>
+              <button type="submit" className="button button-primary" disabled={!name.trim()}>{copy.form.save}</button>
             </div>
           </form>
         ) : null}
         {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
       </PageToolbar>
 
-      <OperationalSafetyPanel action="معاينة قواعد الأتمتة" dryRun confidence={82} auditHref="/activity" />
+      <OperationalSafetyPanel action={copy.safetyAction} dryRun confidence={82} auditHref="/activity" />
 
       {error ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل بيانات الأتمتة</strong>
+          <strong>{copy.load.errorTitle}</strong>
           <span className="helper-text">{error}</span>
         </div>
       ) : null}
 
       {loading ? (
         <div className="panel panel-compact" role="status">
-          <Skeleton label="جار تحميل قواعد الأتمتة..." />
+          <Skeleton label={copy.load.loading} />
         </div>
       ) : null}
 
       {!loading && rules.length === 0 ? (
-        <EmptyState title="لا توجد قواعد بعد." description="أنشئ قاعدة محفوظة في الخادم، ثم اختبرها بـ dry-run قبل التشغيل الفعلي." />
+        <EmptyState title={copy.empty.title} description={copy.empty.description} />
       ) : (
-        <section className="rules-grid" aria-label="قواعد الأتمتة">
+        <section className="rules-grid" aria-label={copy.rules.ariaLabel}>
           {rules.map((rule) => (
             <article className="local-list-card" key={rule.id} data-enabled={rule.enabled ? "true" : "false"}>
               <div className="local-list-card__main">
                 <div>
-                  <span className="badge">{rule.enabled ? "مفعّلة" : "متوقفة"}</span>
+                  <span className="badge">{rule.enabled ? copy.rules.enabled : copy.rules.stopped}</span>
                   <h3>{rule.name}</h3>
                 </div>
                 <strong className="metric-value">{matchingCount(rule)}</strong>
               </div>
               <dl className="mobile-field-list">
-                <div><dt>المشغّل</dt><dd>{triggerLabels[rule.trigger]}</dd></div>
-                <div><dt>الشروط</dt><dd>{[rule.query, rule.type !== "all" ? rule.type : "", rule.tag !== "all" ? rule.tag : "", rule.status !== "all" ? rule.status : ""].filter(Boolean).join(" · ") || "كل السجلات"}</dd></div>
-                <div><dt>الإجراء</dt><dd>{actionLabels[rule.action]}{rule.departmentId ? ` · ${rule.departmentId}` : ""}</dd></div>
-                <div><dt>آخر تشغيل</dt><dd>{formatDate(rule.lastRunAt)}</dd></div>
+                <div><dt>{copy.rules.triggerLabel}</dt><dd>{triggerLabels[rule.trigger]}</dd></div>
+                <div><dt>{copy.rules.conditionsLabel}</dt><dd>{[rule.query, rule.type !== "all" ? rule.type : "", rule.tag !== "all" ? rule.tag : "", rule.status !== "all" ? rule.status : ""].filter(Boolean).join(" · ") || copy.rules.allRecords}</dd></div>
+                <div><dt>{copy.rules.actionLabel}</dt><dd>{actionLabels[rule.action]}{rule.departmentId ? ` · ${rule.departmentId}` : ""}</dd></div>
+                <div><dt>{copy.rules.lastRunLabel}</dt><dd>{formatDate(rule.lastRunAt, locale)}</dd></div>
               </dl>
               <div className="button-row">
                 <button className="button button-secondary button-sm" type="button" onClick={() => void runRule(rule, true)} disabled={busyId === rule.id}>
-                  Dry-run
+                  {copy.rules.dryRun}
                 </button>
                 {canManageAutomation ? (
                   <>
                     <button className="button button-primary button-sm" type="button" onClick={() => void runRule(rule, false)} disabled={busyId === rule.id || !rule.enabled}>
-                      تشغيل فعلي
+                      {copy.rules.liveRun}
                     </button>
                     <button className="button button-secondary button-sm" type="button" onClick={() => void toggleRule(rule)} disabled={busyId === rule.id}>
-                      {rule.enabled ? "إيقاف" : "تفعيل"}
+                      {rule.enabled ? copy.rules.stop : copy.rules.enable}
                     </button>
-                    <button className="button button-danger button-sm" type="button" onClick={() => void deleteRule(rule)} disabled={busyId === rule.id}>حذف</button>
+                    <button className="button button-danger button-sm" type="button" onClick={() => void deleteRule(rule)} disabled={busyId === rule.id}>{copy.rules.delete}</button>
                   </>
                 ) : null}
               </div>
@@ -292,14 +291,14 @@ export default function AutomationPage() {
       {runs.length > 0 ? (
         <article className="panel">
           <div className="panel-section-header">
-            <h2>سجل تشغيل الأتمتة</h2>
+            <h2>{copy.runs.title}</h2>
           </div>
           <ul className="compact-list">
             {runs.map((run) => (
               <li key={run.id}>
-                <strong>{run.dryRun ? "Dry-run" : "تشغيل فعلي"} · {run.status}</strong>
+                <strong>{run.dryRun ? copy.runs.dryRun : copy.runs.liveRun} · {run.status}</strong>
                 <span className="helper-text">
-                  مطابق {run.matchedCount} · منفذ {run.executedCount} · {formatDate(run.createdAt)}
+                  {copy.runs.matched.replace("{count}", String(run.matchedCount))} · {copy.runs.executed.replace("{count}", String(run.executedCount))} · {formatDate(run.createdAt, locale)}
                 </span>
                 {run.message ? <span className="helper-text">{run.message}</span> : null}
               </li>

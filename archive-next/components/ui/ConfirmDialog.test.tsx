@@ -1,7 +1,21 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { ConfirmDialogProvider, useConfirmDialog, type ConfirmDialogApi } from "@/components/ui/ConfirmDialog";
+
+const localeState = vi.hoisted(() => ({ current: "ar" as "ar" | "en" }));
+
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+  return {
+    useLocale: () => ({
+      locale: localeState.current,
+      direction: localeState.current === "ar" ? "rtl" : "ltr",
+      t: getDictionary(localeState.current),
+      setLocale: vi.fn(),
+    }),
+  };
+});
 
 let dialogApi: ConfirmDialogApi;
 
@@ -10,7 +24,8 @@ function ApiCapture() {
   return null;
 }
 
-function renderProvider() {
+function renderProvider(locale: "ar" | "en" = "ar") {
+  localeState.current = locale;
   return render(
     <ConfirmDialogProvider>
       <ApiCapture />
@@ -18,9 +33,23 @@ function renderProvider() {
   );
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localeState.current = "ar";
+});
 
 describe("ConfirmDialogProvider — confirm", () => {
+  test("uses English default dialog copy when English is active", async () => {
+    renderProvider("en");
+    const result = dialogApi.confirm({ message: "This action changes the record." });
+
+    expect(await screen.findByRole("dialog", { name: "Confirm action" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    await expect(result).resolves.toBe(true);
+  });
+
   test("resolves true when the confirm button is clicked", async () => {
     renderProvider();
     const result = dialogApi.confirm({ message: "سيتم حذف السجل نهائيًا.", destructive: true });
@@ -121,7 +150,7 @@ describe("ConfirmDialogProvider — alert", () => {
 
     await screen.findByRole("dialog");
     expect(screen.getByText("فشل الإلغاء: خطأ في الخادم")).toBeTruthy();
-    const closeButton = screen.getByRole("button", { name: "حسناً" });
+    const closeButton = screen.getByRole("button", { name: "حسنًا" });
     await waitFor(() => expect(document.activeElement).toBe(closeButton));
 
     fireEvent.click(closeButton);

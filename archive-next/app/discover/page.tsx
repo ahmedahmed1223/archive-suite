@@ -8,6 +8,7 @@ import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type DiscoverSection, type SuggestionFeedbackValue } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import type { AppDictionary } from "@/lib/i18n/dictionaries";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type DiscoverState =
@@ -15,19 +16,21 @@ type DiscoverState =
   | { status: "ready"; sections: DiscoverSection[] }
   | { status: "error"; message: string };
 
-function recordText(record: ArchiveRecord, locale: "ar" | "en") {
-  return String(record.description || record.metadata?.notes || record.metadata?.path || record.store || (locale === "en" ? "No additional description" : "بدون وصف إضافي"));
+type DiscoverCopy = AppDictionary["pages"]["discover"];
+
+function recordText(record: ArchiveRecord, copy: DiscoverCopy) {
+  return String(record.description || record.metadata?.notes || record.metadata?.path || record.store || copy.noAdditionalDescription);
 }
 
-function recordKind(record: ArchiveRecord, locale: "ar" | "en") {
-  return String(record.type || record.subtype || record.metadata?.mediaType || record.store || (locale === "en" ? "Record" : "سجل"));
+function recordKind(record: ArchiveRecord, copy: DiscoverCopy) {
+  return String(record.type || record.subtype || record.metadata?.mediaType || record.store || copy.record);
 }
 
-function recordDate(record: ArchiveRecord, locale: "ar" | "en") {
+function recordDate(record: ArchiveRecord, locale: "ar" | "en", copy: DiscoverCopy) {
   const value = record.updatedAt || record.createdAt;
 
   if (!value) {
-    return locale === "en" ? "Unspecified" : "غير محدد";
+    return copy.unspecified;
   }
 
   const date = new Date(value);
@@ -35,22 +38,22 @@ function recordDate(record: ArchiveRecord, locale: "ar" | "en") {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(locale === "en" ? "en-US" : "ar-SA");
 }
 
-function DiscoverCard({ record, locale }: Readonly<{ record: ArchiveRecord; locale: "ar" | "en" }>) {
-  const title = String(record.title || record.name || (locale === "en" ? "Untitled" : "بدون عنوان"));
+function DiscoverCard({ record, locale, copy }: Readonly<{ record: ArchiveRecord; locale: "ar" | "en"; copy: DiscoverCopy }>) {
+  const title = String(record.title || record.name || copy.untitled);
 
   return (
     <article className="panel panel-compact">
       <div className="panel-title-row">
         <div>
-          <span className="badge">{recordKind(record, locale)}</span>
+          <span className="badge">{recordKind(record, copy)}</span>
           <h3>{title}</h3>
         </div>
-        <span className="badge">{recordDate(record, locale)}</span>
+        <span className="badge">{recordDate(record, locale, copy)}</span>
       </div>
-      <p className="helper-text">{recordText(record, locale)}</p>
+      <p className="helper-text">{recordText(record, copy)}</p>
       <div className="button-row">
         <a className="button button-primary" href={`/archive/${encodeURIComponent(record.id || record.uid || "")}`}>
-          {locale === "en" ? "Open record" : "فتح السجل"}
+          {copy.openRecord}
         </a>
       </div>
     </article>
@@ -159,7 +162,7 @@ export default function DiscoverPage() {
           ) : (
             <div className="records-surface" data-view="grid">
               {section.records.map((record) => (
-                <DiscoverCard key={`${section.key}:${record.id || record.uid}`} record={record} locale={locale} />
+                <DiscoverCard key={`${section.key}:${record.id || record.uid}`} record={record} locale={locale} copy={copy} />
               ))}
             </div>
           )}

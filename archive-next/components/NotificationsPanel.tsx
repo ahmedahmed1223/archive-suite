@@ -13,12 +13,12 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export function NotificationsBadge() {
   const { unreadCount, isLoading } = useNotifications();
-  const { locale } = useLocale();
+  const { t } = useLocale();
 
   if (isLoading || unreadCount === 0) return null;
 
   return (
-    <span className="notification-badge" aria-label={locale === "en" ? `${unreadCount} new notifications` : `${unreadCount} إشعارات جديدة`}>
+    <span className="notification-badge" aria-label={t.shell.notifications.unreadCount.replace("{count}", String(unreadCount))}>
       {unreadCount}
     </span>
   );
@@ -30,6 +30,9 @@ function NotificationItem({ notification, onRead, onDelete, locale }: {
   onDelete: (id: number) => void;
   locale: "ar" | "en";
 }) {
+  const { t } = useLocale();
+  const copy = t.shell.notifications;
+
   return (
     <div
       className="notification-item"
@@ -61,8 +64,8 @@ function NotificationItem({ notification, onRead, onDelete, locale }: {
         type="button"
         className="notification-item__delete"
         onClick={() => onDelete(notification.id)}
-        aria-label={locale === "en" ? "Delete notification" : "حذف الإشعار"}
-        title={locale === "en" ? "Delete" : "حذف"}
+        aria-label={copy.deleteNotification}
+        title={copy.delete}
       >
         <Trash2 size={16} aria-hidden="true" />
       </button>
@@ -72,7 +75,7 @@ function NotificationItem({ notification, onRead, onDelete, locale }: {
 
 export function NotificationsPanel() {
   const { locale, t } = useLocale();
-  const copy = t.pages.notificationsPanel;
+  const copy = t.shell.notifications;
   const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [alertsGranted, setAlertsGranted] = useState(false);

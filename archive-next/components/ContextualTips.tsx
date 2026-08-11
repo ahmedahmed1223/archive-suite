@@ -6,10 +6,13 @@ import { getPageTips, type PageKey, type Tip } from "@/lib/contextual-tips";
 import { useAuthSession } from "@/lib/auth-session";
 import { useContextualTips } from "@/lib/use-contextual-tips";
 import { resolveIcon } from "@/lib/icon-registry";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const getTipIcon = (name?: string) => resolveIcon(name || "Lightbulb", Icons.Lightbulb);
 
 export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
+  const { t } = useLocale();
+  const copy = t.shell.contextualTips;
   const { isDismissed, isEnabled, handleDismiss, handleDismissSession, isHydrated } = useContextualTips(page);
   const { user } = useAuthSession();
   const [isOpen, setIsOpen] = useState(false);
@@ -60,10 +63,10 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
         type="button"
         className="contextual-tips__trigger icon-action"
         onClick={() => setIsOpen((prev) => !prev)}
-        aria-label={`نصائح حول ${page}`}
+        aria-label={copy.triggerAriaLabel}
         aria-expanded={isOpen}
         aria-controls={popoverId}
-        title="نصائح اضغط لإظهار"
+        title={copy.triggerTitle}
         data-dismissed="false"
         ref={triggerRef}
       >
@@ -80,12 +83,12 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
           aria-labelledby={`${popoverId}-title`}
         >
           <div className="contextual-tips__header">
-            <h3 id={`${popoverId}-title`}>نصائح سريعة</h3>
+            <h3 id={`${popoverId}-title`}>{copy.heading}</h3>
             <button
               type="button"
               className="contextual-tips__close"
               onClick={() => closePopover()}
-              aria-label="إغلاق"
+              aria-label={copy.closeAriaLabel}
             >
               <Icons.X size={16} />
             </button>
@@ -104,7 +107,7 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
                 closePopover(false);
               }}
             >
-              إخفاء لهذه الجلسة (تظهر بعد التحديث)
+              {copy.dismissSession}
             </button>
             <button
               type="button"
@@ -114,7 +117,7 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
                 closePopover(false);
               }}
             >
-              عدم إظهار مرة أخرى
+              {copy.dismissPermanently}
             </button>
           </div>
         </div>

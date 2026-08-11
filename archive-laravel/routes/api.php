@@ -516,6 +516,7 @@ Route::prefix('v1')->group(function (): void {
             Route::patch('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcUpdateRow']);
             Route::delete('/system/odbc/tables/{table}/rows', [SystemController::class, 'odbcDeleteRow']);
         });
+        Route::get('/system/display-settings', [SystemController::class, 'getDisplaySettings']);
         Route::get('/system/security-settings', [SystemController::class, 'getSecuritySettings']);
         Route::get('/system/dropbox', [DropboxController::class, 'show']);
         Route::post('/system/dropbox/authorize', [DropboxController::class, 'authorize']);
@@ -525,6 +526,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/system/dropbox/folders', [DropboxController::class, 'browseFolders']);
         Route::patch('/system/dropbox/folder', [DropboxController::class, 'setFolder']);
         Route::delete('/system/dropbox', [DropboxController::class, 'disconnect']);
+        Route::patch('/system/display-settings', [SystemController::class, 'updateDisplaySettings']);
         Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);
         Route::post('/system/test-storage', [SystemController::class, 'testStorageConnection']);
         Route::post('/system/test-database', [SystemController::class, 'testDatabaseConnection']);

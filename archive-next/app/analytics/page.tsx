@@ -36,13 +36,6 @@ interface AnalyticsData {
   taggedPct: number;
 }
 
-const rangeOptions: Array<DataViewOption<TimeRange>> = [
-  { value: "30d", label: "30 يوم" },
-  { value: "90d", label: "90 يوم" },
-  { value: "1y", label: "سنة" },
-  { value: "all", label: "الكل" }
-];
-
 const chartColors = [
   "var(--color-brand-primary)",
   "var(--color-brand-indigo)",
@@ -110,12 +103,13 @@ function calculateAnalytics(records: ArchiveRecord[], daysAgo?: number): Analyti
   };
 }
 
-function rangeLabel(range: TimeRange) {
-  return rangeOptions.find((option) => option.value === range)?.label || "الكل";
-}
-
 export default function AnalyticsPage() {
   const { t } = useLocale();
+  const copy = t.pages.analytics;
+  const rangeOptions: Array<DataViewOption<TimeRange>> = [
+    { value: "30d", label: copy.ranges["30d"] }, { value: "90d", label: copy.ranges["90d"] },
+    { value: "1y", label: copy.ranges["1y"] }, { value: "all", label: copy.ranges.all }
+  ];
   const api = useMemo(() => createArchiveApiClient(), []);
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
   const recordsQuery = useQuery({
@@ -123,7 +117,7 @@ export default function AnalyticsPage() {
     queryFn: async (): Promise<ArchiveRecord[]> => {
       const response = await api.search({ q: "", limit: 500 });
       if (!response.ok) {
-        throw new Error(response.error || "تعذر تحميل بيانات التحليلات.");
+        throw new Error(response.error || copy.loadError);
       }
 
       return response.records;
@@ -182,89 +176,89 @@ export default function AnalyticsPage() {
   return (
     <AppShell subtitle={t.pageTitles.archiveAnalytics} navLabel={t.pageTitles.analytics} contentClassName="observability-content" tipsPage="analytics">
       <PageToolbar
-        eyebrow={<span className="badge">تحليل تشغيلي</span>}
-        title="تحليلات الأرشيف"
-        description="مؤشرات نمو الأرشيف، جودة الوسوم، وتوزيع الأنواع والحالات من بيانات البحث الحالية."
+        eyebrow={<span className="badge">{copy.eyebrow}</span>}
+        title={copy.title}
+        description={copy.description}
         meta={
           <>
-            <span className="badge">{rangeLabel(timeRange)}</span>
-            <span className="badge">{records.length} عنصر محمل</span>
-            <span className="badge">{analytics.taggedPct}% موسومة</span>
+            <span className="badge">{copy.ranges[timeRange]}</span>
+            <span className="badge">{copy.loadedCount.replace("{count}", String(records.length))}</span>
+            <span className="badge">{copy.taggedPercent.replace("{percent}", String(analytics.taggedPct))}</span>
           </>
         }
         actions={
           <>
             <button className="button button-secondary" type="button" onClick={() => void recordsQuery.refetch()} disabled={recordsQuery.isFetching}>
-              تحديث
+              {copy.refresh}
             </button>
             <button className="button button-primary" type="button" onClick={exportCsv} disabled={records.length === 0}>
-              تصدير CSV
+              {copy.exportCsv}
             </button>
           </>
         }
       >
-        <DataViewSwitcher value={timeRange} options={rangeOptions} onChange={setTimeRange} label="نطاق التحليل" />
+        <DataViewSwitcher value={timeRange} options={rangeOptions} onChange={setTimeRange} label={copy.rangeLabel} />
       </PageToolbar>
 
       {isLoading ? (
         <section className="state-banner" role="status" aria-live="polite">
-          <strong>جار تحميل بيانات التحليل</strong>
-          <p>يتم جلب آخر 500 سجل من عقد البحث الحالي.</p>
+          <strong>{copy.loadingTitle}</strong>
+          <p>{copy.loadingDescription}</p>
         </section>
       ) : null}
 
       {loadError ? (
         <section className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل التحليلات</strong>
-          <p>{redactAdminSecrets(loadError)} — تحقق من الاتصال ثم أعد المحاولة.</p>
+          <strong>{copy.errorTitle}</strong>
+          <p>{copy.errorDescription.replace("{error}", redactAdminSecrets(loadError))}</p>
         </section>
       ) : null}
 
       {isEmpty && !isLoading ? (
         <EmptyState
-          title="لا بيانات للتحليل"
-          description="أضف عناصر إلى الأرشيف أو وسع نطاق التحليل لتظهر مؤشرات الأداء هنا."
+          title={copy.emptyTitle}
+          description={copy.emptyDescription}
         />
       ) : (
         <>
           <div className="analytics-metric-grid">
             <article className="health-metric" data-tone="accent">
               <div className="health-metric__body">
-                <span>إجمالي العناصر</span>
+                <span>{copy.totalItems}</span>
                 <strong>{analytics.totalCount}</strong>
               </div>
             </article>
             <article className="health-metric" data-tone="success">
               <div className="health-metric__body">
-                <span>العناصر الموسومة</span>
+                <span>{copy.taggedItems}</span>
                 <strong>{analytics.taggedPct}%</strong>
-                <small>{analytics.taggedCount} عنصر</small>
+                <small>{copy.itemCount.replace("{count}", String(analytics.taggedCount))}</small>
               </div>
             </article>
             <article className="health-metric">
               <div className="health-metric__body">
-                <span>عدد الأنواع</span>
+                <span>{copy.typeCount}</span>
                 <strong>{Object.keys(analytics.countByType).length}</strong>
               </div>
             </article>
             <article className="health-metric">
               <div className="health-metric__body">
-                <span>عدد الحالات</span>
+                <span>{copy.statusCount}</span>
                 <strong>{Object.keys(analytics.countByStatus).length}</strong>
               </div>
             </article>
           </div>
 
           {analytics.monthlyGrowth.length > 0 ? (
-            <section className="panel analytics-chart analytics-recharts-panel" aria-label="النمو الشهري">
+            <section className="panel analytics-chart analytics-recharts-panel" aria-label={copy.monthlyGrowthAriaLabel}>
               <div className="panel-title-row">
                 <div>
-                  <h2>النمو الشهري</h2>
-                  <p>آخر 12 شهرًا لديها تاريخ إنشاء أو تحديث واضح.</p>
+                  <h2>{copy.monthlyGrowth}</h2>
+                  <p>{copy.monthlyGrowthDescription}</p>
                 </div>
-                <span className="badge">{analytics.monthlyGrowth.length} أشهر</span>
+                <span className="badge">{copy.monthCount.replace("{count}", String(analytics.monthlyGrowth.length))}</span>
               </div>
-              <div className="analytics-recharts" role="img" aria-label="رسم بياني للنمو الشهري">
+              <div className="analytics-recharts" role="img" aria-label={copy.monthlyGrowthChartAriaLabel}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={analytics.monthlyGrowth} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
                     <CartesianGrid stroke="var(--color-border-secondary)" vertical={false} />
@@ -279,7 +273,7 @@ export default function AnalyticsPage() {
                         color: "var(--color-text-primary)"
                       }}
                     />
-                    <Bar dataKey="count" name="العناصر" fill="var(--color-brand-primary)" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="count" name={copy.chartItems} fill="var(--color-brand-primary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -290,8 +284,8 @@ export default function AnalyticsPage() {
             <section className="panel">
               <div className="panel-title-row">
                 <div>
-                  <h2>توزيع الأنواع</h2>
-                  <p>عدد العناصر حسب نوع المحتوى.</p>
+                  <h2>{copy.typeDistribution}</h2>
+                  <p>{copy.typeDistributionDescription}</p>
                 </div>
               </div>
               <div className="analytics-chip-list">
@@ -306,8 +300,8 @@ export default function AnalyticsPage() {
             <section className="panel">
               <div className="panel-title-row">
                 <div>
-                  <h2>الحالات</h2>
-                  <p>قراءة أولية من `metadata.status` لكل سجل.</p>
+                  <h2>{copy.statuses}</h2>
+                  <p>{copy.statusesDescription}</p>
                 </div>
               </div>
               <div className="analytics-chip-list">
@@ -321,15 +315,15 @@ export default function AnalyticsPage() {
           </div>
 
           {typeChartData.length > 0 ? (
-            <section className="panel analytics-chart analytics-recharts-panel" aria-label="توزيع الأنواع البياني">
+            <section className="panel analytics-chart analytics-recharts-panel" aria-label={copy.typeChartAriaLabel}>
               <div className="panel-title-row">
                 <div>
-                  <h2>خريطة الأنواع</h2>
-                  <p>قراءة سريعة لحجم كل نوع داخل نطاق التحليل.</p>
+                  <h2>{copy.typeMap}</h2>
+                  <p>{copy.typeMapDescription}</p>
                 </div>
-                <span className="badge">{typeChartData.length} أنواع</span>
+                <span className="badge">{copy.typesCount.replace("{count}", String(typeChartData.length))}</span>
               </div>
-              <div className="analytics-recharts" role="img" aria-label="رسم دائري لتوزيع الأنواع">
+              <div className="analytics-recharts" role="img" aria-label={copy.typePieChartAriaLabel}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
@@ -363,10 +357,10 @@ export default function AnalyticsPage() {
             <section className="panel">
               <div className="panel-title-row">
                 <div>
-                  <h2>أكثر الوسوم</h2>
-                  <p>أعلى الوسوم تكرارًا داخل نطاق التحليل الحالي.</p>
+                  <h2>{copy.topTags}</h2>
+                  <p>{copy.topTagsDescription}</p>
                 </div>
-                <span className="badge">{analytics.topTags.length} وسوم</span>
+                <span className="badge">{copy.tagsCount.replace("{count}", String(analytics.topTags.length))}</span>
               </div>
               <div className="analytics-tag-list">
                 {analytics.topTags.map(({ tag, count }) => (

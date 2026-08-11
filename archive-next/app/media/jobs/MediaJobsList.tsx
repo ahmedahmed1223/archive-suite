@@ -8,7 +8,15 @@ import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation, type PaginationMeta } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
+import type { mediaJobs } from "@/lib/i18n/dictionaries/ar/pages/mediaJobs";
 import "../media.css";
+
+type LocalizedStrings<T> = {
+  [Key in keyof T]: T[Key] extends object ? LocalizedStrings<T[Key]> : string;
+};
+
+type MediaJobsCopy = LocalizedStrings<typeof mediaJobs>;
 
 type ListState =
   | { status: "loading" }
@@ -29,40 +37,34 @@ type IngestState =
   | { status: "error"; message: string };
 
 const OPERATIONS: readonly MediaOperation[] = ["thumbnail", "transcode", "transcription"];
-const WATERMARK_POSITIONS = [
-  { value: "bottom-right", label: "أسفل يمين" },
-  { value: "bottom-left", label: "أسفل يسار" },
-  { value: "top-right", label: "أعلى يمين" },
-  { value: "top-left", label: "أعلى يسار" },
-  { value: "center", label: "الوسط" }
-] as const;
+function createMediaJobFormSchema(copy: MediaJobsCopy) {
+  return z
+    .object({
+      recordId: z.string().trim().min(1, copy.validation.recordIdRequired),
+      operation: z.string().trim().min(1, copy.validation.operationRequired),
+      sourcePath: z.string().trim().optional().transform((value) => value || undefined),
+      atSec: z.coerce.number().min(0, copy.validation.atSecMinimum).max(86400, copy.validation.atSecMaximum).default(0),
+      formatSrt: z.boolean().optional().default(true),
+      formatVtt: z.boolean().optional().default(true),
+      formatTtml: z.boolean().optional().default(true),
+      watermarkEnabled: z.boolean().optional().default(false),
+      watermarkPath: z.string().trim().optional().transform((value) => value || undefined),
+      watermarkPosition: z.string().default("bottom-right"),
+      watermarkOpacity: z.coerce.number().min(0, copy.validation.opacityRange).max(1, copy.validation.opacityRange).default(0.85),
+      watermarkMargin: z.coerce.number().min(0, copy.validation.marginMinimum).max(512, copy.validation.marginMaximum).default(24)
+    })
+    .superRefine((value, ctx) => {
+      if (!(OPERATIONS as readonly string[]).includes(value.operation)) {
+        ctx.addIssue({ code: "custom", path: ["operation"], message: copy.validation.operationUnsupported });
+      }
 
-const mediaJobFormSchema = z
-  .object({
-    recordId: z.string().trim().min(1, "أدخل معرّف السجل."),
-    operation: z.string().trim().min(1, "اختر نوع العملية."),
-    sourcePath: z.string().trim().optional().transform((value) => value || undefined),
-    atSec: z.coerce.number().min(0, "الثانية لا يمكن أن تكون سالبة.").max(86400, "الحد الأقصى 86400 ثانية.").default(0),
-    formatSrt: z.boolean().optional().default(true),
-    formatVtt: z.boolean().optional().default(true),
-    formatTtml: z.boolean().optional().default(true),
-    watermarkEnabled: z.boolean().optional().default(false),
-    watermarkPath: z.string().trim().optional().transform((value) => value || undefined),
-    watermarkPosition: z.string().default("bottom-right"),
-    watermarkOpacity: z.coerce.number().min(0, "الشفافية بين 0 و 1.").max(1, "الشفافية بين 0 و 1.").default(0.85),
-    watermarkMargin: z.coerce.number().min(0, "الهامش لا يمكن أن يكون سالبًا.").max(512, "الهامش الأقصى 512.").default(24)
-  })
-  .superRefine((value, ctx) => {
-    if (!(OPERATIONS as readonly string[]).includes(value.operation)) {
-      ctx.addIssue({ code: "custom", path: ["operation"], message: "اختر عملية مدعومة." });
-    }
+      if (value.operation === "transcode" && value.watermarkEnabled && !value.watermarkPath) {
+        ctx.addIssue({ code: "custom", path: ["watermarkPath"], message: copy.validation.watermarkPathRequired });
+      }
+    });
+}
 
-    if (value.operation === "transcode" && value.watermarkEnabled && !value.watermarkPath) {
-      ctx.addIssue({ code: "custom", path: ["watermarkPath"], message: "أدخل مسار صورة العلامة المائية." });
-    }
-  });
-
-type MediaJobFormValues = z.input<typeof mediaJobFormSchema>;
+type MediaJobFormValues = z.input<ReturnType<typeof createMediaJobFormSchema>>;
 
 function clampNumber(value: number, min: number, max: number, fallback: number) {
   if (!Number.isFinite(value)) {
@@ -72,25 +74,25 @@ function clampNumber(value: number, min: number, max: number, fallback: number) 
   return Math.min(max, Math.max(min, value));
 }
 
-function operationLabel(operation: MediaOperation) {
+function operationLabel(operation: MediaOperation, copy: MediaJobsCopy) {
   const labels: Record<MediaOperation, string> = {
-    thumbnail: "صورة مصغرة",
-    transcode: "تحويل صيغة",
-    transcription: "تفريغ نصي",
-    ocr: "استخراج نص OCR",
-    montage_export: "تصدير مونتاج"
+    thumbnail: copy.operations.thumbnail,
+    transcode: copy.operations.transcode,
+    transcription: copy.operations.transcription,
+    ocr: copy.operations.ocr,
+    montage_export: copy.operations.montageExport
   };
 
   return labels[operation] || operation;
 }
 
-function statusLabel(status: MediaJobStatus) {
+function statusLabel(status: MediaJobStatus, copy: MediaJobsCopy) {
   const labels: Record<MediaJobStatus, string> = {
-    queued: "قيد الانتظار",
-    processing: "قيد المعالجة",
-    completed: "مكتمل",
-    failed: "فشل",
-    canceled: "ملغى"
+    queued: copy.statuses.queued,
+    processing: copy.statuses.processing,
+    completed: copy.statuses.completed,
+    failed: copy.statuses.failed,
+    canceled: copy.statuses.canceled
   };
 
   return labels[status] || status;
@@ -101,7 +103,17 @@ function progressValue(value: number | null | undefined) {
 }
 
 export function MediaJobsList() {
+  const { t } = useLocale();
+  const copy = t.pages.mediaJobs;
   const api = useMemo(() => createArchiveApiClient(), []);
+  const mediaJobFormSchema = useMemo(() => createMediaJobFormSchema(copy), [copy]);
+  const watermarkPositions = [
+    { value: "bottom-right", label: copy.positions.bottomRight },
+    { value: "bottom-left", label: copy.positions.bottomLeft },
+    { value: "top-right", label: copy.positions.topRight },
+    { value: "top-left", label: copy.positions.topLeft },
+    { value: "center", label: copy.positions.center }
+  ] as const;
   const [listState, setListState] = useState<ListState>({ status: "loading" });
   const [createState, setCreateState] = useState<CreateState>({ status: "idle" });
   const [ingestState, setIngestState] = useState<IngestState>({ status: "idle" });
@@ -185,7 +197,7 @@ export function MediaJobsList() {
           createForm.setError(field as keyof MediaJobFormValues, { type: "zod", message: issue.message });
         }
       });
-      setCreateState({ status: "error", message: parsed.error.issues[0]?.message || "راجع حقول المهمة." });
+      setCreateState({ status: "error", message: parsed.error.issues[0]?.message || copy.validation.reviewFields });
       return;
     }
 
@@ -259,39 +271,39 @@ export function MediaJobsList() {
   }
 
   return (
-    <div className="stack" aria-label="إدارة مهام الوسائط">
+    <div className="stack" aria-label={copy.list.ariaLabel}>
       <MetricStrip
-        ariaLabel="ملخص قائمة انتظار الوسائط"
+        ariaLabel={copy.metrics.ariaLabel}
         items={[
           {
-            label: "المهام المعروضة",
+            label: copy.metrics.displayedLabel,
             value: listState.status === "loading" ? "..." : jobs.length,
             description: statusFilter
-              ? `مفلترة: ${statusLabel(statusFilter)}`
+              ? copy.metrics.filtered.replace("{status}", statusLabel(statusFilter, copy))
               : listState.status === "loaded" && listState.pagination
-                ? `من إجمالي ${listState.pagination.total} مهمة`
-                : "أحدث المهام",
+                ? copy.metrics.total.replace("{count}", String(listState.pagination.total))
+                : copy.metrics.latest,
             icon: <Clock3 size={20} />,
             tone: "accent"
           },
           {
-            label: "قيد المعالجة",
+            label: copy.metrics.processingLabel,
             value: processingCount,
-            description: `${queuedCount} في الانتظار`,
+            description: copy.metrics.queued.replace("{count}", String(queuedCount)),
             icon: <Loader2 size={20} />,
             tone: processingCount > 0 ? "warning" : "default"
           },
           {
-            label: "مكتملة",
+            label: copy.metrics.completedLabel,
             value: completedCount,
-            description: "جاهزة للمراجعة",
+            description: copy.metrics.readyForReview,
             icon: <CheckCircle2 size={20} />,
             tone: "success"
           },
           {
-            label: "فاشلة",
+            label: copy.metrics.failedLabel,
             value: failedCount,
-            description: "تحتاج مراجعة",
+            description: copy.metrics.needsReview,
             icon: <AlertTriangle size={20} />,
             tone: failedCount > 0 ? "danger" : "default"
           }
@@ -301,28 +313,28 @@ export function MediaJobsList() {
       <article className="workspace-panel">
         <div className="workspace-panel__header">
           <div>
-            <h2>إنشاء مهمة وسائط</h2>
-            <p className="field-note">أدخل معرّف السجل ثم اختر عملية المعالجة المناسبة.</p>
+            <h2>{copy.create.title}</h2>
+            <p className="field-note">{copy.create.description}</p>
           </div>
-          <span className="badge">إنشاء</span>
+          <span className="badge">{copy.create.badge}</span>
         </div>
 
         <form className="auth-form" onSubmit={handleCreate}>
           <label>
-            معرّف السجل
-            <input type="text" placeholder="record-id" {...createForm.register("recordId")} />
+            {copy.create.recordIdLabel}
+            <input type="text" placeholder={copy.create.recordIdPlaceholder} {...createForm.register("recordId")} />
             <FieldError>{formErrors.recordId?.message}</FieldError>
           </label>
 
           <label>
-            نوع العملية
+            {copy.create.operationLabel}
             <select
               {...createForm.register("operation")}
             >
-              <option value="">اختر عملية...</option>
+              <option value="">{copy.create.operationPlaceholder}</option>
               {OPERATIONS.map((op) => (
                 <option key={op} value={op}>
-                    {operationLabel(op)}
+                    {operationLabel(op, copy)}
                 </option>
               ))}
             </select>
@@ -330,35 +342,35 @@ export function MediaJobsList() {
           </label>
 
           <label>
-            مسار الملف المصدر
-            <input type="text" placeholder="media/source.mp4" {...createForm.register("sourcePath")} />
+            {copy.create.sourcePathLabel}
+            <input type="text" placeholder={copy.create.sourcePathPlaceholder} {...createForm.register("sourcePath")} />
           </label>
 
           {selectedOperation === "transcription" && (
             <div className="state-banner">
-              <p className="helper-text">يُختار معالج Whisper من إعدادات النظام ويُطبّق على جميع مهام التفريغ الجديدة.</p>
+              <p className="helper-text">{copy.create.whisperHint}</p>
 
               <div className="helper-row">
-                <strong>صيغ الإخراج</strong>
+                <strong>{copy.create.outputFormats}</strong>
               </div>
               <label className="checkbox-row">
                 <input type="checkbox" {...createForm.register("formatSrt")} />
-                SRT (نص مع الطوابع)
+                {copy.create.srtOption}
               </label>
               <label className="checkbox-row">
                 <input type="checkbox" {...createForm.register("formatVtt")} />
-                VTT (فيديو ويب)
+                {copy.create.vttOption}
               </label>
               <label className="checkbox-row">
                 <input type="checkbox" {...createForm.register("formatTtml")} />
-                TTML (تنسيق توقيت نص)
+                {copy.create.ttmlOption}
               </label>
             </div>
           )}
 
           {selectedOperation === "thumbnail" && (
             <label>
-              لقطة عند الثانية
+              {copy.create.thumbnailAtSecond}
               <input type="number" min="0" max="86400" {...createForm.register("atSec", { valueAsNumber: true })} />
               <FieldError>{formErrors.atSec?.message}</FieldError>
             </label>
@@ -367,27 +379,27 @@ export function MediaJobsList() {
           {selectedOperation === "transcode" && (
             <div className="state-banner">
               <div className="helper-row">
-                <strong>إضافة علامة مائية</strong>
+                <strong>{copy.create.watermarkTitle}</strong>
                 <label className="checkbox-row">
                   <input
                     type="checkbox"
                     {...createForm.register("watermarkEnabled")}
                   />
-                  تفعيل
+                  {copy.create.watermarkEnabled}
                 </label>
               </div>
 
               <label>
-                مسار صورة العلامة
-                <input type="text" placeholder="branding/watermark.png" {...createForm.register("watermarkPath")} />
+                {copy.create.watermarkPathLabel}
+                <input type="text" placeholder={copy.create.watermarkPathPlaceholder} {...createForm.register("watermarkPath")} />
                 <FieldError>{formErrors.watermarkPath?.message}</FieldError>
               </label>
 
               <div className="field-row">
                 <label>
-                  الموضع
+                  {copy.create.watermarkPositionLabel}
                   <select {...createForm.register("watermarkPosition")}>
-                    {WATERMARK_POSITIONS.map((position) => (
+                    {watermarkPositions.map((position) => (
                       <option key={position.value} value={position.value}>
                         {position.label}
                       </option>
@@ -395,12 +407,12 @@ export function MediaJobsList() {
                   </select>
                 </label>
                 <label>
-                  الشفافية
+                  {copy.create.watermarkOpacityLabel}
                   <input type="number" min="0" max="1" step="0.05" {...createForm.register("watermarkOpacity", { valueAsNumber: true })} />
                   <FieldError>{formErrors.watermarkOpacity?.message}</FieldError>
                 </label>
                 <label>
-                  الهامش
+                  {copy.create.watermarkMarginLabel}
                   <input type="number" min="0" max="512" {...createForm.register("watermarkMargin", { valueAsNumber: true })} />
                   <FieldError>{formErrors.watermarkMargin?.message}</FieldError>
                 </label>
@@ -410,12 +422,12 @@ export function MediaJobsList() {
 
           <button type="submit" className="button button-primary" disabled={createState.status === "creating"}>
             <PlusCircle size={16} aria-hidden="true" />
-            {createState.status === "creating" ? "جار الإنشاء..." : "إنشاء المهمة"}
+            {createState.status === "creating" ? copy.create.creating : copy.create.submit}
           </button>
 
           <p className="form-status" role={createState.status === "error" ? "alert" : "status"}>
             {createState.status === "success"
-              ? `تم إنشاء المهمة بنجاح. الحالة الحالية: ${statusLabel(createState.job.status)}.`
+              ? copy.create.success.replace("{status}", statusLabel(createState.job.status, copy))
               : createState.status === "error"
                 ? createState.message
                 : ""}
@@ -426,48 +438,48 @@ export function MediaJobsList() {
       <article className="workspace-panel">
         <div className="workspace-panel__header">
           <div>
-            <h2>مسح الإدخال</h2>
-            <p className="field-note">افحص مجلد الإدخال وأنشئ مهامًا للملفات الجديدة عند الحاجة.</p>
+            <h2>{copy.ingest.title}</h2>
+            <p className="field-note">{copy.ingest.description}</p>
           </div>
-          <span className="badge">استيعاب الملفات</span>
+          <span className="badge">{copy.ingest.badge}</span>
         </div>
 
         <button className="button button-primary" onClick={handleIngestScan} disabled={ingestState.status === "scanning"}>
           <ScanSearch size={16} aria-hidden="true" />
-          {ingestState.status === "scanning" ? "جار المسح..." : "بدء مسح الدخول"}
+          {ingestState.status === "scanning" ? copy.ingest.scanning : copy.ingest.scan}
         </button>
         <p className="form-status" role={ingestState.status === "error" ? "alert" : "status"}>
           {ingestState.status === "done"
-            ? `اكتمل المسح: تمت إضافة ${ingestState.ingested} ملفًا وتخطي ${ingestState.skipped}.`
+            ? copy.ingest.success.replace("{ingested}", String(ingestState.ingested)).replace("{skipped}", String(ingestState.skipped))
             : ingestState.status === "error"
               ? ingestState.message
               : ""}
         </p>
       </article>
 
-      <section className="workspace-panel" aria-label="قائمة مهام الوسائط">
+      <section className="workspace-panel" aria-label={copy.list.ariaLabel}>
         <div className="workspace-panel__header">
           <div>
-            <h2>قائمة مهام الوسائط</h2>
-            <p className="field-note">فلترة مباشرة حسب الحالة مع إبقاء التفاصيل قابلة للمسح بسرعة.</p>
+            <h2>{copy.list.title}</h2>
+            <p className="field-note">{copy.list.description}</p>
           </div>
           <div className="button-row">
             <label className="field-row field-row-reset">
-              <span className="field-note">الحالة</span>
+              <span className="field-note">{copy.list.statusLabel}</span>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as MediaJobStatus | "")}
               >
-                <option value="">الكل</option>
-                <option value="queued">قيد الانتظار</option>
-                <option value="processing">قيد المعالجة</option>
-                <option value="completed">مكتمل</option>
-                <option value="failed">فشل</option>
+                <option value="">{copy.list.allStatuses}</option>
+                <option value="queued">{copy.statuses.queued}</option>
+                <option value="processing">{copy.statuses.processing}</option>
+                <option value="completed">{copy.statuses.completed}</option>
+                <option value="failed">{copy.statuses.failed}</option>
               </select>
             </label>
             <button className="button button-secondary button-sm" type="button" onClick={() => void loadJobs()}>
               <RefreshCw size={16} aria-hidden="true" />
-              تحديث
+              {copy.list.refresh}
             </button>
           </div>
         </div>
@@ -475,26 +487,26 @@ export function MediaJobsList() {
         {listState.status === "loading" && (
           <p className="form-status" role="status" aria-live="polite" aria-busy="true">
             <Loader2 className="status-refresh-icon is-spinning" size={16} aria-hidden="true" />
-            جار تحميل مهام الوسائط...
+            {copy.list.loading}
           </p>
         )}
         {listState.status === "empty" && (
           <EmptyState
             icon={<FileScan size={22} />}
-            title={statusFilter ? `لا توجد مهام بحالة «${statusLabel(statusFilter)}».` : "لا توجد مهام وسائط بعد."}
-            description={statusFilter ? "غيّر عامل التصفية أو حدّث القائمة للتحقق من المهام الأخرى." : "ابدأ بإنشاء مهمة أو افحص مجلد الإدخال لتوليد مهام من الملفات الجديدة."}
+            title={statusFilter ? copy.list.emptyFiltered.replace("{status}", statusLabel(statusFilter, copy)) : copy.list.empty}
+            description={statusFilter ? copy.list.emptyFilteredDescription : copy.list.emptyDescription}
             actions={statusFilter ? (
               <button className="button button-secondary button-sm" type="button" onClick={() => setStatusFilter("")}>
-                عرض جميع الحالات
+                {copy.list.showAll}
               </button>
             ) : undefined}
           />
         )}
         {listState.status === "error" && (
           <div role="alert" className="form-status status-error">
-            <span>تعذر تحميل المهام: {listState.message}</span>
+            <span>{copy.list.loadError.replace("{error}", listState.message)}</span>
             <button className="button button-secondary button-sm" type="button" onClick={() => void loadJobs()}>
-              إعادة المحاولة
+              {copy.list.retry}
             </button>
           </div>
         )}
@@ -504,18 +516,18 @@ export function MediaJobsList() {
             {listState.jobs.map((job) => (
               <article className="media-job-card" data-status={job.status} key={job.id}>
                 <div className="toolbar-row">
-                  <h3>{operationLabel(job.operation)}</h3>
-                  <span className="badge">{statusLabel(job.status)}</span>
+                  <h3>{operationLabel(job.operation, copy)}</h3>
+                  <span className="badge">{statusLabel(job.status, copy)}</span>
                 </div>
                 {(job.status === "queued" || job.status === "processing") && job.progressPercent !== null && (
                   <div className="state-banner">
                     <div className="helper-row">
-                      <span className="field-note">{job.progressStage || "جاري المعالجة"}</span>
+                      <span className="field-note">{job.progressStage || copy.list.processingFallback}</span>
                       <span className="field-note">{progressValue(job.progressPercent)}%</span>
                     </div>
                     <div
                       role="progressbar"
-                      aria-label="تقدم المهمة"
+                      aria-label={copy.list.progressAriaLabel}
                       aria-valuemin={0}
                       aria-valuemax={100}
                       aria-valuenow={progressValue(job.progressPercent)}
@@ -527,29 +539,29 @@ export function MediaJobsList() {
                 )}
                 <div className="kv-grid">
                   <div className="kv-item">
-                    <strong>معرّف السجل</strong>
+                    <strong>{copy.list.recordIdLabel}</strong>
                     <span>{job.recordId}</span>
                   </div>
                   <div className="kv-item">
-                    <strong>المعرّف</strong>
+                    <strong>{copy.list.idLabel}</strong>
                     <span className="wrap-anywhere">{job.id}</span>
                   </div>
                   {job.sourcePath && (
                     <div className="kv-item">
-                      <strong>المصدر</strong>
+                      <strong>{copy.list.sourceLabel}</strong>
                       <span className="wrap-anywhere">{job.sourcePath}</span>
                     </div>
                   )}
                   {job.queuedAt && (
                     <div className="kv-item">
-                      <strong>وقت الإضافة</strong>
+                      <strong>{copy.list.queuedAtLabel}</strong>
                       <time>{new Date(job.queuedAt).toLocaleString("ar-SA")}</time>
                     </div>
                   )}
                 </div>
                 {job.options && Object.keys(job.options).length > 0 && (
                   <details className="section-divider">
-                    <summary className="field-note">خيارات المهمة</summary>
+                    <summary className="field-note">{copy.list.optionsLabel}</summary>
                     <pre className="token-preview">{JSON.stringify(job.options, null, 2)}</pre>
                   </details>
                 )}
@@ -558,7 +570,7 @@ export function MediaJobsList() {
             {listState.pagination?.hasMore ? (
               <div className="button-row" style={{ justifyContent: "center" }}>
                 <button type="button" className="button button-secondary" onClick={() => void loadMoreJobs()} disabled={loadingMore}>
-                  {loadingMore ? "جار التحميل..." : "تحميل المزيد"}
+                  {loadingMore ? copy.list.loadingMore : copy.list.loadMore}
                 </button>
               </div>
             ) : null}

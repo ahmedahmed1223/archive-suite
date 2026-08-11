@@ -24,15 +24,16 @@ function recordTitle(entry: TrashEntry): string {
   return typeof title === "string" && title.trim() ? title : entry.uid;
 }
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null, locale: "ar" | "en"): string {
   if (!value) return "—";
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleString("ar");
+  return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleString(locale === "en" ? "en-US" : "ar-SA");
 }
 
-/** V1-731 (B07): سلة مهملات مستقلة قابلة للتصفح والاستعادة. */
+/** V1-731 (B07): A standalone trash view that supports browsing and restoring records. */
 export default function TrashPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const copy = t.pages.trash;
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialog = useConfirmDialog();
   const canRestore = useCapability("trash.restore");
@@ -53,12 +54,12 @@ export default function TrashPage() {
       setState({ status: "loading" });
       const response = await api.trash({ ...filters, limit: PAGE_SIZE });
       if (!response.ok) {
-        setState({ status: "error", message: response.error || "تعذر تحميل سلة المهملات." });
+        setState({ status: "error", message: response.error || copy.loadFailed });
         return;
       }
       setState({ status: "ready", items: response.items, pagination: response.pagination });
     },
-    [api]
+    [api, copy.loadFailed]
   );
 
   useEffect(() => {
@@ -71,7 +72,7 @@ export default function TrashPage() {
     const response = await api.trash({ ...appliedFilters, limit: PAGE_SIZE, page: state.pagination.page + 1 });
     setBusy(false);
     if (!response.ok) {
-      setNotice(response.error || "تعذر تحميل المزيد.");
+      setNotice(response.error || copy.loadMoreFailed);
       return;
     }
     setState((current) =>
@@ -97,23 +98,22 @@ export default function TrashPage() {
     setBusy(false);
 
     if (!response.ok) {
-      setNotice(response.error || "تعذر استعادة السجل.");
+      setNotice(response.error || copy.restoreFailed);
       return;
     }
 
     const result = response.results[0];
     if (!result?.restored) {
-      // الاستعادة تُرفض عند وجود سجل حي بنفس المعرّف — لا نستبدله بصمت.
+      // Restoration is rejected when an active record has the same ID; never replace it silently.
       setNotice(
         result?.reason === "conflict"
-          ? `تعذرت الاستعادة: يوجد سجل حي بالمعرّف ${entry.uid}. احذفه أو غيّر معرّفه أولاً.`
-          : `تعذرت الاستعادة: لم يعد ${entry.uid} موجوداً في السلة.`
+          ? copy.restoreConflict.replace("{id}", entry.uid) : copy.restoreMissing.replace("{id}", entry.uid)
       );
       void loadTrash(appliedFilters);
       return;
     }
 
-    setNotice(`تمت استعادة ${recordTitle(entry)}.`);
+    setNotice(copy.restored.replace("{title}", recordTitle(entry)));
     setRestoreStack((stack) => pushUndo(stack, entry));
     void loadTrash(appliedFilters);
   }
@@ -127,11 +127,11 @@ export default function TrashPage() {
     setBusy(false);
 
     if (!response.ok) {
-      setNotice(response.error || "تعذر التراجع عن الاستعادة.");
+      setNotice(response.error || copy.undoFailed);
       return;
     }
 
-    setNotice(`أُرجع ${recordTitle(result.entry)} إلى السلة.`);
+    setNotice(copy.undone.replace("{title}", recordTitle(result.entry)));
     setRestoreStack(result.stack);
     void loadTrash(appliedFilters);
   }
@@ -145,20 +145,18 @@ export default function TrashPage() {
     setBusy(false);
 
     if (!response.ok || !response.results[0]?.restored) {
-      setNotice(response.ok ? "تعذرت إعادة الاستعادة." : response.error || "تعذرت إعادة الاستعادة.");
+      setNotice(response.ok ? copy.redoFailed : response.error || copy.redoFailed);
       return;
     }
 
-    setNotice(`أُعيدت استعادة ${recordTitle(result.entry)}.`);
+    setNotice(copy.redone.replace("{title}", recordTitle(result.entry)));
     setRestoreStack(result.stack);
     void loadTrash(appliedFilters);
   }
 
   async function purge(entry: TrashEntry) {
     const confirmed = await dialog.confirm({
-      title: "حذف نهائي",
-      message: `سيُحذف «${recordTitle(entry)}» نهائياً ولا يمكن التراجع. النسخ الاحتياطي هو السبيل الوحيد للاسترجاع بعدها.`,
-      confirmLabel: "حذف نهائي",
+      title: copy.purgeTitle, message: copy.purgeMessage.replace("{title}", recordTitle(entry)), confirmLabel: copy.purgeTitle,
       destructive: true
     });
     if (!confirmed) return;
@@ -169,12 +167,12 @@ export default function TrashPage() {
     setBusy(false);
 
     if (!response.ok) {
-      // الحذف النهائي مقصور على المدير (403 لغير ذلك).
-      setNotice(response.error || "تعذر الحذف النهائي. هذا الإجراء مقصور على المدير.");
+      // Permanent deletion is restricted to administrators (403 for other roles).
+      setNotice(response.error || copy.purgeFailed);
       return;
     }
 
-    setNotice(`تم حذف ${recordTitle(entry)} نهائياً.`);
+    setNotice(copy.purged.replace("{title}", recordTitle(entry)));
     void loadTrash(appliedFilters);
   }
 
@@ -184,34 +182,30 @@ export default function TrashPage() {
   return (
     <AppShell subtitle={t.pageTitles.trash} tipsPage="trash">
       <PageToolbar
-        eyebrow={<span className="badge">سلة المهملات</span>}
-        title="سلة المهملات"
-        description="السجلات المحذوفة تبقى هنا قابلة للاستعادة حتى انتهاء مدة الاحتفاظ، ثم تُحذف نهائياً تلقائياً. الاستعادة تُعيد السجل بحالته السابقة."
-        meta={<span className="badge">{pagination ? `${items.length} من ${pagination.total}` : items.length} عنصر</span>}
+        eyebrow={<span className="badge">{copy.eyebrow}</span>} title={copy.title} description={copy.description}
+        meta={<span className="badge">{pagination ? copy.range.replace("{shown}", String(items.length)).replace("{total}", String(pagination.total)) : copy.itemCount.replace("{count}", String(items.length))}</span>}
         actions={
           <button type="button" className="button button-secondary" onClick={() => void loadTrash(appliedFilters)}>
-            تحديث
+            {copy.refresh}
           </button>
         }
       />
 
-      <form className="search-form" aria-label="فلاتر سلة المهملات" onSubmit={applyFilters}>
+      <form className="search-form" aria-label={copy.filters} onSubmit={applyFilters}>
         <input
           className="search-input"
           value={store}
           onChange={(event) => setStore(event.target.value)}
-          placeholder="كل المخازن"
-          aria-label="فلتر المخزن"
+          placeholder={copy.allStores} aria-label={copy.storeFilter}
         />
         <input
           className="search-input"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="العنوان أو المعرّف"
-          aria-label="بحث في السلة"
+          placeholder={copy.titleOrId} aria-label={copy.search}
         />
         <button type="submit" className="button button-primary">
-          تصفية
+          {copy.filter}
         </button>
       </form>
 
@@ -229,7 +223,7 @@ export default function TrashPage() {
             disabled={!canUndo(restoreStack) || busy}
             onClick={() => void handleUndoRestore()}
           >
-            تراجع عن الاستعادة{restoreStack.past.length > 0 ? ` (${restoreStack.past.length})` : ""}
+            {copy.undoRestore}{restoreStack.past.length > 0 ? ` (${restoreStack.past.length})` : ""}
           </button>
           <button
             type="button"
@@ -237,28 +231,25 @@ export default function TrashPage() {
             disabled={!canRedo(restoreStack) || busy}
             onClick={() => void handleRedoRestore()}
           >
-            إعادة الاستعادة{restoreStack.future.length > 0 ? ` (${restoreStack.future.length})` : ""}
+            {copy.redoRestore}{restoreStack.future.length > 0 ? ` (${restoreStack.future.length})` : ""}
           </button>
         </div>
       ) : null}
 
       {state.status === "loading" ? <Skeleton /> : null}
 
-      {state.status === "error" ? <EmptyState title="تعذر التحميل" description={state.message} /> : null}
+      {state.status === "error" ? <EmptyState title={copy.loadError} description={state.message} /> : null}
 
       {state.status === "ready" && items.length === 0 ? (
-        <EmptyState title="السلة فارغة" description="لا توجد سجلات محذوفة ضمن هذه التصفية." />
+        <EmptyState title={copy.empty} description={copy.emptyDescription} />
       ) : null}
 
       {state.status === "ready" && items.length > 0 ? (
         <div className="scroll-x desktop-table-wrap">
-          <table className="data-table" role="grid" aria-label="السجلات المحذوفة">
+          <table className="data-table" role="grid" aria-label={copy.deletedRecords}>
             <thead>
               <tr>
-                <th scope="col">السجل</th>
-                <th scope="col">المخزن</th>
-                <th scope="col">تاريخ الحذف</th>
-                <th scope="col" className="data-table-sticky-end">إجراءات</th>
+                <th scope="col">{copy.record}</th><th scope="col">{copy.store}</th><th scope="col">{copy.deletedAt}</th><th scope="col" className="data-table-sticky-end">{copy.actions}</th>
               </tr>
             </thead>
             <tbody>
@@ -270,7 +261,7 @@ export default function TrashPage() {
                     <code>{entry.uid}</code>
                   </td>
                   <td>{entry.store}</td>
-                  <td>{formatDate(entry.deletedAt)}</td>
+                  <td>{formatDate(entry.deletedAt, locale)}</td>
                   <td className="data-table-sticky-end">
                     <div className="button-row">
                       {canRestore && (
@@ -280,7 +271,7 @@ export default function TrashPage() {
                           disabled={busy}
                           onClick={() => void restore(entry)}
                         >
-                          استعادة
+                          {copy.restore}
                         </button>
                       )}
                       {canPurge && (
@@ -290,7 +281,7 @@ export default function TrashPage() {
                           disabled={busy}
                           onClick={() => void purge(entry)}
                         >
-                          حذف نهائي
+                          {copy.purge}
                         </button>
                       )}
                       {!canRestore && !canPurge && <span className="helper-text">-</span>}
@@ -306,7 +297,7 @@ export default function TrashPage() {
       {state.status === "ready" && pagination?.hasMore ? (
         <div className="button-row" style={{ justifyContent: "center" }}>
           <button type="button" className="button button-secondary" onClick={() => void loadMore()} disabled={busy}>
-            {busy ? "جار التحميل..." : "تحميل المزيد"}
+            {busy ? copy.loading : copy.loadMore}
           </button>
         </div>
       ) : null}

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useDisplaySettings } from "@/lib/display-settings-context";
+import { formatDateTime } from "@/lib/display-settings";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
@@ -47,15 +49,14 @@ function formatBytes(bytes?: number): string {
   return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
 }
 
-function formatDate(value?: string) {
+function formatDate(value: string | undefined, settings: import("@/lib/display-settings").DisplaySettings, locale: import("@/lib/i18n/types").AppLocale) {
   if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("ar-SA");
+  return formatDateTime(value, settings, locale, value);
 }
 
 export default function BackupPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const { settings: displaySettings } = useDisplaySettings();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [listState, setListState] = useState<BackupListState>({ status: "loading" });
   const [runState, setRunState] = useState<RunState>({ status: "idle" });
@@ -72,12 +73,12 @@ export default function BackupPage() {
       if (response.ok) {
         setListState({ status: "ready", backups: response.backups });
       } else {
-        setListState({ status: "error", message: response.error || "تعذر تحميل قائمة النسخ الاحتياطية." });
+        setListState({ status: "error", message: response.error || t.pages.backup.loadErrorMessage });
       }
     } catch (error) {
-      setListState({ status: "error", message: error instanceof Error ? error.message : "تعذر تحميل قائمة النسخ الاحتياطية." });
+      setListState({ status: "error", message: error instanceof Error ? error.message : t.pages.backup.loadErrorMessage });
     }
-  }, [api]);
+  }, [api, t]);
 
   useEffect(() => {
     void loadBackups();
@@ -91,10 +92,10 @@ export default function BackupPage() {
         setRunState({ status: "success", backup: response.backup });
         await loadBackups();
       } else {
-        setRunState({ status: "error", message: response.error || "تعذر إنشاء النسخة الاحتياطية." });
+        setRunState({ status: "error", message: response.error || t.pages.backup.runErrorMessage });
       }
     } catch (error) {
-      setRunState({ status: "error", message: error instanceof Error ? error.message : "تعذر إنشاء النسخة الاحتياطية." });
+      setRunState({ status: "error", message: error instanceof Error ? error.message : t.pages.backup.runErrorMessage });
     }
   };
 
@@ -105,10 +106,10 @@ export default function BackupPage() {
       if (response.ok) {
         setPreviewState({ status: "ready", preview: response.preview });
       } else {
-        setPreviewState({ status: "error", message: response.error || "تعذر معاينة النسخة الاحتياطية." });
+        setPreviewState({ status: "error", message: response.error || t.pages.backup.previewErrorMessage });
       }
     } catch (error) {
-      setPreviewState({ status: "error", message: error instanceof Error ? error.message : "تعذر معاينة النسخة الاحتياطية." });
+      setPreviewState({ status: "error", message: error instanceof Error ? error.message : t.pages.backup.previewErrorMessage });
     }
   };
 
@@ -135,10 +136,10 @@ export default function BackupPage() {
         setRestoreTarget(null);
         setRestoreConfirmName("");
       } else {
-        setRestoreState({ status: "error", message: response.error || "تعذرت الاستعادة من النسخة الاحتياطية." });
+        setRestoreState({ status: "error", message: response.error || t.pages.backup.restoreErrorMessage });
       }
     } catch (error) {
-      setRestoreState({ status: "error", message: error instanceof Error ? error.message : "تعذرت الاستعادة من النسخة الاحتياطية." });
+      setRestoreState({ status: "error", message: error instanceof Error ? error.message : t.pages.backup.restoreErrorMessage });
     }
   };
 
@@ -150,12 +151,12 @@ export default function BackupPage() {
   return (
     <AppShell subtitle={t.pageTitles.dataCenter} navLabel={t.pageTitles.backups} contentClassName="observability-content" tipsPage="backup">
       <PageToolbar
-        eyebrow={<span className="badge">مركز البيانات</span>}
-        title="النسخ الاحتياطي والاستعادة"
-        description="إدارة النسخ الاحتياطية لمخازن السجلات: إنشاء نسخة فورية، معاينة المحتوى، أو الاستعادة الكاملة (للمشرفين فقط)."
+        eyebrow={<span className="badge">{t.pages.backup.eyebrow}</span>}
+        title={t.pages.backup.title}
+        description={t.pages.backup.description}
         meta={(
           <>
-            <span className="badge">{backups.length} نسخة</span>
+            <span className="badge">{backups.length} {t.pages.backup.countSuffix}</span>
             <span className="badge">{formatBytes(totalSize)}</span>
             <span className={`badge badge-${freshness.tone}`}>{freshness.label}</span>
           </>
@@ -169,11 +170,11 @@ export default function BackupPage() {
                 onClick={() => void handleRunBackup()}
                 disabled={runState.status === "running"}
               >
-                {runState.status === "running" ? "جار إنشاء النسخة..." : "إنشاء نسخة احتياطية الآن"}
+                {runState.status === "running" ? t.pages.backup.running : t.pages.backup.runNow}
               </button>
             ) : null}
             <button type="button" className="button button-secondary" onClick={() => void loadBackups()} disabled={listState.status === "loading"}>
-              تحديث
+              {t.pages.backup.refresh}
             </button>
           </>
         )}
@@ -182,45 +183,45 @@ export default function BackupPage() {
 
       {runState.status === "success" ? (
         <div className="state-banner state-banner-success" role="status">
-          <strong>تم إنشاء النسخة الاحتياطية</strong>
+          <strong>{t.pages.backup.runSuccessTitle}</strong>
           <span className="helper-text">
-            {runState.backup.name} · {formatBytes(runState.backup.sizeBytes)} · {formatDate(runState.backup.completedAt)}
+            {runState.backup.name} · {formatBytes(runState.backup.sizeBytes)} · {formatDate(runState.backup.completedAt, displaySettings, locale)}
           </span>
         </div>
       ) : null}
 
       {runState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر إنشاء النسخة الاحتياطية</strong>
+          <strong>{t.pages.backup.runErrorTitle}</strong>
           <span className="helper-text">{redactAdminSecrets(runState.message)}</span>
         </div>
       ) : null}
 
       {restoreState.status === "success" ? (
         <div className="state-banner state-banner-success" role="status">
-          <strong>تمت الاستعادة بنجاح من {restoreState.name}</strong>
+          <strong>{t.pages.backup.restoreSuccessTitle.replace("{name}", restoreState.name)}</strong>
           <span className="helper-text">
             {Object.entries(restoreState.counts)
               .map(([store, count]) => `${store}: ${count}`)
-              .join(" · ") || "لا سجلات"}
+              .join(" · ") || t.pages.backup.noRecords}
             {" — "}
-            {formatDate(restoreState.restoredAt)}
+            {formatDate(restoreState.restoredAt, displaySettings, locale)}
           </span>
         </div>
       ) : null}
 
       {restoreState.status === "success" && !restoreState.verified ? (
         <div className="state-banner state-banner-warning" role="alert">
-          <strong>تحذير: لم يتم التحقق من سلامة النسخة الاحتياطية</strong>
+          <strong>{t.pages.backup.restoreUnverifiedTitle}</strong>
           <span className="helper-text">
-            هذه النسخة لا تحتوي على بصمة تحقق (checksum) قديمة من قبل هذه الميزة، فتمت الاستعادة اعتمادًا على فحص البنية فقط دون تأكيد عدم التلاعب أو التلف.
+            {t.pages.backup.restoreUnverifiedDescription}
           </span>
         </div>
       ) : null}
 
       {restoreState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذرت الاستعادة</strong>
+          <strong>{t.pages.backup.restoreErrorTitle}</strong>
           <span className="helper-text">{redactAdminSecrets(restoreState.message)}</span>
         </div>
       ) : null}
@@ -229,16 +230,15 @@ export default function BackupPage() {
         <section className="panel" role="alertdialog" aria-labelledby="restore-dialog-title" aria-describedby="restore-dialog-desc">
           <div className="panel-title-row">
             <div>
-              <h2 id="restore-dialog-title">تأكيد الاستعادة — إجراء لا رجعة فيه</h2>
+              <h2 id="restore-dialog-title">{t.pages.backup.restoreDialogTitle}</h2>
               <p id="restore-dialog-desc">
-                الاستعادة من &quot;{restoreTarget}&quot; ستستبدل كل السجلات الحالية في المخازن بمحتوى النسخة الاحتياطية.
-                البيانات التي أضيفت بعد هذه النسخة ستفقد نهائيًا.
+                {t.pages.backup.restoreDialogDescription.replace("{name}", restoreTarget)}
               </p>
             </div>
-            <span className="badge badge-danger">إجراء مدمر</span>
+            <span className="badge badge-danger">{t.pages.backup.destructiveBadge}</span>
           </div>
           <label>
-            <span>اكتب اسم النسخة الاحتياطية بالكامل للتأكيد: {restoreTarget}</span>
+            <span>{t.pages.backup.confirmNameLabel.replace("{name}", restoreTarget)}</span>
             <input
               type="text"
               dir="ltr"
@@ -255,7 +255,7 @@ export default function BackupPage() {
               onClick={() => void handleRestore()}
               disabled={!isRestoreConfirmed || restoreState.status === "running"}
             >
-              {restoreState.status === "running" ? "جار الاستعادة..." : "تأكيد الاستعادة الآن"}
+              {restoreState.status === "running" ? t.pages.backup.restoring : t.pages.backup.confirmRestoreNow}
             </button>
             <button
               type="button"
@@ -266,7 +266,7 @@ export default function BackupPage() {
               }}
               disabled={restoreState.status === "running"}
             >
-              إلغاء
+              {t.pages.backup.cancel}
             </button>
           </div>
         </section>
@@ -274,25 +274,25 @@ export default function BackupPage() {
 
       {previewState.status === "loading" ? (
         <div className="panel panel-compact" role="status" aria-live="polite">
-          <p className="form-status">جار معاينة النسخة {previewState.name}...</p>
+          <p className="form-status">{t.pages.backup.previewingLabel.replace("{name}", previewState.name)}</p>
         </div>
       ) : null}
 
       {previewState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذرت المعاينة</strong>
+          <strong>{t.pages.backup.previewErrorTitle}</strong>
           <span className="helper-text">{redactAdminSecrets(previewState.message)}</span>
         </div>
       ) : null}
 
       {previewState.status === "ready" ? (
-        <section className="panel" aria-label="معاينة النسخة الاحتياطية">
+        <section className="panel" aria-label={t.pages.backup.previewAriaLabel}>
           <div className="panel-title-row">
             <div>
-              <h2>معاينة: {previewState.preview.name}</h2>
-              <p>عدد السجلات في كل مخزن داخل النسخة الاحتياطية دون تنفيذ أي استعادة.</p>
+              <h2>{t.pages.backup.previewTitle.replace("{name}", previewState.preview.name)}</h2>
+              <p>{t.pages.backup.previewDescription}</p>
             </div>
-            <span className="badge">{previewState.preview.totalRecords} سجل إجمالي</span>
+            <span className="badge">{previewState.preview.totalRecords} {t.pages.backup.totalRecordsSuffix}</span>
           </div>
           <div className="analytics-chip-list">
             {Object.entries(previewState.preview.stores).map(([store, count]) => (
@@ -306,46 +306,46 @@ export default function BackupPage() {
 
       {listState.status === "loading" ? (
         <div className="panel panel-compact">
-          <Skeleton label="جار تحميل النسخ الاحتياطية..." />
+          <Skeleton label={t.pages.backup.loadingBackups} />
         </div>
       ) : null}
 
       {listState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل النسخ الاحتياطية</strong>
-          <span className="helper-text">{redactAdminSecrets(listState.message)} — هذه الصفحة متاحة للمشرفين فقط.</span>
+          <strong>{t.pages.backup.loadErrorTitle}</strong>
+          <span className="helper-text">{redactAdminSecrets(listState.message)} — {t.pages.backup.loadErrorAdminOnly}</span>
         </div>
       ) : null}
 
       {listState.status === "ready" ? (
         backups.length === 0 ? (
           <EmptyState
-            title="لا توجد نسخ احتياطية بعد."
-            description="أنشئ أول نسخة احتياطية الآن لتأمين مخازن السجلات."
+            title={t.pages.backup.emptyTitle}
+            description={t.pages.backup.emptyDescription}
             actions={
               canManageBackup ? (
                 <button type="button" className="button button-primary" onClick={() => void handleRunBackup()} disabled={runState.status === "running"}>
-                  إنشاء نسخة احتياطية
+                  {t.pages.backup.emptyAction}
                 </button>
               ) : null
             }
           />
         ) : (
-          <section className="panel" aria-label="قائمة النسخ الاحتياطية">
+          <section className="panel" aria-label={t.pages.backup.listAriaLabel}>
             <div className="panel-title-row">
               <div>
-                <h2>النسخ الاحتياطية المتاحة</h2>
-                <p>الأحدث أولًا. المعاينة آمنة تمامًا؛ الاستعادة تتطلب تأكيدًا كتابيًا.</p>
+                <h2>{t.pages.backup.listTitle}</h2>
+                <p>{t.pages.backup.listDescription}</p>
               </div>
             </div>
             <div className="scroll-x">
-              <table className="data-table" aria-label="النسخ الاحتياطية">
+              <table className="data-table" aria-label={t.pages.backup.tableAriaLabel}>
                 <thead>
                   <tr>
-                    <th>الاسم</th>
-                    <th>الحجم</th>
-                    <th>تاريخ الإنشاء</th>
-                    <th className="data-table-sticky-end">الإجراءات</th>
+                    <th>{t.pages.backup.colName}</th>
+                    <th>{t.pages.backup.colSize}</th>
+                    <th>{t.pages.backup.colCreatedAt}</th>
+                    <th className="data-table-sticky-end">{t.pages.backup.colActions}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -353,15 +353,15 @@ export default function BackupPage() {
                     <tr key={backup.name}>
                       <td className="mono-text wrap-anywhere" dir="ltr">{backup.name}</td>
                       <td className="mono-text text-sm">{formatBytes(backup.sizeBytes)}</td>
-                      <td className="text-sm">{formatDate(backup.createdAt)}</td>
+                      <td className="text-sm">{formatDate(backup.createdAt, displaySettings, locale)}</td>
                       <td className="data-table-sticky-end">
                         <div className="button-row">
                           <button type="button" className="button button-secondary button-sm" onClick={() => void handlePreview(backup.name)}>
-                            معاينة
+                            {t.pages.backup.preview}
                           </button>
                           {canManageBackup ? (
                             <button type="button" className="button button-secondary button-sm" onClick={() => openRestoreDialog(backup.name)}>
-                              استعادة
+                              {t.pages.backup.restore}
                             </button>
                           ) : null}
                         </div>

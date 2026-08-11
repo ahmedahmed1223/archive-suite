@@ -4352,6 +4352,31 @@
     "/system/storage-operations/{operation}/cancel": {
       "post": { "tags": ["System"], "summary": "Cancel a storage operation (admin only)", "operationId": "cancelStorageOperation", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "operation", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Cancelled operation", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/StorageOperationResponse" } } } } } }
     },
+    "/system/display-settings": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Read central display settings",
+        "operationId": "getDisplaySettings",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Current display settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DisplaySettingsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["System"],
+        "summary": "Update central display settings (admin only)",
+        "operationId": "updateDisplaySettings",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateDisplaySettingsRequest" } } } },
+        "responses": {
+          "200": { "description": "Updated display settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DisplaySettingsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/system/security-settings": {
       "get": {
         "tags": ["System"],
@@ -8825,6 +8850,31 @@
             }
           }
         ]
+      },
+      "DisplaySettings": {
+        "type": "object",
+        "required": ["timeZone", "dateFormat", "timeFormat", "showSeconds"],
+        "properties": {
+          "timeZone": { "type": "string", "format": "timezone", "default": "Europe/Istanbul" },
+          "dateFormat": { "type": "string", "enum": ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"], "default": "DD/MM/YYYY" },
+          "timeFormat": { "type": "string", "enum": ["24h", "12h"], "default": "24h" },
+          "showSeconds": { "type": "boolean", "default": false }
+        }
+      },
+      "DisplaySettingsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          { "type": "object", "required": ["settings"], "properties": { "settings": { "$ref": "#/components/schemas/DisplaySettings" } } }
+        ]
+      },
+      "UpdateDisplaySettingsRequest": {
+        "type": "object",
+        "properties": {
+          "timeZone": { "type": "string", "format": "timezone" },
+          "dateFormat": { "type": "string", "enum": ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"] },
+          "timeFormat": { "type": "string", "enum": ["24h", "12h"] },
+          "showSeconds": { "type": "boolean" }
+        }
       },
       "UpdateSecuritySettingsRequest": {
         "type": "object",

@@ -6,6 +6,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useDisplaySettings } from "@/lib/display-settings-context";
+import { formatDate as formatDisplayDate } from "@/lib/display-settings";
 import PageToolbar from "@/components/PageToolbar";
 import DataTable from "@/components/ui/DataTable";
 import { FieldError } from "@/components/ui/Form";
@@ -13,16 +15,9 @@ import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ManagedUser, type ManagedUserRole, type PendingInvitation } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-const roleLabels: Record<ManagedUserRole, string> = {
-  admin: "مدير",
-  editor: "محرّر",
-  viewer: "مشاهد"
-};
-
-function formatLocalDate(value?: string) {
+function formatLocalDate(value: string | undefined, settings: import("@/lib/display-settings").DisplaySettings, locale: import("@/lib/i18n/types").AppLocale) {
   if (!value) return "-";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("ar-SA");
+  return formatDisplayDate(value, settings, locale, value);
 }
 
 type LoadState =
@@ -32,15 +27,23 @@ type LoadState =
 
 type ActionState = { status: "idle" } | { status: "error"; message: string } | { status: "success"; message: string };
 
-const inviteSchema = z.object({
-  email: z.string().trim().min(1, "أدخل البريد الإلكتروني.").email("اكتب بريدًا إلكترونيًا صحيحًا."),
-  role: z.enum(["admin", "editor", "viewer"])
-});
+function createInviteSchema(strings: { emailRequired: string; emailInvalid: string }) {
+  return z.object({
+    email: z.string().trim().min(1, strings.emailRequired).email(strings.emailInvalid),
+    role: z.enum(["admin", "editor", "viewer"])
+  });
+}
 
-type InviteFormValues = z.input<typeof inviteSchema>;
+type InviteFormValues = z.input<ReturnType<typeof createInviteSchema>>;
 
 export default function UsersSettingsPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const { settings: displaySettings } = useDisplaySettings();
+  const roleLabels: Record<ManagedUserRole, string> = t.pages.settingsUsers.roles;
+  const inviteSchema = useMemo(
+    () => createInviteSchema(t.pages.settingsUsers),
+    [t]
+  );
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageUsers = useCapability("users.manage");
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -79,7 +82,7 @@ export default function UsersSettingsPage() {
           inviteForm.setError(field as keyof InviteFormValues, { type: "zod", message: issue.message });
         }
       });
-      setActionState({ status: "error", message: parsed.error.issues[0]?.message || "راجع بيانات الدعوة." });
+      setActionState({ status: "error", message: parsed.error.issues[0]?.message || t.pages.settingsUsers.reviewInviteError });
       return;
     }
 
@@ -88,7 +91,7 @@ export default function UsersSettingsPage() {
       setActionState({ status: "error", message: response.error });
       return;
     }
-    setActionState({ status: "success", message: `تم إرسال الدعوة إلى ${response.invitation.email}` });
+    setActionState({ status: "success", message: t.pages.settingsUsers.inviteSentMessage.replace("{email}", response.invitation.email) });
     inviteForm.reset({ email: "", role: "editor" });
     void load();
   });
@@ -120,19 +123,19 @@ export default function UsersSettingsPage() {
     () => [
       {
         accessorKey: "name",
-        header: "الاسم"
+        header: t.pages.settingsUsers.nameColumnHeader
       },
       {
         accessorKey: "email",
-        header: "البريد الإلكتروني",
+        header: t.pages.settingsUsers.emailColumnHeader,
         cell: ({ row }) => <span dir="ltr">{row.original.email}</span>
       },
       {
         accessorKey: "role",
-        header: "الدور",
+        header: t.pages.settingsUsers.roleColumnHeader,
         cell: ({ row }) =>
           canManageUsers ? (
-            <select aria-label={`دور ${row.original.email}`} value={row.original.role} onChange={(event) => void handleRoleChange(row.original, event.target.value as ManagedUserRole)}>
+            <select aria-label={t.pages.settingsUsers.roleAriaLabel.replace("{email}", row.original.email)} value={row.original.role} onChange={(event) => void handleRoleChange(row.original, event.target.value as ManagedUserRole)}>
               {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
                 <option key={role} value={role}>
                   {roleLabels[role]}
@@ -145,64 +148,64 @@ export default function UsersSettingsPage() {
       },
       {
         id: "actions",
-        header: "إجراءات",
+        header: t.pages.settingsUsers.actionsColumnHeader,
         cell: ({ row }) =>
           canManageUsers ? (
             <button type="button" className="button button-secondary" onClick={() => void handleDelete(row.original)}>
-              إزالة
+              {t.pages.settingsUsers.removeButton}
             </button>
           ) : null,
         enableSorting: false
       }
     ],
-    [canManageUsers, handleDelete, handleRoleChange]
+    [canManageUsers, handleDelete, handleRoleChange, roleLabels, t]
   );
   const invitationColumns = useMemo<Array<ColumnDef<PendingInvitation, unknown>>>(
     () => [
       {
         accessorKey: "email",
-        header: "البريد الإلكتروني",
+        header: t.pages.settingsUsers.emailColumnHeader,
         cell: ({ row }) => <span dir="ltr">{row.original.email}</span>
       },
       {
         accessorKey: "role",
-        header: "الدور",
+        header: t.pages.settingsUsers.roleColumnHeader,
         cell: ({ row }) => roleLabels[row.original.role]
       },
       {
         accessorKey: "expiresAt",
-        header: "تنتهي في",
-        cell: ({ row }) => formatLocalDate(row.original.expiresAt)
+        header: t.pages.settingsUsers.expiresAtLabel,
+        cell: ({ row }) => formatLocalDate(row.original.expiresAt, displaySettings, locale)
       }
     ],
-    []
+    [roleLabels, t, displaySettings, locale]
   );
 
   return (
     <AppShell subtitle={t.pageTitles.usersAndRoles} contentClassName="stack" tipsPage="settings-users">
       <PageToolbar
-        title="المستخدمون والأدوار"
-        description="إدارة أعضاء الفريق وأدوارهم، ودعوة أعضاء جدد بالبريد الإلكتروني. مقتصر على المدراء."
-        meta={<span className="badge">مدير فقط</span>}
+        title={t.pages.settingsUsers.pageTitle}
+        description={t.pages.settingsUsers.pageDescription}
+        meta={<span className="badge">{t.pages.settingsUsers.adminOnlyBadge}</span>}
       />
       <div className="state-banner state-banner-info" role="status">
-        <strong>رحلة الإعداد: جهّز الفريق بعد التحقق من حساب المدير</strong>
-        <p>أضف المستخدمين والأدوار، ثم ارجع إلى الجاهزية لمراجعة الإجراء التالي.</p>
-        <a className="button button-secondary button-small" href="/first-run">عرض رحلة الإعداد</a>
+        <strong>{t.pages.settingsUsers.onboardingBannerTitle}</strong>
+        <p>{t.pages.settingsUsers.onboardingBannerBody}</p>
+        <a className="button button-secondary button-small" href="/first-run">{t.pages.settingsUsers.onboardingBannerLink}</a>
       </div>
 
       <article className="panel">
         <div className="toolbar-row">
           <div>
-            <h2>دعوة عضو جديد</h2>
-            <p className="field-note">تُنشأ دعوة صالحة لمدة 7 أيام؛ يشارك المدير الرابط/الرمز يدويًا حتى تفعيل البريد الإلكتروني.</p>
+            <h2>{t.pages.settingsUsers.inviteHeading}</h2>
+            <p className="field-note">{t.pages.settingsUsers.inviteNote}</p>
           </div>
         </div>
 
         {canManageUsers ? (
           <form className="auth-form" onSubmit={handleInvite}>
             <label>
-              البريد الإلكتروني
+              {t.pages.settingsUsers.emailLabel}
               <input
                 type="email"
                 dir="ltr"
@@ -212,7 +215,7 @@ export default function UsersSettingsPage() {
             </label>
 
             <label>
-              الدور
+              {t.pages.settingsUsers.roleLabel}
               <select {...inviteForm.register("role")}>
                 {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
                   <option key={role} value={role}>
@@ -224,7 +227,7 @@ export default function UsersSettingsPage() {
             </label>
 
             <button type="submit" className="button button-primary">
-              إرسال الدعوة
+              {t.pages.settingsUsers.inviteSubmit}
             </button>
 
             <p className="form-status" role={actionState.status === "error" ? "alert" : "status"}>
@@ -232,19 +235,19 @@ export default function UsersSettingsPage() {
             </p>
           </form>
         ) : (
-          <p className="helper-text">هذه الصفحة مقتصرة على المدراء؛ لا يمكنك دعوة أعضاء جدد.</p>
+          <p className="helper-text">{t.pages.settingsUsers.inviteRestrictedNote}</p>
         )}
       </article>
 
       <article className="panel">
-        <h2>الأعضاء</h2>
+        <h2>{t.pages.settingsUsers.membersHeading}</h2>
 
-        {state.status === "loading" && <Skeleton label="جار تحميل الأعضاء..." />}
-        {state.status === "error" && <p className="helper-text status-error">خطأ: {state.message}</p>}
+        {state.status === "loading" && <Skeleton label={t.pages.settingsUsers.loadingMembers} />}
+        {state.status === "error" && <p className="helper-text status-error">{t.pages.settingsUsers.errorPrefix.replace("{message}", state.message)}</p>}
 
         {state.status === "ready" && (
           <>
-            <div className="mobile-card-list" role="list" aria-label="بطاقات أعضاء الفريق">
+            <div className="mobile-card-list" role="list" aria-label={t.pages.settingsUsers.membersCardListLabel}>
               {state.users.map((user) => (
                 <article className="local-list-card" key={user.id} role="listitem">
                   <div className="local-list-card__main">
@@ -252,23 +255,23 @@ export default function UsersSettingsPage() {
                       <span className="badge">{roleLabels[user.role]}</span>
                       <h3>{user.name}</h3>
                     </div>
-                    <span className="badge">{formatLocalDate(user.createdAt)}</span>
+                    <span className="badge">{formatLocalDate(user.createdAt, displaySettings, locale)}</span>
                   </div>
                   <dl className="mobile-field-list">
                     <div>
-                      <dt>البريد الإلكتروني</dt>
+                      <dt>{t.pages.settingsUsers.emailColumnHeader}</dt>
                       <dd dir="ltr">{user.email}</dd>
                     </div>
                     <div>
-                      <dt>المعرّف</dt>
+                      <dt>{t.pages.settingsUsers.idLabel}</dt>
                       <dd dir="ltr">{user.id}</dd>
                     </div>
                   </dl>
                   {canManageUsers ? (
                     <>
                       <label className="toolbar-field">
-                        الدور
-                        <select aria-label={`دور ${user.email}`} value={user.role} onChange={(event) => void handleRoleChange(user, event.target.value as ManagedUserRole)}>
+                        {t.pages.settingsUsers.roleLabel}
+                        <select aria-label={t.pages.settingsUsers.roleAriaLabel.replace("{email}", user.email)} value={user.role} onChange={(event) => void handleRoleChange(user, event.target.value as ManagedUserRole)}>
                           {(Object.keys(roleLabels) as ManagedUserRole[]).map((role) => (
                             <option key={role} value={role}>
                               {roleLabels[role]}
@@ -277,7 +280,7 @@ export default function UsersSettingsPage() {
                         </select>
                       </label>
                       <button type="button" className="button button-danger button-sm" onClick={() => void handleDelete(user)}>
-                        إزالة
+                        {t.pages.settingsUsers.removeButton}
                       </button>
                     </>
                   ) : (
@@ -289,10 +292,10 @@ export default function UsersSettingsPage() {
 
             <div className="desktop-table-wrap">
               <DataTable
-                ariaLabel="أعضاء الفريق"
+                ariaLabel={t.pages.settingsUsers.membersTableAriaLabel}
                 columns={userColumns}
                 data={state.users}
-                emptyMessage="لا يوجد أعضاء."
+                emptyMessage={t.pages.settingsUsers.noMembers}
                 getRowId={(user) => user.id}
               />
             </div>
@@ -302,25 +305,25 @@ export default function UsersSettingsPage() {
 
       {state.status === "ready" && state.invitations.length > 0 && (
         <article className="panel">
-          <h2>الدعوات المعلّقة</h2>
-          <div className="mobile-card-list" role="list" aria-label="بطاقات الدعوات المعلقة">
+          <h2>{t.pages.settingsUsers.pendingInvitationsHeading}</h2>
+          <div className="mobile-card-list" role="list" aria-label={t.pages.settingsUsers.pendingInvitationsCardListLabel}>
             {state.invitations.map((invitation) => (
               <article className="local-list-card" key={invitation.id} role="listitem">
                 <div className="local-list-card__main">
                   <div>
-                    <span className="badge">دعوة معلّقة</span>
+                    <span className="badge">{t.pages.settingsUsers.pendingBadge}</span>
                     <h3 dir="ltr">{invitation.email}</h3>
                   </div>
                   <span className="badge">{roleLabels[invitation.role]}</span>
                 </div>
                 <dl className="mobile-field-list">
                   <div>
-                    <dt>تنتهي في</dt>
-                    <dd>{formatLocalDate(invitation.expiresAt)}</dd>
+                    <dt>{t.pages.settingsUsers.expiresAtLabel}</dt>
+                    <dd>{formatLocalDate(invitation.expiresAt, displaySettings, locale)}</dd>
                   </div>
                   <div>
-                    <dt>تاريخ الإنشاء</dt>
-                    <dd>{formatLocalDate(invitation.createdAt)}</dd>
+                    <dt>{t.pages.settingsUsers.createdAtLabel}</dt>
+                    <dd>{formatLocalDate(invitation.createdAt, displaySettings, locale)}</dd>
                   </div>
                 </dl>
               </article>
@@ -328,10 +331,10 @@ export default function UsersSettingsPage() {
           </div>
           <div className="desktop-table-wrap">
             <DataTable
-              ariaLabel="الدعوات المعلقة"
+              ariaLabel={t.pages.settingsUsers.invitationsTableAriaLabel}
               columns={invitationColumns}
               data={state.invitations}
-              emptyMessage="لا توجد دعوات معلقة."
+              emptyMessage={t.pages.settingsUsers.noInvitations}
               getRowId={(invitation) => invitation.id}
             />
           </div>

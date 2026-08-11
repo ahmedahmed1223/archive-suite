@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { ArchiveRecord } from "@/lib/archive-api";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { ArchiveRecordCard } from "./ArchiveRecordCard";
 
 afterEach(cleanup);
@@ -14,16 +15,18 @@ function renderCard(overrides: Partial<React.ComponentProps<typeof ArchiveRecord
   const onPreview = vi.fn();
   const onRename = vi.fn();
   render(
-    <ArchiveRecordCard
-      record={record}
-      itemSize="compact"
-      isSelected={false}
-      canEdit
-      onSelectClick={onSelectClick}
-      onPreview={onPreview}
-      onRename={onRename}
-      {...overrides}
-    />
+    <LocaleProvider initialLocale="ar" hasLocaleCookie={false}>
+      <ArchiveRecordCard
+        record={record}
+        itemSize="compact"
+        isSelected={false}
+        canEdit
+        onSelectClick={onSelectClick}
+        onPreview={onPreview}
+        onRename={onRename}
+        {...overrides}
+      />
+    </LocaleProvider>
   );
   return { onSelectClick, onPreview, onRename };
 }
@@ -35,7 +38,7 @@ test("native checkbox activation changes checked state once while forwarding sel
     return <ArchiveRecordCard record={record} itemSize="compact" isSelected={selected} canEdit onPreview={() => {}} onRename={() => {}}
       onSelectClick={(id, event) => { onSelectClick(id, event); setSelected((value) => value ? !event.ctrlKey : true); }} />;
   }
-  render(<StatefulCard />);
+  render(<LocaleProvider initialLocale="ar" hasLocaleCookie={false}><StatefulCard /></LocaleProvider>);
   const checkbox = screen.getByRole("checkbox", { name: "تحديد سجل تجريبي" });
   expect(checkbox).not.toBeChecked();
   fireEvent.click(checkbox);

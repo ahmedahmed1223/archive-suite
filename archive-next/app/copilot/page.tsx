@@ -24,37 +24,15 @@ interface ChatMessage {
 
 type SendPhase = "idle" | "sending";
 
-const safeStartingPoints = [
-  {
-    title: "ابحث في الأرشيف",
-    description: "استخدم البحث المتقدم مع الفلاتر بدل إرسال محتوى الأرشيف إلى خدمة خارجية.",
-    href: "/search",
-    icon: Search,
-    label: "فتح البحث"
-  },
-  {
-    title: "راجع العناصر المتشابهة",
-    description: "اعرض التكرارات المحتملة وقرر الدمج أو الاحتفاظ بكل سجل من داخل النظام.",
-    href: "/duplicates",
-    icon: CopyCheck,
-    label: "فتح المكررات"
-  },
-  {
-    title: "نظّم البيانات الوصفية",
-    description: "أدر الأنواع والوسوم والمفردات أولاً لتحسين نتائج البحث والعمل الجماعي.",
-    href: "/tags",
-    icon: Tags,
-    label: "فتح الوسوم"
-  }
-] as const;
-
 interface LinkedRecordContext {
   title: string;
   contextText: string;
 }
 
 function CopilotPageContent() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const copy = t.pages.copilot;
+  const safeStartingPoints = [{ title: copy.searchTitle, description: copy.searchDescription, href: "/search", icon: Search, label: copy.openSearch }, { title: copy.duplicatesTitle, description: copy.duplicatesDescription, href: "/duplicates", icon: CopyCheck, label: copy.openDuplicates }, { title: copy.metadataTitle, description: copy.metadataDescription, href: "/tags", icon: Tags, label: copy.openTags }];
   const [phase, setPhase] = useState<StatusPhase>("loading");
   const [status, setStatus] = useState<CopilotStatus | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -82,7 +60,7 @@ function CopilotPageContent() {
       if (cancelled || !response.ok) return;
       setRecordContext({
         title: response.record.title,
-        contextText: buildRecordContext(response.record)
+        contextText: buildRecordContext(response.record, locale)
       });
       setContextAttached(true);
     });
@@ -90,7 +68,7 @@ function CopilotPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [recordId, accessToken]);
+  }, [recordId, accessToken, locale]);
 
   const refreshStatus = useCallback(async () => {
     setPhase("loading");
@@ -124,24 +102,25 @@ function CopilotPageContent() {
         headers,
         body: JSON.stringify({
           messages: nextMessages,
-          context: contextAttached ? recordContext?.contextText : undefined
+          context: contextAttached ? recordContext?.contextText : undefined,
+          locale
         })
       });
 
       const payload = await response.json().catch(() => null) as { ok: true; reply: string } | { ok: false; error: string } | null;
 
       if (!response.ok || !payload?.ok) {
-        setSendError(payload && !payload.ok ? payload.error : "تعذر إرسال الرسالة. حاول مرة أخرى.");
+        setSendError(payload && !payload.ok ? payload.error : copy.sendFailed);
         return;
       }
 
       setMessages([...nextMessages, { role: "assistant", content: payload.reply }]);
     } catch {
-      setSendError("تعذر الاتصال بالخادم. تحقق من الاتصال ثم أعد المحاولة.");
+      setSendError(copy.connectionFailed);
     } finally {
       setSendPhase("idle");
     }
-  }, [accessToken, contextAttached, recordContext]);
+  }, [accessToken, contextAttached, recordContext, copy, locale]);
 
   const handleSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -160,57 +139,53 @@ function CopilotPageContent() {
   }, [messages, sendConversation, sendPhase]);
 
   const statusLabel = phase === "loading"
-    ? "جارٍ التحقق"
+    ? copy.checking
     : phase === "error"
-      ? "تعذر التحقق"
+      ? copy.checkFailed
       : status?.configured
-        ? "المحادثة مفعّلة"
-        : "غير مهيأ";
+        ? copy.enabled : copy.unconfigured;
 
   return (
     <AppShell subtitle={t.pageTitles.archiveAssistant} navLabel={t.pageTitles.archiveAssistantTours} contentClassName="copilot-content" tipsPage="copilot">
       <PageToolbar
         icon={<BotMessageSquare size={24} strokeWidth={1.8} />}
-        eyebrow={<span className="badge">مساحة آمنة</span>}
-        title="مساعد الأرشيف"
+        eyebrow={<span className="badge">{copy.safeSpace}</span>} title={copy.title}
         description={
           status?.configured
-            ? "المحادثة محمية بجلسة تسجيل الدخول ولا تُرسل رسائلك إلا عند الضغط على إرسال."
-            : "نقطة دخول موجهة لعمليات الأرشيف. لا ترسل هذه الشاشة نصوصاً أو ملفات إلى أي مزود ذكاء اصطناعي."
+            ? copy.configuredDescription : copy.unconfiguredDescription
         }
         meta={(
           <>
             <span className="badge" data-tone={phase === "error" ? "danger" : undefined}>{statusLabel}</span>
-            <span className="badge">معالجة خارجية: {status?.configured ? "نشطة عند الإرسال" : "متوقفة"}</span>
+            <span className="badge">{copy.external.replace("{value}", status?.configured ? copy.activeOnSend : copy.stopped)}</span>
           </>
         )}
         actions={(
           <button className="button button-secondary" type="button" onClick={() => void refreshStatus()} disabled={phase === "loading"}>
             <RefreshCw aria-hidden="true" size={17} strokeWidth={2} />
-            إعادة التحقق
+            {copy.recheck}
           </button>
         )}
       />
 
       <OperationalSafetyPanel
-        action="إرسال طلب إلى المساعد"
+        action={copy.safetyAction}
         dryRun={!status?.configured}
         confidence={status?.configured ? 75 : undefined}
         rights="review"
         auditHref="/activity"
       />
-      <p className="helper-text">الخادم يطبق سياسات الحقوق والصلاحيات عند إرسال الطلب؛ تهيئة المساعد لا تعني موافقة حقوق محلية.</p>
+      <p className="helper-text">{copy.rightsNote}</p>
 
       {phase === "loading" ? (
         <div className="panel panel-compact" role="status" aria-live="polite">
-          <p className="form-status">جارٍ فحص جاهزية المساعد على الخادم دون الاتصال بأي مزود خارجي…</p>
+          <p className="form-status">{copy.checkingDescription}</p>
         </div>
       ) : null}
 
       {phase === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر فحص تهيئة المساعد</strong>
-          <span className="helper-text">لا تزال المحادثة والتكاملات الخارجية معطلة. أعد المحاولة بعد التحقق من الخادم.</span>
+          <strong>{copy.checkConfigurationFailed}</strong><span className="helper-text">{copy.disabledNote}</span>
         </div>
       ) : null}
 
@@ -218,8 +193,7 @@ function CopilotPageContent() {
         <div className="state-banner copilot-safety-banner" role="status">
           <ShieldCheck aria-hidden="true" size={20} strokeWidth={2} />
           <div>
-            <strong>المساعد غير مهيأ خادمياً</strong>
-            <span>تبقى المحادثة معطلة إلى أن يفعّل المسؤول مزوداً خادمياً محمياً ونقطة خدمة تراجع الصلاحيات.</span>
+            <strong>{copy.notConfigured}</strong><span>{copy.notConfiguredNote}</span>
           </div>
         </div>
       ) : null}
@@ -228,76 +202,71 @@ function CopilotPageContent() {
         <div className="state-banner copilot-safety-banner" role="status">
           <ShieldCheck aria-hidden="true" size={20} strokeWidth={2} />
           <div>
-            <strong>المحادثة مفعّلة عبر نقطة خدمة محمية</strong>
-            <span>تُرسل رسالتك ورد المساعد فقط عند الضغط على إرسال، وتمر عبر التحقق من صلاحيتك أولاً.</span>
+            <strong>{copy.protectedEnabled}</strong><span>{copy.protectedEnabledNote}</span>
           </div>
         </div>
       ) : null}
 
       <MetricStrip
-        ariaLabel="حدود مساعد الأرشيف"
+        ariaLabel={copy.limits}
         items={[
           {
-            label: "محادثات مرسلة",
+            label: copy.sentConversations,
             value: String(messages.filter((message) => message.role === "user").length),
-            description: status?.configured ? "منذ فتح هذه الصفحة" : "لا يوجد إرسال من المتصفح",
+            description: status?.configured ? copy.sinceOpen : copy.noBrowserSend,
             icon: <BotMessageSquare size={20} />,
             tone: "accent"
           },
           {
-            label: "محتوى خارجي",
-            value: status?.configured ? "عند الطلب فقط" : "محجوب",
-            description: "لا ملفات ولا نصوص تغادر هذه الشاشة دون إرسال صريح",
+            label: copy.externalContent, value: status?.configured ? copy.onDemand : copy.blocked, description: copy.noExternal,
             icon: <ShieldCheck size={20} />,
             tone: "success"
           },
-          { label: "مسارات آمنة", value: safeStartingPoints.length, description: "ابدأ بعمليات النظام الحالية", icon: <DatabaseZap size={20} />, tone: "info" }
+          { label: copy.safePaths, value: safeStartingPoints.length, description: copy.startOperations, icon: <DatabaseZap size={20} />, tone: "info" }
         ]}
       />
 
-      <section className="copilot-workspace" aria-label="مساحة مساعد الأرشيف">
+      <section className="copilot-workspace" aria-label={copy.workspace}>
         <article className="panel copilot-conversation" aria-labelledby="copilot-conversation-title">
           <div className="panel-section-header">
-            <h2 id="copilot-conversation-title">محادثة المساعد</h2>
+            <h2 id="copilot-conversation-title">{copy.conversation}</h2>
             <p>
               {status?.configured
-                ? "الرسائل هنا تُرسل إلى نقطة خدمة محمية على الخادم بعد التحقق من جلستك."
-                : "ستظهر المحادثات المراجعة خادمياً هنا بعد إضافة نقطة الخدمة المحمية."}
+                ? copy.configuredConversation : copy.unconfiguredConversation}
             </p>
           </div>
 
           {messages.length === 0 ? (
             <EmptyState
               icon={<BotMessageSquare size={24} strokeWidth={1.8} />}
-              title="لا توجد محادثات بعد"
+              title={copy.noConversations}
               description={
                 status?.configured
-                  ? "اكتب سؤالك أدناه للبدء. لا يُرسل أي محتوى إلى المساعد قبل الضغط على إرسال."
-                  : "هذه مساحة فارغة مقصودة: لا تُنشأ أي طلبات ذكاء اصطناعي أو طلبات خارجية من هذا المتصفح."
+                  ? copy.configuredEmpty : copy.unconfiguredEmpty
               }
             />
           ) : (
             <div className="copilot-messages" role="log" aria-live="polite">
               {messages.map((message, index) => (
                 <div className="workspace-panel copilot-message" data-role={message.role} key={index}>
-                  <strong>{message.role === "user" ? "أنت" : "المساعد"}</strong>
+                  <strong>{message.role === "user" ? copy.you : copy.assistant}</strong>
                   <p>{message.content}</p>
                 </div>
               ))}
               {sendPhase === "sending" ? (
-                <p className="form-status" role="status">المساعد يكتب الرد…</p>
+                <p className="form-status" role="status">{copy.typing}</p>
               ) : null}
             </div>
           )}
 
           {sendError ? (
             <div className="state-banner state-banner-error" role="alert">
-              <strong>تعذر إرسال الرسالة</strong>
+              <strong>{copy.sendFailed}</strong>
               <span className="helper-text">{sendError}</span>
               <div className="button-row">
                 <button className="button button-secondary" type="button" onClick={handleRetry} disabled={sendPhase === "sending"}>
                   <RefreshCw aria-hidden="true" size={17} strokeWidth={2} />
-                  إعادة المحاولة
+                  {copy.retry}
                 </button>
               </div>
             </div>
@@ -306,7 +275,7 @@ function CopilotPageContent() {
           {recordContext ? (
             <div className="state-banner copilot-context-banner" role="status">
               <div>
-                <strong>{contextAttached ? "سيُرفق سياق السجل" : "سياق السجل غير مرفق"}</strong>
+                <strong>{contextAttached ? copy.contextAttached : copy.contextDetached}</strong>
                 <span className="helper-text">{recordContext.title}</span>
               </div>
               <button
@@ -317,10 +286,10 @@ function CopilotPageContent() {
                 {contextAttached ? (
                   <>
                     <X aria-hidden="true" size={16} strokeWidth={2} />
-                    إزالة السياق
+                    {copy.removeContext}
                   </>
                 ) : (
-                  "إرفاق السياق"
+                  copy.attachContext
                 )}
               </button>
             </div>
@@ -332,33 +301,31 @@ function CopilotPageContent() {
               disabled={!status?.configured || sendPhase === "sending"}
               aria-describedby="copilot-composer-note"
             >
-              <label htmlFor="copilot-prompt">اكتب طلبك</label>
+              <label htmlFor="copilot-prompt">{copy.prompt}</label>
               <textarea
                 id="copilot-prompt"
                 className="search-input"
-                placeholder={status?.configured ? "اكتب سؤالك عن الأرشيف هنا…" : "المحادثة غير متاحة حتى اكتمال التهيئة الخادمية الآمنة."}
+                placeholder={status?.configured ? copy.promptConfigured : copy.promptUnconfigured}
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
               />
               <div className="button-row">
                 <button className="button button-primary" type="submit" disabled={!draft.trim() || sendPhase === "sending"}>
                   <BotMessageSquare aria-hidden="true" size={17} strokeWidth={2} />
-                  إرسال إلى المساعد
+                  {copy.send}
                 </button>
               </div>
             </fieldset>
           </form>
           <p id="copilot-composer-note" className="helper-text">
             {status?.configured
-              ? "لا تحفظ هذه الصفحة أي مسودة في المتصفح؛ المحادثة تُفقد عند تحديث الصفحة."
-              : "الحقل معطل عمداً، ولا تحفظ هذه الصفحة أي مسودة في المتصفح."}
+              ? copy.draftConfigured : copy.draftUnconfigured}
           </p>
         </article>
 
-        <aside className="copilot-guidance" aria-label="مسارات آمنة مقترحة">
+        <aside className="copilot-guidance" aria-label={copy.guidance}>
           <div className="panel-section-header">
-            <h2>ابدأ من النظام</h2>
-            <p>بدائل عملية متاحة الآن دون انتظار أي تكامل خارجي.</p>
+            <h2>{copy.startSystem}</h2><p>{copy.guidanceNote}</p>
           </div>
           <div className="copilot-guidance__list">
             {safeStartingPoints.map(({ title, description, href, icon: Icon, label }) => (

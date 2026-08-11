@@ -9,7 +9,6 @@ import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type SyncLogEntry, type SyncSummary } from "@/lib/archive-api";
 import "./sync.css";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { formatArabicDateTime } from "@/lib/arabic-format";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type SyncState =
@@ -17,8 +16,14 @@ type SyncState =
   | { status: "ready"; entries: SyncLogEntry[]; summary: SyncSummary }
   | { status: "error"; message: string };
 
-function statusLabel(status: SyncLogEntry["status"], locale: "ar" | "en") {
-  return locale === "en" ? (status === "conflict" ? "Needs sync" : "Synced") : (status === "conflict" ? "يحتاج مزامنة" : "متزامن");
+function statusLabel(status: SyncLogEntry["status"], labels: { synced: string; conflict: string }) {
+  return status === "conflict" ? labels.conflict : labels.synced;
+}
+
+function formatDateTime(value: string | null | undefined, locale: "ar" | "en") {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString(locale === "en" ? "en-US" : "ar-SA");
 }
 
 type SyncFilter = "all" | SyncLogEntry["status"];
@@ -168,12 +173,12 @@ export default function SyncPage() {
                           <td>{entry.store}</td>
                           <td>
                             <span className={`badge ${entry.status === "conflict" ? "badge-error" : "badge-success"}`}>
-                              {statusLabel(entry.status, locale)}
+                              {statusLabel(entry.status, copy.statusLabels)}
                             </span>
                           </td>
                           <td>{entry.syncVersion ?? "—"}</td>
                           <td>
-                            {locale === "en" ? (entry.updatedAt ? new Date(entry.updatedAt).toLocaleString("en-US") : "—") : formatArabicDateTime(entry.updatedAt, "—")}
+                            {formatDateTime(entry.updatedAt, locale)}
                           </td>
                         </tr>
                       );
@@ -186,7 +191,7 @@ export default function SyncPage() {
               {selectedEntry ? (
                 <>
                   <span className={`badge ${selectedEntry.status === "conflict" ? "badge-error" : "badge-success"}`}>
-                    {statusLabel(selectedEntry.status, locale)}
+                    {statusLabel(selectedEntry.status, copy.statusLabels)}
                   </span>
                   <h2>{selectedEntry.uid}</h2>
                   <div className="kv-grid">
@@ -198,7 +203,7 @@ export default function SyncPage() {
                       <strong>{copy.columns.version}</strong><span>{selectedEntry.syncVersion ?? copy.unspecified}</span>
                     </div>
                     <div className="kv-item">
-                      <strong>{copy.columns.updated}</strong><span>{locale === "en" ? (selectedEntry.updatedAt ? new Date(selectedEntry.updatedAt).toLocaleString("en-US") : "—") : formatArabicDateTime(selectedEntry.updatedAt, "—")}</span>
+                      <strong>{copy.columns.updated}</strong><span>{formatDateTime(selectedEntry.updatedAt, locale)}</span>
                     </div>
                   </div>
                   <div className="button-row">

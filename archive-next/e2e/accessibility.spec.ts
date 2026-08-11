@@ -37,7 +37,7 @@ for (const viewport of VIEWPORTS) {
       await page.goto('/first-run', { waitUntil: 'networkidle' });
 
       const commandEntry = viewport.width <= 375
-        ? page.getByRole('button', { name: 'فتح الأوامر' })
+        ? page.getByTestId('mobile-command-palette-trigger')
         : page.getByRole('button', { name: 'بحث، فتح صفحة، أو تنفيذ أمر' });
       await expect(commandEntry).toBeVisible();
 

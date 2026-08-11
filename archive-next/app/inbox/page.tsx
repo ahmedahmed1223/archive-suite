@@ -13,13 +13,6 @@ import { toastError, toastSuccess } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { triageCommand } from "@/lib/inbox-triage";
 
-const statusLabels: Record<InboxStatus, string> = {
-  new: "وارد جديد",
-  triage: "قيد الفرز",
-  ready: "جاهز للأرشفة",
-  done: "مكتمل"
-};
-
 type InboxLoadState =
   | { status: "loading" }
   | { status: "ready" }
@@ -27,6 +20,7 @@ type InboxLoadState =
 
 export default function InboxPage() {
   const { t } = useLocale();
+  const copy = t.pages.inbox;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loadState, setLoadState] = useState<InboxLoadState>({ status: "loading" });
@@ -49,11 +43,11 @@ export default function InboxPage() {
       setItems(response.items);
       setLoadState({ status: "ready" });
     } else {
-      const message = response.error || "تعذر تحميل الوارد.";
+      const message = response.error || copy.errors.load;
       setLoadState({ status: "error", message });
       setStatusMessage(message);
     }
-  }, [api]);
+  }, [api, copy.errors.load]);
 
   useEffect(() => {
     void refreshInbox();
@@ -77,12 +71,12 @@ export default function InboxPage() {
   const updateStatus = useCallback(async (id: string, status: InboxStatus) => {
     const response = await api.updateInboxItem(id, { status });
     if (!response.ok) {
-      const message = response.error || "تعذر تحديث الحالة.";
+      const message = response.error || copy.errors.update;
       setStatusMessage(message);
       toastError(message);
     }
     await refreshInbox();
-  }, [api, refreshInbox]);
+  }, [api, copy.errors.update, refreshInbox]);
 
   useEffect(() => {
     if (!triageMode) return;
@@ -112,16 +106,16 @@ export default function InboxPage() {
   async function addItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!title.trim()) return;
-    setStatusMessage("جار الحفظ...");
+    setStatusMessage(copy.messages.saving);
     const response = await api.createInboxItem({ title: title.trim(), source: source.trim(), note: note.trim() });
     if (!response.ok) {
-      const message = response.error || "تعذر إضافة العنصر.";
+      const message = response.error || copy.errors.add;
       setStatusMessage(message);
       toastError(message);
       return;
     }
-    setStatusMessage("تمت الإضافة إلى الوارد.");
-    toastSuccess("تمت إضافة العنصر إلى الوارد.");
+    setStatusMessage(copy.messages.added);
+    toastSuccess(copy.messages.addedToast);
     setTitle("");
     setSource("");
     setNote("");
@@ -131,11 +125,11 @@ export default function InboxPage() {
   async function removeItem(id: string) {
     const response = await api.deleteInboxItem(id);
     if (!response.ok) {
-      const message = response.error || "تعذر حذف العنصر.";
+      const message = response.error || copy.errors.remove;
       setStatusMessage(message);
       toastError(message);
     } else {
-      toastSuccess("تم حذف العنصر.");
+      toastSuccess(copy.messages.removed);
     }
     await refreshInbox();
   }
@@ -147,10 +141,10 @@ export default function InboxPage() {
     setRoutingBusyId(item.id);
     const response = await api.previewInboxDepartmentRouting(item.id, departmentId);
     const message = !response.ok
-      ? response.error || "تعذرت معاينة التوجيه."
+      ? response.error || copy.errors.previewRoute
       : response.blocked
-        ? response.reason || "تم منع التوجيه المتكرر."
-        : `يمكن التوجيه إلى قسم ${response.toDepartmentId}. لن يُنفذ شيء قبل التأكيد.`;
+        ? response.reason || copy.errors.repeatedRoute
+        : copy.messages.routePreview.replace("{department}", response.toDepartmentId);
     setRoutingPreviews((current) => ({ ...current, [item.id]: message }));
     setRoutingBusyId(null);
   }
@@ -162,12 +156,12 @@ export default function InboxPage() {
     setRoutingBusyId(item.id);
     const response = await api.routeInboxDepartment(item.id, departmentId);
     if (!response.ok) {
-      const message = response.error || "تم منع التوجيه أو تعذر تنفيذه.";
+      const message = response.error || copy.errors.applyRoute;
       setRoutingPreviews((current) => ({ ...current, [item.id]: message }));
       toastError(message);
     } else {
-      toastSuccess(`تم توجيه العنصر إلى قسم ${response.departmentId}.`);
-      setRoutingPreviews((current) => ({ ...current, [item.id]: "تم التوجيه وتسجيله في السجل." }));
+      toastSuccess(copy.messages.routed.replace("{department}", response.departmentId));
+      setRoutingPreviews((current) => ({ ...current, [item.id]: copy.messages.routeLogged }));
       await refreshInbox();
     }
     setRoutingBusyId(null);
@@ -176,90 +170,90 @@ export default function InboxPage() {
   return (
     <AppShell subtitle={t.pageTitles.inbox} contentClassName="local-list-content" tipsPage="inbox">
       <PageToolbar
-        eyebrow={<span className="badge">التقاط سريع</span>}
-        title="صندوق الوارد"
-        description="التقاط سريع للمواد أو الأفكار قبل الأرشفة، محفوظ في الخادم لكل مستخدم."
+        eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={(
           <>
-            <span className="badge">{items.length} عنصر</span>
-            <span className="badge">{counts.ready} جاهز للأرشفة</span>
+            <span className="badge">{copy.toolbar.items.replace("{count}", String(items.length))}</span>
+            <span className="badge">{copy.toolbar.ready.replace("{count}", String(counts.ready))}</span>
           </>
         )}
-        actions={<><button className="button button-secondary" type="button" aria-pressed={triageMode} onClick={() => setTriageMode((value) => !value)}>{triageMode ? "إنهاء الفرز السريع" : "بدء الفرز السريع"}</button><a className="button button-primary" href="/uploads">رفع ملف</a></>}
+        actions={<><button className="button button-secondary" type="button" aria-pressed={triageMode} onClick={() => setTriageMode((value) => !value)}>{triageMode ? copy.toolbar.endTriage : copy.toolbar.startTriage}</button><a className="button button-primary" href="/uploads">{copy.toolbar.upload}</a></>}
       >
         <form className="archive-toolbar-grid" onSubmit={addItem}>
           <label>
-            <span>العنوان</span>
-            <input className="search-input" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="مادة أو مهمة فرز" />
+            <span>{copy.form.title}</span>
+            <input className="search-input" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={copy.form.titlePlaceholder} />
           </label>
           <label>
-            <span>المصدر</span>
-            <input className="search-input" value={source} onChange={(event) => setSource(event.target.value)} placeholder="مجلد، جهة، رابط..." />
+            <span>{copy.form.source}</span>
+            <input className="search-input" value={source} onChange={(event) => setSource(event.target.value)} placeholder={copy.form.sourcePlaceholder} />
           </label>
           <label className="full-span">
-            <span>ملاحظة</span>
+            <span>{copy.form.note}</span>
             <textarea className="search-input" value={note} onChange={(event) => setNote(event.target.value)} rows={3} />
           </label>
           <div className="archive-toolbar-actions">
-            <button className="button button-primary" type="submit" disabled={!title.trim()}>إضافة للوارد</button>
+            <button className="button button-primary" type="submit" disabled={!title.trim()}>{copy.form.add}</button>
           </div>
         </form>
         {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
         <div className="archive-toolbar-row">
-          <button className="badge" data-active={filter === "all" ? "true" : "false"} type="button" onClick={() => setFilter("all")}>الكل · {items.length}</button>
-          {(Object.keys(statusLabels) as InboxStatus[]).map((status) => (
+          <button className="badge" data-active={filter === "all" ? "true" : "false"} type="button" onClick={() => setFilter("all")}>{copy.form.all.replace("{count}", String(items.length))}</button>
+          {(Object.keys(copy.statuses) as InboxStatus[]).map((status) => (
             <button key={status} className="badge" data-active={filter === status ? "true" : "false"} type="button" onClick={() => setFilter(status)}>
-              {statusLabels[status]} · {counts[status]}
+              {copy.statuses[status]} · {counts[status]}
             </button>
           ))}
         </div>
       </PageToolbar>
 
-      {triageMode ? <div className="state-banner state-banner-info" role="status"><strong>الفرز السريع مفعّل</strong><span>J/K أو الأسهم للتنقل · 1 جديد · 2 قيد الفرز · 3 جاهز · 4 مكتمل · Enter للفتح</span></div> : null}
+      {triageMode ? <div className="state-banner state-banner-info" role="status"><strong>{copy.triage.active}</strong><span>{copy.triage.instructions}</span></div> : null}
 
       {loadState.status === "loading" ? (
-        <div className="panel panel-compact"><Skeleton label="جار تحميل عناصر الوارد..." /></div>
+        <div className="panel panel-compact"><Skeleton label={copy.states.loading} /></div>
       ) : null}
 
       {loadState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل عناصر الوارد</strong>
+          <strong>{copy.states.loadFailed}</strong>
           <span className="helper-text">{loadState.message}</span>
-          <div><button type="button" className="button button-secondary button-sm" onClick={() => void refreshInbox()}>إعادة المحاولة</button></div>
+          <div><button type="button" className="button button-secondary button-sm" onClick={() => void refreshInbox()}>{copy.states.retry}</button></div>
         </div>
       ) : null}
 
       {loadState.status === "ready" && visibleItems.length === 0 ? (
-        <EmptyState title="لا توجد عناصر في هذا العرض." description="أضف عنصراً سريعاً أو غيّر فلتر الحالة." />
+        <EmptyState title={copy.states.emptyTitle} description={copy.states.emptyDescription} />
       ) : (
-        <section className="dense-grid" aria-label="عناصر الوارد">
+        <section className="dense-grid" aria-label={copy.states.ariaLabel}>
           {visibleItems.map((item, index) => (
             <article className="local-list-card" data-triage-active={triageMode && index === activeIndex} aria-current={triageMode && index === activeIndex ? "true" : undefined} key={item.id}>
               <div className="local-list-card__main">
                 <div>
-                  <span className="badge">{statusLabels[item.status]}</span>
+                  <span className="badge">{copy.statuses[item.status]}</span>
                   <h3>{item.title}</h3>
                 </div>
                 <span className="badge">{item.createdAt ? formatDate(item.createdAt) : "-"}</span>
               </div>
               <dl className="mobile-field-list">
-                <div><dt>المصدر</dt><dd dir="auto">{item.source || "-"}</dd></div>
-                <div><dt>الملاحظة</dt><dd>{item.note || "-"}</dd></div>
-                <div><dt>القسم</dt><dd>{item.departmentId || "غير موجّه"}</dd></div>
+                <div><dt>{copy.item.source}</dt><dd dir="auto">{item.source || "-"}</dd></div>
+                <div><dt>{copy.item.note}</dt><dd>{item.note || "-"}</dd></div>
+                <div><dt>{copy.item.department}</dt><dd>{item.departmentId || copy.item.unrouted}</dd></div>
               </dl>
               <div className="button-row">
-                <select value={item.status} onChange={(event) => void updateStatus(item.id, event.target.value as InboxStatus)} aria-label={`حالة ${item.title}`}>
-                  {(Object.keys(statusLabels) as InboxStatus[]).map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
+                <select value={item.status} onChange={(event) => void updateStatus(item.id, event.target.value as InboxStatus)} aria-label={copy.item.statusFor.replace("{title}", item.title)}>
+                  {(Object.keys(copy.statuses) as InboxStatus[]).map((status) => <option key={status} value={status}>{copy.statuses[status]}</option>)}
                 </select>
-                <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(normalizeText(item.title))}`}>بحث مشابه</a>
-                {item.status === "ready" ? <a className="button button-primary button-sm" href="/uploads">بدء الأرشفة</a> : null}
-                {item.status === "done" ? <a className="button button-secondary button-sm" href="/archive">فتح الأرشيف</a> : null}
-                <button className="button button-danger button-sm" type="button" onClick={() => void removeItem(item.id)}>حذف</button>
+                <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(normalizeText(item.title))}`}>{copy.item.searchSimilar}</a>
+                {item.status === "ready" ? <a className="button button-primary button-sm" href="/uploads">{copy.item.startArchiving}</a> : null}
+                {item.status === "done" ? <a className="button button-secondary button-sm" href="/archive">{copy.item.openArchive}</a> : null}
+                <button className="button button-danger button-sm" type="button" onClick={() => void removeItem(item.id)}>{copy.item.remove}</button>
               </div>
               <div className="button-row">
-                <input className="search-input" value={departmentTargets[item.id] || ""} onChange={(event) => setDepartmentTargets((current) => ({ ...current, [item.id]: event.target.value }))} placeholder="معرّف القسم المستهدف" aria-label={`القسم المستهدف لـ ${item.title}`} />
-                <button className="button button-secondary button-sm" type="button" onClick={() => void previewRouting(item)} disabled={routingBusyId === item.id || !(departmentTargets[item.id] || "").trim()}>معاينة التوجيه</button>
-                {canRouteInbox ? <button className="button button-primary button-sm" type="button" onClick={() => void applyRouting(item)} disabled={routingBusyId === item.id || !(departmentTargets[item.id] || "").trim()}>توجيه للقسم</button> : null}
+                <input className="search-input" value={departmentTargets[item.id] || ""} onChange={(event) => setDepartmentTargets((current) => ({ ...current, [item.id]: event.target.value }))} placeholder={copy.item.targetDepartmentPlaceholder} aria-label={copy.item.targetDepartmentFor.replace("{title}", item.title)} />
+                <button className="button button-secondary button-sm" type="button" onClick={() => void previewRouting(item)} disabled={routingBusyId === item.id || !(departmentTargets[item.id] || "").trim()}>{copy.item.previewRoute}</button>
+                {canRouteInbox ? <button className="button button-primary button-sm" type="button" onClick={() => void applyRouting(item)} disabled={routingBusyId === item.id || !(departmentTargets[item.id] || "").trim()}>{copy.item.routeDepartment}</button> : null}
               </div>
               {routingPreviews[item.id] ? <p className="helper-text" role="status">{routingPreviews[item.id]}</p> : null}
             </article>

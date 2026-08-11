@@ -9,7 +9,18 @@ import {
   WHATS_NEW_STORAGE_KEY,
 } from "@/lib/whats-new";
 
-vi.mock("@/lib/i18n/LocaleProvider", () => ({ useLocale: () => ({ locale: "ar" }) }));
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+
+  return {
+    useLocale: () => ({
+      locale: "ar",
+      direction: "rtl",
+      t: getDictionary("ar"),
+      setLocale: vi.fn(),
+    }),
+  };
+});
 
 describe("WhatsNewDialog", () => {
   beforeEach(() => window.localStorage.clear());

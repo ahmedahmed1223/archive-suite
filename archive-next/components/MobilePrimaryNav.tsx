@@ -35,7 +35,7 @@ export default function MobilePrimaryNav() {
           </Link>
         );
       })}
-      <button type="button" className="mobile-primary-nav__command" onClick={openCommandPalette} aria-label={t.shell.openCommands}>
+      <button type="button" className="mobile-primary-nav__command" data-testid="mobile-command-palette-trigger" onClick={openCommandPalette} aria-label={t.shell.openCommands}>
         <Icons.Search aria-hidden="true" size={20} strokeWidth={2} />
         <span>{t.shell.commands}</span>
       </button>

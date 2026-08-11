@@ -8,6 +8,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type WatchedIngestBatch } from "@/lib/archive-api";
+import type { AppDictionary } from "@/lib/i18n/dictionaries";
 import "./ingest.css";
 
 type PullResult = { ingested: number; skipped: number };
@@ -20,19 +21,11 @@ type OperationState =
 
 type IngestSource = "scan" | "watched" | "ftp" | "smb" | "dropbox";
 
-const sourceLabels: Record<IngestSource, string> = {
-  scan: "مجلد الخادم",
-  watched: "مجلد مراقَب",
-  ftp: "FTP/FTPS",
-  smb: "SMB",
-  dropbox: "Dropbox"
-};
-
-function operationStatusLabel(state: OperationState) {
-  if (state.status === "running") return "جار التنفيذ";
-  if (state.status === "success") return `${state.result.ingested} مدخل`;
-  if (state.status === "error") return "يتطلب مراجعة";
-  return "جاهز";
+function operationStatusLabel(state: OperationState, tt: AppDictionary["pages"]["ingest"]) {
+  if (state.status === "running") return tt.runningLabel;
+  if (state.status === "success") return tt.ingestedCount.replace("{count}", String(state.result.ingested));
+  if (state.status === "error") return tt.needsReviewLabel;
+  return tt.readyLabel;
 }
 
 function operationTone(state: OperationState) {
@@ -42,12 +35,18 @@ function operationTone(state: OperationState) {
   return "info";
 }
 
-function ResultBanner({ label, state }: Readonly<{ label: string; state: OperationState }>) {
+function ResultBanner({
+  label,
+  state,
+  tt
+}: Readonly<{ label: string; state: OperationState; tt: AppDictionary["pages"]["ingest"] }>) {
   if (state.status === "success") {
     return (
       <div className="state-banner state-banner-success" role="status">
-        <strong>اكتمل {label}</strong>
-        <span className="helper-text">تم إدخال {state.result.ingested} عنصر وتجاوز {state.result.skipped}.</span>
+        <strong>{tt.completedLabel.replace("{label}", label)}</strong>
+        <span className="helper-text">
+          {tt.resultSummary.replace("{ingested}", String(state.result.ingested)).replace("{skipped}", String(state.result.skipped))}
+        </span>
       </div>
     );
   }
@@ -55,7 +54,7 @@ function ResultBanner({ label, state }: Readonly<{ label: string; state: Operati
   if (state.status === "error") {
     return (
       <div className="state-banner state-banner-error" role="alert">
-        <strong>تعذر {label}</strong>
+        <strong>{tt.failedLabel.replace("{label}", label)}</strong>
         <span className="helper-text">{state.message}</span>
       </div>
     );
@@ -66,6 +65,7 @@ function ResultBanner({ label, state }: Readonly<{ label: string; state: Operati
 
 export default function IngestPage() {
   const { t } = useLocale();
+  const ti = t.pages.ingest;
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageIngest = useCapability("ingest.manage");
 
@@ -102,10 +102,10 @@ export default function IngestPage() {
       if (response.ok) {
         setState({ status: "success", result: { ingested: response.ingested.length, skipped: response.skipped } });
       } else {
-        setState({ status: "error", message: response.error || "فشلت العملية." });
+        setState({ status: "error", message: response.error || ti.genericOperationError });
       }
     } catch (error) {
-      setState({ status: "error", message: error instanceof Error ? error.message : "فشلت العملية." });
+      setState({ status: "error", message: error instanceof Error ? error.message : ti.genericOperationError });
     }
   };
 
@@ -126,10 +126,10 @@ export default function IngestPage() {
     setWatchedState({ status: "running" });
     try {
       const response = await api.previewWatchedIngest();
-      if (!response.ok) return setWatchedState({ status: "error", message: response.error || "تعذرت معاينة المجلد المراقَب." });
+      if (!response.ok) return setWatchedState({ status: "error", message: response.error || ti.watchedPreviewError });
       updateWatchedState(response.batch);
     } catch (error) {
-      setWatchedState({ status: "error", message: error instanceof Error ? error.message : "تعذرت معاينة المجلد المراقَب." });
+      setWatchedState({ status: "error", message: error instanceof Error ? error.message : ti.watchedPreviewError });
     }
   })();
 
@@ -138,10 +138,10 @@ export default function IngestPage() {
     setWatchedState({ status: "running" });
     try {
       const response = await api.applyWatchedIngestBatch(watchedBatch.id);
-      if (!response.ok) return setWatchedState({ status: "error", message: response.error || "تعذر تطبيق الدفعة." });
+      if (!response.ok) return setWatchedState({ status: "error", message: response.error || ti.watchedApplyError });
       updateWatchedState(response.batch);
     } catch (error) {
-      setWatchedState({ status: "error", message: error instanceof Error ? error.message : "تعذر تطبيق الدفعة." });
+      setWatchedState({ status: "error", message: error instanceof Error ? error.message : ti.watchedApplyError });
     }
   })();
 
@@ -187,20 +187,20 @@ export default function IngestPage() {
     <AppShell subtitle={t.pageTitles.importContent} navLabel={t.pageTitles.import} contentClassName="observability-content" tipsPage="ingest">
       <PageToolbar
         icon={<RadioTower size={24} />}
-        eyebrow={<span className="badge">عمليات الاستيراد</span>}
-        title="استيراد المحتوى للأرشيف"
-        description="فحص مجلد الاستيراد المحلي، أو سحب ملفات من مصادر FTP وSMB مباشرة إلى مخازن الأرشيف."
+        eyebrow={<span className="badge">{ti.eyebrowLabel}</span>}
+        title={ti.pageTitle}
+        description={ti.pageDescription}
         meta={(
           <>
-            <span className="badge">{isAnyRunning ? "عملية جارية" : "جاهز"}</span>
+            <span className="badge">{isAnyRunning ? ti.operationInProgressLabel : ti.readyLabel}</span>
           </>
         )}
         actions={(
-          <a className="button button-secondary" href="/files">مستعرض الملفات</a>
+          <a className="button button-secondary" href="/files">{ti.filesBrowserLink}</a>
         )}
       >
-        <div className="ingest-source-tabs" role="group" aria-label="مصادر الاستيراد">
-          {(Object.keys(sourceLabels) as IngestSource[]).map((source) => (
+        <div className="ingest-source-tabs" role="group" aria-label={ti.sourceTabsAriaLabel}>
+          {(Object.keys(ti.sourceLabels) as IngestSource[]).map((source) => (
             <button
               key={source}
               type="button"
@@ -208,213 +208,213 @@ export default function IngestPage() {
               data-active={activeSource === source ? "true" : "false"}
               onClick={() => setActiveSource(source)}
             >
-              {sourceLabels[source]}
-              <span>{operationStatusLabel(sourceStates[source])}</span>
+              {ti.sourceLabels[source]}
+              <span>{operationStatusLabel(sourceStates[source], ti)}</span>
             </button>
           ))}
         </div>
       </PageToolbar>
 
-      <section className="ingest-overview-grid" aria-label="ملخص مصادر الاستيراد">
+      <section className="ingest-overview-grid" aria-label={ti.overviewAriaLabel}>
         <article className="health-metric" data-tone={operationTone(scanState)}>
           <span className="health-metric__icon" aria-hidden="true"><FolderSearch size={20} /></span>
           <div className="health-metric__body">
-            <span>مجلد الخادم</span>
-            <strong>{operationStatusLabel(scanState)}</strong>
-            <small>فحص مباشر للملفات الجديدة</small>
+            <span>{ti.sourceLabels.scan}</span>
+            <strong>{operationStatusLabel(scanState, ti)}</strong>
+            <small>{ti.scanHint}</small>
           </div>
         </article>
         <article className="health-metric" data-tone={operationTone(watchedState)}>
           <span className="health-metric__icon" aria-hidden="true"><FolderSearch size={20} /></span>
           <div className="health-metric__body">
-            <span>مجلد مراقَب</span>
-            <strong>{operationStatusLabel(watchedState)}</strong>
-            <small>معاينة ثم موافقة صريحة</small>
+            <span>{ti.sourceLabels.watched}</span>
+            <strong>{operationStatusLabel(watchedState, ti)}</strong>
+            <small>{ti.watchedHint}</small>
           </div>
         </article>
         <article className="health-metric" data-tone={operationTone(ftpState)}>
           <span className="health-metric__icon" aria-hidden="true"><Network size={20} /></span>
           <div className="health-metric__body">
-            <span>FTP/FTPS</span>
-            <strong>{operationStatusLabel(ftpState)}</strong>
-            <small>بيانات الاتصال غير محفوظة</small>
+            <span>{ti.sourceLabels.ftp}</span>
+            <strong>{operationStatusLabel(ftpState, ti)}</strong>
+            <small>{ti.ftpHint}</small>
           </div>
         </article>
         <article className="health-metric" data-tone={operationTone(smbState)}>
           <span className="health-metric__icon" aria-hidden="true"><Server size={20} /></span>
           <div className="health-metric__body">
-            <span>SMB</span>
-            <strong>{operationStatusLabel(smbState)}</strong>
-            <small>سحب من مشاركة داخلية</small>
+            <span>{ti.sourceLabels.smb}</span>
+            <strong>{operationStatusLabel(smbState, ti)}</strong>
+            <small>{ti.smbHint}</small>
           </div>
         </article>
         <article className="health-metric" data-tone={operationTone(dropboxState)}>
           <span className="health-metric__icon" aria-hidden="true"><Cloud size={20} /></span>
           <div className="health-metric__body">
-            <span>Dropbox</span>
-            <strong>{operationStatusLabel(dropboxState)}</strong>
-            <small>سحب قابل للاستئناف من المجلد المتصل</small>
+            <span>{ti.sourceLabels.dropbox}</span>
+            <strong>{operationStatusLabel(dropboxState, ti)}</strong>
+            <small>{ti.dropboxHint}</small>
           </div>
         </article>
       </section>
 
       <div className="state-banner state-banner-info" role="note">
-        <strong>فحص ما قبل التنفيذ</strong>
-        <span className="helper-text">اختر المصدر، راجع المسار وبيانات الاتصال، ثم نفّذ. تعرض النتيجة عدد العناصر المدخلة والمتجاوزة كمعاينة تشغيلية؛ لا توجد محاكاة dry-run في الـAPI الحالي.</span>
+        <strong>{ti.preflightTitle}</strong>
+        <span className="helper-text">{ti.preflightDescription}</span>
       </div>
 
-      <section className="panel ingest-operation-panel" data-active={activeSource === "scan" ? "true" : "false"} aria-label="فحص مجلد الاستيراد">
+      <section className="panel ingest-operation-panel" data-active={activeSource === "scan" ? "true" : "false"} aria-label={ti.scanPanelAriaLabel}>
         <div className="panel-title-row">
           <div>
-            <h2>فحص مجلد الاستيراد</h2>
-            <p>يفحص مجلد الاستيراد على الخادم ويُنشئ سجلات أرشيف للملفات الجديدة.</p>
+            <h2>{ti.scanPanelTitle}</h2>
+            <p>{ti.scanPanelDescription}</p>
           </div>
           {canManageIngest && (
             <button type="button" className="button button-primary" onClick={handleScan} disabled={scanState.status === "running"}>
-              {scanState.status === "running" ? "جار الفحص..." : "بدء الفحص"}
+              {scanState.status === "running" ? ti.scanRunningButton : ti.scanStartButton}
             </button>
           )}
         </div>
-        {!canManageIngest && <p className="helper-text">لا تملك صلاحية تشغيل الاستيراد؛ يمكنك مراجعة النتائج فقط.</p>}
-        <ResultBanner label="فحص مجلد الاستيراد" state={scanState} />
+        {!canManageIngest && <p className="helper-text">{ti.scanNoPermission}</p>}
+        <ResultBanner label={ti.scanPanelTitle} state={scanState} tt={ti} />
       </section>
 
-      <section className="panel ingest-operation-panel" data-active={activeSource === "watched" ? "true" : "false"} aria-label="المجلد المراقَب">
+      <section className="panel ingest-operation-panel" data-active={activeSource === "watched" ? "true" : "false"} aria-label={ti.watchedPanelAriaLabel}>
         <div className="panel-title-row">
           <div>
-            <h2>المجلد المراقَب</h2>
-            <p>تظهر الملفات المستقرة أولاً كدفعة مراجعة. لن يُنشأ أي سجل قبل اعتمادك الصريح للدفعة.</p>
+            <h2>{ti.watchedPanelTitle}</h2>
+            <p>{ti.watchedPanelDescription}</p>
           </div>
           {canManageIngest && (
             <div className="button-row">
-              <button type="button" className="button button-secondary" onClick={handleWatchedPreview} disabled={watchedState.status === "running"}>معاينة الدفعة</button>
-              <button type="button" className="button button-primary" onClick={handleWatchedApply} disabled={watchedState.status === "running" || watchedBatch?.status !== "pending"}>اعتماد وإدخال</button>
+              <button type="button" className="button button-secondary" onClick={handleWatchedPreview} disabled={watchedState.status === "running"}>{ti.previewBatchButton}</button>
+              <button type="button" className="button button-primary" onClick={handleWatchedApply} disabled={watchedState.status === "running" || watchedBatch?.status !== "pending"}>{ti.approveIngestButton}</button>
             </div>
           )}
         </div>
-        {!canManageIngest && <p className="helper-text">لا تملك صلاحية معاينة أو اعتماد دفعات المجلد المراقَب.</p>}
+        {!canManageIngest && <p className="helper-text">{ti.watchedNoPermission}</p>}
         {watchedState.status === "error" && <p className="helper-text" role="alert">{watchedState.message}</p>}
         {watchedBatch && (
           <div className="table-wrap" aria-live="polite">
             <table>
-              <thead><tr><th>الملف</th><th>الحالة</th><th>قاعدة الفرز</th><th>وجهة التجهيز</th><th>سبب المراجعة</th></tr></thead>
-              <tbody>{watchedBatch.entries.map((entry) => <tr key={entry.id}><td>{entry.fileName}</td><td>{entry.status}</td><td>{entry.routing?.metadataTemplateId || "افتراضي"}</td><td>{entry.routing?.stagingDirectory || "ingest/watched/accepted"}</td><td>{entry.reason || "جاهز"}</td></tr>)}</tbody>
+              <thead><tr><th>{ti.tableHeaders.file}</th><th>{ti.tableHeaders.status}</th><th>{ti.tableHeaders.routingRule}</th><th>{ti.tableHeaders.stagingDestination}</th><th>{ti.tableHeaders.reviewReason}</th></tr></thead>
+              <tbody>{watchedBatch.entries.map((entry) => <tr key={entry.id}><td>{entry.fileName}</td><td>{entry.status}</td><td>{entry.routing?.metadataTemplateId || ti.defaultValue}</td><td>{entry.routing?.stagingDirectory || "ingest/watched/accepted"}</td><td>{entry.reason || ti.readyLabel}</td></tr>)}</tbody>
             </table>
           </div>
         )}
       </section>
 
       <div className="analytics-columns">
-        <section className="panel ingest-operation-panel" data-active={activeSource === "ftp" ? "true" : "false"} aria-label="سحب من FTP">
+        <section className="panel ingest-operation-panel" data-active={activeSource === "ftp" ? "true" : "false"} aria-label={ti.ftpPanelAriaLabel}>
           <div className="panel-title-row">
             <div>
-              <h2>سحب من FTP</h2>
-              <p>بيانات الاتصال تُستخدم لهذه العملية فقط ولا تُحفظ في المتصفح.</p>
+              <h2>{ti.ftpPanelTitle}</h2>
+              <p>{ti.connectionNotStoredHint}</p>
             </div>
-            <span className="badge"><ShieldCheck size={14} aria-hidden="true" /> مؤقت</span>
+            <span className="badge"><ShieldCheck size={14} aria-hidden="true" /> {ti.temporaryBadge}</span>
           </div>
           {canManageIngest ? (
             <form onSubmit={handleFtpPull}>
               <div className="archive-toolbar-grid">
                 <label>
-                  <span>الخادم (Host) *</span>
+                  <span>{ti.hostLabel}</span>
                   <input type="text" dir="ltr" value={ftpHost} onChange={(e) => setFtpHost(e.target.value)} required autoComplete="off" />
                 </label>
                 <label>
-                  <span>المنفذ</span>
+                  <span>{ti.portLabel}</span>
                   <input type="number" dir="ltr" min={1} max={65535} value={ftpPort} onChange={(e) => setFtpPort(e.target.value)} placeholder="21" />
                 </label>
                 <label>
-                  <span>المستخدم *</span>
+                  <span>{ti.userLabel}</span>
                   <input type="text" dir="ltr" value={ftpUser} onChange={(e) => setFtpUser(e.target.value)} required autoComplete="off" />
                 </label>
                 <label>
-                  <span>كلمة المرور *</span>
+                  <span>{ti.passwordLabel}</span>
                   <input type="password" dir="ltr" value={ftpPassword} onChange={(e) => setFtpPassword(e.target.value)} required autoComplete="new-password" />
                 </label>
                 <label>
-                  <span>المسار البعيد</span>
+                  <span>{ti.remotePathLabel}</span>
                   <input type="text" dir="ltr" value={ftpRemotePath} onChange={(e) => setFtpRemotePath(e.target.value)} placeholder="/" />
                 </label>
                 <label style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                   <input type="checkbox" checked={ftpSecure} onChange={(e) => setFtpSecure(e.target.checked)} />
-                  <span>اتصال آمن (FTPS)</span>
+                  <span>{ti.secureConnectionLabel}</span>
                 </label>
               </div>
               <div className="button-row">
                 <button type="submit" className="button button-primary" disabled={ftpState.status === "running"}>
-                  {ftpState.status === "running" ? "جار السحب..." : "سحب من FTP"}
+                  {ftpState.status === "running" ? ti.pullingButton : ti.ftpPullButton}
                 </button>
               </div>
             </form>
           ) : (
-            <p className="helper-text">لا تملك صلاحية السحب من FTP.</p>
+            <p className="helper-text">{ti.ftpNoPermission}</p>
           )}
-          <ResultBanner label="السحب من FTP" state={ftpState} />
+          <ResultBanner label={ti.ftpPullButton} state={ftpState} tt={ti} />
         </section>
 
-        <section className="panel ingest-operation-panel" data-active={activeSource === "smb" ? "true" : "false"} aria-label="سحب من SMB">
+        <section className="panel ingest-operation-panel" data-active={activeSource === "smb" ? "true" : "false"} aria-label={ti.smbPanelAriaLabel}>
           <div className="panel-title-row">
             <div>
-              <h2>سحب من SMB</h2>
-              <p>بيانات الاتصال تُستخدم لهذه العملية فقط ولا تُحفظ في المتصفح.</p>
+              <h2>{ti.smbPanelTitle}</h2>
+              <p>{ti.connectionNotStoredHint}</p>
             </div>
-            <span className="badge"><KeyRound size={14} aria-hidden="true" /> وصول مقيد</span>
+            <span className="badge"><KeyRound size={14} aria-hidden="true" /> {ti.restrictedAccessBadge}</span>
           </div>
           {canManageIngest ? (
             <form onSubmit={handleSmbPull}>
               <div className="archive-toolbar-grid">
                 <label>
-                  <span>المشاركة (Share) *</span>
+                  <span>{ti.shareLabel}</span>
                   <input type="text" dir="ltr" value={smbShare} onChange={(e) => setSmbShare(e.target.value)} required autoComplete="off" placeholder="\\server\share" />
                 </label>
                 <label>
-                  <span>المسار داخل المشاركة</span>
+                  <span>{ti.pathInShareLabel}</span>
                   <input type="text" dir="ltr" value={smbPath} onChange={(e) => setSmbPath(e.target.value)} />
                 </label>
                 <label>
-                  <span>المستخدم *</span>
+                  <span>{ti.userLabel}</span>
                   <input type="text" dir="ltr" value={smbUser} onChange={(e) => setSmbUser(e.target.value)} required autoComplete="off" />
                 </label>
                 <label>
-                  <span>كلمة المرور *</span>
+                  <span>{ti.passwordLabel}</span>
                   <input type="password" dir="ltr" value={smbPassword} onChange={(e) => setSmbPassword(e.target.value)} required autoComplete="new-password" />
                 </label>
                 <label>
-                  <span>النطاق (Domain)</span>
+                  <span>{ti.domainLabel}</span>
                   <input type="text" dir="ltr" value={smbDomain} onChange={(e) => setSmbDomain(e.target.value)} />
                 </label>
               </div>
               <div className="button-row">
                 <button type="submit" className="button button-primary" disabled={smbState.status === "running"}>
-                  {smbState.status === "running" ? "جار السحب..." : "سحب من SMB"}
+                  {smbState.status === "running" ? ti.pullingButton : ti.smbPullButton}
                 </button>
               </div>
             </form>
           ) : (
-            <p className="helper-text">لا تملك صلاحية السحب من SMB.</p>
+            <p className="helper-text">{ti.smbNoPermission}</p>
           )}
-          <ResultBanner label="السحب من SMB" state={smbState} />
+          <ResultBanner label={ti.smbPullButton} state={smbState} tt={ti} />
         </section>
 
-        <section className="panel ingest-operation-panel" data-active={activeSource === "dropbox" ? "true" : "false"} aria-label="سحب من Dropbox">
+        <section className="panel ingest-operation-panel" data-active={activeSource === "dropbox" ? "true" : "false"} aria-label={ti.dropboxPanelAriaLabel}>
           <div className="panel-title-row">
             <div>
-              <h2>سحب من Dropbox</h2>
-              <p>يسحب الملفات الجديدة من المجلد المتصل في الإعدادات. الملفات الكبيرة تُنزَّل على دفعات، وتستأنف من آخر جزء وصل بدل إعادة البدء عند انقطاع الاتصال.</p>
+              <h2>{ti.dropboxPanelTitle}</h2>
+              <p>{ti.dropboxPanelDescription}</p>
             </div>
           </div>
           {canManageIngest ? (
             <div className="button-row">
               <button type="button" className="button button-primary" onClick={handleDropboxPull} disabled={dropboxState.status === "running"}>
-                {dropboxState.status === "running" ? "جار السحب..." : "سحب من Dropbox"}
+                {dropboxState.status === "running" ? ti.pullingButton : ti.dropboxPullButton}
               </button>
-              <a className="button button-secondary" href="/settings">إعدادات الاتصال</a>
+              <a className="button button-secondary" href="/settings">{ti.connectionSettingsLink}</a>
             </div>
           ) : (
-            <p className="helper-text">لا تملك صلاحية السحب من Dropbox.</p>
+            <p className="helper-text">{ti.dropboxNoPermission}</p>
           )}
-          <ResultBanner label="السحب من Dropbox" state={dropboxState} />
+          <ResultBanner label={ti.dropboxPullButton} state={dropboxState} tt={ti} />
         </section>
       </div>
     </AppShell>

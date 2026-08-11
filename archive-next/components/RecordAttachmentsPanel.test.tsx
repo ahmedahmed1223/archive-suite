@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 const { recordAttachments, uploadRecordAttachments, deleteRecordAttachment } = vi.hoisted(() => ({
   recordAttachments: vi.fn(), uploadRecordAttachments: vi.fn(), deleteRecordAttachment: vi.fn()
@@ -11,11 +13,15 @@ import RecordAttachmentsPanel from "./RecordAttachmentsPanel";
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
+function renderPanel(node: ReactNode) {
+  return render(<LocaleProvider initialLocale="ar" hasLocaleCookie>{node}</LocaleProvider>);
+}
+
 describe("RecordAttachmentsPanel", () => {
   test("shows a valid fileless state then uploads several files", async () => {
     recordAttachments.mockResolvedValue({ ok: true, attachments: [] });
     uploadRecordAttachments.mockResolvedValue({ ok: true, attachments: [{ id: "a1", originalName: "one.pdf", sizeBytes: 1000, processingStatus: "ready", isPrimary: true }] });
-    render(<RecordAttachmentsPanel recordId="r1" />);
+    renderPanel(<RecordAttachmentsPanel recordId="r1" />);
     expect(await screen.findByText("لا توجد ملفات بعد؛ السجل صالح كسجل وصفي مستقل.")).toBeTruthy();
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [new File(["x"], "one.pdf", { type: "application/pdf" })] } });

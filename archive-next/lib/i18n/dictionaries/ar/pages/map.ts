@@ -9,5 +9,6 @@ export const map = {
   emptyDescription: "أضف موقعاً جغرافياً لسجل من صفحة تفاصيله ليظهر هنا.",
   capped: "عُرضت أول {count} سجلاً موقَّعاً فقط (حد أمان الصفحات)؛ قد توجد سجلات إضافية لم تُحمَّل.",
   list: "قائمة السجلات الموقَّعة",
-  openOsm: "فتح في OpenStreetMap"
+  openOsm: "فتح في OpenStreetMap",
+  mapAriaLabel: "خريطة السجلات ذات الموقع الجغرافي"
 } as const;

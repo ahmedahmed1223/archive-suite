@@ -27,7 +27,7 @@ import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import { buildChangeImpact } from "@/lib/change-impact";
-import { formatDate, getRecordWorkflowStatus, WORKFLOW_STATES, workflowStatusLabels, type WorkflowStatus } from "@/lib/record-utils";
+import { formatDate, getRecordWorkflowStatus, WORKFLOW_STATES, type WorkflowStatus } from "@/lib/record-utils";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -87,6 +87,8 @@ function SortableKanbanCard({
   status: WorkflowStatus;
   canEdit: boolean;
 }>) {
+  const { t } = useLocale();
+  const copy = t.pages.kanban;
   const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({
     id: record.id,
     data: { record },
@@ -105,30 +107,30 @@ function SortableKanbanCard({
             ref={setActivatorNodeRef}
             type="button"
             className="kanban-card__handle"
-            aria-label={`سحب ${record.title || record.id}`}
+            aria-label={copy.drag.replace("{name}", record.title || record.id)}
             {...attributes}
             {...listeners}
           >
             <GripVertical aria-hidden="true" size={14} />
-            نقل
+            {copy.move}
           </button>
         </div>
       )}
       <strong>{record.title || record.id}</strong>
-      <span className="helper-text">{record.type || "غير محدد"} · {formatDate(record.updatedAt || record.createdAt)}</span>
+      <span className="helper-text">{record.type || copy.unspecified} · {formatDate(record.updatedAt || record.createdAt)}</span>
       <div className="button-row">
-        <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(record.id)}`}>فتح</a>
+        <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(record.id)}`}>{copy.open}</a>
         {canEdit ? (
           <select
             value={status}
             disabled={busyId === record.id}
             onChange={(event) => moveRecord(record, event.target.value as WorkflowStatus)}
-            aria-label={`نقل ${record.title || record.id}`}
+            aria-label={copy.move.replace("{name}", record.title || record.id)}
           >
-            {WORKFLOW_STATES.map((next) => <option key={next} value={next}>{workflowStatusLabels[next]}</option>)}
+            {WORKFLOW_STATES.map((next) => <option key={next} value={next}>{copy.statuses[next]}</option>)}
           </select>
         ) : (
-          <span className="badge">{workflowStatusLabels[status]}</span>
+          <span className="badge">{copy.statuses[status]}</span>
         )}
       </div>
     </motion.div>
@@ -137,6 +139,7 @@ function SortableKanbanCard({
 
 export default function KanbanPage() {
   const { t } = useLocale();
+  const copy = t.pages.kanban;
   const api = useMemo(() => createArchiveApiClient(), []);
   const canEditRecords = useCapability("records.edit");
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -186,7 +189,7 @@ export default function KanbanPage() {
       records: [{ ...record, workflowStatus: status }]
     });
     if (response.ok) {
-      setFeedback(`تم نقل "${record.title || record.id}" إلى ${workflowStatusLabels[status]}`);
+      setFeedback(copy.moved.replace("{name}", record.title || record.id).replace("{status}", copy.statuses[status]));
       await load();
     } else {
       setFeedback(response.error);
@@ -234,32 +237,32 @@ export default function KanbanPage() {
   return (
     <AppShell subtitle={t.pageTitles.kanban} contentClassName="local-list-content" tipsPage="kanban">
       <PageToolbar
-        eyebrow={<span className="badge">سير العمل</span>}
-        title="لوحة كانبان"
-        description="عرض سير عمل السجلات حسب الحالة مع نقل سريع عبر نقطة النهاية الحالية records/bulk."
+        eyebrow={<span className="badge">{copy.eyebrow}</span>}
+        title={copy.title}
+        description={copy.description}
         meta={(
           <>
-            <span className="badge">{records.length} سجل</span>
-            <span className="badge">{WORKFLOW_STATES.length} حالات</span>
+            <span className="badge">{copy.recordCount.replace("{count}", String(records.length))}</span>
+            <span className="badge">{copy.statusCount.replace("{count}", String(WORKFLOW_STATES.length))}</span>
           </>
         )}
-        actions={<a className="button button-secondary" href="/archive">فتح الأرشيف</a>}
+        actions={<a className="button button-secondary" href="/archive">{copy.openArchive}</a>}
       />
 
       {feedback ? (
         <div className="state-banner" role="status">
-          <strong>تحديث كانبان</strong>
+          <strong>{copy.update}</strong>
           <span className="helper-text">{feedback}</span>
         </div>
       ) : null}
       {canEditRecords ? (
         <>
-          <ChangeImpactPreview impact={buildChangeImpact({ action: "move", entity: "بطاقة كانبان", affectedCount: 1, reversible: true })} />
-          <p className="helper-text">يمكن استخدام قائمة «نقل» داخل كل بطاقة كبديل كامل قابل للوصول للسحب والإفلات.</p>
-          <p className="helper-text">جميع البطاقات متاحة عبر قائمة النقل، بما فيها البطاقات خارج مساحة العرض الأولى.</p>
+          <ChangeImpactPreview impact={buildChangeImpact({ action: "move", entity: copy.card, affectedCount: 1, reversible: true })} />
+          <p className="helper-text">{copy.accessibleMove}</p>
+          <p className="helper-text">{copy.accessibleCards}</p>
         </>
       ) : (
-        <p className="helper-text">وضع القراءة: يمكنك عرض حالة كل سجل ضمن سير العمل دون نقله بين الحالات.</p>
+        <p className="helper-text">{copy.readOnly}</p>
       )}
       {canEditRecords && (canUndo(moveStack) || canRedo(moveStack)) ? (
         <div className="button-row">
@@ -269,7 +272,7 @@ export default function KanbanPage() {
             disabled={!canUndo(moveStack) || busyId !== null}
             onClick={() => void handleUndo()}
           >
-            تراجع{moveStack.past.length > 0 ? ` (${moveStack.past.length})` : ""}
+            {copy.undo}{moveStack.past.length > 0 ? ` (${moveStack.past.length})` : ""}
           </button>
           <button
             type="button"
@@ -277,36 +280,36 @@ export default function KanbanPage() {
             disabled={!canRedo(moveStack) || busyId !== null}
             onClick={() => void handleRedo()}
           >
-            إعادة{moveStack.future.length > 0 ? ` (${moveStack.future.length})` : ""}
+            {copy.redo}{moveStack.future.length > 0 ? ` (${moveStack.future.length})` : ""}
           </button>
         </div>
       ) : null}
 
-      {state.status === "loading" ? <div className="panel panel-compact"><Skeleton label="جار تحميل اللوحة..." /></div> : null}
+      {state.status === "loading" ? <div className="panel panel-compact"><Skeleton label={copy.loading} /></div> : null}
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل كانبان</strong>
+          <strong>{copy.loadError}</strong>
           <span className="helper-text">{state.message}</span>
         </div>
       ) : null}
       {state.status === "ready" && records.length === 0 ? (
-        <EmptyState title="لا توجد سجلات." description="أضف سجلات إلى الأرشيف لتظهر في لوحة سير العمل." />
+        <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />
       ) : null}
 
       {state.status === "ready" && records.length > 0 ? (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <section className="workflow-board" aria-label="لوحة سير العمل">
+          <section className="workflow-board" aria-label={copy.boardAriaLabel}>
             {WORKFLOW_STATES.map((status) => {
               const items = grouped.get(status) || [];
               const visibleItems = items;
               return (
                 <WorkflowColumn key={status} status={status} itemIds={visibleItems.map((record) => record.id)}>
                   <div className="panel-title-row">
-                    <h2>{workflowStatusLabels[status]}</h2>
+                    <h2>{copy.statuses[status]}</h2>
                     <span className="badge">{items.length}</span>
                   </div>
                   {visibleItems.length === 0 ? (
-                    <p className="helper-text">اسحب سجلًا إلى هنا لتغيير حالته.</p>
+                    <p className="helper-text">{copy.dropHint}</p>
                   ) : (
                     visibleItems.map((record) => (
                       <SortableKanbanCard

@@ -4,13 +4,16 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { ToastProvider, ToastViewport } from "@/components/ui/Toast";
 import ToastHub from "@/components/ui/ToastHub";
 import { toastError, toastSuccess } from "@/lib/toast";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 function renderHub() {
   return render(
-    <ToastProvider swipeDirection="right">
-      <ToastHub />
-      <ToastViewport />
-    </ToastProvider>
+    <LocaleProvider initialLocale="ar" hasLocaleCookie>
+      <ToastProvider swipeDirection="right">
+        <ToastHub />
+        <ToastViewport />
+      </ToastProvider>
+    </LocaleProvider>
   );
 }
 

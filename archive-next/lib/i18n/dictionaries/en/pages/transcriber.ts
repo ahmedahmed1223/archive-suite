@@ -1,0 +1,90 @@
+export const transcriber = {
+  toolbar: {
+    title: "Audio transcription",
+    description: "Create an audio transcription job through media jobs and track it until timestamped text is complete.",
+    queueBadge: "Queued transcription",
+    pollingBadge: "Updates every {seconds} seconds"
+  },
+  validation: {
+    outputFormatRequired: "Choose at least one output format.",
+    recordAndPathRequired: "Enter the record ID and file path before starting transcription."
+  },
+  cancel: {
+    title: "Unable to cancel the job",
+    message: "Cancellation failed: {error}",
+    button: "Cancel"
+  },
+  subtitles: {
+    title: "SRT and WebVTT editor",
+    description: "Open, edit, copy, download, or save subtitles and their display style to an archive record.",
+    cueCount: "{count} cues",
+    fileLabel: "Subtitle file",
+    recordIdLabel: "Record ID to save",
+    recordIdPlaceholder: "record-id",
+    formatLabel: "Format",
+    fontSizeLabel: "Text size",
+    colorLabel: "Text color",
+    alignmentLabel: "Alignment",
+    alignmentStart: "Start",
+    alignmentMiddle: "Middle",
+    alignmentEnd: "End",
+    contentPlaceholder: "Paste or open an SRT or WebVTT file here…",
+    contentAriaLabel: "Subtitle file content",
+    copyButton: "Copy",
+    downloadButton: "Download file",
+    saveButton: "Save to record",
+    previewAriaLabel: "Subtitle style preview",
+    invalidFile: "Choose an SRT or WebVTT file only.",
+    openedForEditing: "Opened {file} for local editing.",
+    copied: "The subtitle file was copied to the clipboard.",
+    downloaded: "A copy of the subtitle file was saved to your device.",
+    recordAndContentRequired: "Enter the record ID and subtitle text before saving.",
+    saveSuccess: "The subtitles and display style were saved to the record.",
+    saveError: "Unable to save subtitles."
+  },
+  form: {
+    ariaLabel: "Create audio transcription job",
+    previousMediaLabel: "Search media from earlier transcription jobs",
+    previousMediaPlaceholder: "Record ID or file path",
+    resultsAriaLabel: "Media selection results",
+    noPath: "No path",
+    recordIdLabel: "Record ID",
+    sourcePathLabel: "Source file path",
+    diskLabel: "Storage disk (optional)",
+    diskPlaceholder: "For example: archive",
+    languageLabel: "Transcription language",
+    whisperHint: "Transcription uses the global Whisper setting. Select GPU in settings only after a CUDA worker is running.",
+    outputFormatsLegend: "Output formats",
+    srtOption: "SRT (timestamped text)",
+    vttOption: "VTT (web video subtitles)",
+    ttmlOption: "TTML (timed text format)",
+    submitting: "Submitting...",
+    submit: "Start transcription"
+  },
+  job: {
+    title: "Job status",
+    processingFallback: "Transcribing",
+    idLabel: "ID",
+    sourceLabel: "Source",
+    failed: "The job failed: {error}",
+    unknownError: "Unknown error",
+    transcriptWithCues: "Transcript ({count} cues)",
+    transcript: "Transcript",
+    showSegmented: "Show segmented text",
+    showRaw: "Show raw text",
+    copied: "Copied",
+    copyText: "Copy text",
+    rawTextAriaLabel: "Raw text",
+    noTranscript: "No extracted text yet.",
+    updating: "Transcription is running and updates automatically...",
+    emptyTitle: "No active transcription job",
+    emptyDescription: "Enter the record ID and file path, then select Start transcription to track progress here."
+  },
+  recent: {
+    ariaLabel: "Recent transcription jobs",
+    title: "Recent transcription jobs",
+    loading: "Loading recent transcription jobs...",
+    empty: "No previous transcription jobs.",
+    errorPrefix: "Error: {error}"
+  }
+} as const;

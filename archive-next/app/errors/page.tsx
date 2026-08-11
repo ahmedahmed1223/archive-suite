@@ -20,12 +20,6 @@ import {
 import { groupActionErrors, redactAdminSecrets } from "@/lib/admin-action-summary";
 import { getErrorWave } from "@/lib/error-rate-alert";
 
-const severityLabels: Record<ClientErrorSeverity, string> = {
-  error: "خطأ",
-  warning: "تحذير",
-  info: "معلومة"
-};
-
 function loadErrors() {
   return listClientErrors();
 }
@@ -37,7 +31,8 @@ function severityClass(severity: ClientErrorSeverity) {
 }
 
 export default function ErrorsPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const copy = t.pages.errors;
   const dialogs = useConfirmDialog();
   const [errors, setErrors] = useState<ClientErrorLogEntry[]>([]);
   const [severityFilter, setSeverityFilter] = useState<ClientErrorSeverity | "">("");
@@ -63,16 +58,16 @@ export default function ErrorsPage() {
     () => [
       {
         accessorKey: "severity",
-        header: "الخطورة",
+        header: copy.table.severity,
         cell: ({ row }) => (
           <span className={`badge ${severityClass(row.original.severity)}`}>
-            {severityLabels[row.original.severity]}
+            {copy.severity[row.original.severity]}
           </span>
         )
       },
       {
         accessorKey: "name",
-        header: "الحدث",
+        header: copy.table.event,
         cell: ({ row }) => (
           <div className="stack stack-tight">
             <strong>{row.original.name}</strong>
@@ -82,24 +77,24 @@ export default function ErrorsPage() {
       },
       {
         accessorKey: "page",
-        header: "الصفحة",
+        header: copy.table.page,
         cell: ({ row }) => <span className="wrap-anywhere">{row.original.page}</span>
       },
       {
         accessorKey: "source",
-        header: "المصدر"
+        header: copy.table.source
       },
       {
         accessorKey: "count",
-        header: "التكرار"
+        header: copy.table.occurrences
       },
       {
         accessorKey: "lastSeenAt",
-        header: "آخر ظهور",
-        cell: ({ row }) => <time>{new Date(row.original.lastSeenAt).toLocaleString("ar-SA")}</time>
+        header: copy.table.lastSeen,
+        cell: ({ row }) => <time>{new Date(row.original.lastSeenAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA")}</time>
       }
     ],
-    []
+    [copy, locale]
   );
 
   const counts = useMemo(
@@ -127,7 +122,7 @@ export default function ErrorsPage() {
   const createManualError = () => {
     recordClientError({
       name: "ManualCheck",
-      message: "اختبار يدوي من صفحة سجل الأخطاء.",
+      message: copy.manualLog.message,
       page: "/errors",
       source: "manual",
       severity: "info"
@@ -138,9 +133,9 @@ export default function ErrorsPage() {
     if (
       errors.length > 0 &&
       !(await dialogs.confirm({
-        title: "مسح سجل الأخطاء",
-        message: "سيتم مسح سجل الأخطاء الحالي من هذا المتصفح. هل تريد المتابعة؟",
-        confirmLabel: "مسح",
+        title: copy.clearDialog.title,
+        message: copy.clearDialog.message,
+        confirmLabel: copy.clearDialog.confirm,
         destructive: true
       }))
     ) {
@@ -154,74 +149,74 @@ export default function ErrorsPage() {
     <AppShell subtitle={t.pageTitles.errorLog} navLabel={t.pageTitles.errorLog} contentClassName="observability-content" tipsPage="errors">
       <PageToolbar
         icon={<Bug size={24} />}
-        eyebrow={<span className="badge">سجل الأخطاء</span>}
-        title="سجل الأخطاء والاسترداد"
-        description="مركز موحد لأعطال الواجهة، تكراراتها، ومكان ظهورها حتى يسهل ربط المشكلة بالصفحة أو سير العمل."
+        eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={
           <>
-            <span className="badge">{errors.length} خطأ فريد</span>
-            <span className="badge">{counts.repeated} تكرار</span>
-            <span className="badge badge-danger">{counts.error} حرج</span>
+            <span className="badge">{copy.toolbar.uniqueCount.replace("{count}", String(errors.length))}</span>
+            <span className="badge">{copy.toolbar.repeatedCount.replace("{count}", String(counts.repeated))}</span>
+            <span className="badge badge-danger">{copy.toolbar.criticalCount.replace("{count}", String(counts.error))}</span>
           </>
         }
         actions={
           <>
             <button className="button button-secondary" type="button" onClick={createManualError}>
               <Sparkles size={16} aria-hidden="true" />
-              اختبار التسجيل
+              {copy.toolbar.testLogging}
             </button>
             <button className="button button-danger" type="button" onClick={clearAll} disabled={errors.length === 0}>
               <Trash2 size={16} aria-hidden="true" />
-              مسح السجل
+              {copy.toolbar.clearLog}
             </button>
           </>
         }
       >
         <div className="archive-toolbar-row">
           <label className="toolbar-field">
-            <span>درجة الخطورة</span>
+            <span>{copy.filter.severity}</span>
             <select
               className="search-input input-narrow"
               value={severityFilter}
               onChange={(event) => setSeverityFilter(event.target.value as ClientErrorSeverity | "")}
             >
-              <option value="">الكل</option>
-              <option value="error">أخطاء</option>
-              <option value="warning">تحذيرات</option>
-              <option value="info">معلومات</option>
+              <option value="">{copy.filter.all}</option>
+              <option value="error">{copy.filter.errors}</option>
+              <option value="warning">{copy.filter.warnings}</option>
+              <option value="info">{copy.filter.information}</option>
             </select>
           </label>
         </div>
       </PageToolbar>
 
       <MetricStrip
-        ariaLabel="مقاييس سجل الأخطاء"
+        ariaLabel={copy.metrics.ariaLabel}
         items={[
           {
-            label: "أخطاء حرجة",
+            label: copy.metrics.criticalErrors,
             value: counts.error,
-            description: "تحتاج معالجة مباشرة",
+            description: copy.metrics.immediateAction,
             icon: <AlertTriangle size={20} />,
             tone: counts.error > 0 ? "danger" : "default"
           },
           {
-            label: "تحذيرات",
+            label: copy.metrics.warnings,
             value: counts.warning,
-            description: "مؤشرات سلوك غير مكتمل",
+            description: copy.metrics.incompleteBehavior,
             icon: <Filter size={20} />,
             tone: counts.warning > 0 ? "warning" : "default"
           },
           {
-            label: "معلومات",
+            label: copy.metrics.information,
             value: counts.info,
-            description: "أحداث تشخيصية",
+            description: copy.metrics.diagnosticEvents,
             icon: <Info size={20} />,
             tone: "info"
           },
           {
-            label: "التكرارات",
+            label: copy.metrics.repetitions,
             value: counts.repeated,
-            description: latestError ? `آخر ظهور: ${new Date(latestError.lastSeenAt).toLocaleString("ar-SA")}` : "لا توجد أحداث",
+            description: latestError ? copy.metrics.lastSeen.replace("{date}", new Date(latestError.lastSeenAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA")) : copy.metrics.noEvents,
             icon: <Repeat2 size={20} />,
             tone: counts.repeated > 0 ? "warning" : "success"
           }
@@ -231,33 +226,33 @@ export default function ErrorsPage() {
         <section className="state-banner state-banner-error" role="alert" aria-live="assertive">
           <AlertTriangle aria-hidden="true" size={20} />
           <div>
-            <strong>ارتفاع ملحوظ في معدل الأعطال</strong>
+            <strong>{copy.wave.title}</strong>
             <p className="helper-text">
-              سُجلت {errorWave.count} حالة خطأ خلال آخر {errorWave.windowMinutes} دقائق. راجع الأحداث المتكررة وابدأ بخطوات الاسترداد أدناه.
+              {copy.wave.description.replace("{count}", String(errorWave.count)).replace("{minutes}", String(errorWave.windowMinutes))}
             </p>
           </div>
         </section>
       ) : null}
-      {groupedErrors.length ? <section className="panel panel-compact" aria-label="ملخص الاسترداد"><div className="panel-title-row"><div><h2>خطوات الاسترداد المقترحة</h2><p>تجميع محلي للأنماط المتكررة، وليس تشخيصاً من الخادم.</p></div></div><div className="analytics-chip-list">{groupedErrors.map((group) => <span className="badge" key={group.key}>{group.label}: {group.count} — {group.recovery}</span>)}</div></section> : null}
+      {groupedErrors.length ? <section className="panel panel-compact" aria-label={copy.recovery.ariaLabel}><div className="panel-title-row"><div><h2>{copy.recovery.title}</h2><p>{copy.recovery.description}</p></div></div><div className="analytics-chip-list">{groupedErrors.map((group) => <span className="badge" key={group.key}>{copy.recovery.group.replace("{label}", group.label).replace("{count}", String(group.count)).replace("{recovery}", group.recovery)}</span>)}</div></section> : null}
 
       {filteredErrors.length === 0 ? (
         <EmptyState
           icon={<Clock3 size={22} />}
-          title="لا توجد أخطاء مطابقة حالياً."
-          description="غيّر درجة الخطورة أو استخدم اختبار التسجيل للتأكد من أن السجل يعمل."
+          title={copy.empty.title}
+          description={copy.empty.description}
         />
       ) : (
-        <section className="workspace-panel error-log-table" aria-label="نتائج سجل الأخطاء">
+        <section className="workspace-panel error-log-table" aria-label={copy.table.ariaLabel}>
           <DataTable
             columns={errorColumns}
             data={filteredErrors}
-            emptyMessage="لا توجد أخطاء مطابقة."
+            emptyMessage={copy.table.emptyMessage}
             getRowId={(entry) => entry.id}
             virtualized={filteredErrors.length > 40}
           />
           {filteredErrors.some((entry) => entry.stack) ? (
             <details className="section-divider">
-              <summary className="field-note">تفاصيل المكدس للأخطاء التي تحتوي stack trace</summary>
+              <summary className="field-note">{copy.table.stackDetails}</summary>
               <div className="stack mt-tight">
                 {filteredErrors.filter((entry) => entry.stack).map((entry) => (
                   <article className="error-log-card" key={entry.id} data-severity={entry.severity}>

@@ -12,28 +12,29 @@ export default async function ReviewLinkPage({ params }: { params: Promise<{ tok
   const forwardedLocale = requestHeaders.get("x-archive-locale");
   const locale = isAppLocale(forwardedLocale) ? forwardedLocale : "ar";
   const t = getDictionary(locale);
+  const copy = t.pages.reviewLink;
 
   return (
     <main className="shell">
       <PublicHeader subtitle={t.pageTitles.publicReviewLink} />
 
-      <section className="content public-content" aria-label="رابط المراجعة العامة">
+      <section className="content public-content" aria-label={copy.sectionAriaLabel}>
         <PageToolbar
-          eyebrow={<span className="badge">مراجعة عامة</span>}
-          title="رابط مراجعة عام"
-          description="يعرض بيانات المراجعة والتعليقات المسموحة لهذا الرابط فقط، مع إبقاء الرمز والصلاحيات محكومة من الخادم."
+          eyebrow={<span className="badge">{copy.eyebrow}</span>}
+          title={copy.title}
+          description={copy.description}
           meta={
             <>
-              <span className="badge">تعليقات محمية</span>
-              <span className="badge">صلاحية عامة محدودة</span>
+              <span className="badge">{copy.protectedCommentsBadge}</span>
+              <span className="badge">{copy.limitedPublicAccessBadge}</span>
             </>
           }
         />
 
         <aside className="panel auth-form">
           <div className="panel-section-header">
-            <h2>محتوى المراجعة</h2>
-            <p>اعرض التعليقات والملاحظات على هذا السجل في سياق آمن.</p>
+            <h2>{copy.contentTitle}</h2>
+            <p>{copy.contentDescription}</p>
           </div>
           <ReviewLinkViewer token={token} />
         </aside>

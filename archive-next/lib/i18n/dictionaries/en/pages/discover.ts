@@ -14,5 +14,10 @@ export const discover = {
   emptyDescription: "Add records or open the archive to work with the current material.",
   openArchive: "Open archive",
   total: "total",
-  noItems: "No items are currently shown in this path."
+  noItems: "No items are currently shown in this path.",
+  noAdditionalDescription: "No additional description",
+  record: "Record",
+  unspecified: "Unspecified",
+  untitled: "Untitled",
+  openRecord: "Open record"
 } as const;

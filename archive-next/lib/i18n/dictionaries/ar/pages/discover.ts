@@ -14,5 +14,10 @@ export const discover = {
   emptyDescription: "أضف سجلات أو افتح الأرشيف للعمل على المواد الحالية.",
   openArchive: "فتح الأرشيف",
   total: "إجمالي",
-  noItems: "لا توجد عناصر ظاهرة في هذا المسار حالياً."
+  noItems: "لا توجد عناصر ظاهرة في هذا المسار حالياً.",
+  noAdditionalDescription: "لا يوجد وصف إضافي",
+  record: "سجل",
+  unspecified: "غير محدد",
+  untitled: "بلا عنوان",
+  openRecord: "فتح السجل"
 } as const;

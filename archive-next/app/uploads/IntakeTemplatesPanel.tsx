@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type IntakeTemplate } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type IntakeTemplatesState =
   | { status: "loading" }
@@ -11,6 +12,7 @@ type IntakeTemplatesState =
   | { status: "error"; message: string };
 
 export function IntakeTemplatesPanel() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [templates, setTemplates] = useState<IntakeTemplate[]>([]);
   const [templatesState, setTemplatesState] = useState<IntakeTemplatesState>({ status: "loading" });
@@ -29,7 +31,7 @@ export function IntakeTemplatesPanel() {
       setTemplates(response.templates);
       setTemplatesState({ status: "ready" });
     } else {
-      setTemplatesState({ status: "error", message: response.error || "تعذر تحميل قوالب الإدخال." });
+      setTemplatesState({ status: "error", message: response.error || t.pages.intakeTemplatesPanel.loadError });
     }
   }
 
@@ -47,7 +49,7 @@ export function IntakeTemplatesPanel() {
     if (tags.trim()) fields.tags = tags.split(",").map((tag) => tag.trim()).filter(Boolean);
 
     if (Object.keys(fields).length === 0) {
-      setError("أضف حقلاً واحدًا على الأقل للقالب (مجلد أو وسوم).");
+      setError(t.pages.intakeTemplatesPanel.fieldRequiredError);
       return;
     }
 
@@ -73,7 +75,7 @@ export function IntakeTemplatesPanel() {
     setDeletingId(id);
     const response = await api.deleteIntakeTemplate(id);
     if (response.ok) await refresh();
-    else setError(response.error || "تعذر حذف القالب.");
+    else setError(response.error || t.pages.intakeTemplatesPanel.deleteError);
     setDeletingId(null);
   }
 
@@ -81,29 +83,29 @@ export function IntakeTemplatesPanel() {
     <article className="panel">
       <div className="toolbar-row">
         <div>
-          <h2>قوالب الإدخال</h2>
-          <p className="field-note">احفظ مجموعة حقول متكررة (مجلد، وسوم) لتسريع إدخال السجلات المتشابهة.</p>
+          <h2>{t.pages.intakeTemplatesPanel.title}</h2>
+          <p className="field-note">{t.pages.intakeTemplatesPanel.description}</p>
         </div>
       </div>
 
       <form className="auth-form" onSubmit={handleCreate}>
         <label>
-          اسم القالب
+          {t.pages.intakeTemplatesPanel.nameLabel}
           <input type="text" value={name} onChange={(event) => setName(event.target.value)} required />
         </label>
         <label>
-          النوع (اختياري)
-          <input type="text" value={type} onChange={(event) => setType(event.target.value)} placeholder="video" dir="ltr" />
+          {t.pages.intakeTemplatesPanel.typeLabel}
+          <input type="text" value={type} onChange={(event) => setType(event.target.value)} placeholder={t.pages.intakeTemplatesPanel.typePlaceholder} dir="ltr" />
         </label>
         <label>
-          مجلّد افتراضي (اختياري)
+          {t.pages.intakeTemplatesPanel.folderLabel}
           <input type="text" value={folder} onChange={(event) => setFolder(event.target.value)} dir="ltr" />
         </label>
         <label>
-          وسوم افتراضية (مفصولة بفاصلة)
+          {t.pages.intakeTemplatesPanel.tagsLabel}
           <input type="text" value={tags} onChange={(event) => setTags(event.target.value)} />
         </label>
-        <button type="submit" className="button button-primary" disabled={isCreating}>{isCreating ? "جار الحفظ..." : "حفظ القالب"}</button>
+        <button type="submit" className="button button-primary" disabled={isCreating}>{isCreating ? t.pages.intakeTemplatesPanel.saving : t.pages.intakeTemplatesPanel.saveButton}</button>
         {error ? (
           <p className="form-status" role="alert">
             {error}
@@ -112,15 +114,15 @@ export function IntakeTemplatesPanel() {
       </form>
 
       {templatesState.status === "loading" ? (
-        <div className="panel panel-compact"><Skeleton label="جار تحميل قوالب الإدخال..." /></div>
+        <div className="panel panel-compact"><Skeleton label={t.pages.intakeTemplatesPanel.loading} /></div>
       ) : templatesState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل قوالب الإدخال</strong>
+          <strong>{t.pages.intakeTemplatesPanel.loadErrorHeading}</strong>
           <span className="helper-text">{templatesState.message}</span>
-          <div><button type="button" className="button button-secondary button-sm" onClick={() => void refresh()}>إعادة المحاولة</button></div>
+          <div><button type="button" className="button button-secondary button-sm" onClick={() => void refresh()}>{t.pages.intakeTemplatesPanel.retry}</button></div>
         </div>
       ) : templates.length === 0 ? (
-        <p className="helper-text">لا توجد قوالب محفوظة بعد.</p>
+        <p className="helper-text">{t.pages.intakeTemplatesPanel.empty}</p>
       ) : (
         <ul className="stack">
           {templates.map((template) => (
@@ -128,7 +130,7 @@ export function IntakeTemplatesPanel() {
               <span className="badge">{template.name}</span>
               {template.type ? <span className="badge">{template.type}</span> : null}
               <button type="button" className="button button-secondary button-sm" disabled={deletingId === template.id} onClick={() => void handleDelete(template.id)}>
-                {deletingId === template.id ? "جار الحذف..." : "حذف"}
+                {deletingId === template.id ? t.pages.intakeTemplatesPanel.deleting : t.pages.intakeTemplatesPanel.deleteButton}
               </button>
             </li>
           ))}

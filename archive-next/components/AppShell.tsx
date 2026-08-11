@@ -25,13 +25,13 @@ export default function AppShell({
   tipsPage,
   breadcrumbExtra
 }: Readonly<{
-  /** نص مُعرَّب مسبقًا من طبقة القاموس (`t.pageTitles.*`)، لا حرفية عربية خام. */
+  /** Already-localized copy from the dictionary layer (`t.pageTitles.*`), never a raw interface literal. */
   subtitle: string;
   navLabel?: string;
   children: ReactNode;
   contentClassName?: string;
   tipsPage?: PageKey;
-  /** عناصر إضافية تُلحق بمسار التنقل الأساسي (مثل اسم العنصر المفتوح حاليًا). */
+  /** Additional items appended to the base breadcrumb, such as the currently open record name. */
   breadcrumbExtra?: BreadcrumbItem[];
 }>) {
   const { t } = useLocale();

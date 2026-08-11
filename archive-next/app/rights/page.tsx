@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useDisplaySettings } from "@/lib/display-settings-context";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
@@ -15,7 +16,7 @@ import {
   type RightsEnforcementStatus
 } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { formatArabicDate } from "@/lib/arabic-format";
+import { formatDate as formatDisplayDate } from "@/lib/display-settings";
 
 type RightsState =
   | { status: "loading" }
@@ -38,22 +39,8 @@ type LicenseType = RightsRecord["licenseType"];
 const WARNING_WINDOW_DAYS = 30;
 const DAY_MS = 86400000;
 
-const daysOptions: Array<DataViewOption<string>> = [
-  { value: "30", label: "30 يوم" },
-  { value: "90", label: "90 يوم" },
-  { value: "365", label: "سنة" }
-];
-
-const licenseLabels: Record<LicenseType, string> = {
-  OWNED: "مملوك",
-  LICENSED: "مرخّص",
-  PUBLIC_DOMAIN: "ملكية عامة",
-  FAIR_USE: "استخدام عادل",
-  UNKNOWN: "غير معروف"
-};
-
-function formatDate(value?: string | null) {
-  return formatArabicDate(value, "غير محدد");
+function formatDate(value: string | null | undefined, fallback: string, settings: import("@/lib/display-settings").DisplaySettings, locale: import("@/lib/i18n/types").AppLocale) {
+  return formatDisplayDate(value, settings, locale, fallback);
 }
 
 function daysUntil(value?: string | null): number | null {
@@ -64,7 +51,8 @@ function daysUntil(value?: string | null): number | null {
 }
 
 export default function RightsPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const { settings: displaySettings } = useDisplaySettings();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<RightsState>({ status: "loading" });
   const [days, setDays] = useState("365");
@@ -78,6 +66,20 @@ export default function RightsPage() {
   const [formNotes, setFormNotes] = useState("");
   const canManageRights = useCapability("rights.manage");
 
+  const daysOptions: Array<DataViewOption<string>> = useMemo(() => [
+    { value: "30", label: t.pages.rights.days30 },
+    { value: "90", label: t.pages.rights.days90 },
+    { value: "365", label: t.pages.rights.days365 }
+  ], [t]);
+
+  const licenseLabels: Record<LicenseType, string> = useMemo(() => ({
+    OWNED: t.pages.rights.licenseOwned,
+    LICENSED: t.pages.rights.licenseLicensed,
+    PUBLIC_DOMAIN: t.pages.rights.licensePublicDomain,
+    FAIR_USE: t.pages.rights.licenseFairUse,
+    UNKNOWN: t.pages.rights.licenseUnknown
+  }), [t]);
+
   const loadRights = useCallback(async (windowDays: string) => {
     setState({ status: "loading" });
     setEnforcementByItem({});
@@ -86,12 +88,12 @@ export default function RightsPage() {
       if (response.ok) {
         setState({ status: "ready", records: response.records });
       } else {
-        setState({ status: "error", message: response.error || "تعذر تحميل سجلات الحقوق." });
+        setState({ status: "error", message: response.error || t.pages.rights.loadErrorTitle });
       }
     } catch (error) {
-      setState({ status: "error", message: error instanceof Error ? error.message : "تعذر تحميل سجلات الحقوق." });
+      setState({ status: "error", message: error instanceof Error ? error.message : t.pages.rights.loadErrorTitle });
     }
-  }, [api]);
+  }, [api, t]);
 
   useEffect(() => {
     void loadRights(days);
@@ -118,13 +120,13 @@ export default function RightsPage() {
       } else {
         setEnforcementByItem((current) => ({
           ...current,
-          [itemId]: { status: "error", message: response.error || "تعذر فحص الإنفاذ." }
+          [itemId]: { status: "error", message: response.error || t.pages.rights.enforcementCheckErrorTitle }
         }));
       }
     } catch (error) {
       setEnforcementByItem((current) => ({
         ...current,
-        [itemId]: { status: "error", message: error instanceof Error ? error.message : "تعذر فحص الإنفاذ." }
+        [itemId]: { status: "error", message: error instanceof Error ? error.message : t.pages.rights.enforcementCheckErrorTitle }
       }));
     }
   };
@@ -134,7 +136,7 @@ export default function RightsPage() {
     const itemId = formItemId.trim();
     const rightsHolder = formHolder.trim();
     if (!itemId || !rightsHolder) {
-      setUpsertState({ status: "error", message: "معرّف العنصر وصاحب الحقوق حقلان إلزاميان." });
+      setUpsertState({ status: "error", message: t.pages.rights.requiredFieldsMessage });
       return;
     }
 
@@ -155,10 +157,10 @@ export default function RightsPage() {
         setFormNotes("");
         await loadRights(days);
       } else {
-        setUpsertState({ status: "error", message: response.error || "تعذر حفظ سجل الحقوق." });
+        setUpsertState({ status: "error", message: response.error || t.pages.rights.saveErrorTitle });
       }
     } catch (error) {
-      setUpsertState({ status: "error", message: error instanceof Error ? error.message : "تعذر حفظ سجل الحقوق." });
+      setUpsertState({ status: "error", message: error instanceof Error ? error.message : t.pages.rights.saveErrorTitle });
     }
   };
 
@@ -167,13 +169,13 @@ export default function RightsPage() {
     if (!enforcementState) {
       return (
         <button type="button" className="button button-secondary button-sm" onClick={() => void checkEnforcement(itemId)}>
-          فحص الإنفاذ
+          {t.pages.rights.checkEnforcement}
         </button>
       );
     }
 
     if (enforcementState.status === "loading") {
-      return <span className="helper-text">جار الفحص...</span>;
+      return <span className="helper-text">{t.pages.rights.checking}</span>;
     }
 
     if (enforcementState.status === "error") {
@@ -184,7 +186,7 @@ export default function RightsPage() {
     return (
       <div className="record-meta">
         <span className={`badge ${enforcement.allowed ? "" : "badge-danger"}`}>
-          {enforcement.allowed ? "مسموح" : "محظور"}
+          {enforcement.allowed ? t.pages.rights.allowed : t.pages.rights.blocked}
         </span>
         {enforcement.reason ? <span className="helper-text">{enforcement.reason}</span> : null}
         {(enforcement.warnings || []).map((warning) => (
@@ -197,14 +199,14 @@ export default function RightsPage() {
   return (
     <AppShell subtitle={t.pageTitles.usageRights} navLabel={t.pageTitles.rights} contentClassName="observability-content" tipsPage="rights">
       <PageToolbar
-        eyebrow={<span className="badge">إدارة الحقوق</span>}
-        title="حقوق الاستخدام والتراخيص"
-        description="مراقبة سجلات الحقوق التي تقترب من الانتهاء، فحص حالة الإنفاذ لكل عنصر، وتسجيل حقوق جديدة."
+        eyebrow={<span className="badge">{t.pages.rights.eyebrow}</span>}
+        title={t.pages.rights.title}
+        description={t.pages.rights.description}
         meta={(
           <>
-            <span className="badge">{records.length} سجل حقوق</span>
+            <span className="badge">{records.length} {t.pages.rights.countSuffix}</span>
             <span className={`badge ${expiringSoonCount > 0 ? "badge-danger" : ""}`}>
-              {expiringSoonCount} ينتهي خلال {WARNING_WINDOW_DAYS} يوم
+              {expiringSoonCount} {t.pages.rights.expiringWithinSuffix.replace("{days}", String(WARNING_WINDOW_DAYS))}
             </span>
           </>
         )}
@@ -212,43 +214,43 @@ export default function RightsPage() {
           <>
             {canManageRights ? (
               <button type="button" className="button button-primary" onClick={() => setIsFormOpen((open) => !open)}>
-                {isFormOpen ? "إغلاق النموذج" : "تسجيل حقوق"}
+                {isFormOpen ? t.pages.rights.closeForm : t.pages.rights.registerRights}
               </button>
             ) : null}
             <button type="button" className="button button-secondary" onClick={() => void loadRights(days)} disabled={state.status === "loading"}>
-              تحديث
+              {t.pages.rights.refresh}
             </button>
           </>
         )}
       >
-        <DataViewSwitcher value={days} options={daysOptions} onChange={setDays} label="نافذة الانتهاء" />
+        <DataViewSwitcher value={days} options={daysOptions} onChange={setDays} label={t.pages.rights.windowLabel} />
       </PageToolbar>
 
       <OperationalSafetyPanel
-        action="نشر أو مشاركة مادة"
+        action={t.pages.rights.safetyAction}
         rights={hasBlockedRights ? "blocked" : "allowed"}
         auditHref="/activity"
       />
 
       {isFormOpen ? (
-        <section className="panel" aria-label="تسجيل حقوق جديدة">
+        <section className="panel" aria-label={t.pages.rights.formAriaLabel}>
           <div className="panel-title-row">
             <div>
-              <h2>تسجيل / تحديث حقوق عنصر</h2>
-              <p>الحفظ يستبدل سجل الحقوق الحالي لنفس معرّف العنصر إن وجد.</p>
+              <h2>{t.pages.rights.formTitle}</h2>
+              <p>{t.pages.rights.formDescription}</p>
             </div>
           </div>
           <form className="archive-toolbar-grid" onSubmit={handleUpsert}>
             <label>
-              <span>معرّف العنصر *</span>
+              <span>{t.pages.rights.fieldItemId}</span>
               <input type="text" dir="ltr" value={formItemId} onChange={(e) => setFormItemId(e.target.value)} required />
             </label>
             <label>
-              <span>صاحب الحقوق *</span>
+              <span>{t.pages.rights.fieldRightsHolder}</span>
               <input type="text" value={formHolder} onChange={(e) => setFormHolder(e.target.value)} required />
             </label>
             <label>
-              <span>نوع الترخيص</span>
+              <span>{t.pages.rights.fieldLicenseType}</span>
               <select value={formLicense} onChange={(e) => setFormLicense(e.target.value as LicenseType)}>
                 {(Object.keys(licenseLabels) as LicenseType[]).map((license) => (
                   <option key={license} value={license}>{licenseLabels[license]}</option>
@@ -256,16 +258,16 @@ export default function RightsPage() {
               </select>
             </label>
             <label>
-              <span>تاريخ الانتهاء</span>
+              <span>{t.pages.rights.fieldExpiresAt}</span>
               <input type="date" value={formExpiresAt} onChange={(e) => setFormExpiresAt(e.target.value)} />
             </label>
             <label>
-              <span>ملاحظات</span>
+              <span>{t.pages.rights.fieldNotes}</span>
               <input type="text" value={formNotes} onChange={(e) => setFormNotes(e.target.value)} maxLength={4000} />
             </label>
             <div className="archive-toolbar-actions">
               <button type="submit" className="button button-primary" disabled={upsertState.status === "saving"}>
-                {upsertState.status === "saving" ? "جار الحفظ..." : "حفظ الحقوق"}
+                {upsertState.status === "saving" ? t.pages.rights.saving : t.pages.rights.saveRights}
               </button>
             </div>
           </form>
@@ -274,27 +276,27 @@ export default function RightsPage() {
 
       {upsertState.status === "success" ? (
         <div className="state-banner state-banner-success" role="status">
-          <strong>تم حفظ سجل الحقوق</strong>
-          <span className="helper-text">العنصر: {upsertState.itemId}</span>
+          <strong>{t.pages.rights.saveSuccessTitle}</strong>
+          <span className="helper-text">{t.pages.rights.itemLabel.replace("{itemId}", upsertState.itemId)}</span>
         </div>
       ) : null}
 
       {upsertState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر حفظ سجل الحقوق</strong>
+          <strong>{t.pages.rights.saveErrorTitle}</strong>
           <span className="helper-text">{upsertState.message}</span>
         </div>
       ) : null}
 
       {state.status === "loading" ? (
         <div className="panel panel-compact">
-          <Skeleton label="جار تحميل سجلات الحقوق..." />
+          <Skeleton label={t.pages.rights.loading} />
         </div>
       ) : null}
 
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل سجلات الحقوق</strong>
+          <strong>{t.pages.rights.loadErrorTitle}</strong>
           <span className="helper-text">{state.message}</span>
         </div>
       ) : null}
@@ -302,32 +304,36 @@ export default function RightsPage() {
       {state.status === "ready" ? (
         records.length === 0 ? (
           <EmptyState
-            title="لا سجلات حقوق ضمن هذه النافذة."
-            description="وسّع نافذة الانتهاء أو سجّل حقوقًا جديدة لعناصر الأرشيف."
+            title={t.pages.rights.emptyTitle}
+            description={t.pages.rights.emptyDescription}
             actions={
               canManageRights ? (
-                <button type="button" className="button button-secondary" onClick={() => setIsFormOpen(true)}>تسجيل حقوق</button>
+                <button type="button" className="button button-secondary" onClick={() => setIsFormOpen(true)}>{t.pages.rights.registerRights}</button>
               ) : null
             }
           />
         ) : (
-          <section className="panel" aria-label="سجلات الحقوق">
+          <section className="panel" aria-label={t.pages.rights.recordsAriaLabel}>
             <div className="panel-title-row">
               <div>
-                <h2>سجلات الحقوق ({records.length})</h2>
-                <p>السجلات التي ينتهي ترخيصها خلال {daysOptions.find((option) => option.value === days)?.label}. المميز بالأحمر ينتهي خلال {WARNING_WINDOW_DAYS} يوم.</p>
+                <h2>{t.pages.rights.recordsTitle.replace("{count}", String(records.length))}</h2>
+                <p>
+                  {t.pages.rights.recordsDescription
+                    .replace("{window}", daysOptions.find((option) => option.value === days)?.label ?? "")
+                    .replace("{days}", String(WARNING_WINDOW_DAYS))}
+                </p>
               </div>
             </div>
             <div className="scroll-x">
-              <table className="data-table" aria-label="سجلات الحقوق">
+              <table className="data-table" aria-label={t.pages.rights.tableAriaLabel}>
                 <thead>
                   <tr>
-                    <th>العنصر</th>
-                    <th>صاحب الحقوق</th>
-                    <th>الترخيص</th>
-                    <th>ينتهي في</th>
-                    <th>المتبقي</th>
-                    <th className="data-table-sticky-end">الإنفاذ</th>
+                    <th>{t.pages.rights.colItem}</th>
+                    <th>{t.pages.rights.colRightsHolder}</th>
+                    <th>{t.pages.rights.colLicense}</th>
+                    <th>{t.pages.rights.colExpiresAt}</th>
+                    <th>{t.pages.rights.colRemaining}</th>
+                    <th className="data-table-sticky-end">{t.pages.rights.colEnforcement}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -343,13 +349,13 @@ export default function RightsPage() {
                         </td>
                         <td>{record.rightsHolder}</td>
                         <td><span className="badge">{licenseLabels[record.licenseType]}</span></td>
-                        <td className="text-sm">{formatDate(record.expiresAt)}</td>
+                        <td className="text-sm">{formatDate(record.expiresAt, t.pages.rights.notSet, displaySettings, locale)}</td>
                         <td>
                           {remaining === null ? (
                             <span className="helper-text">-</span>
                           ) : (
                             <span className={`badge ${isExpiringSoon ? "badge-danger" : ""}`}>
-                              {remaining <= 0 ? "منتهي" : `${remaining} يوم`}
+                              {remaining <= 0 ? t.pages.rights.expired : t.pages.rights.daysRemaining.replace("{days}", String(remaining))}
                             </span>
                           )}
                         </td>

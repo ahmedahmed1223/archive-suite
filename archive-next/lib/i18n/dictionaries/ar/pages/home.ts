@@ -1,0 +1,22 @@
+export const home = {
+  add: "إضافة مادة",
+  loading: "جارٍ تحميل بيانات اللوحة…",
+  error: "تعذر تحميل بيانات اللوحة.",
+  errorTitle: "تعذر تحميل اللوحة",
+  openArchive: "فتح الأرشيف",
+  metrics: "مؤشرات الأرشيف",
+  quick: "مهام سريعة",
+  recent: "أُضيف حديثًا",
+  all: "عرض الكل",
+  empty: "لا توجد سجلات بعد",
+  emptyDescription: "ابدأ بإضافة أول مادة إلى الأرشيف.",
+  untitled: "بدون عنوان",
+  total: "إجمالي السجلات",
+  types: "الأنواع",
+  tags: "الوسوم",
+  stores: "المخازن",
+  most: "الأكثر",
+  quickLinks: { uploads: "إضافة مادة", search: "البحث", collections: "المجموعات", tags: "الوسوم", types: "الأنواع" },
+  roles: { admin: "مدير الأرشيف", editor: "محرر إعلامي", viewer: "مشاهد/باحث" },
+  greetings: { admin: "مرحبًا بعودتك، أدر أرشيفك بثقة", editor: "مرحبًا بعودتك، هيا نكمل التوصيف", viewer: "مرحبًا بعودتك، اكتشف ما هو جديد" }
+} as const;

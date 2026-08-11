@@ -1,4 +1,5 @@
 import { buildOperationalSafety, type OperationalSafetyInput } from "@/lib/operational-safety";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type Props = OperationalSafetyInput & {
   className?: string;
@@ -6,12 +7,13 @@ type Props = OperationalSafetyInput & {
 };
 
 export default function OperationalSafetyPanel({ className = "", onConfirm, ...input }: Readonly<Props>) {
+  const { t } = useLocale();
   const safety = buildOperationalSafety(input);
 
   return (
-    <aside className={`state-banner ${safety.isBlocked ? "state-banner-error" : ""} ${className}`} aria-label="ملخص السلامة التشغيلية" role={safety.isBlocked ? "alert" : "status"}>
+    <aside className={`state-banner ${safety.isBlocked ? "state-banner-error" : ""} ${className}`} aria-label={t.shell.operationalSafety.ariaLabel} role={safety.isBlocked ? "alert" : "status"}>
       <div className="panel-title-row">
-        <strong>ملخص السلامة التشغيلية</strong>
+        <strong>{t.shell.operationalSafety.title}</strong>
         <span className="badge">{safety.modeLabel}</span>
       </div>
       <p className="helper-text">{safety.summary}</p>

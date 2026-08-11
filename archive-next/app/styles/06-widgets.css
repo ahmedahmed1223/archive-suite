@@ -1211,7 +1211,7 @@
   }
 }
 
-/* ── Recent-records card grid ("أُضيف حديثاً") ── */
+/* ── Recent-records card grid ("Recently added") ── */
 .dashboard-recent__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

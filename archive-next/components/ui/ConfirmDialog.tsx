@@ -12,14 +12,15 @@ import {
 } from "react";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export type ConfirmOptions = {
-  /** وصف أثر الإجراء المعروض داخل الحوار. */
+  /** Describes the impact of the action shown in the dialog. */
   message: string;
   title?: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  /** الإجراءات الإتلافية تُبرز زر التأكيد بلون الخطر، والتركيز يبقى على زر الإلغاء الآمن. */
+  /** Destructive actions use the danger treatment while initial focus remains on the safe cancel action. */
   destructive?: boolean;
 };
 
@@ -43,11 +44,11 @@ type PendingDialog =
   | { kind: "alert"; options: AlertOptions; resolve: () => void };
 
 export type ConfirmDialogApi = {
-  /** بديل window.confirm — يُرجع true عند التأكيد و false عند الإلغاء أو الإغلاق. */
+  /** Replaces window.confirm and resolves true on confirmation or false on cancel and dismiss. */
   confirm: (options: ConfirmOptions) => Promise<boolean>;
-  /** بديل window.prompt — يُرجع النص المدخل أو null عند الإلغاء أو الإغلاق. */
+  /** Replaces window.prompt and resolves the entered value or null on cancel and dismiss. */
   prompt: (options: PromptOptions) => Promise<string | null>;
-  /** بديل window.alert — يُحل الوعد عند إغلاق التنبيه. */
+  /** Replaces window.alert and resolves when the alert closes. */
   alert: (options: AlertOptions) => Promise<void>;
 };
 
@@ -61,13 +62,8 @@ export function useConfirmDialog(): ConfirmDialogApi {
   return api;
 }
 
-const DEFAULT_TITLES = {
-  confirm: "تأكيد الإجراء",
-  prompt: "إدخال قيمة",
-  alert: "تنبيه"
-} as const;
-
 export function ConfirmDialogProvider({ children }: Readonly<{ children: ReactNode }>) {
+  const { t } = useLocale();
   const [pending, setPending] = useState<PendingDialog | null>(null);
   const safeActionRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -119,7 +115,8 @@ export function ConfirmDialogProvider({ children }: Readonly<{ children: ReactNo
     setPending(null);
   }, [pending]);
 
-  const title = pending ? (pending.options.title ?? DEFAULT_TITLES[pending.kind]) : "";
+  const defaultTitles = { confirm: t.shared.feedback.confirmActionTitle, prompt: t.shared.feedback.promptValueTitle, alert: t.shared.feedback.alertTitle } as const;
+  const title = pending ? (pending.options.title ?? defaultTitles[pending.kind]) : "";
 
   return (
     <ConfirmDialogContext.Provider value={api}>
@@ -131,7 +128,7 @@ export function ConfirmDialogProvider({ children }: Readonly<{ children: ReactNo
             description={pending.options.message}
             title={title}
             onOpenAutoFocus={(event) => {
-              // التركيز الابتدائي: حقل الإدخال في حوار الإدخال، وزر الإجراء الآمن في التأكيد والتنبيه.
+              // Initial focus goes to the prompt input or the safe action in confirmation and alert dialogs.
               event.preventDefault();
               if (pending.kind === "prompt") inputRef.current?.focus();
               else safeActionRef.current?.focus();
@@ -141,14 +138,14 @@ export function ConfirmDialogProvider({ children }: Readonly<{ children: ReactNo
               <div className="system-control-confirmation__body">
                 <div className="system-control-confirmation__actions">
                   <Button ref={safeActionRef} type="button" variant="secondary" onClick={dismiss}>
-                    {pending.options.cancelLabel ?? "إلغاء"}
+                    {pending.options.cancelLabel ?? t.shared.actions.cancel}
                   </Button>
                   <Button
                     type="button"
                     variant={pending.options.destructive ? "danger" : "primary"}
                     onClick={handleConfirm}
                   >
-                    {pending.options.confirmLabel ?? "تأكيد"}
+                    {pending.options.confirmLabel ?? t.shared.actions.confirm}
                   </Button>
                 </div>
               </div>
@@ -165,10 +162,10 @@ export function ConfirmDialogProvider({ children }: Readonly<{ children: ReactNo
                 />
                 <div className="system-control-confirmation__actions">
                   <Button type="button" variant="secondary" onClick={dismiss}>
-                    {pending.options.cancelLabel ?? "إلغاء"}
+                    {pending.options.cancelLabel ?? t.shared.actions.cancel}
                   </Button>
                   <Button type="submit" variant="primary">
-                    {pending.options.confirmLabel ?? "موافق"}
+                    {pending.options.confirmLabel ?? t.shared.actions.accept}
                   </Button>
                 </div>
               </form>
@@ -177,7 +174,7 @@ export function ConfirmDialogProvider({ children }: Readonly<{ children: ReactNo
               <div className="system-control-confirmation__body">
                 <div className="system-control-confirmation__actions">
                   <Button ref={safeActionRef} type="button" variant="primary" onClick={handleAlertClose}>
-                    {pending.options.closeLabel ?? "حسناً"}
+                    {pending.options.closeLabel ?? t.shared.actions.close}
                   </Button>
                 </div>
               </div>

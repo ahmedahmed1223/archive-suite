@@ -27,6 +27,9 @@ import styles from "./archive.module.css";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { movePinnedFilter, orderPinnedFilters } from "@/lib/pinned-filters";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useDisplaySettings } from "@/lib/display-settings-context";
+import { formatDate as formatDisplayDate, DEFAULT_DISPLAY_SETTINGS, type DisplaySettings } from "@/lib/display-settings";
+import type { AppLocale } from "@/lib/i18n/types";
 
 // V1-732B: one entry per bulk-delete batch, so several consecutive deletes
 // are each independently undoable/redoable via lib/undo-stack.ts, not just
@@ -44,15 +47,6 @@ interface DeleteBatch {
 type WorkflowStatus = "draft" | "editing" | "review" | "approved" | "published" | "archived";
 
 const WORKFLOW_STATES: WorkflowStatus[] = ["draft", "editing", "review", "approved", "published", "archived"];
-
-const workflowStatusLabels: Record<WorkflowStatus, string> = {
-  draft: "مسودة",
-  editing: "تحرير",
-  review: "قيد المراجعة",
-  approved: "معتمد",
-  published: "منشور",
-  archived: "مؤرشف"
-};
 
 function getRecordWorkflowStatus(record: ArchiveRecord): WorkflowStatus {
   const value = record.workflowStatus;
@@ -154,26 +148,13 @@ interface SavedArchiveView {
   sortDirection: ArchiveSortDirection;
 }
 
-const viewOptions: DataViewOption<ArchiveViewMode>[] = [
-  { value: "grid", label: "شبكة", shortLabel: "شبكة" },
-  { value: "gallery", label: "معرض", shortLabel: "معرض" },
-  { value: "compact", label: "مضغوط", shortLabel: "مضغوط" },
-  { value: "list", label: "قائمة", shortLabel: "قائمة" },
-  { value: "details", label: "تفاصيل", shortLabel: "جدول" },
-  { value: "split", label: "مقسّم", shortLabel: "مقسّم" }
-];
-
-const itemSizeOptions: DataViewOption<ArchiveItemSize>[] = [
-  { value: "compact", label: "مضغوط" },
-  { value: "comfortable", label: "مريح" },
-  { value: "large", label: "كبير" }
-];
-
-const sortLabels: Record<ArchiveSortField, string> = {
-  updatedAt: "آخر تحديث",
-  createdAt: "تاريخ الإنشاء",
-  title: "العنوان"
-};
+// Value-only lists for module-scope validation (URL/localStorage restore
+// functions below run outside the component and have no access to `t`);
+// the translated label/shortLabel pairs are built inside the component from
+// these values.
+const VIEW_MODE_VALUES: ArchiveViewMode[] = ["grid", "gallery", "compact", "list", "details", "split"];
+const ITEM_SIZE_VALUES: ArchiveItemSize[] = ["compact", "comfortable", "large"];
+const SORT_FIELD_VALUES: ArchiveSortField[] = ["updatedAt", "createdAt", "title"];
 
 function normalizeText(value: unknown) {
   return String(value || "")
@@ -212,11 +193,8 @@ function inferRecordTypeFromFile(file: File) {
   return "file";
 }
 
-export function formatDate(value?: string) {
-  if (!value) return "غير محدد";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("ar-SA");
+export function formatDate(value: string | undefined, notSpecifiedLabel: string, settings: DisplaySettings = DEFAULT_DISPLAY_SETTINGS, locale: AppLocale = "ar") {
+  return formatDisplayDate(value, settings, locale, value || notSpecifiedLabel);
 }
 
 function getRecordTime(record: ArchiveRecord, field: Exclude<ArchiveSortField, "title">) {
@@ -233,7 +211,7 @@ function getUniqueValues(records: ArchiveRecord[], key: "store" | "type") {
 
 function getInitialViewMode(params: URLSearchParams): ArchiveViewMode {
   const value = params.get("view");
-  if (viewOptions.some((option) => option.value === value)) {
+  if (VIEW_MODE_VALUES.includes(value as ArchiveViewMode)) {
     return value as ArchiveViewMode;
   }
 
@@ -246,7 +224,7 @@ function getInitialViewMode(params: URLSearchParams): ArchiveViewMode {
 
 function getInitialItemSize(params: URLSearchParams): ArchiveItemSize {
   const value = params.get("size");
-  return itemSizeOptions.some((option) => option.value === value) ? (value as ArchiveItemSize) : "compact";
+  return ITEM_SIZE_VALUES.includes(value as ArchiveItemSize) ? (value as ArchiveItemSize) : "compact";
 }
 
 function getInitialSortField(params: URLSearchParams): ArchiveSortField {
@@ -295,7 +273,23 @@ function savedArchiveViewFromSearch(search: SavedSearch): SavedArchiveView {
 }
 
 function ArchivePageContent() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const listSeparator = locale === "en" ? ", " : "، ";
+  const { settings: displaySettings } = useDisplaySettings();
+  const workflowStatusLabels = t.pages.archiveList.workflowStatus;
+  const sortLabels = t.pages.archiveList.sortFields;
+  const viewOptions = useMemo<DataViewOption<ArchiveViewMode>[]>(
+    () => VIEW_MODE_VALUES.map((value) => ({
+      value,
+      label: t.pages.archiveList.viewModes[value].label,
+      shortLabel: t.pages.archiveList.viewModes[value].shortLabel
+    })),
+    [t]
+  );
+  const itemSizeOptions = useMemo<DataViewOption<ArchiveItemSize>[]>(
+    () => ITEM_SIZE_VALUES.map((value) => ({ value, label: t.pages.archiveList.itemSizes[value] })),
+    [t]
+  );
   const dialogs = useConfirmDialog();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -358,8 +352,8 @@ function ArchivePageContent() {
     try {
       const saved = readWorkspacePreferences(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY)).routes["/archive"];
       if (!saved) return;
-      if (saved.view && viewOptions.some((option) => option.value === saved.view)) setViewMode(saved.view as ArchiveViewMode);
-      if (saved.density && itemSizeOptions.some((option) => option.value === saved.density)) setItemSize(saved.density);
+      if (saved.view && VIEW_MODE_VALUES.includes(saved.view as ArchiveViewMode)) setViewMode(saved.view as ArchiveViewMode);
+      if (saved.density && ITEM_SIZE_VALUES.includes(saved.density as ArchiveItemSize)) setItemSize(saved.density);
       if (saved.previewId) setPreviewId(saved.previewId);
       setQuery(saved.filters?.q || "");
       setStore(saved.filters?.store || "all");
@@ -380,7 +374,7 @@ function ArchivePageContent() {
     hasRestoredViewState.current = true;
     if (searchParams.toString()) return;
     const saved = readPersistedViewState<ArchivePersistedViewState>(userId, ARCHIVE_VIEW_STATE_PAGE);
-    if (saved.sortField && (Object.keys(sortLabels) as string[]).includes(saved.sortField)) setSortField(saved.sortField);
+    if (saved.sortField && (SORT_FIELD_VALUES as string[]).includes(saved.sortField)) setSortField(saved.sortField);
     if (saved.sortDirection === "asc" || saved.sortDirection === "desc") setSortDirection(saved.sortDirection);
   }, [authStatus, searchParams, userId]);
 
@@ -407,13 +401,13 @@ function ArchivePageContent() {
   const refreshSavedViews = useCallback(async () => {
     const response = await api.savedSearches();
     if (!response.ok) {
-      setSavedViewStatus(response.error || "تعذر تحميل العروض المحفوظة.");
+      setSavedViewStatus(response.error || t.pages.archiveList.savedViewLoadError);
       return;
     }
 
     setSavedViews(response.searches.filter(isSavedArchiveView).map(savedArchiveViewFromSearch));
     setSavedViewStatus("");
-  }, [api]);
+  }, [api, t]);
 
   const loadRecords = useCallback(async (
     q: string,
@@ -587,11 +581,11 @@ function ArchivePageContent() {
     const failed = results.filter((result) => result.status === "error");
 
     if (succeeded > 0) {
-      toastSuccess(succeeded === 1 ? "تم رفع الملف وإضافته إلى الأرشيف" : `تم رفع ${succeeded} ملفات وإضافتها إلى الأرشيف`);
+      toastSuccess(succeeded === 1 ? t.pages.archiveList.uploadSuccessOne : t.pages.archiveList.uploadSuccessMany.replace("{count}", String(succeeded)));
       await loadRecords(query);
     }
     if (failed.length > 0) {
-      toastError(failed.map((result) => `${result.fileName}: ${result.message}`).join("، "));
+      toastError(failed.map((result) => `${result.fileName}: ${result.message}`).join(listSeparator));
     }
   };
 
@@ -684,7 +678,7 @@ function ArchivePageContent() {
         header: () => (
           <input
             type="checkbox"
-            aria-label="تحديد كل النتائج الظاهرة"
+            aria-label={t.pages.archiveList.selectAllVisible}
             checked={visibleRecords.length > 0 && visibleRecords.every((record) => selectedIdSet.has(record.id))}
             onChange={toggleSelectAllVisible}
           />
@@ -692,7 +686,7 @@ function ArchivePageContent() {
         cell: ({ row }) => (
           <input
             type="checkbox"
-            aria-label={`تحديد ${row.original.title || "السجل"}`}
+            aria-label={t.pages.archiveList.selectRecord.replace("{title}", row.original.title || t.pages.archiveList.fallbackRecordLabel)}
             checked={selectedIdSet.has(row.original.id)}
             onClick={(e) => {
               handleSelectClick(row.original.id, {
@@ -708,45 +702,45 @@ function ArchivePageContent() {
       },
       {
         accessorKey: "title",
-        header: "العنوان",
+        header: t.pages.archiveList.sortFields.title,
         cell: ({ row }) => (
           <a
             className="text-accent"
             href={`/archive/${encodeURIComponent(row.original.id)}`}
             onMouseEnter={() => setPreviewId(row.original.id)}
           >
-            {row.original.title || "بدون عنوان"}
+            {row.original.title || t.pages.archiveList.untitled}
           </a>
         )
       },
       {
         accessorKey: "store",
-        header: "المخزن",
-        cell: ({ row }) => row.original.store || "غير محدد"
+        header: t.pages.archiveList.storeLabel,
+        cell: ({ row }) => row.original.store || t.pages.archiveList.notSpecified
       },
       {
         accessorKey: "type",
-        header: "النوع",
-        cell: ({ row }) => row.original.type || "غير محدد"
+        header: t.pages.archiveList.typeLabel,
+        cell: ({ row }) => row.original.type || t.pages.archiveList.notSpecified
       },
       {
         id: "updated",
-        header: "آخر تحديث",
+        header: t.pages.archiveList.sortFields.updatedAt,
         accessorFn: (record) => record.updatedAt || record.createdAt || "",
-        cell: ({ row }) => formatDate(row.original.updatedAt || row.original.createdAt)
+        cell: ({ row }) => formatDate(row.original.updatedAt || row.original.createdAt, t.pages.archiveList.notSpecified, displaySettings, locale)
       },
       {
         id: "actions",
-        header: "إجراء",
+        header: t.pages.archiveList.columnAction,
         cell: ({ row }) => (
           <button type="button" className="badge" onClick={() => setPreviewId(row.original.id)}>
-            معاينة
+            {t.pages.archiveList.preview}
           </button>
         ),
         enableSorting: false
       }
     ],
-    [selectedIdSet, visibleRecords, handleSelectClick, toggleSelectAllVisible]
+    [selectedIdSet, visibleRecords, handleSelectClick, toggleSelectAllVisible, t, displaySettings, locale]
   );
 
   const resetFilters = () => {
@@ -762,10 +756,10 @@ function ArchivePageContent() {
   };
 
   const saveCurrentView = async () => {
-    const name = await dialogs.prompt({ title: "حفظ العرض", message: "اسم العرض المحفوظ" });
+    const name = await dialogs.prompt({ title: t.pages.archiveList.saveViewDialogTitle, message: t.pages.archiveList.saveViewDialogMessage });
     if (!name?.trim()) return;
 
-    setSavedViewStatus("جار حفظ العرض...");
+    setSavedViewStatus(t.pages.archiveList.savingView);
     const response = await api.createSavedSearch({
       name: name.trim(),
       query: query || undefined,
@@ -782,15 +776,15 @@ function ArchivePageContent() {
     });
 
     if (!response.ok) {
-      const message = response.error || "تعذر حفظ العرض.";
+      const message = response.error || t.pages.archiveList.saveViewError;
       setSavedViewStatus(message);
       toastError(message);
       return;
     }
 
     await refreshSavedViews();
-    setSavedViewStatus("تم حفظ العرض.");
-    toastSuccess("تم حفظ العرض.");
+    setSavedViewStatus(t.pages.archiveList.saveViewSuccess);
+    toastSuccess(t.pages.archiveList.saveViewSuccess);
   };
 
   const applySavedView = (view: SavedArchiveView) => {
@@ -809,7 +803,7 @@ function ArchivePageContent() {
   const removeSavedView = async (viewId: string) => {
     const response = await api.deleteSavedSearch(viewId);
     if (!response.ok) {
-      setSavedViewStatus(response.error || "تعذر حذف العرض.");
+      setSavedViewStatus(response.error || t.pages.archiveList.removeViewError);
       return;
     }
 
@@ -851,7 +845,7 @@ function ArchivePageContent() {
       setBulkFeedback({ kind: "success", message: successMessage });
       await loadRecords(query);
     } catch (error) {
-      setBulkFeedback({ kind: "error", message: error instanceof Error ? error.message : "تعذر تنفيذ الإجراء الجماعي" });
+      setBulkFeedback({ kind: "error", message: error instanceof Error ? error.message : t.pages.archiveList.bulkActionGenericError });
       await loadRecords(query);
     } finally {
       setBulkBusy(false);
@@ -859,22 +853,22 @@ function ArchivePageContent() {
   };
 
   const bulkAddTag = async () => {
-    const tag = await dialogs.prompt({ title: "إضافة وسم", message: "أضف وسمًا للسجلات المحددة" });
+    const tag = await dialogs.prompt({ title: t.pages.archiveList.addTagLabel, message: t.pages.archiveList.addTagDialogMessage });
     if (!tag?.trim()) return;
     const trimmedTag = tag.trim();
     await applyBulkPatch(
       (record) => ({ ...record, tags: Array.from(new Set([...(record.tags || []), trimmedTag])) }),
-      `تمت إضافة الوسم "${trimmedTag}" إلى ${selectedIds.length} سجل`
+      t.pages.archiveList.addTagSuccess.replace("{tag}", trimmedTag).replace("{count}", String(selectedIds.length))
     );
   };
 
   const bulkSetType = async () => {
-    const nextType = await dialogs.prompt({ title: "تغيير النوع", message: "النوع الجديد للسجلات المحددة" });
+    const nextType = await dialogs.prompt({ title: t.pages.archiveList.setTypeDialogTitle, message: t.pages.archiveList.setTypeDialogMessage });
     if (!nextType?.trim()) return;
     const trimmedType = nextType.trim();
     await applyBulkPatch(
       (record) => ({ ...record, type: trimmedType }),
-      `تم تعيين النوع "${trimmedType}" لـ ${selectedIds.length} سجل`
+      t.pages.archiveList.setTypeSuccess.replace("{type}", trimmedType).replace("{count}", String(selectedIds.length))
     );
   };
 
@@ -893,7 +887,7 @@ function ArchivePageContent() {
     for (const [storeKey, storeIds] of idsByStore) {
       const restored = await api.restoreTrash({ store: storeKey, ids: storeIds }, auth);
       if (!restored.ok) {
-        toastError(restored.error || "تعذر التراجع عن الحذف");
+        toastError(restored.error || t.pages.archiveList.undoRestoreError);
         return false;
       }
     }
@@ -905,7 +899,7 @@ function ArchivePageContent() {
     if (!result) return;
     const ok = await restoreDeleteBatch(result.entry.idsByStore);
     if (ok) {
-      toastSuccess("تم استرجاع السجلات");
+      toastSuccess(t.pages.archiveList.undoRestoreSuccess);
       setDeleteStack(result.stack);
       await loadRecords(query);
     }
@@ -917,11 +911,11 @@ function ArchivePageContent() {
     for (const [storeKey, storeIds] of result.entry.idsByStore) {
       const response = await api.bulkDeleteRecords({ store: storeKey, ids: storeIds });
       if (!response.ok) {
-        toastError(response.error || "تعذر إعادة الحذف");
+        toastError(response.error || t.pages.archiveList.redoDeleteError);
         return;
       }
     }
-    toastSuccess(`تم نقل ${result.entry.count} سجل إلى سلة المحذوفات مجدداً`);
+    toastSuccess(t.pages.archiveList.redoDeleteSuccess.replace("{count}", String(result.entry.count)));
     setDeleteStack(result.stack);
     await loadRecords(query);
   }
@@ -932,9 +926,9 @@ function ArchivePageContent() {
     if (selectedRecords.length === 0) return;
 
     const confirmed = await dialogs.confirm({
-      title: "حذف السجلات",
-      message: `سيتم نقل ${selectedRecords.length} سجل إلى سلة المحذوفات. يمكنك التراجع فورًا من زر "تراجع" في الإشعار، أو استعادتها لاحقًا من صفحة المحذوفات. هل تريد المتابعة؟`,
-      confirmLabel: "حذف",
+      title: t.pages.archiveList.deleteDialogTitle,
+      message: t.pages.archiveList.deleteDialogMessage.replace("{count}", String(selectedRecords.length)),
+      confirmLabel: t.pages.archiveList.deleteConfirmLabel,
       destructive: true
     });
     if (!confirmed) return;
@@ -955,7 +949,7 @@ function ArchivePageContent() {
       for (const [storeKey, storeIds] of idsByStore) {
         const response = await api.bulkDeleteRecords({ store: storeKey, ids: storeIds });
         if (!response.ok) {
-          setBulkFeedback({ kind: "error", message: response.error || "تعذر تنفيذ الحذف الجماعي" });
+          setBulkFeedback({ kind: "error", message: response.error || t.pages.archiveList.bulkDeleteGenericError });
           await loadRecords(query);
           return;
         }
@@ -965,17 +959,20 @@ function ArchivePageContent() {
       }
 
       if (failedUids.length > 0) {
-        const message = `تم حذف ${deletedCount} سجل، وتعذر حذف ${failedUids.length}: ${failedUids.join("، ")}`;
+        const message = t.pages.archiveList.bulkDeletePartialFailure
+          .replace("{deleted}", String(deletedCount))
+          .replace("{failed}", String(failedUids.length))
+          .replace("{uids}", failedUids.join(listSeparator));
         setBulkFeedback({ kind: "error", message });
         toastError(message);
       } else {
-        setBulkFeedback({ kind: "success", message: `تم نقل ${deletedCount} سجل إلى سلة المحذوفات` });
+        setBulkFeedback({ kind: "success", message: t.pages.archiveList.bulkDeleteSuccess.replace("{count}", String(deletedCount)) });
         // V1-732B: push onto the real undo stack instead of only wiring a
         // one-shot toast action, so several consecutive delete batches stay
         // independently undoable/redoable (undo-stack.ts, same as kanban).
         setDeleteStack((stack) => pushUndo(stack, { idsByStore, count: deletedCount }));
-        toastSuccess(`تم نقل ${deletedCount} سجل إلى سلة المحذوفات.`, {
-          label: "تراجع",
+        toastSuccess(`${t.pages.archiveList.bulkDeleteSuccess.replace("{count}", String(deletedCount))}.`, {
+          label: t.pages.archiveList.undoAction,
           onAction: () => void handleUndoDelete()
         });
       }
@@ -983,7 +980,7 @@ function ArchivePageContent() {
       setSelectedIds([]);
       await loadRecords(query);
     } catch (error) {
-      setBulkFeedback({ kind: "error", message: error instanceof Error ? error.message : "تعذر تنفيذ الحذف الجماعي" });
+      setBulkFeedback({ kind: "error", message: error instanceof Error ? error.message : t.pages.archiveList.bulkDeleteGenericError });
       await loadRecords(query);
     } finally {
       setBulkBusy(false);
@@ -993,7 +990,7 @@ function ArchivePageContent() {
   const bulkSetStatus = async (nextStatus: WorkflowStatus) => {
     await applyBulkPatch(
       (record) => ({ ...record, workflowStatus: nextStatus }),
-      `تم تعيين الحالة "${workflowStatusLabels[nextStatus]}" لـ ${selectedIds.length} سجل`
+      t.pages.archiveList.setStatusSuccess.replace("{status}", workflowStatusLabels[nextStatus]).replace("{count}", String(selectedIds.length))
     );
   };
 
@@ -1013,13 +1010,13 @@ function ArchivePageContent() {
       const response = await api.bulkRecords({ store: target.store || "archive-items", records: [updated] });
       if (!response.ok) {
         setState((current) => current.status === "ready" ? { status: "ready", records: previousRecords } : current);
-        toastError(response.error || "تعذر إعادة تسمية السجل");
+        toastError(response.error || t.pages.archiveList.renameError);
         return;
       }
-      toastSuccess("تم حفظ العنوان الجديد");
+      toastSuccess(t.pages.archiveList.renameSuccess);
     } catch (error) {
       setState((current) => current.status === "ready" ? { status: "ready", records: previousRecords } : current);
-      toastError(error instanceof Error ? error.message : "تعذر إعادة تسمية السجل");
+      toastError(error instanceof Error ? error.message : t.pages.archiveList.renameError);
     }
   };
 
@@ -1044,26 +1041,26 @@ function ArchivePageContent() {
     previewRecord ? (
       <>
         <div className="panel-section-header">
-          <span className="badge"><PanelRightOpen aria-hidden="true" size={14} /> معاينة</span>
-          <h2>{previewRecord.title || "بدون عنوان"}</h2>
+          <span className="badge"><PanelRightOpen aria-hidden="true" size={14} /> {t.pages.archiveList.preview}</span>
+          <h2>{previewRecord.title || t.pages.archiveList.untitled}</h2>
         </div>
-        <p>{previewRecord.description || "لا يوجد وصف محفوظ لهذا السجل بعد."}</p>
+        <p>{previewRecord.description || t.pages.archiveList.noDescription}</p>
         <div className="kv-grid">
           <div className="kv-item">
-            <strong>المخزن</strong>
-            <span>{previewRecord.store || "غير محدد"}</span>
+            <strong>{t.pages.archiveList.storeLabel}</strong>
+            <span>{previewRecord.store || t.pages.archiveList.notSpecified}</span>
           </div>
           <div className="kv-item">
-            <strong>النوع</strong>
-            <span>{previewRecord.type || "غير محدد"}</span>
+            <strong>{t.pages.archiveList.typeLabel}</strong>
+            <span>{previewRecord.type || t.pages.archiveList.notSpecified}</span>
           </div>
           <div className="kv-item">
-            <strong>الإنشاء</strong>
-            <span>{formatDate(previewRecord.createdAt)}</span>
+            <strong>{t.pages.archiveList.kvCreated}</strong>
+            <span>{formatDate(previewRecord.createdAt, t.pages.archiveList.notSpecified, displaySettings, locale)}</span>
           </div>
           <div className="kv-item">
-            <strong>التحديث</strong>
-            <span>{formatDate(previewRecord.updatedAt)}</span>
+            <strong>{t.pages.archiveList.kvUpdated}</strong>
+            <span>{formatDate(previewRecord.updatedAt, t.pages.archiveList.notSpecified, displaySettings, locale)}</span>
           </div>
         </div>
         {previewRecord.tags && previewRecord.tags.length > 0 ? (
@@ -1075,12 +1072,12 @@ function ArchivePageContent() {
           <pre className="token-preview">{JSON.stringify(previewRecord.metadata, null, 2)}</pre>
         ) : null}
         <div className="button-row">
-          <a className="button button-primary" href={`/archive/${encodeURIComponent(previewRecord.id)}`}>فتح التفاصيل</a>
-          <a className="button button-secondary" href={`/search?q=${encodeURIComponent(previewRecord.title || "")}`}>بحث مشابه</a>
+          <a className="button button-primary" href={`/archive/${encodeURIComponent(previewRecord.id)}`}>{t.pages.archiveList.openDetails}</a>
+          <a className="button button-secondary" href={`/search?q=${encodeURIComponent(previewRecord.title || "")}`}>{t.pages.archiveList.similarSearch}</a>
         </div>
       </>
     ) : (
-      <EmptyState title="لا توجد معاينة." description="اختر سجلاً من النتائج لعرض تفاصيله السريعة هنا." />
+      <EmptyState title={t.pages.archiveList.noPreviewTitle} description={t.pages.archiveList.noPreviewDescription} />
     )
   );
 
@@ -1096,11 +1093,11 @@ function ArchivePageContent() {
       data-record-id={record.id}
       onClick={() => setPreviewId(record.id)}
     >
-      <span className="split-list-row__title">{record.title || "بدون عنوان"}</span>
+      <span className="split-list-row__title">{record.title || t.pages.archiveList.untitled}</span>
       <span className="split-list-row__meta">
         {record.store ? <span className="badge">{record.store}</span> : null}
         {record.type ? <span className="badge">{record.type}</span> : null}
-        <time className="created-at">{formatDate(record.updatedAt || record.createdAt)}</time>
+        <time className="created-at">{formatDate(record.updatedAt || record.createdAt, t.pages.archiveList.notSpecified, displaySettings, locale)}</time>
       </span>
     </button>
   );
@@ -1116,84 +1113,84 @@ function ArchivePageContent() {
     >
       {isDraggingFile && (
         <div className={styles.dropOverlay}>
-          <span>أفلت الملفات هنا لإضافتها إلى الأرشيف</span>
+          <span>{t.pages.archiveList.dropOverlay}</span>
         </div>
       )}
       <PageToolbar
         icon={<Archive size={24} strokeWidth={2} />}
-        eyebrow={<span className="badge">مساحة الأرشيف</span>}
-        title="الأرشيف"
-        description="سطح عمل موحد للبحث والتصفية والمعاينة والإجراءات الجماعية على السجلات."
+        eyebrow={<span className="badge">{t.pages.archiveList.eyebrow}</span>}
+        title={t.pages.archiveList.pageTitle}
+        description={t.pages.archiveList.pageDescription}
         meta={(
           <>
-            <span className="badge">{visibleRecords.length} نتيجة</span>
-            <span className="badge">{activeFilterCount} فلتر نشط</span>
-            <span className="badge">{selectedIds.length} محدد</span>
+            <span className="badge">{t.pages.archiveList.resultsCount.replace("{count}", String(visibleRecords.length))}</span>
+            <span className="badge">{t.pages.archiveList.activeFiltersCount.replace("{count}", String(activeFilterCount))}</span>
+            <span className="badge">{t.pages.archiveList.selectedCount.replace("{count}", String(selectedIds.length))}</span>
           </>
         )}
         actions={(
           <>
             {canCreateRecords ? (
               <>
-                <a className="button button-primary" href="/uploads">إضافة للأرشيف</a>
-                <a className="button button-secondary" href="/files">استيراد ملفات</a>
+                <a className="button button-primary" href="/uploads">{t.pages.archiveList.addToArchive}</a>
+                <a className="button button-secondary" href="/files">{t.pages.archiveList.importFiles}</a>
               </>
             ) : null}
-            <button type="button" className="button button-secondary" onClick={() => void saveCurrentView()}>حفظ العرض</button>
+            <button type="button" className="button button-secondary" onClick={() => void saveCurrentView()}>{t.pages.archiveList.saveView}</button>
           </>
         )}
       >
         <form className="archive-toolbar-grid command-filter-grid" onSubmit={handleSearch}>
           <label>
-            <span><Search aria-hidden="true" size={14} /> بحث</span>
+            <span><Search aria-hidden="true" size={14} /> {t.pages.archiveList.searchLabel}</span>
             <input
               type="search"
-              placeholder="العنوان، الوسوم، الوصف، metadata..."
+              placeholder={t.pages.archiveList.searchPlaceholder}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="search-input"
             />
           </label>
           <label>
-            <span><FolderSearch aria-hidden="true" size={14} /> المخزن</span>
+            <span><FolderSearch aria-hidden="true" size={14} /> {t.pages.archiveList.storeLabel}</span>
             <select value={store} onChange={(e) => setStore(e.target.value)}>
-              <option value="all">كل المخازن</option>
+              <option value="all">{t.pages.archiveList.allStores}</option>
               {storeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
           <label>
-            <span><Filter aria-hidden="true" size={14} /> النوع</span>
+            <span><Filter aria-hidden="true" size={14} /> {t.pages.archiveList.typeLabel}</span>
             <select value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="all">كل الأنواع</option>
+              <option value="all">{t.pages.archiveList.allTypes}</option>
               {typeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
           <label>
-            <span><SlidersHorizontal aria-hidden="true" size={14} /> الفرز</span>
+            <span><SlidersHorizontal aria-hidden="true" size={14} /> {t.pages.archiveList.sortLabel}</span>
             <select value={sortField} onChange={(e) => setSortField(e.target.value as ArchiveSortField)}>
               {Object.entries(sortLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
           <label>
-            <span>الاتجاه</span>
+            <span>{t.pages.archiveList.directionLabel}</span>
             <select value={sortDirection} onChange={(e) => setSortDirection(e.target.value as ArchiveSortDirection)}>
-              <option value="desc">الأحدث أولاً</option>
-              <option value="asc">الأقدم أولاً</option>
+              <option value="desc">{t.pages.archiveList.newestFirst}</option>
+              <option value="asc">{t.pages.archiveList.oldestFirst}</option>
             </select>
           </label>
           <div className="archive-toolbar-actions">
-            <button type="submit" className="button button-primary">تحديث</button>
-            <button type="button" className="button button-secondary" onClick={resetFilters}>تصفير</button>
+            <button type="submit" className="button button-primary">{t.pages.archiveList.refresh}</button>
+            <button type="button" className="button button-secondary" onClick={resetFilters}>{t.pages.archiveList.reset}</button>
           </div>
         </form>
-        <div className="archive-toolbar-row" role="group" aria-label="تصفية حسب حالة سير العمل">
+        <div className="archive-toolbar-row" role="group" aria-label={t.pages.archiveList.workflowFilterGroupLabel}>
           <button
             type="button"
             className={`badge ${styles.filterChip}`}
             data-active={workflowStatus === "all" ? "true" : "false"}
             onClick={() => setWorkflowStatus("all")}
           >
-            الكل · {records.length}
+            {t.pages.archiveList.allStatusChip.replace("{count}", String(records.length))}
           </button>
           {WORKFLOW_STATES.filter((s) => statusCounts[s] > 0).map((s) => (
             <button
@@ -1203,7 +1200,7 @@ function ArchivePageContent() {
               data-active={workflowStatus === s ? "true" : "false"}
               onClick={() => setWorkflowStatus(workflowStatus === s ? "all" : s)}
             >
-              {workflowStatusLabels[s]} · {statusCounts[s]}
+              {t.pages.archiveList.statusChip.replace("{label}", workflowStatusLabels[s]).replace("{count}", String(statusCounts[s]))}
             </button>
           ))}
           {incompleteCount > 0 || incompleteOnly ? (
@@ -1214,21 +1211,21 @@ function ArchivePageContent() {
               aria-pressed={incompleteOnly}
               onClick={() => setIncompleteOnly(!incompleteOnly)}
             >
-              توصيف ناقص · {incompleteCount}
+              {t.pages.archiveList.incompleteChip.replace("{count}", String(incompleteCount))}
             </button>
           ) : null}
         </div>
         <div className="archive-toolbar-row">
           <DataViewSwitcher value={viewMode} options={viewOptions} onChange={setViewMode} />
-          <DataViewSwitcher value={itemSize} options={itemSizeOptions} onChange={setItemSize} label="كثافة العناصر" />
+          <DataViewSwitcher value={itemSize} options={itemSizeOptions} onChange={setItemSize} label={t.pages.archiveList.densityLabel} />
           {savedViews.length > 0 ? (
-            <div className="saved-views-strip" aria-label="العروض المحفوظة">
+            <div className="saved-views-strip" aria-label={t.pages.archiveList.savedViewsLabel}>
               {orderedSavedViews.map((view, index) => (
                 <span key={view.id} className="saved-view-chip">
                   <button type="button" onClick={() => applySavedView(view)}>{view.name}</button>
-                  <button type="button" disabled={index === 0} aria-label={`نقل ${view.name} للأعلى`} onClick={() => reorderPinnedView(view.id, -1)}>↑</button>
-                  <button type="button" disabled={index === orderedSavedViews.length - 1} aria-label={`نقل ${view.name} للأسفل`} onClick={() => reorderPinnedView(view.id, 1)}>↓</button>
-                  <button type="button" aria-label={`حذف ${view.name}`} onClick={() => void removeSavedView(view.id)}>×</button>
+                  <button type="button" disabled={index === 0} aria-label={t.pages.archiveList.moveUp.replace("{name}", view.name)} onClick={() => reorderPinnedView(view.id, -1)}>↑</button>
+                  <button type="button" disabled={index === orderedSavedViews.length - 1} aria-label={t.pages.archiveList.moveDown.replace("{name}", view.name)} onClick={() => reorderPinnedView(view.id, 1)}>↓</button>
+                  <button type="button" aria-label={t.pages.archiveList.removeView.replace("{name}", view.name)} onClick={() => void removeSavedView(view.id)}>×</button>
                 </span>
               ))}
             </div>
@@ -1240,15 +1237,15 @@ function ArchivePageContent() {
       {selectedIds.length > 0 ? (
         <>
         <div className={`bulk-action-bar ${bulkBusy ? styles.bulkBarBusy : ""}`} role="status">
-          <strong>{selectedIds.length} سجل محدد</strong>
+          <strong>{t.pages.archiveList.bulkSelectedCount.replace("{count}", String(selectedIds.length))}</strong>
           <div className="button-row">
-            <button type="button" className="button button-secondary" onClick={toggleSelectAllVisible}>تحديد الظاهر</button>
+            <button type="button" className="button button-secondary" onClick={toggleSelectAllVisible}>{t.pages.archiveList.selectVisible}</button>
             {canEditRecords ? (
               <>
-                <button type="button" className="button button-secondary" onClick={bulkAddTag} disabled={bulkBusy}>إضافة وسم</button>
-                <button type="button" className="button button-secondary" onClick={bulkSetType} disabled={bulkBusy}>تعيين النوع</button>
+                <button type="button" className="button button-secondary" onClick={bulkAddTag} disabled={bulkBusy}>{t.pages.archiveList.addTagLabel}</button>
+                <button type="button" className="button button-secondary" onClick={bulkSetType} disabled={bulkBusy}>{t.pages.archiveList.bulkSetTypeButton}</button>
                 <label className="archive-toolbar-actions" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-                  <span className="helper-text">تعيين الحالة</span>
+                  <span className="helper-text">{t.pages.archiveList.bulkSetStatusLabel}</span>
                   <select
                     disabled={bulkBusy}
                     defaultValue=""
@@ -1258,7 +1255,7 @@ function ArchivePageContent() {
                       if (nextStatus) void bulkSetStatus(nextStatus);
                     }}
                   >
-                    <option value="" disabled>اختر حالة...</option>
+                    <option value="" disabled>{t.pages.archiveList.chooseStatusOption}</option>
                     {WORKFLOW_STATES.map((s) => (
                       <option key={s} value={s}>{workflowStatusLabels[s]}</option>
                     ))}
@@ -1266,11 +1263,11 @@ function ArchivePageContent() {
                 </label>
               </>
             ) : null}
-            <a className="button button-secondary" href={`/archive/${encodeURIComponent(selectedIds[0])}`}>فتح الأول</a>
-            <button type="button" className="button button-secondary" onClick={() => setSelectedIds([])}>إلغاء التحديد</button>
+            <a className="button button-secondary" href={`/archive/${encodeURIComponent(selectedIds[0])}`}>{t.pages.archiveList.openFirst}</a>
+            <button type="button" className="button button-secondary" onClick={() => setSelectedIds([])}>{t.pages.archiveList.clearSelection}</button>
             {canBulkDelete ? (
               <button type="button" className="button button-danger" onClick={() => void bulkDelete()} disabled={bulkBusy}>
-                حذف المحدد ({selectedIds.length})
+                {t.pages.archiveList.deleteSelected.replace("{count}", String(selectedIds.length))}
               </button>
             ) : null}
           </div>
@@ -1281,7 +1278,7 @@ function ArchivePageContent() {
 
       {bulkFeedback ? (
         <div className={`state-banner ${bulkFeedback.kind === "success" ? "state-banner-success" : "state-banner-error"}`} role="status">
-          <strong>{bulkFeedback.kind === "success" ? "تم تنفيذ الإجراء الجماعي" : "تعذر تنفيذ الإجراء الجماعي"}</strong>
+          <strong>{bulkFeedback.kind === "success" ? t.pages.archiveList.bulkSuccessTitle : t.pages.archiveList.bulkErrorTitle}</strong>
           <span className="helper-text">{bulkFeedback.message}</span>
         </div>
       ) : null}
@@ -1294,7 +1291,7 @@ function ArchivePageContent() {
             disabled={!canUndo(deleteStack) || bulkBusy}
             onClick={() => void handleUndoDelete()}
           >
-            تراجع عن الحذف{deleteStack.past.length > 0 ? ` (${deleteStack.past.length})` : ""}
+            {t.pages.archiveList.undoDeleteLabel}{deleteStack.past.length > 0 ? ` (${deleteStack.past.length})` : ""}
           </button>
           <button
             type="button"
@@ -1302,20 +1299,20 @@ function ArchivePageContent() {
             disabled={!canRedo(deleteStack) || bulkBusy}
             onClick={() => void handleRedoDelete()}
           >
-            إعادة الحذف{deleteStack.future.length > 0 ? ` (${deleteStack.future.length})` : ""}
+            {t.pages.archiveList.redoDeleteLabel}{deleteStack.future.length > 0 ? ` (${deleteStack.future.length})` : ""}
           </button>
         </div>
       ) : null}
 
       {state.status === "loading" ? (
         <div className="panel panel-compact" aria-live="polite" role="status">
-          <Skeleton label="جار تحميل السجلات..." />
+          <Skeleton label={t.pages.archiveList.loadingRecords} />
         </div>
       ) : null}
 
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل السجلات</strong>
+          <strong>{t.pages.archiveList.loadRecordsError}</strong>
           <span className="helper-text">{state.message}</span>
         </div>
       ) : null}
@@ -1324,12 +1321,12 @@ function ArchivePageContent() {
         visibleRecords.length === 0 ? (
           <EmptyState
             icon={<PanelRightOpen size={22} />}
-            title="لا توجد سجلات مطابقة."
-            description="خفف الفلاتر أو اترك البحث فارغاً لعرض أحدث السجلات من الخادم."
-            actions={<button type="button" className="button button-secondary" onClick={resetFilters}>تصفير الفلاتر</button>}
+            title={t.pages.archiveList.emptyResultsTitle}
+            description={t.pages.archiveList.emptyResultsDescription}
+            actions={<button type="button" className="button button-secondary" onClick={resetFilters}>{t.pages.archiveList.resetFiltersButton}</button>}
           />
         ) : (
-          <section className="archive-workspace" data-view={viewMode} aria-label="نتائج الأرشيف">
+          <section className="archive-workspace" data-view={viewMode} aria-label={t.pages.archiveList.resultsSectionLabel}>
             {showDragSelectRect && dragSelectRect ? (
               <div
                 className={styles.dragSelectionRect}
@@ -1351,10 +1348,10 @@ function ArchivePageContent() {
             >
               {viewMode === "details" ? (
                 <DataTable
-                  ariaLabel="جدول نتائج الأرشيف"
+                  ariaLabel={t.pages.archiveList.tableAriaLabel}
                   columns={archiveColumns}
                   data={visibleRecords}
-                  emptyMessage="لا توجد سجلات مطابقة."
+                  emptyMessage={t.pages.archiveList.emptyResultsTitle}
                   getRowId={(record) => record.id}
                   tableClassName="archive-table"
                   virtualized={visibleRecords.length > 60}
@@ -1362,10 +1359,10 @@ function ArchivePageContent() {
                 />
               ) : viewMode === "split" ? (
                 <>
-                  <div className="split-list-pane" role="list" aria-label="قائمة السجلات">
+                  <div className="split-list-pane" role="list" aria-label={t.pages.archiveList.recordListLabel}>
                     {visibleRecords.map(renderSplitListRow)}
                   </div>
-                  <aside className="record-preview-rail split-detail-pane" aria-label="تفاصيل السجل">
+                  <aside className="record-preview-rail split-detail-pane" aria-label={t.pages.archiveList.recordDetailsLabel}>
                     {renderPreviewDetailContent()}
                   </aside>
                 </>
@@ -1375,7 +1372,7 @@ function ArchivePageContent() {
             </div>
 
             {viewMode !== "split" ? (
-              <aside className="record-preview-rail" aria-label="معاينة السجل">
+              <aside className="record-preview-rail" aria-label={t.pages.archiveList.recordPreviewLabel}>
                 {renderPreviewDetailContent()}
               </aside>
             ) : null}
@@ -1393,7 +1390,7 @@ export default function ArchivePage() {
     <Suspense fallback={(
       <AppShell subtitle={t.pageTitles.recordsCenter} contentClassName="archive-content">
         <div className="panel panel-compact" role="status">
-          <p className="form-status">جار تجهيز الأرشيف...</p>
+          <p className="form-status">{t.pages.archiveList.preparingArchive}</p>
         </div>
       </AppShell>
     )}>

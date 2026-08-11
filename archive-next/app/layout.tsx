@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import AppProviders from "@/components/AppProviders";
 import ClientErrorReporter from "@/components/ClientErrorReporter";
 import { BRAND } from "@/lib/brand";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { directionFor } from "@/lib/i18n/resolve-locale";
 import { isAppLocale } from "@/lib/i18n/types";
 import "./styles/01-base.css";
@@ -25,22 +26,32 @@ const plexArabic = IBM_Plex_Sans_Arabic({
   display: "swap"
 });
 
-export const metadata: Metadata = {
-  title: `${BRAND.arabicName} | ${BRAND.latinName}`,
-  description: `${BRAND.descriptor} في ${BRAND.lockupName}`,
-  applicationName: BRAND.latinName,
-  icons: {
-    icon: [
-      {
-        url: "/brand/masar-mark-2026.png?v=20260801",
-        type: "image/png",
-        sizes: "1254x1254"
-      }
-    ],
-    shortcut: "/brand/masar-mark-2026.png?v=20260801",
-    apple: "/brand/masar-mark-2026.png?v=20260801"
-  }
-};
+export function metadataDescription(locale: "ar" | "en"): string {
+  return getDictionary(locale).auth.login.description;
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const requestHeaders = await headers();
+  const forwardedLocale = requestHeaders.get("x-archive-locale");
+  const locale = isAppLocale(forwardedLocale) ? forwardedLocale : "ar";
+
+  return {
+    title: `${BRAND.arabicName} | ${BRAND.latinName}`,
+    description: metadataDescription(locale),
+    applicationName: BRAND.latinName,
+    icons: {
+      icon: [
+        {
+          url: "/brand/masar-mark-2026.png?v=20260801",
+          type: "image/png",
+          sizes: "1254x1254"
+        }
+      ],
+      shortcut: "/brand/masar-mark-2026.png?v=20260801",
+      apple: "/brand/masar-mark-2026.png?v=20260801"
+    }
+  };
+}
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const requestHeaders = await headers();

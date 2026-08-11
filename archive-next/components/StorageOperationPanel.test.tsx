@@ -1,15 +1,21 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import StorageOperationPanel from "./StorageOperationPanel";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 afterEach(cleanup);
+
+function renderPanel(node: ReactNode) {
+  return render(<LocaleProvider initialLocale="ar" hasLocaleCookie>{node}</LocaleProvider>);
+}
 
 describe("StorageOperationPanel", () => {
   it("confirms a preview and lets the operator cancel it", () => {
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
-    render(<StorageOperationPanel operation={{ id: "op-1", type: "نقل", status: "preview", completedItems: 0, totalItems: 2, conflict: "copy" }} onConfirm={onConfirm} onCancel={onCancel} />);
+    renderPanel(<StorageOperationPanel operation={{ id: "op-1", type: "نقل", status: "preview", completedItems: 0, totalItems: 2, conflict: "copy" }} onConfirm={onConfirm} onCancel={onCancel} />);
 
     fireEvent.click(screen.getByRole("button", { name: "تأكيد العملية" }));
     fireEvent.click(screen.getByRole("button", { name: "إلغاء" }));
@@ -24,7 +30,7 @@ describe("StorageOperationPanel", () => {
     const trigger = document.createElement("button");
     document.body.append(trigger);
     trigger.focus();
-    render(<StorageOperationPanel operation={{ id: "op-1", type: "نقل", status: "preview", completedItems: 0, totalItems: 2 }} onCancel={onCancel} />);
+    renderPanel(<StorageOperationPanel operation={{ id: "op-1", type: "نقل", status: "preview", completedItems: 0, totalItems: 2 }} onCancel={onCancel} />);
 
     const panel = screen.getByLabelText("حالة نقل الملفات");
     expect(panel).toHaveFocus();

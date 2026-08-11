@@ -32,13 +32,13 @@ type ProgressState =
   | { status: "ready"; progress: OnboardingProgress }
   | { status: "error"; message: string };
 
-function formatUptime(seconds: number, locale: "ar" | "en") {
-  if (!Number.isFinite(seconds) || seconds < 0) return locale === "en" ? "Unknown" : "غير معروف";
+function formatUptime(seconds: number, copy: { unknown: string; seconds: string; minutes: string; hoursAndMinutes: string }) {
+  if (!Number.isFinite(seconds) || seconds < 0) return copy.unknown;
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 1) return locale === "en" ? `${Math.floor(seconds)} seconds` : `${Math.floor(seconds)} ثانية`;
+  if (minutes < 1) return copy.seconds.replace("{count}", String(Math.floor(seconds)));
   const hours = Math.floor(minutes / 60);
-  if (hours < 1) return locale === "en" ? `${minutes} minutes` : `${minutes} دقيقة`;
-  return locale === "en" ? `${hours} hours ${minutes % 60} minutes` : `${hours} ساعة و${minutes % 60} دقيقة`;
+  if (hours < 1) return copy.minutes.replace("{count}", String(minutes));
+  return copy.hoursAndMinutes.replace("{hours}", String(hours)).replace("{minutes}", String(minutes % 60));
 }
 
 export default function FirstRunPage() {
@@ -73,10 +73,11 @@ export default function FirstRunPage() {
   );
   const copy = t.pages.firstRun;
   const title = copy.title.replace("{brand}", locale === "en" ? BRAND.latinName : BRAND.arabicName);
-  const journeySteps: Array<{ id: SetupStepId; title: string; description: string }> = locale === "en" ? [
-    { id: "server", title: "Start the server", description: "Checks the API and data engine automatically." }, { id: "account", title: "Confirm sign-in", description: "Sign in when needed to resume saved setup." }, { id: "settings", title: "Review settings", description: "Test connections and review operating settings." }, { id: "ready", title: "Start working", description: "Move to the workspace after readiness is complete." }
-  ] : [
-    { id: "server", title: "تشغيل الخادم", description: "فحص API ومحرك البيانات تلقائياً." }, { id: "account", title: "تأكيد الدخول", description: "سجّل الدخول عند الحاجة لاستئناف التهيئة المحفوظة." }, { id: "settings", title: "مراجعة الإعدادات", description: "اختبار الاتصالات ومراجعة إعدادات التشغيل." }, { id: "ready", title: "بدء العمل", description: "الانتقال إلى مساحة العمل بعد اكتمال الجاهزية." }
+  const journeySteps: Array<{ id: SetupStepId; title: string; description: string }> = [
+    { id: "server", ...copy.journeySteps.server },
+    { id: "account", ...copy.journeySteps.account },
+    { id: "settings", ...copy.journeySteps.settings },
+    { id: "ready", ...copy.journeySteps.ready }
   ];
 
   useEffect(() => {
@@ -91,13 +92,13 @@ export default function FirstRunPage() {
     if (auth.status === "authenticated") {
       void loadProgress();
     }
-    // تغيّر الجلسة هو سبب إعادة التحميل الوحيد؛ العميل ثابت داخل الصفحة.
+    // A session change is the only reason to reload; the client is stable on this page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.status]);
 
   useEffect(() => {
     void checkHealth();
-    // الفحص تلقائي مرة واحدة عند فتح الرحلة؛ يظل زر إعادة الفحص متاحاً.
+    // The health check runs once when the journey opens; the recheck button remains available.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -318,7 +319,7 @@ export default function FirstRunPage() {
               </strong>
               <small>
                 {health.status === "ready"
-                  ? `${health.backend} · ${health.engine} · ${formatUptime(health.uptimeSec, locale)}`
+                  ? `${health.backend} · ${health.engine} · ${formatUptime(health.uptimeSec, copy.uptime)}`
                   : health.status === "error"
                     ? health.message
                     : copy.startHealth}

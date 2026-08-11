@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import EmptyState from "@/components/EmptyState";
 import type { ArchiveType } from "@/lib/archive-api";
 import { iconRegistry } from "@/lib/icon-registry";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type TypesListProps = {
   types: ArchiveType[];
@@ -24,18 +25,20 @@ export default function TypesList({
   onDeleteType,
   onCreateType,
 }: TypesListProps) {
+  const { t } = useLocale();
+  const copy = t.pages.types;
   if (types.length === 0) {
     return (
       <EmptyState
-        title="لا توجد أنواع معرفة بعد"
-        description="أنشئ نوعًا لتحديد حقول البيانات والصلاحيات التي يحتاجها فريق الأرشفة."
-        actions={<Button type="button" variant="primary" onClick={onCreateType}>إنشاء أول نوع</Button>}
+        title={copy.list.emptyTitle}
+        description={copy.list.emptyDescription}
+        actions={<Button type="button" variant="primary" onClick={onCreateType}>{copy.list.createFirst}</Button>}
       />
     );
   }
 
   return (
-    <ul className="types-list" aria-label="الأنواع المعرفة">
+    <ul className="types-list" aria-label={copy.list.ariaLabel}>
       {types.map((type) => {
         const isSelected = selectedTypeId === type.id;
         const isDeleting = deletingTypeId === type.id;
@@ -56,11 +59,11 @@ export default function TypesList({
               <span className="type-list-item__body">
                 <strong>{type.name}</strong>
                 <span className="type-list-item__id" dir="ltr">{type.id}</span>
-                <span className="type-list-item__summary">{type.fields.length} {type.fields.length === 1 ? "حقل" : "حقول"}</span>
+                <span className="type-list-item__summary">{copy.list.fields.replace("{count}", String(type.fields.length))}</span>
               </span>
             </button>
-            <div className="type-list-item__actions" aria-label={`إجراءات ${type.name}`}>
-              <Button type="button" size="sm" onClick={() => onEditType(type)}>تحرير</Button>
+            <div className="type-list-item__actions" aria-label={copy.list.actions.replace("{name}", type.name)}>
+              <Button type="button" size="sm" onClick={() => onEditType(type)}>{copy.edit}</Button>
               <Button
                 type="button"
                 size="sm"
@@ -68,7 +71,7 @@ export default function TypesList({
                 disabled={isDeleting}
                 onClick={() => onDeleteType(type)}
               >
-                {isDeleting ? "جارٍ الحذف…" : "حذف"}
+                {isDeleting ? copy.list.deleting : copy.delete}
               </Button>
             </div>
           </li>

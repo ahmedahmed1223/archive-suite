@@ -26,7 +26,7 @@ describe("operational safety wiring", () => {
     const source = pageSource("copilot/page.tsx");
 
     expect(source).toContain('rights="review"');
-    expect(source).toContain("الخادم يطبق سياسات الحقوق والصلاحيات");
+    expect(source).toContain("copy.rightsNote");
     expect(source).not.toContain('rights={status?.configured ? "allowed" : "blocked"}');
   });
 });

@@ -62,12 +62,6 @@ type ScanState =
 type FileViewMode = "table" | "cards" | "browser";
 type FileKind = "all" | "media" | "image" | "document" | "other";
 
-const fileViewOptions: DataViewOption<FileViewMode>[] = [
-  { value: "table", label: "جدول" },
-  { value: "cards", label: "بطاقات" },
-  { value: "browser", label: "مجلدات" }
-];
-
 const PLAYABLE_EXTENSIONS = new Set([
   "mp3",
   "wav",
@@ -123,18 +117,6 @@ function getFileKind(file: FileLike): Exclude<FileKind, "all"> {
   return "other";
 }
 
-function kindLabel(kind: FileKind) {
-  const labels: Record<FileKind, string> = {
-    all: "كل الملفات",
-    media: "وسائط",
-    image: "صور",
-    document: "مستندات",
-    other: "أخرى"
-  };
-
-  return labels[kind];
-}
-
 function mediaPlayHref(file: FileLike): string {
   const params = new URLSearchParams({ path: file.key });
 
@@ -154,11 +136,11 @@ function formatBytes(bytes?: number): string {
   return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
 }
 
-function formatDate(value?: string) {
+function formatDate(value: string | undefined, locale: "ar" | "en") {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("ar-SA");
+  return date.toLocaleDateString(locale === "en" ? "en-US" : "ar-SA");
 }
 
 function getUniqueStores(files: ArchiveFile[]) {
@@ -180,7 +162,10 @@ function getInitialFileViewMode(): FileViewMode {
 }
 
 export default function FilesPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const copy = t.pages.files;
+  const fileViewOptions: DataViewOption<FileViewMode>[] = [{ value: "table", label: copy.table }, { value: "cards", label: copy.cards }, { value: "browser", label: copy.folders }];
+  const kindLabel = (kind: FileKind) => ({ all: copy.all, media: copy.media, image: copy.image, document: copy.document, other: copy.other })[kind];
   const api = useMemo(() => createArchiveApiClient(), []);
   const canIngest = useCapability("ingest.manage");
   const canShare = useCapability("shares.manage");
@@ -235,12 +220,12 @@ export default function FilesPage() {
       if (response.ok) {
         setBrowserState({ status: "ready", path: response.path, entries: response.items.map((item) => ({ key: item.id, name: item.name, path: item.path, kind: item.kind, size: item.size ?? undefined, modifiedAt: item.modifiedAt ?? undefined })) });
       } else {
-        setBrowserState({ status: "error", message: response.error || "تعذر تصفح المجلد." });
+        setBrowserState({ status: "error", message: response.error || copy.browseFailed });
       }
     } catch (error) {
-      setBrowserState({ status: "error", message: error instanceof Error ? error.message : "تعذر تصفح المجلد." });
+      setBrowserState({ status: "error", message: error instanceof Error ? error.message : copy.browseFailed });
     }
-  }, [api, workspaceProviderId]);
+  }, [api, workspaceProviderId, copy.browseFailed]);
 
   useEffect(() => {
     if (viewMode === "browser") {
@@ -253,9 +238,9 @@ export default function FilesPage() {
   const browserEntries = useMemo(
     () =>
       browserState.status === "ready"
-        ? [...browserState.entries].sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name, "ar") : a.kind === "folder" ? -1 : 1))
+        ? [...browserState.entries].sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name, locale === "en" ? "en" : "ar") : a.kind === "folder" ? -1 : 1))
         : [],
-    [browserState]
+    [browserState, locale]
   );
   const storageEntries = useMemo<StorageEntry[]>(() => browserEntries.map((entry) => ({
     id: entry.key,
@@ -270,7 +255,7 @@ export default function FilesPage() {
     const apiAction = action === "create-folder" ? "create_folder" : action;
     const response = await api.previewStorageOperation({ action: apiAction, sourceProviderId: workspaceProviderId, items: (selectedKeys.length ? selectedKeys : [browserPath]).map((sourcePath) => ({ sourcePath })) });
     if (!response.ok) { setWorkspaceOperation({ id: "preview", type: apiAction, status: "failed", completedItems: 0, totalItems: selectedKeys.length || 1, message: response.error, retryable: true }); return; }
-    setWorkspaceOperation({ id: response.preview.previewToken, type: apiAction, status: "preview", completedItems: 0, totalItems: response.preview.items.length, message: "راجع العملية قبل تنفيذها. لا تُنفذ أي عملية مدمرة دون تأكيد الخادم." });
+    setWorkspaceOperation({ id: response.preview.previewToken, type: apiAction, status: "preview", completedItems: 0, totalItems: response.preview.items.length, message: copy.reviewOperation });
   };
   const confirmWorkspaceOperation = async () => {
     if (!workspaceOperation) return;
@@ -357,7 +342,7 @@ export default function FilesPage() {
     addMintedLink({
       token: response.token,
       url: response.url || "",
-      itemLabel: `${selectedKeys.length} عنصر`,
+      itemLabel: copy.selectedItems.replace("{count}", String(selectedKeys.length)),
       createdAt: new Date().toISOString()
     });
 
@@ -391,12 +376,12 @@ export default function FilesPage() {
       {isPlayableFile(file) ? (
         <a href={mediaPlayHref(file)} className="button button-secondary button-sm">
           <Play size={16} aria-hidden="true" />
-          تشغيل
+          {copy.play}
         </a>
       ) : null}
       <button type="button" className="button button-secondary button-sm" onClick={() => setPreviewKey(file.key)}>
         <Eye size={16} aria-hidden="true" />
-        معاينة
+        {copy.preview}
       </button>
     </div>
   );
@@ -404,7 +389,7 @@ export default function FilesPage() {
     () => [
       {
         accessorKey: "name",
-        header: "الاسم",
+        header: copy.name,
         cell: ({ row }) => {
           const entry = row.original;
           const entryPath = entry.path || (browserPath ? `${browserPath}/${entry.name}` : entry.name);
@@ -424,22 +409,22 @@ export default function FilesPage() {
       },
       {
         accessorKey: "kind",
-        header: "النوع",
-        cell: ({ row }) => row.original.kind === "folder" ? "مجلد" : kindLabel(getFileKind(row.original))
+        header: copy.kind,
+        cell: ({ row }) => row.original.kind === "folder" ? copy.folder : kindLabel(getFileKind(row.original))
       },
       {
         accessorKey: "size",
-        header: "الحجم",
+        header: copy.size,
         cell: ({ row }) => <span className="mono-text text-sm">{row.original.kind === "folder" ? "-" : formatBytes(row.original.size)}</span>
       },
       {
         accessorKey: "modifiedAt",
-        header: "التاريخ",
-        cell: ({ row }) => <span className="mono-text text-sm">{formatDate(row.original.modifiedAt)}</span>
+        header: copy.date,
+        cell: ({ row }) => <span className="mono-text text-sm">{formatDate(row.original.modifiedAt, locale)}</span>
       },
       {
         id: "actions",
-        header: "الإجراءات",
+        header: copy.actions,
         cell: ({ row }) => {
           const entry = row.original;
           const entryPath = entry.path || (browserPath ? `${browserPath}/${entry.name}` : entry.name);
@@ -447,19 +432,19 @@ export default function FilesPage() {
           if (entry.kind === "folder") {
             return (
               <button type="button" className="button button-secondary button-sm" onClick={() => setBrowserPath(entryPath)}>
-                فتح
+                {copy.open}
               </button>
             );
           }
 
           return isPlayableFile(entry) ? (
-            <a href={mediaPlayHref(entry)} className="button button-secondary button-sm">تشغيل</a>
+            <a href={mediaPlayHref(entry)} className="button button-secondary button-sm">{copy.play}</a>
           ) : null;
         },
         enableSorting: false
       }
     ],
-    [browserPath]
+    [browserPath, copy, locale]
   );
   const fileColumns = useMemo<Array<ColumnDef<ArchiveFile, unknown>>>(
     () => [
@@ -470,7 +455,7 @@ export default function FilesPage() {
             type="checkbox"
             checked={visibleFiles.length > 0 && visibleFiles.every((file) => selectedKeySet.has(file.key))}
             onChange={toggleSelectAllVisible}
-            aria-label="تحديد الكل"
+            aria-label={copy.selectAll}
           />
         ),
         cell: ({ row }) => (
@@ -478,14 +463,14 @@ export default function FilesPage() {
             type="checkbox"
             checked={selectedKeySet.has(row.original.key)}
             onChange={() => handleToggleFile(row.original.key)}
-            aria-label={`تحديد ${getFileName(row.original)}`}
+            aria-label={copy.select.replace("{name}", getFileName(row.original))}
           />
         ),
         enableSorting: false
       },
       {
         accessorKey: "name",
-        header: "الاسم",
+        header: copy.name,
         cell: ({ row }) => (
           <span className="wrap-anywhere" onMouseEnter={() => setPreviewKey(row.original.key)}>
             <strong>{getFileName(row.original)}</strong>
@@ -497,89 +482,86 @@ export default function FilesPage() {
       },
       {
         id: "kind",
-        header: "النوع",
+        header: copy.kind,
         accessorFn: (file) => getFileKind(file),
         cell: ({ row }) => kindLabel(getFileKind(row.original))
       },
       {
         accessorKey: "size",
-        header: "الحجم",
+        header: copy.size,
         cell: ({ row }) => <span className="mono-text text-sm">{formatBytes(row.original.size)}</span>
       },
       {
         accessorKey: "store",
-        header: "المخزن",
+        header: copy.store,
         cell: ({ row }) => <span className="text-sm">{row.original.store || "-"}</span>
       },
       {
         accessorKey: "modifiedAt",
-        header: "التاريخ",
-        cell: ({ row }) => <span className="mono-text text-sm">{formatDate(row.original.modifiedAt)}</span>
+        header: copy.date,
+        cell: ({ row }) => <span className="mono-text text-sm">{formatDate(row.original.modifiedAt, locale)}</span>
       },
       {
         id: "actions",
-        header: "الإجراءات",
+        header: copy.actions,
         cell: ({ row }) => renderFileActions(row.original),
         enableSorting: false
       }
     ],
-    [selectedKeySet, visibleFiles, toggleSelectAllVisible]
+    [selectedKeySet, visibleFiles, toggleSelectAllVisible, copy, locale]
   );
 
   return (
     <AppShell subtitle={t.pageTitles.fileBrowser} contentClassName="files-content" tipsPage="files">
       <PageToolbar
         icon={<Files size={24} />}
-        eyebrow={<span className="badge">عمليات الملفات</span>}
-        title="الملفات"
-        description="استعرض ملفات التخزين، شغّل الوسائط، اختر عناصر للمشاركة، أو أطلق فحص ingest من واجهة واحدة."
+        eyebrow={<span className="badge">{copy.eyebrow}</span>} title={copy.title} description={copy.description}
         meta={(
           <>
-            <span className="badge">{files.length} ملف</span>
-            <span className="badge">{mediaCount} وسائط</span>
+            <span className="badge">{copy.fileCount.replace("{count}", String(files.length))}</span><span className="badge">{copy.mediaCount.replace("{count}", String(mediaCount))}</span>
             <span className="badge">{formatBytes(totalSize)}</span>
-            <span className="badge">{selectedKeys.length} محدد</span>
+            <span className="badge">{copy.selectedCount.replace("{count}", String(selectedKeys.length))}</span>
           </>
         )}
         actions={(
           <>
             <a className="button button-primary" href="/uploads">
               <UploadCloud size={16} aria-hidden="true" />
-              رفع ملف
+              {copy.upload}
             </a>
             {canIngest && (
               <button type="button" className="button button-primary" onClick={() => void handleScan()} disabled={scanState.status === "running"}>
                 <ScanSearch size={16} aria-hidden="true" />
-                {scanState.status === "running" ? "جار الفحص" : "فحص التخزين"}
+                {scanState.status === "running" ? copy.scanning : copy.scanStorage}
               </button>
             )}
             <a className="button button-secondary" href="/media/jobs">
               <Play size={16} aria-hidden="true" />
-              مهام الوسائط
+              {copy.mediaJobs}
             </a>
           </>
         )}
       >
         <form className="archive-toolbar-grid" onSubmit={handleSearch}>
           <label>
-            <span>بحث</span>
+            <span>{copy.search}</span>
             <input
               type="search"
-              placeholder="اسم الملف أو المسار..."
+              placeholder={copy.searchPlaceholder}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="search-input"
             />
           </label>
           <label>
-            <span>المخزن</span>
+            <span>{copy.store}</span>
             <select value={storeFilter} onChange={(event) => setStoreFilter(event.target.value)}>
-              <option value="all">كل المخازن</option>
+              <option value="all">{copy.allStores}</option>
               {stores.map((store) => <option key={store} value={store}>{store}</option>)}
             </select>
           </label>
           <label>
-            <span>النوع</span>
+            <span>{copy.kind}</span>
             <select value={kindFilter} onChange={(event) => setKindFilter(event.target.value as FileKind)}>
               {(["all", "media", "image", "document", "other"] as FileKind[]).map((kind) => (
                 <option key={kind} value={kind}>{kindLabel(kind)}</option>
@@ -589,7 +571,7 @@ export default function FilesPage() {
           <div className="archive-toolbar-actions">
             <button type="submit" className="button button-primary">
               <RefreshCw size={16} aria-hidden="true" />
-              تحديث
+              {copy.refresh}
             </button>
             <button
               type="button"
@@ -601,43 +583,43 @@ export default function FilesPage() {
                 void loadFiles("");
               }}
             >
-              تصفير
+              {copy.reset}
             </button>
           </div>
         </form>
         <div className="archive-toolbar-row">
-          <DataViewSwitcher value={viewMode} options={fileViewOptions} onChange={setViewMode} label="طريقة عرض الملفات" />
+          <DataViewSwitcher value={viewMode} options={fileViewOptions} onChange={setViewMode} label={copy.viewMode} />
         </div>
       </PageToolbar>
 
       <MetricStrip
-        ariaLabel="ملخص الملفات"
+        ariaLabel={copy.filesSummary}
         items={[
           {
-            label: "إجمالي الملفات",
+            label: copy.totalFiles,
             value: files.length,
-            description: `${stores.length || 1} مخزن متاح`,
+            description: copy.availableStores.replace("{count}", String(stores.length || 1)),
             icon: <HardDrive size={20} />,
             tone: "accent"
           },
           {
-            label: "وسائط قابلة للتشغيل",
+            label: copy.playableMedia,
             value: mediaCount,
-            description: "صوت وفيديو",
+            description: copy.audioVideo,
             icon: <Play size={20} />,
             tone: "info"
           },
           {
-            label: "صور ومستندات",
+            label: copy.imagesDocuments,
             value: imageCount + documentCount,
-            description: `${imageCount} صور، ${documentCount} مستندات`,
+            description: copy.imagesDocumentsCount.replace("{images}", String(imageCount)).replace("{documents}", String(documentCount)),
             icon: <FileArchive size={20} />,
             tone: "success"
           },
           {
-            label: "الحجم الكلي",
+            label: copy.totalSize,
             value: formatBytes(totalSize),
-            description: `${selectedKeys.length} عنصر محدد`,
+            description: copy.selectedItems.replace("{count}", String(selectedKeys.length)),
             icon: <Share2 size={20} />,
             tone: selectedKeys.length > 0 ? "warning" : "default"
           }
@@ -646,22 +628,20 @@ export default function FilesPage() {
 
       {scanState.status === "success" ? (
         <div className="state-banner state-banner-success">
-          <strong>انتهى فحص التخزين</strong>
-          <span className="helper-text">تم إدخال {scanState.ingested} وتجاوز {scanState.skipped}.</span>
+          <strong>{copy.scanComplete}</strong><span className="helper-text">{copy.scanResult.replace("{ingested}", String(scanState.ingested)).replace("{skipped}", String(scanState.skipped))}</span>
         </div>
       ) : null}
 
       {scanState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر فحص التخزين</strong>
+          <strong>{copy.scanFailed}</strong>
           <span className="helper-text">{scanState.message}</span>
         </div>
       ) : null}
 
       {selectedKeys.length > 0 ? (
         <div className="bulk-action-bar" role="status">
-          <strong>{selectedKeys.length} ملف محدد</strong>
-          <span className="helper-text">قبل أي نقل أو إعادة تسمية من مصدر خارجي، راجع روابط السجلات والمشاركات؛ هذه الواجهة لا تغيّر المسارات دون عملية مدعومة من الخادم.</span>
+          <strong>{copy.selectedFiles.replace("{count}", String(selectedKeys.length))}</strong><span className="helper-text">{copy.selectionSafety}</span>
           <div className="button-row">
             {canShare && (
               <button
@@ -670,23 +650,21 @@ export default function FilesPage() {
                 className="button button-primary"
               >
                 <Share2 size={16} aria-hidden="true" />
-                {shareState.status === "creating" ? "جار الإنشاء..." : "إنشاء رابط مشاركة"}
+                {shareState.status === "creating" ? copy.creating : copy.createShare}
               </button>
             )}
-            <button type="button" className="button button-secondary" onClick={toggleSelectAllVisible}>تحديد الظاهر</button>
-            <button type="button" className="button button-secondary" onClick={() => setSelectedKeys([])}>مسح التحديد</button>
+            <button type="button" className="button button-secondary" onClick={toggleSelectAllVisible}>{copy.selectVisible}</button><button type="button" className="button button-secondary" onClick={() => setSelectedKeys([])}>{copy.clearSelection}</button>
           </div>
         </div>
       ) : null}
 
       {shareChecklist.open ? (
-        <div className="panel" role="dialog" aria-label="فحص قبل المشاركة">
+        <div className="panel" role="dialog" aria-label={copy.preShare}>
           <div className="panel-section-header">
-            <h2>فحص قبل المشاركة</h2>
-            <p className="helper-text">راجع القائمة قبل إنشاء الرابط. القرار النهائي لك.</p>
+            <h2>{copy.preShare}</h2><p className="helper-text">{copy.preShareDescription}</p>
           </div>
           <label>
-            تاريخ انتهاء الرابط
+            {copy.shareExpiry}
             <input
               type="datetime-local"
               value={shareChecklist.expiryLocalValue}
@@ -704,7 +682,7 @@ export default function FilesPage() {
                 setShareChecklist((current) => ({ ...current, rightsConfirmed: event.target.checked }))
               }
             />
-            الحقوق سارية لهذه الملفات ولا يوجد حظر أو انتهاء نشط عليها.
+            {copy.rightsConfirmed}
           </label>
           <label className="checkbox-row">
             <input
@@ -714,7 +692,7 @@ export default function FilesPage() {
                 setShareChecklist((current) => ({ ...current, sensitiveDataConfirmed: event.target.checked }))
               }
             />
-            راجعت الملفات ولا تحتوي بيانات حساسة لا يجب مشاركتها خارجيًا.
+            {copy.sensitiveConfirmed}
           </label>
           <div className="button-row">
             <button
@@ -727,10 +705,10 @@ export default function FilesPage() {
               }
               onClick={() => void handleConfirmShare()}
             >
-              {shareState.status === "creating" ? "جار الإنشاء..." : "تأكيد ومشاركة"}
+              {shareState.status === "creating" ? copy.creating : copy.confirmShare}
             </button>
             <button type="button" className="button button-secondary" onClick={handleCancelShareChecklist}>
-              إلغاء
+              {copy.cancel}
             </button>
           </div>
         </div>
@@ -738,10 +716,10 @@ export default function FilesPage() {
 
       {shareState.status === "success" ? (
         <div className="state-banner state-banner-success">
-          <strong>تم إنشاء الرابط بنجاح</strong>
+          <strong>{copy.shareCreated}</strong>
           <span className="helper-text">
             <a className="text-accent" href={`/share/${encodeURIComponent(shareState.token)}`}>
-              فتح المشاركة
+              {copy.openShare}
             </a>
             {shareState.url ? ` | ${shareState.url}` : ""}
           </span>
@@ -750,27 +728,26 @@ export default function FilesPage() {
 
       {shareState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>خطأ في المشاركة</strong>
+          <strong>{copy.shareError}</strong>
           <span className="helper-text">{shareState.message}</span>
         </div>
       ) : null}
 
       {viewMode === "browser" ? (
-        <section className="workspace-panel" aria-label="متصفح المجلدات">
+        <section className="workspace-panel" aria-label={copy.folderBrowser}>
           <div className="workspace-panel__header">
             <div>
-              <h2>متصفح المجلدات</h2>
-              <p>تنقل داخل شجرة مخزن الملفات عبر المجلدات ومسار التنقل.</p>
+              <h2>{copy.folderBrowser}</h2><p>{copy.folderBrowserDescription}</p>
             </div>
             <button type="button" className="button button-secondary button-sm" onClick={() => void loadBrowser(browserPath)}>
               <RefreshCw size={16} aria-hidden="true" />
-              تحديث المجلد
+              {copy.refreshFolder}
             </button>
           </div>
 
-          <nav className="record-meta" aria-label="مسار المجلد الحالي">
+          <nav className="record-meta" aria-label={copy.currentPath}>
             <button type="button" className="badge" onClick={() => setBrowserPath("")} disabled={!browserPath}>
-              الجذر
+              {copy.root}
             </button>
             {browserPath.split("/").filter(Boolean).map((segment, index, segments) => {
               const segmentPath = segments.slice(0, index + 1).join("/");
@@ -812,25 +789,25 @@ export default function FilesPage() {
           />
 
           {browserState.status === "loading" ? (
-            <Skeleton label="جار تحميل محتوى المجلد..." />
+            <Skeleton label={copy.loadingFolder} />
           ) : null}
 
           {browserState.status === "error" ? (
             <div className="state-banner state-banner-error" role="alert">
-              <strong>تعذر تصفح المجلد</strong>
+              <strong>{copy.browseFailed}</strong>
               <span className="helper-text">{browserState.message}</span>
             </div>
           ) : null}
 
           {browserState.status === "ready" ? (
             browserState.entries.length === 0 ? (
-              <EmptyState icon={<FolderOpen size={22} />} title="مجلد فارغ." description="لا توجد ملفات أو مجلدات فرعية في هذا المسار." />
+              <EmptyState icon={<FolderOpen size={22} />} title={copy.emptyFolder} description={copy.emptyFolderDescription} />
             ) : (
               <DataTable
-                ariaLabel="محتوى المجلد"
+                ariaLabel={copy.folderContents}
                 columns={browserColumns}
                 data={browserEntries}
-                emptyMessage="لا توجد ملفات أو مجلدات فرعية."
+                emptyMessage={copy.emptyFolderDescription}
                 getRowId={(entry) => entry.key}
                 virtualized={browserEntries.length > 80}
               />
@@ -841,13 +818,13 @@ export default function FilesPage() {
 
       {viewMode !== "browser" && state.status === "loading" ? (
         <div className="panel panel-compact">
-          <Skeleton label="جار تحميل قائمة الملفات..." />
+          <Skeleton label={copy.loadingFiles} />
         </div>
       ) : null}
 
       {viewMode !== "browser" && state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل الملفات</strong>
+          <strong>{copy.loadFilesFailed}</strong>
           <span className="helper-text">{state.message}</span>
         </div>
       ) : null}
@@ -856,24 +833,23 @@ export default function FilesPage() {
         visibleFiles.length === 0 ? (
           <EmptyState
             icon={<FileQuestion size={22} />}
-            title="لم يتم العثور على ملفات."
-            description="جرّب بحثاً أوسع أو غيّر الفلاتر، ثم أعد فحص التخزين عند الحاجة."
+            title={copy.noFiles} description={copy.noFilesDescription}
             actions={canIngest ? (
               <button type="button" className="button button-secondary" onClick={() => void handleScan()}>
                 <ScanSearch size={16} aria-hidden="true" />
-                فحص التخزين
+                {copy.scanStorage}
               </button>
             ) : undefined}
           />
         ) : (
-          <section className="files-workspace" aria-label="واجهة الملفات">
+          <section className="files-workspace" aria-label={copy.filesWorkspace}>
             <div className="files-surface" data-view={viewMode}>
               {viewMode === "table" ? (
                 <DataTable
-                  ariaLabel="قائمة الملفات"
+                  ariaLabel={copy.fileList}
                   columns={fileColumns}
                   data={visibleFiles}
-                  emptyMessage="لا توجد ملفات مطابقة."
+                  emptyMessage={copy.noMatches}
                   getRowId={(file) => file.key}
                   virtualized={visibleFiles.length > 80}
                 />
@@ -884,7 +860,7 @@ export default function FilesPage() {
                       type="checkbox"
                       checked={selectedKeySet.has(file.key)}
                       onChange={() => handleToggleFile(file.key)}
-                      aria-label={`تحديد ${getFileName(file)}`}
+                      aria-label={copy.select.replace("{name}", getFileName(file))}
                     />
                     <div className="file-card__body">
                       <div className="panel-title-row">
@@ -895,7 +871,7 @@ export default function FilesPage() {
                       <div className="record-meta">
                         <span className="badge">{formatBytes(file.size)}</span>
                         <span className="badge">{file.store || "default"}</span>
-                        <span className="badge">{formatDate(file.modifiedAt)}</span>
+                        <span className="badge">{formatDate(file.modifiedAt, locale)}</span>
                       </div>
                       {renderFileActions(file)}
                     </div>
@@ -904,47 +880,47 @@ export default function FilesPage() {
               )}
             </div>
 
-            <aside className="record-preview-rail" aria-label="معاينة الملف">
+            <aside className="record-preview-rail" aria-label={copy.filePreview}>
               {previewFile ? (
                 <>
                   <div className="panel-section-header">
-                    <span className="badge">معاينة</span>
+                    <span className="badge">{copy.preview}</span>
                     <h2>{getFileName(previewFile)}</h2>
                   </div>
                   <p className="wrap-anywhere">{previewFile.key}</p>
                   <div className="kv-grid">
                     <div className="kv-item">
-                      <strong>النوع</strong>
+                      <strong>{copy.kind}</strong>
                       <span>{kindLabel(getFileKind(previewFile))}</span>
                     </div>
                     <div className="kv-item">
-                      <strong>الحجم</strong>
+                      <strong>{copy.size}</strong>
                       <span>{formatBytes(previewFile.size)}</span>
                     </div>
                     <div className="kv-item">
-                      <strong>المخزن</strong>
+                      <strong>{copy.store}</strong>
                       <span>{previewFile.store || "-"}</span>
                     </div>
                     <div className="kv-item">
-                      <strong>التاريخ</strong>
-                      <span>{formatDate(previewFile.modifiedAt)}</span>
+                      <strong>{copy.date}</strong>
+                      <span>{formatDate(previewFile.modifiedAt, locale)}</span>
                     </div>
                   </div>
                   <div className="button-row">
                     {isPlayableFile(previewFile) ? (
                       <a className="button button-primary" href={mediaPlayHref(previewFile)}>
                         <Play size={16} aria-hidden="true" />
-                        تشغيل الملف
+                        {copy.playFile}
                       </a>
                     ) : null}
                     <button type="button" className="button button-secondary" onClick={() => handleToggleFile(previewFile.key)}>
                       <Share2 size={16} aria-hidden="true" />
-                      {selectedKeySet.has(previewFile.key) ? "إزالة من التحديد" : "تحديد الملف"}
+                      {selectedKeySet.has(previewFile.key) ? copy.removeSelection : copy.selectFile}
                     </button>
                   </div>
                 </>
               ) : (
-                <EmptyState icon={<Eye size={22} />} title="لا توجد معاينة." description="مرر فوق ملف أو حدده لعرض تفاصيله هنا." />
+                <EmptyState icon={<Eye size={22} />} title={copy.noPreview} description={copy.noPreviewDescription} />
               )}
             </aside>
           </section>

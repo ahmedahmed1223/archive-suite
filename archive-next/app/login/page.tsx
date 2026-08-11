@@ -111,7 +111,7 @@ function LoginPageContent() {
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder={t.auth.login.emailPlaceholder}
                   autoComplete="email"
                   required
                   disabled={state.status === "loading"}
@@ -164,16 +164,16 @@ function LoginPageContent() {
                   className={`state-banner ${state.status === "error" ? "state-banner-error" : "state-banner-success"}`}
                   role={state.status === "error" ? "alert" : "status"}
                 >
-                  <strong>{state.status === "success" ? "تم تسجيل الدخول بنجاح" : "فشل تسجيل الدخول"}</strong>
+                  <strong>{state.status === "success" ? t.auth.login.successTitle : t.auth.login.failureTitle}</strong>
                   <span className="helper-text">
                     {state.status === "success"
-                      ? "سيتم تحويلك الآن إلى مساحة العمل."
+                      ? t.auth.login.successDescription
                       : state.message}
                   </span>
                   {state.status === "error" ? (
                     <span className="button-row">
-                      <a className="button button-secondary button-sm" href="/status">افحص حالة الخادم</a>
-                      <a className="button button-secondary button-sm" href="/first-run">ارجع إلى رحلة الإعداد</a>
+                      <a className="button button-secondary button-sm" href="/status">{t.auth.login.checkServer}</a>
+                      <a className="button button-secondary button-sm" href="/first-run">{t.auth.login.returnToSetup}</a>
                     </span>
                   ) : null}
                 </div>

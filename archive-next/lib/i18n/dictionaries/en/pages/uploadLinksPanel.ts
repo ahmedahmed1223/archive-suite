@@ -1,0 +1,23 @@
+export const uploadLinksPanel = {
+  title: "External upload links",
+  description: "Create a temporary link for an external party to upload files into a specific folder without granting full access.",
+  loadError: "Failed to load upload links.",
+  revokeError: "Failed to revoke the link.",
+  labelLabel: "Link label (optional)",
+  labelPlaceholder: "Field team",
+  folderLabel: "Destination folder (optional)",
+  folderPlaceholder: "incoming/field",
+  expiryLabel: "Link validity (hours)",
+  creating: "Creating...",
+  createButton: "Create link",
+  loading: "Loading upload links...",
+  loadErrorHeading: "Failed to load upload links",
+  retry: "Retry",
+  empty: "No upload links yet.",
+  unlabeled: "Unlabeled",
+  revoked: "Revoked",
+  active: "Active",
+  uploadedFilesCount: "{count} files uploaded",
+  revoking: "Revoking...",
+  revokeButton: "Revoke"
+};

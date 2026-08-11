@@ -26,6 +26,15 @@ vi.mock("@/lib/auth-session", () => ({
   useAuthSession: () => ({ user: { id: "user-1", role: "admin" }, status: "authenticated", accessToken: "token-abc" })
 }));
 
+vi.mock("@/lib/display-settings-context", () => ({
+  useDisplaySettings: () => ({
+    settings: { timeZone: "Europe/Istanbul", dateFormat: "DD/MM/YYYY", timeFormat: "24h", showSeconds: false },
+    status: "ready",
+    error: null,
+    replaceSettings: vi.fn()
+  })
+}));
+
 // A stable searchParams instance matters here: the page has an effect keyed
 // on it (to reload records / sync the URL), and Next's real useSearchParams()
 // returns a stable reference across renders. A factory that allocates a new

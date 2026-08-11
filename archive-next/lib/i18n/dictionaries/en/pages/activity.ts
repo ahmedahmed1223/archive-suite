@@ -16,6 +16,7 @@ export const activity = {
   resourceId: "Resource ID",
   loading: "Loading the activity log…",
   loadError: "Could not load activity",
+  loadErrorMessage: "Could not load the activity log.",
   errorHelp: "Check the filters and your access, then try again.",
   emptyTitle: "No matching activity.",
   emptyDescription: "Change the filters or perform a tracked change to see it here.",
@@ -24,5 +25,13 @@ export const activity = {
   openContext: "Open context",
   filterResource: "Filter resource",
   loadingMore: "Loading…",
-  loadMore: "Load more"
+  loadMore: "Load more",
+  filterOptions: {
+    events: { all: "All events", bulkUpsert: "Record updates", notes: "Notes", comments: "Comments", rights: "Rights", relations: "Relationships", media: "Media tasks", systemAllowed: "System control", systemBlocked: "Blocked control" },
+    outcomes: { all: "All outcomes", success: "Successful", rejected: "Rejected", failed: "Failed" },
+    resources: { all: "All resources", record: "Record", note: "Note", comment: "Comment", rights: "Rights", relation: "Relationship", media: "Media", systemControl: "System control" }
+  },
+  eventLabels: { bulkUpsert: "Record update", noteCreated: "Note added", noteUpdated: "Note updated", noteDeleted: "Note deleted", commentCreated: "Comment added", commentDeleted: "Comment deleted", rightsUpdated: "Rights updated", relationCreated: "Relationship added", relationDeleted: "Relationship deleted", shareCreated: "Share created", mediaQueued: "Media task queued", systemAllowed: "System action", systemBlocked: "System action blocked", systemRejected: "System action rejected" },
+  outcomeLabels: { success: "Successful", rejected: "Rejected", failed: "Failed" },
+  restore: { defaultLabel: "Restore decision" }
 } as const;

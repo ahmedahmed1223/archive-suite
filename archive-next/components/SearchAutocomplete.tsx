@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import type { SearchSuggestion } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export default function SearchAutocomplete({ value, onChange, onSelect, fetchSuggestions, placeholder, className }: Readonly<{
   value: string;
@@ -11,6 +12,7 @@ export default function SearchAutocomplete({ value, onChange, onSelect, fetchSug
   placeholder?: string;
   className?: string;
 }>) {
+  const { t } = useLocale();
   const listId = useId();
   const [items, setItems] = useState<SearchSuggestion[]>([]);
   const [active, setActive] = useState(-1);
@@ -34,7 +36,7 @@ export default function SearchAutocomplete({ value, onChange, onSelect, fetchSug
   }, [fetchSuggestions, isFocused, value]);
 
   return <div className="search-autocomplete">
-    <input aria-label="اقتراحات البحث" role="combobox" value={value} placeholder={placeholder} className={className} onFocus={() => setIsFocused(true)} onChange={(event) => onChange(event.target.value)} onBlur={() => { window.setTimeout(() => { setIsFocused(false); setItems([]); }, 0); }} aria-controls={listId} aria-expanded={items.length > 0} onKeyDown={(event) => {
+    <input aria-label={t.pages.searchResults.searchSuggestionsAriaLabel} role="combobox" value={value} placeholder={placeholder} className={className} onFocus={() => setIsFocused(true)} onChange={(event) => onChange(event.target.value)} onBlur={() => { window.setTimeout(() => { setIsFocused(false); setItems([]); }, 0); }} aria-controls={listId} aria-expanded={items.length > 0} onKeyDown={(event) => {
       if (event.key === "ArrowDown") { event.preventDefault(); setActive((current) => Math.min(current + 1, items.length - 1)); }
       if (event.key === "ArrowUp") { event.preventDefault(); setActive((current) => Math.max(current - 1, 0)); }
       if (event.key === "Enter" && items[active]) onSelect(items[active]);

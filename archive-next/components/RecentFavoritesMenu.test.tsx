@@ -5,7 +5,18 @@ import RecentFavoritesMenu from "@/components/RecentFavoritesMenu";
 import { addFavorite } from "@/lib/favorites";
 import { recordView } from "@/lib/recent-items";
 
-vi.mock("@/lib/i18n/LocaleProvider", () => ({ useLocale: () => ({ locale: "ar" }) }));
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+
+  return {
+    useLocale: () => ({
+      locale: "ar",
+      direction: "rtl",
+      t: getDictionary("ar"),
+      setLocale: vi.fn(),
+    }),
+  };
+});
 
 afterEach(() => {
   cleanup();

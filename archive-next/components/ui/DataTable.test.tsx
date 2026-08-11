@@ -1,8 +1,15 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { ColumnDef } from "@tanstack/react-table";
 import DataTable from "@/components/ui/DataTable";
+
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+  return {
+    useLocale: () => ({ locale: "ar", direction: "rtl", t: getDictionary("ar"), setLocale: vi.fn() }),
+  };
+});
 
 type Row = { id: string; title: string; type: string };
 
@@ -12,6 +19,21 @@ const columns: Array<ColumnDef<Row, unknown>> = [
 ];
 
 const data: Row[] = [{ id: "1", title: "سجل تجريبي", type: "مستند" }];
+
+const storedValues = new Map<string, string>();
+const localStorageMock: Storage = {
+  get length() { return storedValues.size; },
+  clear: () => storedValues.clear(),
+  getItem: (key) => storedValues.get(key) ?? null,
+  key: (index) => Array.from(storedValues.keys())[index] ?? null,
+  removeItem: (key) => { storedValues.delete(key); },
+  setItem: (key, value) => { storedValues.set(key, value); },
+};
+
+beforeEach(() => {
+  storedValues.clear();
+  Object.defineProperty(window, "localStorage", { configurable: true, value: localStorageMock });
+});
 
 afterEach(() => {
   cleanup();

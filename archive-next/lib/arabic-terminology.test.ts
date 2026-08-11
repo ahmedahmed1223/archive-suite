@@ -14,12 +14,17 @@ const SOURCE_EXTENSIONS = [".ts", ".tsx"];
 const EXCLUDED_SUFFIXES = [".test.ts", ".test.tsx"];
 const EXCLUDED_DIRS = new Set(["generated"]);
 
+function isEnglishDictionary(relativePath: string) {
+  return relativePath.split(/[\\/]/).join("/").includes("lib/i18n/dictionaries/en/");
+}
+
 function listSourceFiles(root: string): string[] {
   const absoluteRoot = join(repoRoot, root);
   return (readdirSync(absoluteRoot, { recursive: true }) as string[])
     .filter((relativePath) => SOURCE_EXTENSIONS.some((ext) => relativePath.endsWith(ext)))
     .filter((relativePath) => !EXCLUDED_SUFFIXES.some((suffix) => relativePath.endsWith(suffix)))
     .filter((relativePath) => !relativePath.split(/[\\/]/).some((segment) => EXCLUDED_DIRS.has(segment)))
+    .filter((relativePath) => !isEnglishDictionary(join(root, relativePath)))
     .map((relativePath) => join(absoluteRoot, relativePath));
 }
 

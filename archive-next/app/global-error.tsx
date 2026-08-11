@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { BRAND } from "@/lib/brand";
+import { shared as arShared } from "@/lib/i18n/dictionaries/ar/shared";
+import { shared as enShared } from "@/lib/i18n/dictionaries/en/shared";
 
 export default function GlobalError({
   error,
@@ -17,24 +19,26 @@ export default function GlobalError({
   }, [error]);
 
   const english = locale === "en";
+  const copy = english ? enShared.globalError : arShared.globalError;
+  const brand = english ? BRAND.latinName : BRAND.arabicName;
 
   return (
     <html lang={locale} dir={english ? "ltr" : "rtl"}>
       <body>
         <main className="content global-error-content">
           <section className="panel">
-            <span className="badge badge-danger">{english ? "Unexpected error" : "خطأ غير متوقع"}</span>
-            <h1>{english ? `Could not load ${BRAND.latinName}.` : `تعذر تحميل ${BRAND.arabicName}.`}</h1>
+            <span className="badge badge-danger">{copy.badge}</span>
+            <h1>{copy.title.replace("{brand}", brand)}</h1>
             <p>
-              {english ? "Try again. If the error continues, open the error log from the workspace." : "يمكنك إعادة المحاولة، وإن تكرر الخطأ فافتح سجل الأخطاء من لوحة التشغيل."}
+              {copy.description}
             </p>
-            {error.digest ? <p className="muted">{english ? "Error reference" : "مرجع الخطأ"}: {error.digest}</p> : null}
+            {error.digest ? <p className="muted">{copy.errorReference}: {error.digest}</p> : null}
             <div className="button-row">
               <button className="button button-primary" type="button" onClick={reset}>
-                {english ? "Try again" : "إعادة المحاولة"}
+                {copy.retry}
               </button>
               <a className="button" href="/errors">
-                {english ? "Error log" : "سجل الأخطاء"}
+                {copy.errorLog}
               </a>
             </div>
           </section>

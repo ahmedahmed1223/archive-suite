@@ -85,20 +85,20 @@ function formatBytes(bytes: number): string {
   return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
 }
 
-function formatUptime(seconds: number): string {
+function formatUptime(seconds: number, copy: { day: string; hour: string; minute: string }): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "-";
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  if (d > 0) return `${d}د ${h}س`;
-  if (h > 0) return `${h}س ${m}د`;
-  return `${m}د`;
+  if (d > 0) return `${d}${copy.day} ${h}${copy.hour}`;
+  if (h > 0) return `${h}${copy.hour} ${m}${copy.minute}`;
+  return `${m}${copy.minute}`;
 }
 
-function formatDateTime(date: Date | null): string {
+function formatDateTime(date: Date | null, locale: "ar" | "en"): string {
   if (!date) return "-";
   try {
-    return new Intl.DateTimeFormat("ar-SA", {
+    return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "ar-SA", {
       dateStyle: "short",
       timeStyle: "medium"
     }).format(date);
@@ -130,7 +130,8 @@ function HealthMetric({
 }
 
 export default function StatusPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const copy = t.pages.status;
   const [state, setState] = useState<StatusState>({
     status: "loading",
     health: null,
@@ -152,14 +153,14 @@ export default function StatusPage() {
           setMetricsState({ status: "forbidden" });
           return;
         }
-        setMetricsState({ status: "error", message: response.error || "تعذر تحميل مقاييس النظام." });
+        setMetricsState({ status: "error", message: response.error || copy.errors.metricsLoad });
         return;
       }
       setMetricsState({ status: "ready", metrics: response.metrics, dr: response.dr });
     } catch (err) {
-      setMetricsState({ status: "error", message: err instanceof Error ? err.message : "خطأ غير معروف" });
+      setMetricsState({ status: "error", message: err instanceof Error ? err.message : copy.errors.unknown });
     }
-  }, []);
+  }, [copy.errors.metricsLoad, copy.errors.unknown]);
 
   const checkHealth = useCallback(async () => {
     setState((prev) => ({ ...prev, status: "loading" }));
@@ -171,7 +172,7 @@ export default function StatusPage() {
           status: "error",
           health: null,
           lastChecked: new Date(),
-          error: response.error || "فشل الاتصال بالخادم"
+          error: response.error || copy.errors.healthConnection
         });
         return;
       }
@@ -183,15 +184,15 @@ export default function StatusPage() {
         error: null
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "خطأ غير معروف";
+      const message = err instanceof Error ? err.message : copy.errors.unknown;
       setState({
         status: "error",
         health: null,
         lastChecked: new Date(),
-        error: `خطأ في الاتصال: ${message}`
+        error: copy.errors.connectionPrefix.replace("{message}", message)
       });
     }
-  }, []);
+  }, [copy.errors.connectionPrefix, copy.errors.healthConnection, copy.errors.unknown]);
 
   useEffect(() => {
     void checkMetrics();
@@ -217,15 +218,15 @@ export default function StatusPage() {
   return (
     <AppShell subtitle={t.pageTitles.systemStatus} navLabel={t.pageTitles.systemStatus} contentClassName="observability-content" tipsPage="status">
       <PageToolbar
-        eyebrow={<span className="badge">مراقبة تشغيلية</span>}
-        title="حالة النظام"
-        description="سطح سريع لمراقبة اتصال الخادم، محرك البيانات، ومدة التشغيل مع تحديث تلقائي كل 30 ثانية."
+        eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={
           <>
             <span className={`badge ${isOnline ? "status-success" : "status-error"}`}>
-              {isOnline ? "متصل" : state.status === "loading" ? "جار الفحص" : "غير متصل"}
+              {isOnline ? copy.toolbar.connected : state.status === "loading" ? copy.toolbar.checking : copy.toolbar.disconnected}
             </span>
-            <span className="badge">آخر فحص: {formatDateTime(state.lastChecked)}</span>
+            <span className="badge">{copy.toolbar.lastChecked.replace("{date}", formatDateTime(state.lastChecked, locale))}</span>
           </>
         }
         actions={
@@ -234,12 +235,12 @@ export default function StatusPage() {
             onClick={() => void checkHealth()}
             disabled={state.status === "loading"}
             className="button button-secondary"
-            aria-label="فحص الحالة الآن"
+            aria-label={copy.toolbar.checkNowAriaLabel}
           >
             <span className={state.status === "loading" ? "status-refresh-icon is-spinning" : "status-refresh-icon"}>
               <IconRefresh />
             </span>
-            {state.status === "loading" ? "جاري الفحص" : "فحص الآن"}
+            {state.status === "loading" ? copy.toolbar.checking : copy.toolbar.checkNow}
           </button>
         }
       />
@@ -247,92 +248,92 @@ export default function StatusPage() {
       <section className="system-health-strip" data-tone={statusTone} aria-live="polite">
         <div className="system-health-strip__icon">{isOnline ? <IconSignal /> : <IconSignalOff />}</div>
         <div>
-          <strong>{isOnline ? "الاتصال بالخادم مستقر" : state.status === "loading" ? "يتم فحص الاتصال" : "الاتصال بالخادم متوقف"}</strong>
-          <p>{state.error || "يعرض هذا السطح صحة الواجهة الخلفية الحالية ونبض الاتصال المباشر."}</p>
+          <strong>{isOnline ? copy.health.stable : state.status === "loading" ? copy.health.checking : copy.health.stopped}</strong>
+          <p>{state.error || copy.health.defaultDescription}</p>
         </div>
       </section>
 
       <div className="health-metric-grid">
-        <HealthMetric icon={<IconServer />} label="الخادم الخلفي" value={state.health?.backend || "محلي"} tone={isOnline ? "success" : "neutral"} />
-        <HealthMetric icon={<IconServer />} label="محرك البيانات" value={state.health?.engine || "-"} tone="accent" />
+        <HealthMetric icon={<IconServer />} label={copy.health.backend} value={state.health?.backend || copy.health.local} tone={isOnline ? "success" : "neutral"} />
+        <HealthMetric icon={<IconServer />} label={copy.health.engine} value={state.health?.engine || "-"} tone="accent" />
         <HealthMetric
           icon={<IconRefresh />}
-          label="مدة التشغيل"
-          value={state.health?.uptimeSec != null ? formatUptime(state.health.uptimeSec) : "-"}
+          label={copy.health.uptime}
+          value={state.health?.uptimeSec != null ? formatUptime(state.health.uptimeSec, copy.uptime) : "-"}
         />
       </div>
 
       {state.error ? (
         <section className="state-banner state-banner-error" role="alert">
-          <strong>تعذر إكمال فحص الصحة</strong>
+          <strong>{copy.recovery.healthCheckFailed}</strong>
           <p>{state.error}</p>
           <div className="button-row">
-            <button type="button" className="button button-primary" onClick={() => void checkHealth()}>أعد الفحص</button>
-            <a className="button button-secondary" href="/first-run">ارجع إلى رحلة الإعداد</a>
-            <a className="button button-secondary" href="/system/control">افتح التحكم بالنظام</a>
+            <button type="button" className="button button-primary" onClick={() => void checkHealth()}>{copy.recovery.retry}</button>
+            <a className="button button-secondary" href="/first-run">{copy.recovery.setupJourney}</a>
+            <a className="button button-secondary" href="/system/control">{copy.recovery.systemControl}</a>
           </div>
         </section>
       ) : null}
 
       {isOnline ? (
         <section className="state-banner state-banner-success" role="status">
-          <strong>خطوة الخادم مكتملة</strong>
-          <p>اتصال الخادم سليم. اعرض رحلة الإعداد لمعرفة الخطوة التالية ونسبة الجاهزية.</p>
-          <a className="button button-secondary" href="/first-run">متابعة رحلة الإعداد</a>
+          <strong>{copy.recovery.serverReady}</strong>
+          <p>{copy.recovery.serverReadyDescription}</p>
+          <a className="button button-secondary" href="/first-run">{copy.recovery.continueSetup}</a>
         </section>
       ) : null}
 
-      <section className="panel status-console" aria-label="تفاصيل الفحص">
+      <section className="panel status-console" aria-label={copy.check.ariaLabel}>
         <div className="panel-title-row">
           <div>
-            <h2>تفاصيل الفحص</h2>
-            <p>تعتمد هذه البيانات على نقطة `/api/v1/health` بدون تغيير في عقد الواجهة الخلفية.</p>
+            <h2>{copy.check.title}</h2>
+            <p>{copy.check.description}</p>
           </div>
-          <span className="badge">تحديث تلقائي</span>
+          <span className="badge">{copy.check.autoRefresh}</span>
         </div>
         <div className="kv-grid">
           <div className="kv-item">
-            <strong>حالة الطلب</strong>
-            <span>{state.status === "loading" ? "قيد التنفيذ" : isOnline ? "ناجح" : "فشل"}</span>
+            <strong>{copy.check.requestStatus}</strong>
+            <span>{state.status === "loading" ? copy.check.pending : isOnline ? copy.check.success : copy.check.failed}</span>
           </div>
           <div className="kv-item">
-            <strong>إيقاع الفحص</strong>
-            <span>30 ثانية</span>
+            <strong>{copy.check.interval}</strong>
+            <span>{copy.check.intervalValue}</span>
           </div>
           <div className="kv-item">
-            <strong>آخر تحديث</strong>
-            <span>{formatDateTime(state.lastChecked)}</span>
+            <strong>{copy.check.lastUpdated}</strong>
+            <span>{formatDateTime(state.lastChecked, locale)}</span>
           </div>
         </div>
       </section>
 
       {metricsState.status === "ready" ? (
-        <section className="panel" aria-label="مقاييس الخادم الحية">
+        <section className="panel" aria-label={copy.metrics.ariaLabel}>
           <div className="panel-title-row">
             <div>
-              <h2>مقاييس الخادم الحية</h2>
-              <p>معالج، ذاكرة، قرص، وعمق قائمة المهام — من `/api/v1/system/status` (للمشرفين فقط).</p>
+              <h2>{copy.metrics.title}</h2>
+              <p>{copy.metrics.description}</p>
             </div>
           </div>
           <div className="kv-grid">
             <div className="kv-item">
-              <strong>حمل المعالج</strong>
-              <span>{metricsState.metrics.cpuLoad.length > 0 ? metricsState.metrics.cpuLoad.map((v) => v.toFixed(2)).join(" / ") : "غير متاح"}</span>
+              <strong>{copy.metrics.cpu}</strong>
+              <span>{metricsState.metrics.cpuLoad.length > 0 ? metricsState.metrics.cpuLoad.map((v) => v.toFixed(2)).join(" / ") : copy.metrics.unavailable}</span>
             </div>
             <div className="kv-item">
-              <strong>الذاكرة</strong>
+              <strong>{copy.metrics.memory}</strong>
               <span>
                 {formatBytes(metricsState.metrics.memory.usedBytes)} / {formatBytes(metricsState.metrics.memory.totalBytes)}
               </span>
             </div>
             <div className="kv-item">
-              <strong>القرص</strong>
+              <strong>{copy.metrics.disk}</strong>
               <span>
                 {formatBytes(metricsState.metrics.disk.usedBytes)} / {formatBytes(metricsState.metrics.disk.totalBytes)}
               </span>
             </div>
             <div className="kv-item">
-              <strong>عمق قائمة المهام</strong>
+              <strong>{copy.metrics.queueDepth}</strong>
               <span>{metricsState.metrics.queueDepth}</span>
             </div>
           </div>
@@ -340,27 +341,27 @@ export default function StatusPage() {
       ) : null}
 
       {metricsState.status === "ready" ? (
-        <section className="panel" aria-label="جاهزية التعافي من الكوارث">
+        <section className="panel" aria-label={copy.disasterRecovery.ariaLabel}>
           <div className="panel-title-row">
             <div>
-              <h2>جاهزية التعافي من الكوارث</h2>
-              <p>آخر نسخة احتياطية وآخر اختبار استعادة، من `/api/v1/system/dr-probe`.</p>
+              <h2>{copy.disasterRecovery.title}</h2>
+              <p>{copy.disasterRecovery.description}</p>
             </div>
             <a className="button button-secondary" href="/backup">
-              إدارة النسخ الاحتياطي
+              {copy.disasterRecovery.manageBackups}
             </a>
           </div>
           <div className="kv-grid">
             <div className="kv-item">
-              <strong>آخر نسخة احتياطية</strong>
-              <span>{metricsState.dr.lastBackupName ? `${metricsState.dr.lastBackupName} — ${formatDateTime(metricsState.dr.lastBackupAt ? new Date(metricsState.dr.lastBackupAt) : null)}` : "لا توجد نسخة بعد"}</span>
+              <strong>{copy.disasterRecovery.lastBackup}</strong>
+              <span>{metricsState.dr.lastBackupName ? `${metricsState.dr.lastBackupName} — ${formatDateTime(metricsState.dr.lastBackupAt ? new Date(metricsState.dr.lastBackupAt) : null, locale)}` : copy.disasterRecovery.noBackup}</span>
             </div>
             <div className="kv-item">
-              <strong>آخر اختبار استعادة</strong>
+              <strong>{copy.disasterRecovery.lastRestoreTest}</strong>
               <span>
                 {metricsState.dr.lastRestoreTestAt
-                  ? `${metricsState.dr.lastRestoreTestOk ? "نجح" : "فشل"} — ${formatDateTime(new Date(metricsState.dr.lastRestoreTestAt))}`
-                  : "لم يُجرَ بعد"}
+                  ? `${metricsState.dr.lastRestoreTestOk ? copy.disasterRecovery.succeeded : copy.disasterRecovery.failed} — ${formatDateTime(new Date(metricsState.dr.lastRestoreTestAt), locale)}`
+                  : copy.disasterRecovery.notRun}
               </span>
             </div>
           </div>
@@ -369,7 +370,7 @@ export default function StatusPage() {
 
       {metricsState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل مقاييس النظام</strong>
+          <strong>{copy.metrics.loadError}</strong>
           <p>{metricsState.message}</p>
         </div>
       ) : null}
@@ -377,11 +378,11 @@ export default function StatusPage() {
       <section className="panel">
         <div className="panel-title-row">
           <div>
-            <h2>إشارات المتابعة</h2>
-            <p>استخدم سجل الأخطاء والتحليلات عند ظهور انقطاع أو تباطؤ للتأكد من أثره على تجربة المستخدم.</p>
+            <h2>{copy.monitoring.title}</h2>
+            <p>{copy.monitoring.description}</p>
           </div>
           <a className="button button-secondary" href="/errors">
-            سجل الأخطاء
+            {copy.monitoring.errorLog}
           </a>
         </div>
       </section>

@@ -103,12 +103,12 @@ export default function TranscriberPage() {
     if (data.get("format-vtt")) outputFormats.push("vtt");
     if (data.get("format-ttml")) outputFormats.push("ttml");
     if (outputFormats.length === 0) {
-      setSubmitState({ status: "error", message: "اختر صيغة إخراج واحدة على الأقل." });
+      setSubmitState({ status: "error", message: t.pages.transcriber.validation.outputFormatRequired });
       return;
     }
 
     if (!recordId || !sourcePath) {
-      setSubmitState({ status: "error", message: "أدخل معرّف السجل ومسار الملف قبل بدء التفريغ." });
+      setSubmitState({ status: "error", message: t.pages.transcriber.validation.recordAndPathRequired });
       return;
     }
 
@@ -134,7 +134,7 @@ export default function TranscriberPage() {
   async function handleCancel(jobId: string) {
     const response = await api.cancelMediaJob(jobId);
     if (!response.ok) {
-      await dialogs.alert({ title: "تعذر إلغاء المهمة", message: `فشل الإلغاء: ${response.error}` });
+      await dialogs.alert({ title: t.pages.transcriber.cancel.title, message: t.pages.transcriber.cancel.message.replace("{error}", response.error) });
       return;
     }
     setSubmitState({ status: "tracking", job: response.job });
@@ -174,19 +174,19 @@ export default function TranscriberPage() {
     if (!file) return;
     const extension = file.name.toLowerCase().endsWith(".vtt") ? "vtt" : file.name.toLowerCase().endsWith(".srt") ? "srt" : null;
     if (!extension) {
-      setSubtitleMessage("اختر ملف SRT أو WebVTT فقط.");
+      setSubtitleMessage(t.pages.transcriber.subtitles.invalidFile);
       return;
     }
     setSubtitleContent(await file.text());
     setSubtitleFileName(file.name);
     setSubtitleFormat(extension);
-    setSubtitleMessage(`فُتح ${file.name} للتعديل محليًا.`);
+    setSubtitleMessage(t.pages.transcriber.subtitles.openedForEditing.replace("{file}", file.name));
   }
 
   async function copySubtitles() {
     if (!subtitleContent || !navigator.clipboard) return;
     await navigator.clipboard.writeText(subtitleContent);
-    setSubtitleMessage("نُسخ ملف الترجمة إلى الحافظة.");
+    setSubtitleMessage(t.pages.transcriber.subtitles.copied);
   }
 
   function downloadSubtitles() {
@@ -199,12 +199,12 @@ export default function TranscriberPage() {
     link.download = `${filename}.${extension}`;
     link.click();
     URL.revokeObjectURL(url);
-    setSubtitleMessage("حُفظت نسخة ملف الترجمة على جهازك.");
+    setSubtitleMessage(t.pages.transcriber.subtitles.downloaded);
   }
 
   async function saveSubtitlesToRecord() {
     if (!subtitleRecordId.trim() || !subtitleContent.trim()) {
-      setSubtitleMessage("أدخل معرّف المادة ونص الترجمة قبل الحفظ.");
+      setSubtitleMessage(t.pages.transcriber.subtitles.recordAndContentRequired);
       return;
     }
     const response = await api.saveRecordSubtitles(subtitleRecordId.trim(), {
@@ -212,92 +212,92 @@ export default function TranscriberPage() {
       format: subtitleFormat,
       style: { fontSize: subtitleFontSize, color: subtitleColor, align: subtitleAlign }
     });
-    setSubtitleMessage(response.ok ? "حُفظت الترجمة والنمط على المادة." : response.error || "تعذر حفظ الترجمة.");
+    setSubtitleMessage(response.ok ? t.pages.transcriber.subtitles.saveSuccess : response.error || t.pages.transcriber.subtitles.saveError);
   }
 
   return (
     <AppShell subtitle={t.pageTitles.transcription} contentClassName={`stack ${styles.transcriberContent}`} tipsPage="transcriber">
       <PageToolbar
-        title="التفريغ الصوتي"
-        description="أنشئ مهمة تفريغ صوتي عبر مهام الوسائط وتابع تقدّمها حتى اكتمال النص بالطوابع الزمنية."
+        title={t.pages.transcriber.toolbar.title}
+        description={t.pages.transcriber.toolbar.description}
         meta={
           <>
-            <span className="badge">تفريغ عبر queue</span>
-            <span className="badge">تتبّع كل {POLL_INTERVAL_MS / 1000} ثوانٍ</span>
+            <span className="badge">{t.pages.transcriber.toolbar.queueBadge}</span>
+            <span className="badge">{t.pages.transcriber.toolbar.pollingBadge.replace("{seconds}", String(POLL_INTERVAL_MS / 1000))}</span>
           </>
         }
       />
 
       <section className="panel stack" aria-labelledby="subtitle-editor-title">
         <div className="panel-section-header">
-          <div><h2 id="subtitle-editor-title">محرر SRT وWebVTT</h2><p>افتح، عدّل، انسخ، نزّل، أو احفظ الترجمة ونمط عرضها على مادة أرشيفية.</p></div>
-          <span className="badge">{parseSubtitles(subtitleContent).length} مقطع</span>
+          <div><h2 id="subtitle-editor-title">{t.pages.transcriber.subtitles.title}</h2><p>{t.pages.transcriber.subtitles.description}</p></div>
+          <span className="badge">{t.pages.transcriber.subtitles.cueCount.replace("{count}", String(parseSubtitles(subtitleContent).length))}</span>
         </div>
         <div className="archive-toolbar-grid">
-          <label><span>ملف الترجمة</span><input type="file" accept=".srt,.vtt,text/plain" onChange={(event) => void loadSubtitleFile(event.target.files?.[0])} /></label>
-          <label><span>معرّف المادة للحفظ</span><input value={subtitleRecordId} onChange={(event) => setSubtitleRecordId(event.target.value)} placeholder="record-id" /></label>
-          <label><span>الصيغة</span><select value={subtitleFormat} onChange={(event) => setSubtitleFormat(event.target.value as "srt" | "vtt")}><option value="srt">SRT</option><option value="vtt">WebVTT</option></select></label>
-          <label><span>حجم النص</span><input type="number" min="12" max="72" value={subtitleFontSize} onChange={(event) => setSubtitleFontSize(Number(event.target.value) || 24)} /></label>
-          <label><span>لون النص</span><input type="color" value={subtitleColor} onChange={(event) => setSubtitleColor(event.target.value)} /></label>
-          <label><span>المحاذاة</span><select value={subtitleAlign} onChange={(event) => setSubtitleAlign(event.target.value as "start" | "middle" | "end")}><option value="start">بداية</option><option value="middle">وسط</option><option value="end">نهاية</option></select></label>
+          <label><span>{t.pages.transcriber.subtitles.fileLabel}</span><input type="file" accept=".srt,.vtt,text/plain" onChange={(event) => void loadSubtitleFile(event.target.files?.[0])} /></label>
+          <label><span>{t.pages.transcriber.subtitles.recordIdLabel}</span><input value={subtitleRecordId} onChange={(event) => setSubtitleRecordId(event.target.value)} placeholder={t.pages.transcriber.subtitles.recordIdPlaceholder} /></label>
+          <label><span>{t.pages.transcriber.subtitles.formatLabel}</span><select value={subtitleFormat} onChange={(event) => setSubtitleFormat(event.target.value as "srt" | "vtt")}><option value="srt">SRT</option><option value="vtt">WebVTT</option></select></label>
+          <label><span>{t.pages.transcriber.subtitles.fontSizeLabel}</span><input type="number" min="12" max="72" value={subtitleFontSize} onChange={(event) => setSubtitleFontSize(Number(event.target.value) || 24)} /></label>
+          <label><span>{t.pages.transcriber.subtitles.colorLabel}</span><input type="color" value={subtitleColor} onChange={(event) => setSubtitleColor(event.target.value)} /></label>
+          <label><span>{t.pages.transcriber.subtitles.alignmentLabel}</span><select value={subtitleAlign} onChange={(event) => setSubtitleAlign(event.target.value as "start" | "middle" | "end")}><option value="start">{t.pages.transcriber.subtitles.alignmentStart}</option><option value="middle">{t.pages.transcriber.subtitles.alignmentMiddle}</option><option value="end">{t.pages.transcriber.subtitles.alignmentEnd}</option></select></label>
         </div>
-        <textarea className={styles.rawText} value={subtitleContent} onChange={(event) => setSubtitleContent(event.target.value)} placeholder="ألصق أو افتح ملف SRT / WebVTT هنا…" aria-label="محتوى ملف الترجمة" />
-        <div className="button-row"><button className="button button-secondary" type="button" onClick={() => void copySubtitles()} disabled={!subtitleContent}>نسخ</button><button className="button button-secondary" type="button" onClick={downloadSubtitles} disabled={!subtitleContent}>تنزيل الملف</button><button className="button button-primary" type="button" onClick={() => void saveSubtitlesToRecord()} disabled={!subtitleContent || !subtitleRecordId.trim()}>حفظ على المادة</button></div>
+        <textarea className={styles.rawText} value={subtitleContent} onChange={(event) => setSubtitleContent(event.target.value)} placeholder={t.pages.transcriber.subtitles.contentPlaceholder} aria-label={t.pages.transcriber.subtitles.contentAriaLabel} />
+        <div className="button-row"><button className="button button-secondary" type="button" onClick={() => void copySubtitles()} disabled={!subtitleContent}>{t.pages.transcriber.subtitles.copyButton}</button><button className="button button-secondary" type="button" onClick={downloadSubtitles} disabled={!subtitleContent}>{t.pages.transcriber.subtitles.downloadButton}</button><button className="button button-primary" type="button" onClick={() => void saveSubtitlesToRecord()} disabled={!subtitleContent || !subtitleRecordId.trim()}>{t.pages.transcriber.subtitles.saveButton}</button></div>
         {subtitleMessage ? <p className="helper-text" role="status">{subtitleMessage}</p> : null}
-        {subtitleContent ? <div className={styles.subtitlePreview} style={{ fontSize: `${subtitleFontSize}px`, color: subtitleColor, textAlign: subtitleAlign === "middle" ? "center" : subtitleAlign }} aria-label="معاينة نمط الترجمة">{parseSubtitles(subtitleContent).slice(0, 3).map((cue) => <p key={cue.index}>{cue.text}</p>)}</div> : null}
+        {subtitleContent ? <div className={styles.subtitlePreview} style={{ fontSize: `${subtitleFontSize}px`, color: subtitleColor, textAlign: subtitleAlign === "middle" ? "center" : subtitleAlign }} aria-label={t.pages.transcriber.subtitles.previewAriaLabel}>{parseSubtitles(subtitleContent).slice(0, 3).map((cue) => <p key={cue.index}>{cue.text}</p>)}</div> : null}
       </section>
 
-      <div className={`split-layout ${styles.console}`} aria-label="أدوات التفريغ الصوتي">
+      <div className={`split-layout ${styles.console}`} aria-label={t.pages.transcriber.form.ariaLabel}>
         <div className={styles.formPanel}>
-          <form ref={formRef} className="panel auth-form" onSubmit={handleSubmit} aria-label="إنشاء مهمة تفريغ صوتي">
+          <form ref={formRef} className="panel auth-form" onSubmit={handleSubmit} aria-label={t.pages.transcriber.form.ariaLabel}>
             <label>
-              ابحث في وسائط مهام التفريغ السابقة
-              <input type="search" value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} placeholder="معرّف السجل أو مسار الملف" />
+              {t.pages.transcriber.form.previousMediaLabel}
+              <input type="search" value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} placeholder={t.pages.transcriber.form.previousMediaPlaceholder} />
             </label>
             {mediaQuery && selectableJobs.length ? (
-              <div className="stack" aria-label="نتائج اختيار الوسائط">
+              <div className="stack" aria-label={t.pages.transcriber.form.resultsAriaLabel}>
                 {selectableJobs.slice(0, 5).map((job) => (
                   <button key={job.id} type="button" className="button button-secondary" onClick={() => selectPreviousMedia(job)}>
-                    {job.recordId} · {job.sourcePath || "بدون مسار"}
+                    {job.recordId} · {job.sourcePath || t.pages.transcriber.form.noPath}
                   </button>
                 ))}
               </div>
             ) : null}
             <label>
-              معرّف السجل
+              {t.pages.transcriber.form.recordIdLabel}
               <input name="recordId" type="text" placeholder="record-id" required />
             </label>
 
             <label>
-              مسار الملف المصدر
+              {t.pages.transcriber.form.sourcePathLabel}
               <input name="sourcePath" type="text" placeholder="audio/clip.mp3" required />
             </label>
 
             <label>
-              قرص التخزين (اختياري)
-              <input name="disk" type="text" placeholder="مثل: archive" />
+              {t.pages.transcriber.form.diskLabel}
+              <input name="disk" type="text" placeholder={t.pages.transcriber.form.diskPlaceholder} />
             </label>
 
             <label>
-              لغة التفريغ
+              {t.pages.transcriber.form.languageLabel}
               <input name="language" type="text" defaultValue="ar" />
             </label>
 
-            <p className="helper-text">يعتمد الجهاز على إعداد Whisper العام. اختر GPU من الإعدادات فقط بعد تشغيل عامل CUDA.</p>
+            <p className="helper-text">{t.pages.transcriber.form.whisperHint}</p>
 
             <fieldset className="stack" style={{ gap: '0.5rem' }}>
-              <legend>صيغ الإخراج</legend>
+              <legend>{t.pages.transcriber.form.outputFormatsLegend}</legend>
               <label className="checkbox-row">
                 <input name="format-srt" type="checkbox" defaultChecked />
-                SRT (نص مع الطوابع)
+                {t.pages.transcriber.form.srtOption}
               </label>
               <label className="checkbox-row">
                 <input name="format-vtt" type="checkbox" defaultChecked />
-                VTT (فيديو ويب)
+                {t.pages.transcriber.form.vttOption}
               </label>
               <label className="checkbox-row">
                 <input name="format-ttml" type="checkbox" defaultChecked />
-                TTML (تنسيق توقيت نص)
+                {t.pages.transcriber.form.ttmlOption}
               </label>
             </fieldset>
 
@@ -306,7 +306,7 @@ export default function TranscriberPage() {
               className="button button-primary"
               disabled={submitState.status === "submitting" || (submitState.status === "tracking" && submitState.job.status !== "completed" && submitState.job.status !== "failed")}
             >
-              {submitState.status === "submitting" ? "جار الإرسال..." : "ابدأ التفريغ"}
+              {submitState.status === "submitting" ? t.pages.transcriber.form.submitting : t.pages.transcriber.form.submit}
             </button>
 
             <p className="form-status" role={submitState.status === "error" ? "alert" : "status"}>
@@ -319,14 +319,14 @@ export default function TranscriberPage() {
           {trackedJob ? (
             <article className="panel stack">
               <div className="panel-section-header">
-                <h2>حالة المهمة</h2>
+                <h2>{t.pages.transcriber.job.title}</h2>
                 <span className="badge">{trackedJob.status}</span>
               </div>
 
               {(trackedJob.status === "queued" || trackedJob.status === "processing") && (
                 <div className="state-banner">
                   <div className="helper-row">
-                    <strong>{trackedJob.progressStage || "جاري التفريغ"}</strong>
+                    <strong>{trackedJob.progressStage || t.pages.transcriber.job.processingFallback}</strong>
                     <span className="field-note">{(trackedJob.progressPercent ?? 0)}%</span>
                   </div>
                   <div style={{ width: "100%", height: "8px", backgroundColor: "rgba(0,0,0,0.1)", borderRadius: "4px", overflow: "hidden" }}>
@@ -338,44 +338,44 @@ export default function TranscriberPage() {
                     onClick={() => handleCancel(trackedJob.id)}
                     disabled={submitState.status === "submitting"}
                   >
-                    إلغاء
+                    {t.pages.transcriber.cancel.button}
                   </button>
                 </div>
               )}
 
               <div className="kv-grid">
                 <div className="kv-item">
-                  <strong>المعرّف</strong>
+                  <strong>{t.pages.transcriber.job.idLabel}</strong>
                   <span className="wrap-anywhere mono-text">{trackedJob.id}</span>
                 </div>
                 <div className="kv-item">
-                  <strong>المصدر</strong>
+                  <strong>{t.pages.transcriber.job.sourceLabel}</strong>
                   <span className="wrap-anywhere">{trackedJob.sourcePath}</span>
                 </div>
               </div>
 
               {trackedJob.status === "failed" && (
                 <p role="alert" className="form-status status-error">
-                  فشلت المهمة: {trackedJob.error || "خطأ غير معروف"}
+                  {t.pages.transcriber.job.failed.replace("{error}", trackedJob.error || t.pages.transcriber.job.unknownError)}
                 </p>
               )}
 
               {trackedJob.status === "completed" && (
                 <>
                   <div className="toolbar-row">
-                    <h3>{cues.length > 0 ? `النص (${cues.length} مقطع)` : "النص"}</h3>
+                    <h3>{cues.length > 0 ? t.pages.transcriber.job.transcriptWithCues.replace("{count}", String(cues.length)) : t.pages.transcriber.job.transcript}</h3>
                     <div className="button-row">
                       <button type="button" className="button button-secondary" onClick={() => setShowRaw((v) => !v)}>
-                        {showRaw ? "عرض النص المقسّم" : "عرض النص الخام"}
+                        {showRaw ? t.pages.transcriber.job.showSegmented : t.pages.transcriber.job.showRaw}
                       </button>
                       <button type="button" className="button button-secondary" onClick={handleCopy}>
-                        {copied ? "تم النسخ" : "نسخ النص"}
+                        {copied ? t.pages.transcriber.job.copied : t.pages.transcriber.job.copyText}
                       </button>
                     </div>
                   </div>
 
                   {showRaw ? (
-                    <textarea readOnly value={transcriptText} className={styles.rawText} aria-label="النص الخام" />
+                    <textarea readOnly value={transcriptText} className={styles.rawText} aria-label={t.pages.transcriber.job.rawTextAriaLabel} />
                   ) : cues.length > 0 ? (
                     <div className={styles.cueList}>
                       {cues.map((cue) => (
@@ -386,34 +386,34 @@ export default function TranscriberPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="helper-text">{plainText || "لا يوجد نص مُستخرج بعد."}</p>
+                    <p className="helper-text">{plainText || t.pages.transcriber.job.noTranscript}</p>
                   )}
                 </>
               )}
 
               {(trackedJob.status === "queued" || trackedJob.status === "processing") && (
-                <p className="form-status">جار التفريغ، يتم التحديث تلقائياً...</p>
+                <p className="form-status">{t.pages.transcriber.job.updating}</p>
               )}
             </article>
           ) : (
             <EmptyState
-              title="لا توجد مهمة تفريغ نشطة"
-              description="أدخل معرّف السجل ومسار الملف ثم اضغط ابدأ التفريغ لمتابعة التقدّم هنا."
+              title={t.pages.transcriber.job.emptyTitle}
+              description={t.pages.transcriber.job.emptyDescription}
             />
           )}
         </div>
       </div>
 
-      <section className="stack" aria-label="مهام التفريغ الأخيرة">
+      <section className="stack" aria-label={t.pages.transcriber.recent.ariaLabel}>
         <div className="toolbar-row">
-          <h2>مهام التفريغ الأخيرة</h2>
+          <h2>{t.pages.transcriber.recent.title}</h2>
         </div>
 
-        {recentState.status === "loading" && <Skeleton label="جار تحميل عمليات التفريغ الأخيرة..." />}
-        {recentState.status === "empty" && <p className="empty-state">لا توجد مهام تفريغ سابقة.</p>}
+        {recentState.status === "loading" && <Skeleton label={t.pages.transcriber.recent.loading} />}
+        {recentState.status === "empty" && <p className="empty-state">{t.pages.transcriber.recent.empty}</p>}
         {recentState.status === "error" && (
           <p role="alert" className="form-status status-error">
-            خطأ: {recentState.message}
+            {t.pages.transcriber.recent.errorPrefix.replace("{error}", recentState.message)}
           </p>
         )}
 
@@ -428,7 +428,7 @@ export default function TranscriberPage() {
                 {job.sourcePath && (
                   <div className="kv-grid">
                     <div className="kv-item">
-                      <strong>المصدر</strong>
+                      <strong>{t.pages.transcriber.job.sourceLabel}</strong>
                       <span className="wrap-anywhere">{job.sourcePath}</span>
                     </div>
                   </div>

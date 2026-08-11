@@ -10,9 +10,22 @@ type ReviewLinkState =
   | { status: "ready"; data: ReviewLinkDetails }
   | { status: "error"; message: string };
 
+function localizedExpiryLabel(
+  expiresAt: string | null | undefined,
+  labels: { noExpiry: string; unavailable: string; expired: string; soon: string; active: string }
+): string {
+  if (!expiresAt) return labels.noExpiry;
+  const expiryTime = new Date(expiresAt).getTime();
+  if (Number.isNaN(expiryTime)) return labels.unavailable;
+  const remaining = expiryTime - Date.now();
+  if (remaining <= 0) return labels.expired;
+  if (remaining <= 48 * 60 * 60 * 1000) return labels.soon;
+  return labels.active;
+}
+
 export function ReviewLinkViewer({ token }: { token: string }) {
   const { locale, t } = useLocale();
-  const copy = t.pages.reviewLinkViewer;
+  const copy = t.pages.reviewLink.viewer;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<ReviewLinkState>({ status: "loading" });
 
@@ -55,9 +68,7 @@ export function ReviewLinkViewer({ token }: { token: string }) {
 
   const { data } = state;
   const expiry = buildShareExpiry(data.review.expiresAt);
-  const expiryLabel = locale === "en"
-    ? ({ "بلا انتهاء": "No expiry", "تاريخ غير واضح": "Date unavailable", "منتهية": "Expired", "تنتهي قريباً": "Expires soon", "نشطة": "Active" }[expiry.label] ?? expiry.label)
-    : expiry.label;
+  const expiryLabel = localizedExpiryLabel(data.review.expiresAt, copy.expiryLabels);
 
   return (
     <main className="share-list" aria-label={copy.content}>

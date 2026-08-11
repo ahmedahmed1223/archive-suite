@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import { Activity, AlertTriangle, CheckCircle2, DatabaseZap, Eye, Fingerprint, Info, KeyRound, LifeBuoy, MinusCircle, RefreshCw, Settings, ShieldCheck, Users, XCircle } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useAuthSession } from "@/lib/auth-session";
+import { useDisplaySettings } from "@/lib/display-settings-context";
+import { DEFAULT_DISPLAY_SETTINGS, formatDateTime, type DisplaySettings } from "@/lib/display-settings";
 import DropboxFolderPicker from "@/components/DropboxFolderPicker";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
@@ -23,29 +26,9 @@ import {
   type SecuritySettings,
   type StorageConnectionResult
 } from "@/lib/archive-api";
+import type { AppDictionary } from "@/lib/i18n/dictionaries";
 
-const categoryCards = [
-  {
-    title: "النظام",
-    summary: "تجميع إعدادات البيئة العامة والاحتفاظ التشغيلي في وضع قراءة فقط.",
-    items: ["المنطقة الزمنية: Europe/Istanbul", "الاحتفاظ: وفق السياسة"]
-  },
-  {
-    title: "التخزين",
-    summary: "مؤشرات التخزين تشرح مكان البيانات وحدودها من دون أدوات تحرير.",
-    items: ["المخزن الرئيسي: تخزين كائني", "النسخ الاحتياطي: مجدول", "الحصة: تحت المراقبة"]
-  },
-  {
-    title: "واجهة API",
-    summary: "ملخص طبقة التكامل مع العقد والقيود والاعتمادية التي تعتمد عليها الواجهة.",
-    items: ["الإصدار: v1", "المصادقة: رمز قصير + تحديث آمن", "حدود الطلب: مفعلة"]
-  },
-  {
-    title: "المظهر",
-    summary: "هوية العرض والنسق المرئي الحاليان موثقان هنا للرجوع السريع.",
-    items: ["النسق: فاتح", "الكثافة: مدمجة", `الهوية: ${BRAND.lockupName}`]
-  }
-];
+type SettingsCopy = AppDictionary["pages"]["settings"];
 
 const odbcCoreTables = ["items", "users", "settings", "audit"] as const;
 const disabledOdbcProbe: OdbcProbe = { enabled: false, driverLoaded: false, dsn: "", status: "disabled", tables: [] };
@@ -71,13 +54,6 @@ type DatabaseTestForm = {
   database: string;
   username: string;
   password: string;
-};
-
-const odbcTableLabels: Record<OdbcCoreTable, string> = {
-  items: "المواد",
-  users: "المستخدمون",
-  settings: "الإعدادات",
-  audit: "التدقيق"
 };
 
 const getDefaultOdbcKeyColumn = (table: OdbcCoreTable) => (table === "settings" ? "key" : "id");
@@ -112,13 +88,13 @@ export function StatusBadge({ children, tone = "neutral" }: Readonly<{ children:
   );
 }
 
-function odbcStatusLabel(status: OdbcProbe["status"]) {
+function odbcStatusLabel(status: OdbcProbe["status"], copy: SettingsCopy["odbc"]) {
   const labels: Record<OdbcProbe["status"], string> = {
-    connected: "متصل",
-    disabled: "معطل",
-    "missing-dsn": "DSN مفقود",
-    "driver-unavailable": "Driver غير متاح",
-    failed: "فشل الاتصال"
+    connected: copy.statusMap.connected,
+    disabled: copy.statusMap.disabled,
+    "missing-dsn": copy.statusMap.missingDsn,
+    "driver-unavailable": copy.statusMap.driverUnavailable,
+    failed: copy.statusMap.failed
   };
 
   return labels[status];
@@ -137,19 +113,19 @@ function odbcStatusTone(status: OdbcProbe["status"]): StatusBadgeTone {
 }
 
 // ponytail: fixed API messages map 1:1 to status; dynamic driver errors stay raw
-function odbcStatusMessage(odbc: OdbcProbe) {
+function odbcStatusMessage(odbc: OdbcProbe, copy: SettingsCopy["odbc"]) {
   const messages: Partial<Record<OdbcProbe["status"], string>> = {
-    disabled: "جسر ODBC معطل في بيئة الخادم.",
-    "missing-dsn": "ODBC مفعل لكن قيمة ODBC_DSN فارغة.",
-    "driver-unavailable": "امتداد PHP ODBC أو مشغلات ODBC غير متاحة."
+    disabled: copy.statusMessages.disabled,
+    "missing-dsn": copy.statusMessages.missingDsn,
+    "driver-unavailable": copy.statusMessages.driverUnavailable
   };
 
   return messages[odbc.status] || odbc.error || odbc.message;
 }
 
-function formatPreviewValue(value: unknown) {
+function formatPreviewValue(value: unknown, notAvailableText: string) {
   if (value === null || value === undefined || value === "") {
-    return "غير متاح";
+    return notAvailableText;
   }
 
   if (typeof value === "object") {
@@ -160,8 +136,12 @@ function formatPreviewValue(value: unknown) {
 }
 
 export default function SettingsPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const { user } = useAuthSession();
+  const { settings: activeDisplaySettings, status: displaySettingsStatus, error: displaySettingsError, replaceSettings } = useDisplaySettings();
   const [settings, setSettings] = useState<SecuritySettings | null>(null);
+  const [displaySettingsDraft, setDisplaySettingsDraft] = useState<DisplaySettings>(DEFAULT_DISPLAY_SETTINGS);
+  const [displaySaveState, setDisplaySaveState] = useState<{ status: "idle" | "saving" | "success" | "error"; message?: string }>({ status: "idle" });
   const [whisperSaveState, setWhisperSaveState] = useState<{ status: "idle" | "saving" | "success" | "error"; message?: string }>({ status: "idle" });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -195,6 +175,10 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
+    setDisplaySettingsDraft(activeDisplaySettings);
+  }, [activeDisplaySettings]);
+
+  useEffect(() => {
     const fetchDropboxStatus = async () => {
       try {
         const response = await createArchiveApiClient().dropboxConnection();
@@ -215,10 +199,10 @@ export default function SettingsPage() {
         if (response.ok) {
           setSettings(response.settings);
         } else {
-          setError(response.error || "تعذر تحميل إعدادات الأمان.");
+          setError(response.error || t.pages.settings.security.loadError);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "تعذر الاتصال بالخادم لجلب الإعدادات.");
+        setError(err instanceof Error ? err.message : t.pages.settings.security.loadConnectionError);
       } finally {
         setIsLoading(false);
       }
@@ -238,10 +222,10 @@ export default function SettingsPage() {
         } else if (response.code === "NOT_FOUND" || response.code === "not_found") {
           setOdbc(disabledOdbcProbe);
         } else {
-          setOdbcError(response.error || "تعذر تحميل حالة ODBC.");
+          setOdbcError(response.error || t.pages.settings.odbc.loadStatusError);
         }
       } catch (err) {
-        setOdbcError(err instanceof Error ? err.message : "تعذر الاتصال بالخادم لجلب حالة ODBC.");
+        setOdbcError(err instanceof Error ? err.message : t.pages.settings.odbc.loadStatusConnectionError);
       } finally {
         setIsOdbcLoading(false);
       }
@@ -262,11 +246,11 @@ export default function SettingsPage() {
         setOdbcPreview(response);
       } else {
         setOdbcPreview(null);
-        setPreviewError(response.error || "تعذر تحميل معاينة جدول ODBC.");
+        setPreviewError(response.error || t.pages.settings.odbc.loadPreviewError);
       }
     } catch (err) {
       setOdbcPreview(null);
-      setPreviewError(err instanceof Error ? err.message : "تعذر الاتصال بالخادم لمعاينة جدول ODBC.");
+      setPreviewError(err instanceof Error ? err.message : t.pages.settings.odbc.loadPreviewConnectionError);
     } finally {
       setIsPreviewLoading(false);
     }
@@ -290,7 +274,7 @@ export default function SettingsPage() {
       } else {
         const parsedValues = JSON.parse(odbcValuesText) as unknown;
         if (!parsedValues || typeof parsedValues !== "object" || Array.isArray(parsedValues)) {
-          setOdbcWriteState({ status: "error", message: "اكتب القيم كـ JSON object صالح." });
+          setOdbcWriteState({ status: "error", message: t.pages.settings.odbc.invalidJson });
           return;
         }
 
@@ -311,13 +295,15 @@ export default function SettingsPage() {
 
       setOdbcWriteState({
         status: "success",
-        message: `تم تنفيذ ${response.operation} على ${response.affected} صف.`
+        message: t.pages.settings.odbc.writeSuccess
+          .replace("{operation}", response.operation)
+          .replace("{affected}", String(response.affected))
       });
       await loadOdbcPreview(selectedOdbcTable);
     } catch (err) {
       setOdbcWriteState({
         status: "error",
-        message: err instanceof Error ? err.message : "تعذر تنفيذ عملية ODBC."
+        message: err instanceof Error ? err.message : t.pages.settings.odbc.writeError
       });
     }
   };
@@ -333,7 +319,7 @@ export default function SettingsPage() {
       });
 
       if (!response.ok) {
-        setStorageTestState({ status: "error", message: response.error || "تعذر فحص التخزين المحلي." });
+        setStorageTestState({ status: "error", message: response.error || t.pages.settings.connectionTest.storageError });
         return;
       }
 
@@ -341,7 +327,7 @@ export default function SettingsPage() {
     } catch (err) {
       setStorageTestState({
         status: "error",
-        message: err instanceof Error ? err.message : "تعذر الاتصال بالخادم أثناء فحص التخزين."
+        message: err instanceof Error ? err.message : t.pages.settings.connectionTest.storageConnectionError
       });
     }
   };
@@ -354,16 +340,37 @@ export default function SettingsPage() {
     try {
       const response = await createArchiveApiClient().updateSecuritySettings({ whisperDevice });
       if (!response.ok) {
-        setWhisperSaveState({ status: "error", message: response.error || "تعذر حفظ إعداد Whisper." });
+        setWhisperSaveState({ status: "error", message: response.error || t.pages.settings.whisper.saveError });
         return;
       }
 
       setSettings(response.settings);
-      setWhisperSaveState({ status: "success", message: "تم حفظ إعداد Whisper. سيُطبق على مهام التفريغ الجديدة." });
+      setWhisperSaveState({ status: "success", message: t.pages.settings.whisper.saveSuccess });
     } catch (err) {
       setWhisperSaveState({
         status: "error",
-        message: err instanceof Error ? err.message : "تعذر الاتصال بالخادم لحفظ إعداد Whisper."
+        message: err instanceof Error ? err.message : t.pages.settings.whisper.saveConnectionError
+      });
+    }
+  };
+
+  const saveDisplaySettings = async () => {
+    if (user?.role !== "admin") return;
+
+    setDisplaySaveState({ status: "saving" });
+    try {
+      const response = await createArchiveApiClient().updateDisplaySettings(displaySettingsDraft);
+      if (!response.ok) {
+        setDisplaySaveState({ status: "error", message: response.error || t.pages.settings.display.saveError });
+        return;
+      }
+
+      replaceSettings(response.settings);
+      setDisplaySaveState({ status: "success", message: t.pages.settings.display.saveSuccess });
+    } catch (saveError) {
+      setDisplaySaveState({
+        status: "error",
+        message: saveError instanceof Error ? saveError.message : t.pages.settings.display.saveConnectionError
       });
     }
   };
@@ -371,13 +378,13 @@ export default function SettingsPage() {
   const runDatabaseConnectionTest = async () => {
     const database = databaseTestForm.database.trim();
     if (!database) {
-      setDatabaseTestState({ status: "error", message: "أدخل اسم قاعدة البيانات أو مسار ملف SQLite قبل الفحص." });
+      setDatabaseTestState({ status: "error", message: t.pages.settings.connectionTest.databaseNameRequired });
       return;
     }
 
     const port = Number(databaseTestForm.port);
     if (databaseTestForm.port.trim() && (!Number.isInteger(port) || port < 1 || port > 65535)) {
-      setDatabaseTestState({ status: "error", message: "منفذ قاعدة البيانات يجب أن يكون رقماً بين 1 و65535." });
+      setDatabaseTestState({ status: "error", message: t.pages.settings.connectionTest.databasePortInvalid });
       return;
     }
 
@@ -398,10 +405,10 @@ export default function SettingsPage() {
       });
 
       if (!response.ok) {
-        const detailsText = response.details !== undefined ? ` — ${formatPreviewValue(response.details)}` : "";
+        const detailsText = response.details !== undefined ? ` — ${formatPreviewValue(response.details, t.pages.settings.metrics.notAvailable)}` : "";
         setDatabaseTestState({
           status: "error",
-          message: `${response.error || "تعذر فحص اتصال قاعدة البيانات."}${detailsText}`
+          message: `${response.error || t.pages.settings.connectionTest.databaseError}${detailsText}`
         });
         return;
       }
@@ -410,119 +417,132 @@ export default function SettingsPage() {
     } catch (err) {
       setDatabaseTestState({
         status: "error",
-        message: err instanceof Error ? err.message : "تعذر الاتصال بالخادم أثناء فحص قاعدة البيانات."
+        message: err instanceof Error ? err.message : t.pages.settings.connectionTest.databaseConnectionError
       });
     }
   };
 
+  const settingsCopy = t.pages.settings;
   const postureRows = settings
     ? [
-        { label: "مدة رمز الوصول", value: `${settings.accessTokenTtlMinutes} دقيقة` },
-        { label: "حد الطلبات لكل دقيقة", value: `${settings.perUserRateLimit} طلب` },
-        { label: "ترقية كلمات المرور القديمة", value: settings.legacyPasswordUpgrade ? "مفعلة" : "معطلة" },
-        { label: "قائمة Webhook المسموحة", value: settings.webhookUrlAllowlist.length > 0 ? `${settings.webhookUrlAllowlist.length} رابط` : "فارغة" },
-        { label: "معالج Whisper", value: settings.whisperDevice === "cuda" ? "GPU (CUDA)" : "CPU" },
+        { label: settingsCopy.security.accessTokenTtl, value: settingsCopy.security.accessTokenTtlValue.replace("{minutes}", String(settings.accessTokenTtlMinutes)) },
+        { label: settingsCopy.security.rateLimit, value: settingsCopy.security.rateLimitValue.replace("{limit}", String(settings.perUserRateLimit)) },
+        { label: settingsCopy.security.legacyPasswordUpgrade, value: settings.legacyPasswordUpgrade ? settingsCopy.security.enabled : settingsCopy.security.disabled },
+        { label: settingsCopy.security.webhookAllowlist, value: settings.webhookUrlAllowlist.length > 0 ? settingsCopy.security.webhookAllowlistValue.replace("{count}", String(settings.webhookUrlAllowlist.length)) : settingsCopy.security.webhookAllowlistEmpty },
+        { label: settingsCopy.security.whisperProcessorLabel, value: settings.whisperDevice === "cuda" ? settingsCopy.security.whisperGpu : settingsCopy.security.whisperCpu },
       ]
     : [];
   const odbcRows = odbc
     ? [
-        { label: "الحالة", value: odbcStatusLabel(odbc.status) },
-        { label: "مشغّل ODBC", value: odbc.driverLoaded ? "متاح" : "غير متاح" },
-        { label: "DSN", value: odbc.dsn || "غير مضبوط" },
-        { label: "الجداول المرئية", value: `${odbc.tables.length}` }
+        { label: settingsCopy.odbc.statusLabel, value: odbcStatusLabel(odbc.status, settingsCopy.odbc) },
+        { label: settingsCopy.odbc.driverLabel, value: odbc.driverLoaded ? settingsCopy.odbc.driverAvailable : settingsCopy.odbc.driverUnavailable },
+        { label: settingsCopy.odbc.dsnLabel, value: odbc.dsn || settingsCopy.odbc.dsnNotConfigured },
+        { label: settingsCopy.odbc.visibleTablesLabel, value: `${odbc.tables.length}` }
       ]
     : [];
   const previewColumns = odbcPreview
     ? Array.from(new Set(odbcPreview.rows.flatMap((row) => Object.keys(row)))).slice(0, 8)
     : [];
   const canPreviewOdbc = odbc?.status === "connected";
+  const canManageDisplaySettings = user?.role === "admin";
+  const displayPreview = formatDateTime("2026-07-21T06:05:09.000Z", displaySettingsDraft, locale);
+  const categoryCards = [
+    { ...settingsCopy.categories.system },
+    { ...settingsCopy.categories.storage },
+    { ...settingsCopy.categories.api },
+    {
+      title: settingsCopy.categories.appearance.title,
+      summary: settingsCopy.categories.appearance.summary,
+      items: [...settingsCopy.categories.appearance.items, settingsCopy.categories.appearance.identityItemTemplate.replace("{brand}", BRAND.lockupName)]
+    }
+  ];
 
   return (
     <AppShell subtitle={t.pageTitles.settingsCenter} contentClassName="settings-content" tipsPage="settings">
       <PageToolbar
         icon={<Settings size={24} />}
-        eyebrow={<span className="badge">مركز الإعدادات</span>}
-        title={`إعدادات ${BRAND.arabicName}`}
-        description="مركز واحد للهوية، الأمان، التخزين، ODBC، API، والمظهر، مع تمييز ما هو مطبق فعلاً وما ينتظر صلاحيات تحرير أو دعم خلفي إضافي."
+        eyebrow={<span className="badge">{settingsCopy.toolbar.eyebrow}</span>}
+        title={settingsCopy.toolbar.title.replace("{brand}", BRAND.arabicName)}
+        description={settingsCopy.toolbar.description}
         meta={(
           <>
-            <span className="badge">هوية النظام</span>
-            <span className="badge">أمان</span>
+            <span className="badge">{settingsCopy.toolbar.metaIdentity}</span>
+            <span className="badge">{settingsCopy.toolbar.metaSecurity}</span>
             <span className="badge">ODBC</span>
-            <span className="badge">مراقبة</span>
+            <span className="badge">{settingsCopy.toolbar.metaMonitoring}</span>
           </>
         )}
         actions={(
           <>
             <a className="button button-secondary" href="/settings/users">
               <Users size={16} aria-hidden="true" />
-              المستخدمون والأدوار
+              {settingsCopy.toolbar.usersAndRoles}
             </a>
             <a className="button button-secondary" href="/first-run">
               <LifeBuoy size={16} aria-hidden="true" />
-              إعادة فتح الجولة
+              {settingsCopy.toolbar.reopenTour}
             </a>
             <a className="button button-secondary" href="/status">
               <Activity size={16} aria-hidden="true" />
-              حالة النظام
+              {settingsCopy.toolbar.systemStatus}
             </a>
             <a className="button button-secondary" href="/errors">
               <AlertTriangle size={16} aria-hidden="true" />
-              سجل الأخطاء
+              {settingsCopy.toolbar.errorLog}
             </a>
           </>
         )}
       />
 
-      <section className="state-banner state-banner-info" aria-label="رحلة الإعداد">
-        <strong>الخطوة الحالية: مراجعة إعدادات التشغيل</strong>
-        <p>نفّذ اختبارات التخزين وقاعدة البيانات أدناه، ثم راجع حالة النظام لتحديد الإجراء التالي.</p>
+      <section className="state-banner state-banner-info" aria-label={settingsCopy.setupBanner.ariaLabel}>
+        <strong>{settingsCopy.setupBanner.stepTitle}</strong>
+        <p>{settingsCopy.setupBanner.description}</p>
         <div className="button-row">
-          <a className="button button-secondary button-small" href="/status">متابعة الجاهزية</a>
-          <a className="button button-secondary button-small" href="/first-run">عرض رحلة الإعداد</a>
+          <a className="button button-secondary button-small" href="/status">{settingsCopy.setupBanner.continueReadiness}</a>
+          <a className="button button-secondary button-small" href="/first-run">{settingsCopy.setupBanner.viewTour}</a>
         </div>
       </section>
 
       <MetricStrip
-        ariaLabel="ملخص الإعدادات"
+        ariaLabel={settingsCopy.metrics.ariaLabel}
         items={[
           {
-            label: "الهوية",
+            label: settingsCopy.metrics.identityLabel,
             value: BRAND.arabicName,
             description: `${BRAND.latinName} v${BRAND.version}`,
             icon: <Fingerprint size={20} />,
             tone: "accent"
           },
           {
-            label: "الأمان",
-            value: isLoading ? "جار الفحص" : error ? "يتطلب مراجعة" : "محمّل",
-            description: settings ? `${settings.perUserRateLimit} طلب/دقيقة` : "إعدادات القراءة",
+            label: settingsCopy.metrics.securityLabel,
+            value: isLoading ? settingsCopy.metrics.checking : error ? settingsCopy.metrics.needsReview : settingsCopy.metrics.loaded,
+            description: settings ? settingsCopy.metrics.securityDescriptionRate.replace("{rate}", String(settings.perUserRateLimit)) : settingsCopy.metrics.securityDescriptionReadOnly,
             icon: <ShieldCheck size={20} />,
             tone: error ? "danger" : "success"
           },
           {
             label: "ODBC",
-            value: isOdbcLoading ? "جار الفحص" : odbc ? odbcStatusLabel(odbc.status) : "غير متاح",
-            description: odbc ? `${odbc.tables.length} جدول مرئي` : "ربط الأنظمة القديمة",
+            value: isOdbcLoading ? settingsCopy.metrics.checking : odbc ? odbcStatusLabel(odbc.status, settingsCopy.odbc) : settingsCopy.metrics.notAvailable,
+            description: odbc ? settingsCopy.metrics.odbcDescriptionTablesVisible.replace("{count}", String(odbc.tables.length)) : settingsCopy.metrics.odbcDescriptionLegacy,
             icon: <DatabaseZap size={20} />,
             tone: odbc?.status === "connected" ? "success" : "warning"
           },
           {
-            label: "الكتابة",
-            value: canPreviewOdbc ? "مقيدة" : "مغلقة",
-            description: `الجدول المحدد: ${odbcTableLabels[selectedOdbcTable]}`,
+            label: settingsCopy.metrics.writeLabel,
+            value: canPreviewOdbc ? settingsCopy.metrics.writeRestricted : settingsCopy.metrics.writeClosed,
+            description: settingsCopy.metrics.writeDescriptionTable.replace("{table}", settingsCopy.odbc.tableLabels[selectedOdbcTable]),
             icon: <KeyRound size={20} />,
             tone: canPreviewOdbc ? "info" : "default"
           }
         ]}
       />
 
-        <article className="workspace-panel identity-panel" aria-label="هوية النظام">
+        <article className="workspace-panel identity-panel" aria-label={settingsCopy.identity.ariaLabel}>
           <div className="identity-lockup">
             <img src={BRAND.lockupPath} alt={BRAND.lockupName} width={360} height={96} />
             <div>
-              <h2>هوية النظام</h2>
-              <p>{BRAND.descriptor} باسم عربي أساسي واسم لاتيني داعم للاستخدامات التقنية.</p>
+              <h2>{settingsCopy.identity.heading}</h2>
+              <p>{settingsCopy.identity.descriptionTemplate.replace("{descriptor}", BRAND.descriptor)}</p>
             </div>
             <div className="record-meta">
               <span className="badge">{BRAND.arabicName}</span>
@@ -535,13 +555,13 @@ export default function SettingsPage() {
           </div>
         </article>
 
-        <div className="dense-grid" aria-label="فئات الإعدادات">
+        <div className="dense-grid" aria-label={settingsCopy.categories.ariaLabel}>
           {categoryCards.map((card) => (
             <article className="workspace-panel panel-compact" key={card.title}>
               <h2>{card.title}</h2>
               <p>{card.summary}</p>
               <ul>
-                {card.items.map((item) => (
+                {card.items.map((item: string) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
@@ -549,23 +569,23 @@ export default function SettingsPage() {
           ))}
         </div>
 
-        <article className="workspace-panel" aria-label="وضع الأمان">
+        <article className="workspace-panel" aria-label={settingsCopy.security.ariaLabel}>
           <div className="workspace-panel__header">
             <div>
-              <h2>وضع الأمان</h2>
-              <p>ملخص للقراءة فقط يوضح سياسة الوصول الحالية والضوابط المطبقة.</p>
+              <h2>{settingsCopy.security.heading}</h2>
+              <p>{settingsCopy.security.description}</p>
             </div>
-            <StatusBadge tone={error ? "danger" : "neutral"}>{error ? "يتطلب مراجعة" : "قراءة فقط"}</StatusBadge>
+            <StatusBadge tone={error ? "danger" : "neutral"}>{error ? settingsCopy.security.needsReview : settingsCopy.security.readOnly}</StatusBadge>
           </div>
 
           <div className="stack">
             {isLoading ? (
-              <p className="helper-text">جاري تحميل إعدادات الأمان...</p>
+              <p className="helper-text">{settingsCopy.security.loading}</p>
             ) : error ? (
-              <p className="helper-text status-error">خطأ: {error}</p>
+              <p className="helper-text status-error">{settingsCopy.security.errorPrefix.replace("{error}", error)}</p>
             ) : (
               <>
-                <div className="kv-grid" role="group" aria-label="ضوابط الأمان الحالية">
+                <div className="kv-grid" role="group" aria-label={settingsCopy.security.postureAriaLabel}>
                   {postureRows.map((row) => (
                     <div className="kv-item" key={row.label}>
                       <strong>{row.label}</strong>
@@ -576,7 +596,7 @@ export default function SettingsPage() {
 
                 {settings && settings.cspPolicy && (
                   <div className="section-divider">
-                    <strong>سياسة CSP (وقت النشر)</strong>
+                    <strong>{settingsCopy.security.cspHeading}</strong>
                     <p className="helper-text mt-tight mono-text">
                       {settings.cspPolicy}
                     </p>
@@ -585,7 +605,7 @@ export default function SettingsPage() {
 
                 {settings && settings.corsOrigins && settings.corsOrigins.length > 0 && (
                   <div className="section-divider">
-                    <strong>مصادر CORS (وقت النشر)</strong>
+                    <strong>{settingsCopy.security.corsHeading}</strong>
                     <ul className="compact-list mt-tight">
                       {settings.corsOrigins.map((origin) => (
                         <li key={origin}>{origin}</li>
@@ -599,31 +619,116 @@ export default function SettingsPage() {
           </div>
         </article>
 
-        <article className="workspace-panel" aria-label="إعداد معالجة Whisper">
+        <article className="workspace-panel" aria-label={settingsCopy.display.ariaLabel}>
           <div className="workspace-panel__header">
             <div>
-              <h2>معالجة Whisper</h2>
-              <p>اختر المعالج الذي تستخدمه مهام تفريغ الصوت والفيديو الجديدة. المعالج المركزي هو الإعداد الافتراضي.</p>
+              <h2>{settingsCopy.display.heading}</h2>
+              <p>{settingsCopy.display.description}</p>
+            </div>
+            <StatusBadge tone={displaySettingsStatus === "fallback" ? "warning" : "neutral"}>
+              {displaySettingsStatus === "loading" ? settingsCopy.display.loading : displayPreview}
+            </StatusBadge>
+          </div>
+
+          {displaySettingsStatus === "fallback" ? (
+            <p className="helper-text status-error" role="status">
+              {displaySettingsError ? `${settingsCopy.display.fallback} ${displaySettingsError}` : settingsCopy.display.fallback}
+            </p>
+          ) : null}
+
+          <div className="stack section-divider">
+            <div className="field-row">
+              <label>
+                <span className="field-note">{settingsCopy.display.timeZoneLabel}</span>
+                <input
+                  className="search-input"
+                  value={displaySettingsDraft.timeZone}
+                  dir="ltr"
+                  disabled={!canManageDisplaySettings}
+                  onChange={(event) => setDisplaySettingsDraft((current) => ({ ...current, timeZone: event.target.value }))}
+                />
+                <span className="helper-text">{settingsCopy.display.timeZoneHint}</span>
+              </label>
+              <label>
+                <span className="field-note">{settingsCopy.display.dateFormatLabel}</span>
+                <select
+                  className="search-input"
+                  value={displaySettingsDraft.dateFormat}
+                  disabled={!canManageDisplaySettings}
+                  onChange={(event) => setDisplaySettingsDraft((current) => ({ ...current, dateFormat: event.target.value as DisplaySettings["dateFormat"] }))}
+                >
+                  <option value="DD/MM/YYYY">{settingsCopy.display.dateFormatDayFirst}</option>
+                  <option value="MM/DD/YYYY">{settingsCopy.display.dateFormatMonthFirst}</option>
+                  <option value="YYYY-MM-DD">{settingsCopy.display.dateFormatYearFirst}</option>
+                </select>
+              </label>
+              <label>
+                <span className="field-note">{settingsCopy.display.timeFormatLabel}</span>
+                <select
+                  className="search-input"
+                  value={displaySettingsDraft.timeFormat}
+                  disabled={!canManageDisplaySettings}
+                  onChange={(event) => setDisplaySettingsDraft((current) => ({ ...current, timeFormat: event.target.value as DisplaySettings["timeFormat"] }))}
+                >
+                  <option value="24h">{settingsCopy.display.timeFormat24}</option>
+                  <option value="12h">{settingsCopy.display.timeFormat12}</option>
+                </select>
+              </label>
+            </div>
+
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={displaySettingsDraft.showSeconds}
+                disabled={!canManageDisplaySettings}
+                onChange={(event) => setDisplaySettingsDraft((current) => ({ ...current, showSeconds: event.target.checked }))}
+              />
+              {settingsCopy.display.showSecondsLabel}
+            </label>
+
+            <div className="helper-row">
+              <strong>{settingsCopy.display.previewLabel}: {displayPreview}</strong>
+              {canManageDisplaySettings ? (
+                <button className="button button-primary button-small" type="button" disabled={displaySaveState.status === "saving"} onClick={() => void saveDisplaySettings()}>
+                  {displaySaveState.status === "saving" ? settingsCopy.display.saving : settingsCopy.display.save}
+                </button>
+              ) : (
+                <span className="helper-text">{settingsCopy.display.readOnly}</span>
+              )}
+            </div>
+            {displaySaveState.status !== "idle" && displaySaveState.status !== "saving" ? (
+              <p className={`form-status ${displaySaveState.status === "error" ? "status-error" : "status-success"}`} role={displaySaveState.status === "error" ? "alert" : "status"}>
+                {displaySaveState.message}
+              </p>
+            ) : null}
+          </div>
+        </article>
+
+        <article className="workspace-panel" aria-label={settingsCopy.whisper.ariaLabel}>
+          <div className="workspace-panel__header">
+            <div>
+              <h2>{settingsCopy.whisper.heading}</h2>
+              <p>{settingsCopy.whisper.description}</p>
             </div>
           </div>
 
           {isLoading ? (
-            <p className="helper-text">جاري تحميل إعداد Whisper...</p>
+            <p className="helper-text">{settingsCopy.whisper.loading}</p>
           ) : settings ? (
             <div className="stack">
               <label>
-                <span className="field-note">المعالج</span>
+                <span className="field-note">{settingsCopy.whisper.processorLabel}</span>
                 <select
                   className="search-input"
                   value={settings.whisperDevice}
                   disabled={whisperSaveState.status === "saving"}
                   onChange={(event) => void updateWhisperDevice(event.target.value as "cpu" | "cuda")}
                 >
-                  <option value="cpu">CPU — الافتراضي</option>
-                  <option value="cuda">GPU عبر CUDA</option>
+                  <option value="cpu">{settingsCopy.whisper.cpuOption}</option>
+                  <option value="cuda">{settingsCopy.whisper.cudaOption}</option>
                 </select>
               </label>
-              <p className="helper-text">يتطلب خيار GPU عامل <code>laravel-worker-gpu</code> يعمل مع CUDA وNVIDIA Container Toolkit. حفظ الخيار لا يثبت توفر GPU تلقائيًا؛ ستفشل المهمة برسالة واضحة إن لم يكن العامل جاهزًا.</p>
+              <p className="helper-text">{settingsCopy.whisper.gpuHelperBefore} <code>laravel-worker-gpu</code> {settingsCopy.whisper.gpuHelperAfter}</p>
               {whisperSaveState.status !== "idle" && whisperSaveState.status !== "saving" && (
                 <p className={`form-status ${whisperSaveState.status === "error" ? "status-error" : "status-success"}`} role={whisperSaveState.status === "error" ? "alert" : undefined}>
                   {whisperSaveState.message}
@@ -631,7 +736,7 @@ export default function SettingsPage() {
               )}
             </div>
           ) : (
-            <p className="helper-text status-error">تعذر تحميل إعداد Whisper.</p>
+            <p className="helper-text status-error">{settingsCopy.whisper.loadError}</p>
           )}
         </article>
 
@@ -639,11 +744,11 @@ export default function SettingsPage() {
         <ShortcutsSettings />
         <AppearanceSettings />
 
-        <article className="workspace-panel" aria-label="نصائح السياق">
+        <article className="workspace-panel" aria-label={settingsCopy.tips.ariaLabel}>
           <div className="workspace-panel__header">
             <div>
-              <h2>نصائح السياق</h2>
-              <p>زر المساعدة "؟" الذي يظهر في شريط أدوات كل صفحة، مع اقتراحات سريعة خاصة بها.</p>
+              <h2>{settingsCopy.tips.heading}</h2>
+              <p>{settingsCopy.tips.description}</p>
             </div>
           </div>
           <label>
@@ -656,27 +761,27 @@ export default function SettingsPage() {
                 setTipsEnabled(enabled);
               }}
             />
-            {" "}إظهار نصائح السياق في كل الصفحات
+            {" "}{settingsCopy.tips.toggleLabel}
           </label>
           <p className="helper-text mt-tight">
-            إعادة التفعيل تُظهر من جديد كل نصيحة أُخفيت سابقًا لهذه الجلسة أو نهائيًا.
+            {settingsCopy.tips.helper}
           </p>
         </article>
 
         <article className="workspace-panel" aria-label="ODBC bridge">
           <div className="workspace-panel__header">
             <div>
-              <h2>ODBC للأنظمة القديمة</h2>
-              <p>فحص الاتصال، معاينة قراءة محدودة، وكتابة صفوف مقيدة للجداول الأساسية المسموحة فقط.</p>
+              <h2>{settingsCopy.odbc.heading}</h2>
+              <p>{settingsCopy.odbc.description}</p>
             </div>
-            {odbc && <StatusBadge tone={odbcStatusTone(odbc.status)}>{odbcStatusLabel(odbc.status)}</StatusBadge>}
+            {odbc && <StatusBadge tone={odbcStatusTone(odbc.status)}>{odbcStatusLabel(odbc.status, settingsCopy.odbc)}</StatusBadge>}
           </div>
 
           <div className="stack">
             {isOdbcLoading ? (
-              <p className="helper-text">جاري فحص ODBC...</p>
+              <p className="helper-text">{settingsCopy.odbc.loading}</p>
             ) : odbcError ? (
-              <p className="helper-text status-error">خطأ: {odbcError}</p>
+              <p className="helper-text status-error">{settingsCopy.odbc.errorPrefix.replace("{error}", odbcError)}</p>
             ) : odbc ? (
               <>
                 <div className="kv-grid" aria-label="ODBC connection posture">
@@ -690,14 +795,14 @@ export default function SettingsPage() {
 
                 {(odbc.message || odbc.error) && (
                   <div className={`state-banner ${odbc.status === "connected" ? "state-banner-success" : "state-banner-error"}`}>
-                    <strong>{odbc.status === "connected" ? "الاتصال جاهز" : "يتطلب إعداداً"}</strong>
-                    <p className="helper-text">{odbcStatusMessage(odbc)}</p>
+                    <strong>{odbc.status === "connected" ? settingsCopy.odbc.connectedTitle : settingsCopy.odbc.needsSetupTitle}</strong>
+                    <p className="helper-text">{odbcStatusMessage(odbc, settingsCopy.odbc)}</p>
                   </div>
                 )}
 
                 <div className="field-row" aria-label="ODBC table preview controls">
                   <label>
-                    <span className="field-note">الجدول الأساسي</span>
+                    <span className="field-note">{settingsCopy.odbc.tableFieldLabel}</span>
                     <select
                       className="search-input"
                       value={selectedOdbcTable}
@@ -713,7 +818,7 @@ export default function SettingsPage() {
                     >
                       {odbcCoreTables.map((table) => (
                         <option key={table} value={table}>
-                          {odbcTableLabels[table]}
+                          {settingsCopy.odbc.tableLabels[table]}
                         </option>
                       ))}
                     </select>
@@ -725,43 +830,43 @@ export default function SettingsPage() {
                     onClick={() => void loadOdbcPreview()}
                   >
                     {isPreviewLoading ? <RefreshCw size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
-                    {isPreviewLoading ? "جاري القراءة" : "معاينة"}
+                    {isPreviewLoading ? settingsCopy.odbc.previewButtonLoading : settingsCopy.odbc.previewButton}
                   </button>
                 </div>
 
                 {!canPreviewOdbc && (
                   <p className="helper-text">
-                    المعاينة تعمل بعد تفعيل ODBC وضبط DSN وتحميل driver في بيئة الخادم.
+                    {settingsCopy.odbc.previewDisabledHelper}
                   </p>
                 )}
 
                 {canPreviewOdbc && (
                   <div className="stack section-divider" aria-label="ODBC row write controls">
                     <div>
-                      <strong>كتابة صف مقيدة</strong>
+                      <strong>{settingsCopy.odbc.writeSectionTitle}</strong>
                       <p className="helper-text">
-                        تقبل العمليات JSON object فقط، وتمنع أعمدة الأسرار وكلمات المرور وtokens.
+                        {settingsCopy.odbc.writeSectionHelper}
                       </p>
                     </div>
 
                     <div className="field-row">
                       <label>
-                        <span className="field-note">العملية</span>
+                        <span className="field-note">{settingsCopy.odbc.operationLabel}</span>
                         <select
                           className="search-input"
                           value={odbcWriteOperation}
                           onChange={(event) => setOdbcWriteOperation(event.target.value as OdbcWriteOperation)}
                         >
-                          <option value="insert">إضافة صف</option>
-                          <option value="update">تحديث صف</option>
-                          <option value="delete">حذف صف</option>
+                          <option value="insert">{settingsCopy.odbc.operationInsert}</option>
+                          <option value="update">{settingsCopy.odbc.operationUpdate}</option>
+                          <option value="delete">{settingsCopy.odbc.operationDelete}</option>
                         </select>
                       </label>
 
                       {odbcWriteOperation !== "insert" && (
                         <>
                           <label>
-                            <span className="field-note">عمود المفتاح</span>
+                            <span className="field-note">{settingsCopy.odbc.keyColumnLabel}</span>
                             <input
                               className="search-input"
                               value={odbcKeyColumn}
@@ -770,12 +875,12 @@ export default function SettingsPage() {
                             />
                           </label>
                           <label>
-                            <span className="field-note">قيمة المفتاح</span>
+                            <span className="field-note">{settingsCopy.odbc.keyValueLabel}</span>
                             <input
                               className="search-input"
                               value={odbcKeyValue}
                               onChange={(event) => setOdbcKeyValue(event.target.value)}
-                              placeholder="row id أو key"
+                              placeholder={settingsCopy.odbc.keyValuePlaceholder}
                             />
                           </label>
                         </>
@@ -784,7 +889,7 @@ export default function SettingsPage() {
 
                     {odbcWriteOperation !== "delete" && (
                       <label>
-                        <span className="field-note">القيم JSON</span>
+                        <span className="field-note">{settingsCopy.odbc.valuesJsonLabel}</span>
                         <textarea
                           className="search-input"
                           value={odbcValuesText}
@@ -802,7 +907,7 @@ export default function SettingsPage() {
                         disabled={odbcWriteState.status === "saving"}
                         onClick={() => void handleOdbcWrite()}
                       >
-                        {odbcWriteState.status === "saving" ? "جار التنفيذ..." : "تنفيذ العملية"}
+                        {odbcWriteState.status === "saving" ? settingsCopy.odbc.executeButtonSaving : settingsCopy.odbc.executeButton}
                       </button>
                       <span className={`form-status ${
                         odbcWriteState.status === "error"
@@ -818,18 +923,18 @@ export default function SettingsPage() {
                 )}
 
                 {previewError && (
-                  <p className="helper-text status-error">خطأ: {previewError}</p>
+                  <p className="helper-text status-error">{settingsCopy.odbc.previewErrorPrefix.replace("{error}", previewError)}</p>
                 )}
 
                 {odbcPreview && (
                   <div className="stack section-divider">
                     <div className="helper-row">
-                      <strong>{odbcTableLabels[odbcPreview.table as OdbcCoreTable] || odbcPreview.table}</strong>
-                      <StatusBadge tone="neutral">{`${odbcPreview.count} صف`}</StatusBadge>
+                      <strong>{settingsCopy.odbc.tableLabels[odbcPreview.table as OdbcCoreTable] || odbcPreview.table}</strong>
+                      <StatusBadge tone="neutral">{settingsCopy.odbc.previewRowCount.replace("{count}", String(odbcPreview.count))}</StatusBadge>
                     </div>
 
                     {odbcPreview.rows.length === 0 ? (
-                      <div className="empty-state">لا توجد صفوف ضمن حد المعاينة الحالي.</div>
+                      <div className="empty-state">{settingsCopy.odbc.previewEmpty}</div>
                     ) : (
                       <div className="scroll-x">
                         <table className="data-table">
@@ -847,7 +952,7 @@ export default function SettingsPage() {
                               <tr key={`${odbcPreview.table}-${rowIndex}`}>
                                 {previewColumns.map((column) => (
                                   <td key={column}>
-                                    {formatPreviewValue(row[column])}
+                                    {formatPreviewValue(row[column], settingsCopy.metrics.notAvailable)}
                                   </td>
                                 ))}
                               </tr>
@@ -866,25 +971,25 @@ export default function SettingsPage() {
         <article className="workspace-panel" aria-label="Connection testing">
           <div className="workspace-panel__header">
             <div>
-              <h2>فحص الاتصالات</h2>
-              <p>نفّذ فحصاً آمناً للقراءة والكتابة ثم راجع النتيجة قبل الاعتماد على أي اتصال.</p>
+              <h2>{settingsCopy.connectionTest.heading}</h2>
+              <p>{settingsCopy.connectionTest.description}</p>
             </div>
           </div>
           <div className="stack">
             <section className="section-divider stack" aria-labelledby="dropbox-connection-title">
               <div className="helper-row">
                 <div>
-                  <strong id="dropbox-connection-title">تكامل Dropbox</strong>
+                  <strong id="dropbox-connection-title">{settingsCopy.connectionTest.dropboxTitle}</strong>
                   <p className="helper-text mt-tight">
                     {dropbox?.status === "connected"
-                      ? `متصل بالمجلد ${dropbox.folderPath || "/"}. تحفظ رموز الوصول مشفرة على الخادم.`
+                      ? settingsCopy.connectionTest.dropboxConnectedTemplate.replace("{folder}", dropbox.folderPath || "/")
                       : dropbox?.status === "disabled"
-                        ? "غير مهيأ في بيئة الخادم. أضف إعدادات OAuth إلى الأسرار ثم أعد تحميل الحالة."
-                        : "غير متصل. يتطلب الربط بيانات OAuth معتمدة من مسؤول النظام."}
+                        ? settingsCopy.connectionTest.dropboxDisabled
+                        : settingsCopy.connectionTest.dropboxNotConnected}
                   </p>
                 </div>
                 <StatusBadge tone={dropbox?.status === "connected" ? "success" : dropbox?.status === "disabled" ? "warning" : "neutral"}>
-                  {dropbox?.status === "connected" ? "متصل" : dropbox?.status === "disabled" ? "غير مهيأ" : "غير متصل"}
+                  {dropbox?.status === "connected" ? settingsCopy.connectionTest.dropboxStatusConnected : dropbox?.status === "disabled" ? settingsCopy.connectionTest.dropboxStatusDisabled : settingsCopy.connectionTest.dropboxStatusNotConnected}
                 </StatusBadge>
               </div>
               {dropbox?.status === "connected" ? (
@@ -893,13 +998,13 @@ export default function SettingsPage() {
                   onSelected={(folderPath) => setDropbox((current) => (current ? { ...current, folderPath } : current))}
                 />
               ) : null}
-              <p className="helper-text">لا تُدخل رموز Dropbox في المتصفح. يبدأ تدفق التفويض من بيئة الخادم بعد توفير بيانات الاعتماد.</p>
+              <p className="helper-text">{settingsCopy.connectionTest.dropboxSecurityHelper}</p>
             </section>
             <section className="section-divider stack" aria-labelledby="storage-connection-test-title">
               <div className="helper-row">
                 <div>
-                  <strong id="storage-connection-test-title">اختبار التخزين المحلي</strong>
-                  <p className="helper-text mt-tight">يفحص مجلد التخزين الافتراضي على الخادم بإنشاء ملف اختبار وقراءته ثم حذفه.</p>
+                  <strong id="storage-connection-test-title">{settingsCopy.connectionTest.storageTitle}</strong>
+                  <p className="helper-text mt-tight">{settingsCopy.connectionTest.storageDescription}</p>
                 </div>
                 <button
                   className="button button-secondary button-small"
@@ -909,22 +1014,22 @@ export default function SettingsPage() {
                   onClick={() => void runStorageConnectionTest()}
                 >
                   {storageTestState.status === "pending"
-                    ? "جاري الفحص..."
+                    ? settingsCopy.connectionTest.checking
                     : storageTestState.status === "error"
-                      ? "إعادة المحاولة"
-                      : "فحص التخزين"}
+                      ? settingsCopy.connectionTest.retry
+                      : settingsCopy.connectionTest.storageTestButton}
                 </button>
               </div>
               <div id="storage-connection-test-status" aria-live="polite">
                 {storageTestState.status === "success" && (
                   <div className="state-banner state-banner-success">
-                    <strong>التخزين المحلي متصل</strong>
+                    <strong>{settingsCopy.connectionTest.storageSuccessTitle}</strong>
                     <p className="helper-text">{storageTestState.connection.message}</p>
                   </div>
                 )}
                 {storageTestState.status === "error" && (
                   <div className="state-banner state-banner-error" role="alert">
-                    <strong>فشل فحص التخزين</strong>
+                    <strong>{settingsCopy.connectionTest.storageErrorTitle}</strong>
                     <p className="helper-text">{storageTestState.message}</p>
                   </div>
                 )}
@@ -933,12 +1038,12 @@ export default function SettingsPage() {
 
             <section className="section-divider stack" aria-labelledby="database-connection-test-title">
               <div>
-                <strong id="database-connection-test-title">اختبار قاعدة البيانات</strong>
-                <p className="helper-text mt-tight">أدخل بيانات هدف الاختبار. لا تُحفظ كلمة المرور في المتصفح أو في هذه الصفحة.</p>
+                <strong id="database-connection-test-title">{settingsCopy.connectionTest.databaseTitle}</strong>
+                <p className="helper-text mt-tight">{settingsCopy.connectionTest.databaseDescription}</p>
               </div>
-              <div className="field-row" aria-label="بيانات اتصال قاعدة البيانات">
+              <div className="field-row" aria-label={settingsCopy.connectionTest.databaseFieldsAriaLabel}>
                 <label>
-                  <span className="field-note">المشغّل</span>
+                  <span className="field-note">{settingsCopy.connectionTest.driverLabel}</span>
                   <select
                     className="search-input"
                     value={databaseTestForm.driver}
@@ -958,7 +1063,7 @@ export default function SettingsPage() {
                   </select>
                 </label>
                 <label>
-                  <span className="field-note">{databaseTestForm.driver === "sqlite" ? "مسار قاعدة البيانات" : "اسم قاعدة البيانات"}</span>
+                  <span className="field-note">{databaseTestForm.driver === "sqlite" ? settingsCopy.connectionTest.databasePathLabel : settingsCopy.connectionTest.databaseNameLabel}</span>
                   <input
                     className="search-input"
                     value={databaseTestForm.database}
@@ -966,14 +1071,14 @@ export default function SettingsPage() {
                       setDatabaseTestForm((current) => ({ ...current, database: event.target.value }));
                       setDatabaseTestState({ status: "idle" });
                     }}
-                    placeholder={databaseTestForm.driver === "sqlite" ? ":memory: أو /path/to/database.sqlite" : "archive"}
+                    placeholder={databaseTestForm.driver === "sqlite" ? settingsCopy.connectionTest.databasePathPlaceholder : "archive"}
                     dir="ltr"
                   />
                 </label>
                 {databaseTestForm.driver !== "sqlite" && (
                   <>
                     <label>
-                      <span className="field-note">المضيف</span>
+                      <span className="field-note">{settingsCopy.connectionTest.hostLabel}</span>
                       <input
                         className="search-input"
                         value={databaseTestForm.host}
@@ -986,7 +1091,7 @@ export default function SettingsPage() {
                       />
                     </label>
                     <label>
-                      <span className="field-note">المنفذ</span>
+                      <span className="field-note">{settingsCopy.connectionTest.portLabel}</span>
                       <input
                         className="search-input"
                         inputMode="numeric"
@@ -1000,7 +1105,7 @@ export default function SettingsPage() {
                       />
                     </label>
                     <label>
-                      <span className="field-note">اسم المستخدم</span>
+                      <span className="field-note">{settingsCopy.connectionTest.usernameLabel}</span>
                       <input
                         className="search-input"
                         autoComplete="username"
@@ -1013,7 +1118,7 @@ export default function SettingsPage() {
                       />
                     </label>
                     <label>
-                      <span className="field-note">كلمة المرور</span>
+                      <span className="field-note">{settingsCopy.connectionTest.passwordLabel}</span>
                       <input
                         className="search-input"
                         type="password"
@@ -1038,22 +1143,22 @@ export default function SettingsPage() {
                   onClick={() => void runDatabaseConnectionTest()}
                 >
                   {databaseTestState.status === "pending"
-                    ? "جاري الفحص..."
+                    ? settingsCopy.connectionTest.checking
                     : databaseTestState.status === "error"
-                      ? "إعادة المحاولة"
-                      : "فحص قاعدة البيانات"}
+                      ? settingsCopy.connectionTest.retry
+                      : settingsCopy.connectionTest.databaseTestButton}
                 </button>
               </div>
               <div id="database-connection-test-status" aria-live="polite">
                 {databaseTestState.status === "success" && (
                   <div className="state-banner state-banner-success">
-                    <strong>قاعدة البيانات متصلة</strong>
+                    <strong>{settingsCopy.connectionTest.databaseSuccessTitle}</strong>
                     <p className="helper-text">{databaseTestState.connection.message}</p>
                   </div>
                 )}
                 {databaseTestState.status === "error" && (
                   <div className="state-banner state-banner-error" role="alert">
-                    <strong>فشل فحص قاعدة البيانات</strong>
+                    <strong>{settingsCopy.connectionTest.databaseErrorTitle}</strong>
                     <p className="helper-text">{databaseTestState.message}</p>
                   </div>
                 )}
@@ -1062,39 +1167,39 @@ export default function SettingsPage() {
           </div>
         </article>
 
-        <article className="workspace-panel" aria-label="تنقل مركز الإعدادات">
+        <article className="workspace-panel" aria-label={settingsCopy.related.ariaLabel}>
           <div className="workspace-panel__header">
             <div>
-              <h2>الأقسام ذات الصلة</h2>
-              <p>روابط سريعة إلى مراكز الإدارة والإعدادات الأخرى.</p>
+              <h2>{settingsCopy.related.heading}</h2>
+              <p>{settingsCopy.related.description}</p>
             </div>
           </div>
 
           <div className="dense-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
             <div className="panel-compact">
-              <h3>مركز البيانات</h3>
-              <p className="helper-text">صحة النظام والنسخ الاحتياطية والاستعادة.</p>
-              <a className="button button-secondary button-small" href="/data-center">الذهاب إلى المركز</a>
+              <h3>{settingsCopy.related.dataCenterTitle}</h3>
+              <p className="helper-text">{settingsCopy.related.dataCenterDescription}</p>
+              <a className="button button-secondary button-small" href="/data-center">{settingsCopy.related.dataCenterLink}</a>
             </div>
             <div className="panel-compact">
-              <h3>قوالب الأقسام</h3>
-              <p className="helper-text">قوالب مركزية بإصدارات وصلاحيات استعمال على مستوى القسم.</p>
-              <a className="button button-secondary button-small" href="/metadata-templates">إدارة القوالب</a>
+              <h3>{settingsCopy.related.templatesTitle}</h3>
+              <p className="helper-text">{settingsCopy.related.templatesDescription}</p>
+              <a className="button button-secondary button-small" href="/metadata-templates">{settingsCopy.related.templatesLink}</a>
             </div>
             <div className="panel-compact">
-              <h3>المستخدمون والأدوار</h3>
-              <p className="helper-text">إدارة الوصول والأذونات.</p>
-              <a className="button button-secondary button-small" href="/settings/users">إدارة المستخدمين</a>
+              <h3>{settingsCopy.related.usersTitle}</h3>
+              <p className="helper-text">{settingsCopy.related.usersDescription}</p>
+              <a className="button button-secondary button-small" href="/settings/users">{settingsCopy.related.usersLink}</a>
             </div>
             <div className="panel-compact">
-              <h3>الجولة الأولى</h3>
-              <p className="helper-text">قائمة فحص الإعدادات والتشغيل.</p>
-              <a className="button button-secondary button-small" href="/first-run">إعادة الفتح</a>
+              <h3>{settingsCopy.related.firstRunTitle}</h3>
+              <p className="helper-text">{settingsCopy.related.firstRunDescription}</p>
+              <a className="button button-secondary button-small" href="/first-run">{settingsCopy.related.firstRunLink}</a>
             </div>
             <div className="panel-compact">
-              <h3>حالة النظام</h3>
-              <p className="helper-text">مراقبة اتصال الخادم والأداء.</p>
-              <a className="button button-secondary button-small" href="/status">عرض الحالة</a>
+              <h3>{settingsCopy.related.statusTitle}</h3>
+              <p className="helper-text">{settingsCopy.related.statusDescription}</p>
+              <a className="button button-secondary button-small" href="/status">{settingsCopy.related.statusLink}</a>
             </div>
           </div>
         </article>

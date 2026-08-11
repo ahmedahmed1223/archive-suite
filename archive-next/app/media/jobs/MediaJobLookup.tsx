@@ -6,6 +6,7 @@ import { KeyRound, SearchCheck } from "lucide-react";
 import { z } from "zod";
 import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type LookupState =
   | { status: "idle" }
@@ -13,39 +14,23 @@ type LookupState =
   | { status: "ready"; job: MediaJob }
   | { status: "error"; message: string };
 
-const lookupSchema = z.object({
-  jobId: z.string().trim().min(1, "أدخل معرّف المهمة قبل الفحص."),
-  accessToken: z.string().trim().optional().transform((value) => value || undefined)
-});
+type LookupFormValues = { jobId: string; accessToken?: string };
 
-type LookupFormValues = z.input<typeof lookupSchema>;
-
-function operationLabel(operation: MediaOperation) {
-  const labels: Record<MediaOperation, string> = {
-    thumbnail: "صورة مصغرة",
-    transcode: "تحويل صيغة",
-    transcription: "تفريغ نصي",
-    ocr: "استخراج نص OCR",
-    montage_export: "تصدير مونتاج"
-  };
-
-  return labels[operation] || operation;
-}
-
-function statusLabel(status: MediaJobStatus) {
-  const labels: Record<MediaJobStatus, string> = {
-    queued: "قيد الانتظار",
-    processing: "قيد المعالجة",
-    completed: "مكتمل",
-    failed: "فشل",
-    canceled: "ملغى"
-  };
-
-  return labels[status] || status;
+function labelFor(labels: object, value: string): string {
+  const label = (labels as Record<string, unknown>)[value];
+  return typeof label === "string" ? label : value;
 }
 
 export function MediaJobLookup() {
+  const { t } = useLocale();
+  const copy = t.pages.mediaJobLookup;
   const api = useMemo(() => createArchiveApiClient(), []);
+  const lookupSchema = useMemo(() => z.object({
+    jobId: z.string().trim().min(1, copy.validation.jobIdRequired),
+    accessToken: z.string().trim().optional().transform((value) => value || undefined)
+  }), [copy.validation.jobIdRequired]);
+  const operationLabel = (operation: MediaOperation) => labelFor(copy.operations, operation);
+  const statusLabel = (status: MediaJobStatus) => labelFor(copy.statuses, status);
   const [state, setState] = useState<LookupState>({ status: "idle" });
   const form = useForm<LookupFormValues>({
     defaultValues: {
@@ -66,7 +51,7 @@ export function MediaJobLookup() {
           form.setError(field as keyof LookupFormValues, { type: "zod", message: issue.message });
         }
       });
-      setState({ status: "error", message: parsed.error.issues[0]?.message || "راجع بيانات الفحص." });
+      setState({ status: "error", message: parsed.error.issues[0]?.message || copy.validation.reviewData });
       return;
     }
 
@@ -82,45 +67,45 @@ export function MediaJobLookup() {
   });
 
   return (
-    <form className="workspace-panel auth-form" onSubmit={handleSubmit} aria-label="فحص مهمة وسائط">
+    <form className="workspace-panel auth-form" onSubmit={handleSubmit} aria-label={copy.form.ariaLabel}>
       <div className="workspace-panel__header">
         <div>
-          <h2>فحص مهمة محددة</h2>
-          <p>تحقق بسرعة من حالة مهمة الوسائط ونتيجتها من الخادم.</p>
+          <h2>{copy.form.title}</h2>
+          <p>{copy.form.description}</p>
         </div>
-        <span className="badge">فحص مباشر</span>
+        <span className="badge">{copy.form.directCheck}</span>
       </div>
 
       <label>
-        معرّف المهمة
-        <input type="text" placeholder="معرّف مهمة الوسائط" autoComplete="off" {...form.register("jobId")} />
+        {copy.form.jobId}
+        <input type="text" placeholder={copy.form.jobIdPlaceholder} autoComplete="off" {...form.register("jobId")} />
         <FieldError>{errors.jobId?.message}</FieldError>
       </label>
 
       <details className="section-divider">
         <summary className="field-note">
           <KeyRound size={15} aria-hidden="true" />
-          خيارات متقدمة للمسؤول
+          {copy.form.advancedOptions}
         </summary>
-        <p className="field-note">استخدم رمز وصول بديلًا فقط عند فحص مهمة ضمن جلسة أو بيئة مختلفة.</p>
+        <p className="field-note">{copy.form.accessTokenDescription}</p>
         <label>
-          رمز الوصول
-          <input type="password" placeholder="رمز Bearer اختياري" autoComplete="off" {...form.register("accessToken")} />
+          {copy.form.accessToken}
+          <input type="password" placeholder={copy.form.accessTokenPlaceholder} autoComplete="off" {...form.register("accessToken")} />
           <FieldError>{errors.accessToken?.message}</FieldError>
         </label>
       </details>
 
       <button type="submit" className="button button-primary" disabled={state.status === "loading"}>
         <SearchCheck size={16} aria-hidden="true" />
-        {state.status === "loading" ? "جار الفحص..." : "فحص حالة المهمة"}
+        {state.status === "loading" ? copy.form.checking : copy.form.submit}
       </button>
 
       <p className="form-status" role={state.status === "error" ? "alert" : "status"}>
         {state.status === "ready"
-          ? `تم العثور على المهمة. الحالة الحالية: ${statusLabel(state.job.status)}، ونوع العملية: ${operationLabel(state.job.operation)}.`
+          ? copy.form.found.replace("{status}", statusLabel(state.job.status)).replace("{operation}", operationLabel(state.job.operation))
           : state.status === "error"
             ? state.message
-            : "أدخل معرّف المهمة لعرض حالتها من الخادم."}
+            : copy.form.idle}
       </p>
     </form>
   );

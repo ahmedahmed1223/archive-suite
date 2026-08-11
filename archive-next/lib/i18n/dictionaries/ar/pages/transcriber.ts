@@ -1,0 +1,90 @@
+export const transcriber = {
+  toolbar: {
+    title: "التفريغ الصوتي",
+    description: "أنشئ مهمة تفريغ صوتي عبر مهام الوسائط وتابع تقدّمها حتى اكتمال النص بالطوابع الزمنية.",
+    queueBadge: "تفريغ عبر قائمة المهام",
+    pollingBadge: "تحديث كل {seconds} ثوانٍ"
+  },
+  validation: {
+    outputFormatRequired: "اختر صيغة إخراج واحدة على الأقل.",
+    recordAndPathRequired: "أدخل معرّف السجل ومسار الملف قبل بدء التفريغ."
+  },
+  cancel: {
+    title: "تعذر إلغاء المهمة",
+    message: "فشل الإلغاء: {error}",
+    button: "إلغاء"
+  },
+  subtitles: {
+    title: "محرر SRT وWebVTT",
+    description: "افتح الترجمة أو عدّلها أو انسخها أو نزّلها أو احفظها مع نمط عرضها في مادة أرشيفية.",
+    cueCount: "{count} مقطع",
+    fileLabel: "ملف الترجمة",
+    recordIdLabel: "معرّف المادة للحفظ",
+    recordIdPlaceholder: "record-id",
+    formatLabel: "الصيغة",
+    fontSizeLabel: "حجم النص",
+    colorLabel: "لون النص",
+    alignmentLabel: "المحاذاة",
+    alignmentStart: "بداية",
+    alignmentMiddle: "وسط",
+    alignmentEnd: "نهاية",
+    contentPlaceholder: "ألصق ملف SRT أو WebVTT هنا أو افتحه…",
+    contentAriaLabel: "محتوى ملف الترجمة",
+    copyButton: "نسخ",
+    downloadButton: "تنزيل الملف",
+    saveButton: "حفظ في المادة",
+    previewAriaLabel: "معاينة نمط الترجمة",
+    invalidFile: "اختر ملف SRT أو WebVTT فقط.",
+    openedForEditing: "فُتح {file} للتعديل محليًا.",
+    copied: "نُسخ ملف الترجمة إلى الحافظة.",
+    downloaded: "حُفظت نسخة من ملف الترجمة على جهازك.",
+    recordAndContentRequired: "أدخل معرّف المادة ونص الترجمة قبل الحفظ.",
+    saveSuccess: "حُفظت الترجمة ونمط العرض في المادة.",
+    saveError: "تعذر حفظ الترجمة."
+  },
+  form: {
+    ariaLabel: "إنشاء مهمة تفريغ صوتي",
+    previousMediaLabel: "ابحث في وسائط مهام التفريغ السابقة",
+    previousMediaPlaceholder: "معرّف السجل أو مسار الملف",
+    resultsAriaLabel: "نتائج اختيار الوسائط",
+    noPath: "من دون مسار",
+    recordIdLabel: "معرّف السجل",
+    sourcePathLabel: "مسار الملف المصدر",
+    diskLabel: "قرص التخزين (اختياري)",
+    diskPlaceholder: "مثال: archive",
+    languageLabel: "لغة التفريغ",
+    whisperHint: "يعتمد التفريغ على إعداد Whisper العام. اختر GPU من الإعدادات فقط بعد تشغيل عامل CUDA.",
+    outputFormatsLegend: "صيغ الإخراج",
+    srtOption: "SRT (نص مع طوابع زمنية)",
+    vttOption: "VTT (ترجمة فيديو الويب)",
+    ttmlOption: "TTML (تنسيق نص موقّت)",
+    submitting: "جارٍ الإرسال...",
+    submit: "بدء التفريغ"
+  },
+  job: {
+    title: "حالة المهمة",
+    processingFallback: "جارٍ التفريغ",
+    idLabel: "المعرّف",
+    sourceLabel: "المصدر",
+    failed: "فشلت المهمة: {error}",
+    unknownError: "خطأ غير معروف",
+    transcriptWithCues: "النص ({count} مقطع)",
+    transcript: "النص",
+    showSegmented: "عرض النص المقسّم",
+    showRaw: "عرض النص الخام",
+    copied: "تم النسخ",
+    copyText: "نسخ النص",
+    rawTextAriaLabel: "النص الخام",
+    noTranscript: "لا يوجد نص مستخرج بعد.",
+    updating: "جارٍ التفريغ، ويجري التحديث تلقائيًا...",
+    emptyTitle: "لا توجد مهمة تفريغ نشطة",
+    emptyDescription: "أدخل معرّف السجل ومسار الملف، ثم اضغط «بدء التفريغ» لمتابعة التقدّم هنا."
+  },
+  recent: {
+    ariaLabel: "مهام التفريغ الأخيرة",
+    title: "مهام التفريغ الأخيرة",
+    loading: "جارٍ تحميل مهام التفريغ الأخيرة...",
+    empty: "لا توجد مهام تفريغ سابقة.",
+    errorPrefix: "خطأ: {error}"
+  }
+} as const;

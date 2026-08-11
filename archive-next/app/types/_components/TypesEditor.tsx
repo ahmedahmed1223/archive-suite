@@ -6,6 +6,7 @@ import { FieldError, FormHint } from "@/components/ui/Form";
 import IconPicker from "@/components/IconPicker";
 import type { ArchiveType, ArchiveTypeField, ArchiveTypeFieldKind } from "@/lib/archive-api";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/local-draft";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type TypesEditorProps = {
   initialType: ArchiveType | null;
@@ -16,14 +17,6 @@ type TypesEditorProps = {
 };
 
 const ROLES = ["viewer", "editor", "admin"];
-const FIELD_TYPES: Array<{ value: ArchiveTypeFieldKind; label: string }> = [
-  { value: "text", label: "نص" },
-  { value: "number", label: "رقم" },
-  { value: "date", label: "تاريخ" },
-  { value: "select", label: "اختيار واحد" },
-  { value: "multi", label: "اختيارات متعددة" },
-  { value: "boolean", label: "نعم / لا" },
-];
 
 const EMPTY_FIELD: ArchiveTypeField = {
   name: "",
@@ -57,16 +50,16 @@ function cloneFields(fields: ArchiveTypeField[]) {
   }));
 }
 
-function typeIdError(typeId: string): string {
-  return typeId.trim() ? "" : "أدخل معرّف النوع.";
+function typeIdError(typeId: string, message: string): string {
+  return typeId.trim() ? "" : message;
 }
 
-function typeNameError(typeName: string): string {
-  return typeName.trim() ? "" : "أدخل اسم النوع.";
+function typeNameError(typeName: string, message: string): string {
+  return typeName.trim() ? "" : message;
 }
 
-function fieldNameError(name: string): string {
-  return name.trim() ? "" : "أدخل اسمًا لهذا الحقل.";
+function fieldNameError(name: string, message: string): string {
+  return name.trim() ? "" : message;
 }
 
 function duplicateFieldIndexes(fields: ArchiveTypeField[]): Set<number> {
@@ -86,14 +79,21 @@ function duplicateFieldIndexes(fields: ArchiveTypeField[]): Set<number> {
   return duplicates;
 }
 
-function fieldConditionError(field: ArchiveTypeField): string {
+function fieldConditionError(field: ArchiveTypeField, message: string): string {
   if (!field.condition) return "";
   const missingField = !field.condition.field.trim();
   const missingEquals = typeof field.condition.equals === "string" && !field.condition.equals.trim();
-  return missingField || missingEquals ? "أدخل الحقل المصدر وقيمة المقارنة لهذا العرض المشروط." : "";
+  return missingField || missingEquals ? message : "";
 }
 
 export default function TypesEditor({ initialType, isSaving, requestError, onSave, onCancel }: TypesEditorProps) {
+  const { locale, t } = useLocale();
+  const copy = t.pages.types;
+  const fieldTypes: Array<{ value: ArchiveTypeFieldKind; label: string }> = [
+    { value: "text", label: copy.fieldTypes.text }, { value: "number", label: copy.fieldTypes.number },
+    { value: "date", label: copy.fieldTypes.date }, { value: "select", label: copy.fieldTypes.select },
+    { value: "multi", label: copy.fieldTypes.multi }, { value: "boolean", label: copy.fieldTypes.boolean },
+  ];
   const formId = useId();
   const [typeId, setTypeId] = useState("");
   const [typeName, setTypeName] = useState("");
@@ -196,20 +196,20 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
     setTouchedFieldNames(new Set(normalizedFields.map((_, index) => index)));
     setTouchedConditions(new Set(normalizedFields.map((_, index) => index).filter((index) => normalizedFields[index].condition)));
 
-    if (typeIdError(typeId) || typeNameError(typeName)) {
-      setFormError("أدخل معرّف النوع واسمه قبل الحفظ.");
+    if (typeIdError(typeId, copy.typeIdRequired) || typeNameError(typeName, copy.typeNameRequired)) {
+      setFormError(copy.formIdentityRequired);
       return;
     }
-    if (normalizedFields.some((field) => fieldNameError(field.name))) {
-      setFormError("أدخل اسمًا لكل حقل قبل الحفظ.");
+    if (normalizedFields.some((field) => fieldNameError(field.name, copy.fieldNameRequired))) {
+      setFormError(copy.formFieldsRequired);
       return;
     }
     if (duplicateFieldIndexes(normalizedFields).size > 0) {
-      setFormError("أسماء بعض الحقول مكررة. استخدم اسمًا فريدًا لكل حقل.");
+      setFormError(copy.duplicateFields);
       return;
     }
-    if (normalizedFields.some((field) => fieldConditionError(field))) {
-      setFormError("أدخل الحقل المصدر وقيمة المقارنة لكل عرض مشروط قبل الحفظ.");
+    if (normalizedFields.some((field) => fieldConditionError(field, copy.conditionRequired))) {
+      setFormError(copy.conditionalFieldsRequired);
       return;
     }
 
@@ -228,10 +228,10 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
     <aside className="schema-editor" aria-labelledby={`${formId}-heading`}>
       <div className="schema-editor__heading">
         <div>
-          <p className="schema-editor__eyebrow">{isEditing ? "تحرير النوع" : "نوع جديد"}</p>
-          <h2 id={`${formId}-heading`}>{isEditing ? typeName || "نوع غير مسمى" : "إنشاء مخطط بيانات"}</h2>
+          <p className="schema-editor__eyebrow">{isEditing ? copy.editType : copy.newType}</p>
+          <h2 id={`${formId}-heading`}>{isEditing ? typeName || copy.unnamedType : copy.createSchema}</h2>
         </div>
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>إغلاق</Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>{copy.close}</Button>
       </div>
 
       <form className="schema-editor__form" onSubmit={handleSubmit} noValidate>
@@ -240,17 +240,17 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
         {pendingDraft ? (
           <div className="panel panel-compact draft-restore-banner" role="status">
             <p className="form-status">
-              يوجد نوع غير محفوظ من {new Date(pendingDraft.savedAt).toLocaleString("ar")}. استعادته؟
+              {copy.unsavedDraft.replace("{date}", new Date(pendingDraft.savedAt).toLocaleString(locale === "ar" ? "ar-SA" : "en-US"))}
             </p>
             <div className="button-row">
-              <Button type="button" size="sm" variant="secondary" onClick={handleRestoreDraft}>استعادة المسودة</Button>
-              <Button type="button" size="sm" variant="ghost" onClick={handleDiscardDraft}>تجاهل</Button>
+              <Button type="button" size="sm" variant="secondary" onClick={handleRestoreDraft}>{copy.restoreDraft}</Button>
+              <Button type="button" size="sm" variant="ghost" onClick={handleDiscardDraft}>{copy.discard}</Button>
             </div>
           </div>
         ) : null}
 
         <label className="schema-form-field">
-          <span>معرّف النوع</span>
+          <span>{copy.typeId}</span>
           <input
             className="schema-field-control"
             value={typeId}
@@ -260,64 +260,64 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
             aria-describedby={`${formId}-id-hint`}
             required
           />
-          {touchedTypeId ? <FieldError>{typeIdError(typeId)}</FieldError> : null}
+          {touchedTypeId ? <FieldError>{typeIdError(typeId, copy.typeIdRequired)}</FieldError> : null}
           <FormHint className="schema-field-hint" >
-            <span id={`${formId}-id-hint`}>{isEditing ? "لا يمكن تغيير المعرّف بعد الإنشاء." : "استخدم معرّفًا ثابتًا مثل document أو photo."}</span>
+            <span id={`${formId}-id-hint`}>{isEditing ? copy.typeIdEditHint : copy.typeIdCreateHint}</span>
           </FormHint>
         </label>
 
         <label className="schema-form-field">
-          <span>اسم النوع</span>
+          <span>{copy.typeName}</span>
           <input
             className="schema-field-control"
             value={typeName}
             onChange={(event) => setTypeName(event.target.value)}
             onBlur={() => setTouchedTypeName(true)}
             disabled={isSaving}
-            placeholder="مثال: مستند"
+            placeholder={copy.typeNamePlaceholder}
             required
           />
-          {touchedTypeName ? <FieldError>{typeNameError(typeName)}</FieldError> : null}
+          {touchedTypeName ? <FieldError>{typeNameError(typeName, copy.typeNameRequired)}</FieldError> : null}
         </label>
 
         <div className="schema-form-field">
-          <span>أيقونة النوع</span>
-          <IconPicker value={icon} onChange={setIcon} label="اختر أيقونة النوع" />
+          <span>{copy.typeIcon}</span>
+          <IconPicker value={icon} onChange={setIcon} label={copy.selectTypeIcon} />
         </div>
 
         <fieldset className="schema-fields">
-          <legend>الحقول</legend>
-          <FormHint>حدّد الحقول التي تظهر عند إدخال سجل من هذا النوع، ثم امنح الأدوار صلاحية العرض أو التحرير.</FormHint>
+          <legend>{copy.fields}</legend>
+          <FormHint>{copy.fieldsHint}</FormHint>
 
           <div className="schema-field-list">
             {fields.map((field, index) => (
               <section className="schema-field-row" key={`${initialType?.id ?? "new"}-${index}`} aria-labelledby={`${formId}-field-${index}`}>
                 <div className="schema-field-row__topline">
-                  <strong id={`${formId}-field-${index}`}>الحقل {index + 1}</strong>
-                  <Button type="button" size="sm" variant="ghost" disabled={isSaving || fields.length === 1} onClick={() => setFields((current) => current.filter((_, itemIndex) => itemIndex !== index))}>حذف</Button>
+                  <strong id={`${formId}-field-${index}`}>{copy.fieldNumber.replace("{number}", String(index + 1))}</strong>
+                  <Button type="button" size="sm" variant="ghost" disabled={isSaving || fields.length === 1} onClick={() => setFields((current) => current.filter((_, itemIndex) => itemIndex !== index))}>{copy.delete}</Button>
                 </div>
                 <div className="schema-field-grid">
                   <label className="schema-form-field">
-                    <span>اسم الحقل</span>
+                    <span>{copy.fieldName}</span>
                     <input
                       className="schema-field-control"
                       value={field.name}
                       disabled={isSaving}
                       onChange={(event) => updateField(index, { name: event.target.value })}
                       onBlur={() => setTouchedFieldNames((current) => new Set(current).add(index))}
-                      placeholder="مثال: جهة الإصدار"
+                      placeholder={copy.fieldNamePlaceholder}
                       required
                     />
                     {touchedFieldNames.has(index) ? (
                       <FieldError>
-                        {fieldNameError(field.name) || (duplicateIndexes.has(index) ? `اسم الحقل «${field.name.trim()}» مكرر.` : "")}
+                        {fieldNameError(field.name, copy.fieldNameRequired) || (duplicateIndexes.has(index) ? copy.duplicateFieldName.replace("{name}", field.name.trim()) : "")}
                       </FieldError>
                     ) : null}
                   </label>
                   <label className="schema-form-field">
-                    <span>نوع البيانات</span>
+                    <span>{copy.dataType}</span>
                     <select className="schema-field-control" value={field.type} disabled={isSaving} onChange={(event) => updateField(index, { type: event.target.value as ArchiveTypeFieldKind })}>
-                      {FIELD_TYPES.map((fieldType) => <option key={fieldType.value} value={fieldType.value}>{fieldType.label}</option>)}
+                      {fieldTypes.map((fieldType) => <option key={fieldType.value} value={fieldType.value}>{fieldType.label}</option>)}
                     </select>
                   </label>
                 </div>
@@ -329,12 +329,12 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
                       disabled={isSaving}
                       onChange={(event) => updateField(index, { condition: event.target.checked ? { field: "", equals: "" } : undefined })}
                     />
-                    <span>عرض مشروط</span>
+                    <span>{copy.conditionalDisplay}</span>
                   </label>
                   {field.condition ? (
                     <div className="schema-field-grid">
                       <label className="schema-form-field">
-                        <span>الحقل المصدر</span>
+                        <span>{copy.sourceField}</span>
                         <select
                           className="schema-field-control"
                           value={field.condition.field}
@@ -342,14 +342,14 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
                           onChange={(event) => updateField(index, { condition: { ...(field.condition ?? { field: "", equals: "" }), field: event.target.value } })}
                           onBlur={() => setTouchedConditions((current) => new Set(current).add(index))}
                         >
-                          <option value="">اختر الحقل المصدر</option>
+                          <option value="">{copy.selectSourceField}</option>
                           {fields
                             .filter((candidate) => candidate.name.trim() && candidate.name.trim() !== field.name.trim())
                             .map((candidate, candidateIndex) => <option key={`${candidate.name}-${candidateIndex}`} value={candidate.name.trim()}>{candidate.name.trim()}</option>)}
                         </select>
                       </label>
                       <label className="schema-form-field">
-                        <span>يساوي</span>
+                        <span>{copy.equals}</span>
                         <input
                           className="schema-field-control"
                           value={String(field.condition.equals)}
@@ -359,18 +359,18 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
                           required
                         />
                       </label>
-                      {touchedConditions.has(index) ? <FieldError>{fieldConditionError(field)}</FieldError> : null}
+                      {touchedConditions.has(index) ? <FieldError>{fieldConditionError(field, copy.conditionRequired)}</FieldError> : null}
                     </div>
                   ) : null}
                 </fieldset>
                 <div className="schema-acl-grid">
                   {(["view", "edit"] as const).map((access) => (
                     <fieldset className="schema-acl" key={access}>
-                      <legend>{access === "view" ? "يمكن العرض" : "يمكن التحرير"}</legend>
+                      <legend>{access === "view" ? copy.canView : copy.canEdit}</legend>
                       {ROLES.map((role) => (
                         <label className="schema-check" key={role}>
                           <input type="checkbox" checked={field.fieldAcl?.[access]?.includes(role) ?? false} disabled={isSaving} onChange={() => toggleFieldRole(index, role, access)} />
-                          <span>{role === "viewer" ? "مشاهد" : role === "editor" ? "محرر" : "مدير"}</span>
+                          <span>{copy.roles[role as keyof typeof copy.roles]}</span>
                         </label>
                       ))}
                     </fieldset>
@@ -379,12 +379,12 @@ export default function TypesEditor({ initialType, isSaving, requestError, onSav
               </section>
             ))}
           </div>
-          <Button type="button" variant="secondary" disabled={isSaving} onClick={() => setFields((current) => [...current, { ...EMPTY_FIELD, fieldAcl: { view: [], edit: [] } }])}>إضافة حقل</Button>
+          <Button type="button" variant="secondary" disabled={isSaving} onClick={() => setFields((current) => [...current, { ...EMPTY_FIELD, fieldAcl: { view: [], edit: [] } }])}>{copy.addField}</Button>
         </fieldset>
 
         <div className="schema-editor__actions">
-          <Button type="submit" variant="primary" disabled={isSaving}>{isSaving ? "جارٍ الحفظ…" : "حفظ النوع"}</Button>
-          <Button type="button" variant="secondary" disabled={isSaving} onClick={onCancel}>إلغاء</Button>
+          <Button type="submit" variant="primary" disabled={isSaving}>{isSaving ? copy.saving : copy.saveType}</Button>
+          <Button type="button" variant="secondary" disabled={isSaving} onClick={onCancel}>{copy.cancel}</Button>
         </div>
       </form>
     </aside>

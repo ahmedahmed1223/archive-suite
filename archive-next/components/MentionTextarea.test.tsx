@@ -11,6 +11,19 @@ vi.mock("@/lib/archive-api", () => ({
   createArchiveApiClient: () => ({ mentionableUsers })
 }));
 
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+
+  return {
+    useLocale: () => ({
+      locale: "ar",
+      direction: "rtl",
+      t: getDictionary("ar"),
+      setLocale: vi.fn(),
+    }),
+  };
+});
+
 import MentionTextarea from "./MentionTextarea";
 
 // A real useState wrapper — MentionTextarea reads its own `value` prop when

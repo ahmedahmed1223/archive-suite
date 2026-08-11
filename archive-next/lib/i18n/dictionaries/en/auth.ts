@@ -29,5 +29,11 @@ export const auth = {
     submitting: "Signing in…",
     gettingStarted: "Getting started",
     secureSession: "Your session is stored in a secure cookie, and the workspace stays hidden until you are authenticated.",
+    emailPlaceholder: "your@email.com",
+    successTitle: "Signed in successfully",
+    successDescription: "You will now be redirected to the workspace.",
+    failureTitle: "Sign-in failed",
+    checkServer: "Check server status",
+    returnToSetup: "Return to setup journey",
   },
 } as const satisfies DictionaryShape<typeof arabicAuth>;

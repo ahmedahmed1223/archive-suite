@@ -56,7 +56,7 @@ export default function SavedSearchesPage() {
   async function saveAccess(search: SavedSearch, members = search.members || []) {
     const departmentId = departmentDrafts[search.id] ?? search.departmentId ?? undefined;
     const response = await api.replaceSavedSearchAccess(search.id, { departmentId: departmentId || undefined, members });
-    if (!response.ok) setError(response.error || "تعذر حفظ صلاحيات الوصول.");
+    if (!response.ok) setError(response.error || t.pages.savedSearches.accessSaveError);
     else await refresh();
   }
 
@@ -89,23 +89,23 @@ export default function SavedSearchesPage() {
   return (
     <AppShell subtitle={t.pageTitles.savedSearches} contentClassName="stack" tipsPage="search-saved">
       <PageToolbar
-        title="مدير البحوث والعروض المحفوظة"
-        description="احفظ عمليات بحث أو عروض أرشيف متكررة وشغّلها لاحقًا دون إعادة كتابة الاستعلام والفلاتر."
-        meta={<span className="badge">{searches.length} عنصر محفوظ</span>}
-        actions={<a className="button button-secondary" href="/search">فتح البحث المتقدم</a>}
+        title={t.pages.savedSearches.heading}
+        description={t.pages.savedSearches.description}
+        meta={<span className="badge">{t.pages.savedSearches.savedItemsCountTemplate.replace("{count}", String(searches.length))}</span>}
+        actions={<a className="button button-secondary" href="/search">{t.pages.savedSearches.openAdvancedSearch}</a>}
       />
 
       <article className="panel">
         <form className="auth-form" onSubmit={handleCreate}>
           <label>
-            اسم البحث
+            {t.pages.savedSearches.nameLabel}
             <input type="text" value={name} onChange={(event) => setName(event.target.value)} required />
           </label>
           <label>
-            الاستعلام
+            {t.pages.savedSearches.queryLabel}
             <input type="text" value={query} onChange={(event) => setQuery(event.target.value)} />
           </label>
-          <button type="submit" className="button button-primary">حفظ البحث</button>
+          <button type="submit" className="button button-primary">{t.pages.savedSearches.saveButton}</button>
           {error ? (
             <p className="form-status" role="alert">
               {error}
@@ -116,12 +116,12 @@ export default function SavedSearchesPage() {
 
       {loading ? (
         <div className="panel panel-compact" role="status">
-          <Skeleton label="جار تحميل البحوث المحفوظة..." />
+          <Skeleton label={t.pages.savedSearches.loadingLabel} />
         </div>
       ) : null}
 
       {!loading && searches.length === 0 ? (
-        <EmptyState title="لا توجد بحوث محفوظة." description="احفظ بحثًا من صفحة البحث المتقدم أو من النموذج أعلاه." />
+        <EmptyState title={t.pages.savedSearches.emptyTitle} description={t.pages.savedSearches.emptyDescription} />
       ) : null}
 
       {searches.length > 0 ? (
@@ -130,25 +130,25 @@ export default function SavedSearchesPage() {
             <li key={search.id} className="panel panel-compact">
               <div className="panel-title-row">
                 <h2>{search.name}</h2>
-                <span className="badge">{search.filters?.viewKind === "archive-view" ? "عرض أرشيف" : "بحث"}</span>
-                <span className="badge">{search.accessRole === "owner" ? "المالك" : search.accessRole === "editor" ? "محرر" : "مشاهد"}</span>
+                <span className="badge">{search.filters?.viewKind === "archive-view" ? t.pages.savedSearches.archiveViewBadge : t.pages.savedSearches.searchBadge}</span>
+                <span className="badge">{search.accessRole === "owner" ? t.pages.savedSearches.ownerRole : search.accessRole === "editor" ? t.pages.savedSearches.editorRole : t.pages.savedSearches.viewerRole}</span>
               </div>
-              {search.query ? <p className="helper-text">الاستعلام: {search.query}</p> : null}
+              {search.query ? <p className="helper-text">{t.pages.savedSearches.queryPrefixTemplate.replace("{query}", search.query)}</p> : null}
               <div className="button-row">
                 <a className="button button-primary button-sm" href={runUrl(search)}>
-                  تشغيل البحث
+                  {t.pages.savedSearches.runSearch}
                 </a>
-                {search.canManage ? <button type="button" className="button button-secondary button-sm" onClick={() => void handleDelete(search.id)}>حذف</button> : <button type="button" className="button button-secondary button-sm" onClick={() => void handleCopy(search.id)}>نسخ إلى بحوثي</button>}
+                {search.canManage ? <button type="button" className="button button-secondary button-sm" onClick={() => void handleDelete(search.id)}>{t.pages.savedSearches.deleteButton}</button> : <button type="button" className="button button-secondary button-sm" onClick={() => void handleCopy(search.id)}>{t.pages.savedSearches.copyToMine}</button>}
               </div>
               {search.canManage ? <div className="stack">
-                <label>القسم <input value={departmentDrafts[search.id] ?? search.departmentId ?? ""} onChange={(event) => setDepartmentDrafts((current) => ({ ...current, [search.id]: event.target.value }))} placeholder="اختياري" /></label>
+                <label>{t.pages.savedSearches.departmentLabel} <input value={departmentDrafts[search.id] ?? search.departmentId ?? ""} onChange={(event) => setDepartmentDrafts((current) => ({ ...current, [search.id]: event.target.value }))} placeholder={t.pages.savedSearches.optionalPlaceholder} /></label>
                 <div className="button-row">
-                  <input value={memberDrafts[search.id]?.userId || ""} onChange={(event) => setMemberDrafts((current) => ({ ...current, [search.id]: { userId: event.target.value, role: current[search.id]?.role || "viewer" } }))} placeholder="معرّف المستخدم" aria-label="معرّف المستخدم" />
-                  <select value={memberDrafts[search.id]?.role || "viewer"} onChange={(event) => setMemberDrafts((current) => ({ ...current, [search.id]: { userId: current[search.id]?.userId || "", role: event.target.value as "editor" | "viewer" } }))}><option value="viewer">مشاهد</option><option value="editor">محرر</option></select>
-                  <button type="button" className="button button-secondary button-sm" onClick={() => void addMember(search)}>إضافة عضو</button>
-                  <button type="button" className="button button-primary button-sm" onClick={() => void saveAccess(search)}>حفظ الصلاحيات</button>
+                  <input value={memberDrafts[search.id]?.userId || ""} onChange={(event) => setMemberDrafts((current) => ({ ...current, [search.id]: { userId: event.target.value, role: current[search.id]?.role || "viewer" } }))} placeholder={t.pages.savedSearches.userIdPlaceholder} aria-label={t.pages.savedSearches.userIdPlaceholder} />
+                  <select value={memberDrafts[search.id]?.role || "viewer"} onChange={(event) => setMemberDrafts((current) => ({ ...current, [search.id]: { userId: current[search.id]?.userId || "", role: event.target.value as "editor" | "viewer" } }))}><option value="viewer">{t.pages.savedSearches.viewerRole}</option><option value="editor">{t.pages.savedSearches.editorRole}</option></select>
+                  <button type="button" className="button button-secondary button-sm" onClick={() => void addMember(search)}>{t.pages.savedSearches.addMember}</button>
+                  <button type="button" className="button button-primary button-sm" onClick={() => void saveAccess(search)}>{t.pages.savedSearches.saveAccess}</button>
                 </div>
-                {(search.members || []).map((member) => <div className="button-row" key={member.userId}><span className="badge">{member.userId} · {member.role === "editor" ? "محرر" : "مشاهد"}</span><button type="button" className="button button-secondary button-sm" onClick={() => void saveAccess(search, (search.members || []).filter((item) => item.userId !== member.userId))}>إزالة</button></div>)}
+                {(search.members || []).map((member) => <div className="button-row" key={member.userId}><span className="badge">{member.userId} · {member.role === "editor" ? t.pages.savedSearches.editorRole : t.pages.savedSearches.viewerRole}</span><button type="button" className="button button-secondary button-sm" onClick={() => void saveAccess(search, (search.members || []).filter((item) => item.userId !== member.userId))}>{t.pages.savedSearches.removeMember}</button></div>)}
               </div> : null}
             </li>
           ))}

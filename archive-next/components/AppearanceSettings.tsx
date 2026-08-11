@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { Download, Upload, Plus, Trash2, Clock } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import {
   THEME_PRESETS,
   exportThemeAsJson,
@@ -15,6 +16,15 @@ import {
 } from "@/lib/themes";
 
 export default function AppearanceSettings() {
+  const { t } = useLocale();
+  const copy = t.settings.appearance;
+  const presetNames: Record<string, string> = {
+    "cinematic-dark": copy.presetNames.cinematicDark,
+    "luxury-dark": copy.presetNames.luxuryDark,
+    "ocean-dark": copy.presetNames.oceanDark,
+    "neutral-light": copy.presetNames.neutralLight,
+    "high-contrast": copy.presetNames.highContrast
+  };
   const { settings, setPreset, refreshTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [exportedJson, setExportedJson] = useState<string | null>(null);
@@ -46,7 +56,7 @@ export default function AppearanceSettings() {
         setImportError(null);
         refreshTheme();
       } else {
-        setImportError(result.error || "خطأ غير معروف أثناء الاستيراد.");
+        setImportError(result.error || copy.importUnknownError);
       }
     };
     reader.readAsText(file);
@@ -87,7 +97,7 @@ export default function AppearanceSettings() {
     <div className="appearance-settings">
       {/* Presets */}
       <div className="settings-section">
-        <h3>سمات جاهزة</h3>
+        <h3>{copy.presetsTitle}</h3>
         <div className="preset-grid">
           {THEME_PRESETS.map((preset) => (
             <button
@@ -96,7 +106,7 @@ export default function AppearanceSettings() {
               onClick={() => setPreset(preset.id)}
               type="button"
             >
-              {preset.name}
+              {presetNames[preset.id] ?? preset.name}
             </button>
           ))}
         </div>
@@ -104,23 +114,23 @@ export default function AppearanceSettings() {
 
       {/* Export/Import */}
       <div className="settings-section">
-        <h3>بيانات السمة</h3>
+        <h3>{copy.themeDataTitle}</h3>
         <div className="button-group">
           <button
             type="button"
             className="btn btn-secondary"
             onClick={handleExport}
           >
-            <Download size={16} />
-            تصدير السمة
+            <Download size={16} aria-hidden="true" />
+            {copy.exportTheme}
           </button>
           <button
             type="button"
             className="btn btn-secondary"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Upload size={16} />
-            استيراد السمة
+            <Upload size={16} aria-hidden="true" />
+            {copy.importTheme}
           </button>
           <input
             ref={fileInputRef}
@@ -133,7 +143,7 @@ export default function AppearanceSettings() {
         {importError && <div className="error-message">{importError}</div>}
         {exportedJson && (
           <details className="export-preview">
-            <summary>معاينة JSON المُصدَّر</summary>
+            <summary>{copy.exportedJsonPreview}</summary>
             <pre>{exportedJson}</pre>
           </details>
         )}
@@ -142,8 +152,8 @@ export default function AppearanceSettings() {
       {/* Scheduled Switching */}
       <div className="settings-section">
         <h3>
-          <Clock size={16} />
-          تبديل السمة حسب الوقت
+          <Clock size={16} aria-hidden="true" />
+          {copy.schedulingTitle}
         </h3>
         <label className="checkbox-label">
           <input
@@ -151,7 +161,7 @@ export default function AppearanceSettings() {
             checked={settings.schedulingEnabled}
             onChange={handleToggleScheduling}
           />
-          تفعيل التبديل التلقائي حسب الوقت
+          {copy.enableScheduling}
         </label>
 
         <div className="rules-list">
@@ -163,15 +173,15 @@ export default function AppearanceSettings() {
                   checked={rule.enabled}
                   onChange={(e) => handleToggleRule(rule.id, e.target.checked)}
                 />
-                {rule.startTime} - {rule.endTime}: {rule.mode === "dark" ? "داكن" : "فاتح"}
+                {rule.startTime} - {rule.endTime}: {rule.mode === "dark" ? copy.darkMode : copy.lightMode}
               </label>
               <button
                 type="button"
                 className="btn-icon"
                 onClick={() => handleRemoveRule(rule.id)}
-                title="حذف القاعدة"
+                title={copy.deleteRule}
               >
-                <Trash2 size={16} />
+                <Trash2 size={16} aria-hidden="true" />
               </button>
             </div>
           ))}
@@ -185,7 +195,7 @@ export default function AppearanceSettings() {
               onChange={(e) =>
                 setNewRuleTime({ ...newRuleTime, start: e.target.value })
               }
-              placeholder="وقت البدء"
+              placeholder={copy.startTimePlaceholder}
             />
             <input
               type="time"
@@ -193,23 +203,23 @@ export default function AppearanceSettings() {
               onChange={(e) =>
                 setNewRuleTime({ ...newRuleTime, end: e.target.value })
               }
-              placeholder="وقت الانتهاء"
+              placeholder={copy.endTimePlaceholder}
             />
             <select
-              aria-label="وضع المظهر للقاعدة"
+              aria-label={copy.ruleModeAriaLabel}
               value={newRuleMode}
               onChange={(e) => setNewRuleMode(e.target.value as "light" | "dark")}
             >
-              <option value="light">فاتح</option>
-              <option value="dark">داكن</option>
+              <option value="light">{copy.lightMode}</option>
+              <option value="dark">{copy.darkMode}</option>
             </select>
             <button
               type="button"
               className="btn btn-primary"
               onClick={handleAddRule}
             >
-              <Plus size={16} />
-              إضافة
+              <Plus size={16} aria-hidden="true" />
+              {copy.addRule}
             </button>
           </div>
         </div>

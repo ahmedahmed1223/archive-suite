@@ -26,5 +26,11 @@ export const auth = {
     submitting: "جارٍ التحقق…",
     gettingStarted: "أول تشغيل",
     secureSession: "يتم حفظ الجلسة عبر cookie آمن، ولا تُعرض مساحة العمل قبل المصادقة.",
+    emailPlaceholder: "your@email.com",
+    successTitle: "تم تسجيل الدخول بنجاح",
+    successDescription: "سيتم تحويلك الآن إلى مساحة العمل.",
+    failureTitle: "فشل تسجيل الدخول",
+    checkServer: "افحص حالة الخادم",
+    returnToSetup: "ارجع إلى رحلة الإعداد",
   },
 } as const;

@@ -17,6 +17,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export default function MediaPlayPage() {
   const { t } = useLocale();
+  const copy = t.pages.mediaPlay;
   const [pathInput, setPathInput] = useState("");
   const [diskInput, setDiskInput] = useState("");
   const [path, setPath] = useState("");
@@ -55,11 +56,11 @@ export default function MediaPlayPage() {
     if (!recordIdParam) return;
 
     setRecordId(recordIdParam);
-    setTranscriptStatus("جار تحميل التفريغ المحفوظ...");
+    setTranscriptStatus(copy.loadingSavedTranscript);
     void api.record(recordIdParam)
       .then((response) => {
         if (!response.ok) {
-          setTranscriptStatus(`تعذر تحميل التفريغ المحفوظ: ${response.error}`);
+          setTranscriptStatus(copy.savedTranscriptLoadError.replace("{error}", response.error));
           return;
         }
 
@@ -69,22 +70,22 @@ export default function MediaPlayPage() {
         void api.recordNotes(recordIdParam, loadedStore).then((notesResponse) => {
           if (notesResponse.ok) setBookmarks(bookmarkNotes(notesResponse.notes));
         });
-        setTranscriptStatus(response.record.transcript?.trim() ? "تم تحميل التفريغ المحفوظ." : "لا يوجد تفريغ محفوظ لهذا السجل.");
+        setTranscriptStatus(response.record.transcript?.trim() ? copy.savedTranscriptLoaded : copy.noSavedTranscript);
       })
-      .catch(() => setTranscriptStatus("تعذر تحميل التفريغ المحفوظ."));
-  }, [api]);
+      .catch(() => setTranscriptStatus(copy.savedTranscriptLoadFailure));
+  }, [api, copy]);
 
   async function addBookmark() {
     if (!recordId || !playerRef.current) return;
-    const body = window.prompt("وصف العلامة الزمنية", "علامة زمنية")?.trim();
+    const body = window.prompt(copy.bookmarkPromptTitle, copy.bookmarkPromptDefault)?.trim();
     if (!body) return;
     const response = await api.createRecordNote(recordId, { body, timestampSeconds: playerRef.current.currentTime }, recordStore || "archive-items");
     if (!response.ok) {
-      setBookmarkStatus(response.error || "تعذر حفظ العلامة.");
+      setBookmarkStatus(response.error || copy.bookmarkSaveError);
       return;
     }
     setBookmarks((current) => bookmarkNotes([...current, response.note]));
-    setBookmarkStatus("تم حفظ العلامة للفريق.");
+    setBookmarkStatus(copy.bookmarkSaved);
   }
 
   async function handleTranscriptFile(event: ChangeEvent<HTMLInputElement>) {
@@ -93,7 +94,7 @@ export default function MediaPlayPage() {
 
     const extension = file.name.split(".").pop()?.toLowerCase() || "";
     if (!["srt", "vtt"].includes(extension)) {
-      setTranscriptStatus("اختر ملف SRT أو VTT.");
+      setTranscriptStatus(copy.invalidTranscriptFile);
       return;
     }
 
@@ -101,29 +102,29 @@ export default function MediaPlayPage() {
       const text = await file.text();
       const cues = parseSubtitles(text);
       if (cues.length === 0) {
-        setTranscriptStatus("لم يتم العثور على مقاطع زمنية صالحة داخل الملف.");
+        setTranscriptStatus(copy.noValidCues);
         return;
       }
 
       setTranscriptText(text);
       setTranscriptFileName(file.name);
       if (!recordId) {
-        setTranscriptStatus(`تم استيراد ${cues.length} مقطع زمني للمعاينة فقط.`);
+        setTranscriptStatus(copy.importedPreview.replace("{count}", String(cues.length)));
         return;
       }
 
-      setTranscriptStatus("جار حفظ التفريغ في السجل...");
+      setTranscriptStatus(copy.savingTranscript);
       const response = await api.updateRecordTranscript(recordId, {
         transcript: text,
         ...(recordStore ? { store: recordStore } : {})
       });
       setTranscriptStatus(
         response.ok
-          ? `تم استيراد وحفظ ${cues.length} مقطع زمني في السجل.`
-          : `تم الاستيراد للمعاينة، وتعذر حفظ التفريغ: ${response.error}`
+          ? copy.importedAndSaved.replace("{count}", String(cues.length))
+          : copy.importedSaveError.replace("{error}", response.error)
       );
     } catch (error) {
-      setTranscriptStatus(error instanceof Error ? error.message : "تعذر قراءة ملف التفريغ.");
+      setTranscriptStatus(error instanceof Error ? error.message : copy.readTranscriptError);
     } finally {
       event.target.value = "";
     }
@@ -138,10 +139,10 @@ export default function MediaPlayPage() {
   return (
     <AppShell subtitle={t.pageTitles.mediaPlayer} contentClassName={styles.playContent} tipsPage="media-play">
       <PageToolbar
-        eyebrow={<span className="badge">تشغيل الوسائط</span>}
-        title="تشغيل المادة"
-        description="يُبث الملف عبر الخادم بدلاً من فتحه محلياً، فيعمل السحب داخل الفيديو والصوت عبر المتصفح مع مصادقة النظام."
-        meta={<span className="badge">{path ? "قيد التشغيل" : "بانتظار مسار"}</span>}
+        eyebrow={<span className="badge">{copy.eyebrow}</span>}
+        title={copy.title}
+        description={copy.description}
+        meta={<span className="badge">{path ? copy.playing : copy.waitingForPath}</span>}
       >
         <form
           className={`auth-form ${styles.pathInputForm}`}
@@ -152,28 +153,28 @@ export default function MediaPlayPage() {
           }}
         >
           <label>
-            مسار المادة داخل الأرشيف
+            {copy.recordPathLabel}
             <input
               value={pathInput}
               onChange={(event) => setPathInput(event.target.value)}
-              placeholder="مثل: video/clip.mp4"
-              aria-label="مسار المادة"
+              placeholder={copy.recordPathPlaceholder}
+              aria-label={copy.recordPathAriaLabel}
             />
-            <p className="helper-text">مسار نسبي داخل التخزين المختار</p>
+            <p className="helper-text">{copy.recordPathHelp}</p>
           </label>
           <label>
-            قرص التخزين (اختياري)
+            {copy.diskLabel}
             <input
               value={diskInput}
               onChange={(event) => setDiskInput(event.target.value)}
-              placeholder="مثل: archive"
-              aria-label="قرص التخزين"
+              placeholder={copy.diskPlaceholder}
+              aria-label={copy.diskAriaLabel}
             />
-            <p className="helper-text">ترك فارغ للقرص الافتراضي</p>
+            <p className="helper-text">{copy.diskHelp}</p>
           </label>
-          <button type="submit" className="button button-primary">تشغيل</button>
+          <button type="submit" className="button button-primary">{copy.play}</button>
           <MediaSourcePicker
-            label="تصفح المصادر"
+            label={copy.browseSources}
             onSelect={(selectedPath) => {
               setPathInput(selectedPath);
               setPath(selectedPath);
@@ -182,7 +183,7 @@ export default function MediaPlayPage() {
         </form>
       </PageToolbar>
 
-      <OperationalSafetyPanel action="تشغيل المادة" dryRun confidence={96} auditHref="/activity" />
+      <OperationalSafetyPanel action={copy.safetyAction} dryRun confidence={96} auditHref="/activity" />
 
       {path ? (
         <div className={styles.theaterLayout}>
@@ -196,21 +197,21 @@ export default function MediaPlayPage() {
               transcriptText={transcriptText}
               onReady={(element) => { playerRef.current = element; }}
             />
-            {recordId ? <div className="button-row"><button type="button" className="button button-secondary button-sm" onClick={() => void addBookmark()}>إضافة علامة عند الوقت الحالي</button>{bookmarkStatus ? <span className="form-status">{bookmarkStatus}</span> : null}</div> : null}
-            {bookmarks.length ? <div className="button-row" aria-label="العلامات الزمنية">{bookmarks.map((bookmark) => <button type="button" className="badge" key={bookmark.id} onClick={() => { if (playerRef.current && bookmark.timestampSeconds !== null) playerRef.current.currentTime = bookmark.timestampSeconds; }}>{formatBookmarkTime(bookmark.timestampSeconds ?? 0)} · {bookmark.body}</button>)}</div> : null}
+            {recordId ? <div className="button-row"><button type="button" className="button button-secondary button-sm" onClick={() => void addBookmark()}>{copy.addBookmark}</button>{bookmarkStatus ? <span className="form-status">{bookmarkStatus}</span> : null}</div> : null}
+            {bookmarks.length ? <div className="button-row" aria-label={copy.bookmarksAriaLabel}>{bookmarks.map((bookmark) => <button type="button" className="badge" key={bookmark.id} onClick={() => { if (playerRef.current && bookmark.timestampSeconds !== null) playerRef.current.currentTime = bookmark.timestampSeconds; }}>{formatBookmarkTime(bookmark.timestampSeconds ?? 0)} · {bookmark.body}</button>)}</div> : null}
           </article>
 
-          <section className={`panel stack ${styles.transcriptPanel}`} aria-label="تفريغ متزامن">
+          <section className={`panel stack ${styles.transcriptPanel}`} aria-label={copy.transcriptAriaLabel}>
             <div className="panel-title-row">
               <div>
-                <h2>تفريغ زمني</h2>
-                <p>{recordId ? "VTT أو SRT — يحفظ في السجل" : "VTT أو SRT — معاينة محلية"}</p>
+                <h2>{copy.transcriptTitle}</h2>
+                <p>{recordId ? copy.transcriptStored : copy.transcriptPreview}</p>
               </div>
-              <span className="badge">{transcriptCueCount > 0 ? `${transcriptCueCount} مقطع` : "اختياري"}</span>
+              <span className="badge">{transcriptCueCount > 0 ? copy.cueCount.replace("{count}", String(transcriptCueCount)) : copy.optional}</span>
             </div>
             <div className={styles.transcriptActions}>
               <label className="button button-secondary button-sm">
-                استيراد SRT/VTT
+                {copy.importTranscript}
                 <input
                   type="file"
                   accept=".srt,.vtt,text/vtt"
@@ -219,7 +220,7 @@ export default function MediaPlayPage() {
                 />
               </label>
               <button type="button" className="button button-secondary button-sm" onClick={clearTranscript} disabled={!transcriptText.trim()}>
-                مسح التفريغ
+                {copy.clearTranscript}
               </button>
               {transcriptFileName ? <span className="badge">{transcriptFileName}</span> : null}
             </div>
@@ -229,15 +230,15 @@ export default function MediaPlayPage() {
               onChange={(event) => setTranscriptText(event.target.value)}
               rows={7}
               dir="ltr"
-              placeholder={"WEBVTT\n\n00:00:00.000 --> 00:00:03.000\nالمقطع الأول"}
+              placeholder={copy.transcriptPlaceholder}
               className={styles.transcriptInput}
             />
           </section>
         </div>
       ) : (
         <EmptyState
-          title="أدخل مساراً لبدء التشغيل."
-          description="استخدم مسار الملف النسبي داخل التخزين، مع تحديد القرص إن لم يكن الافتراضي."
+          title={copy.emptyTitle}
+          description={copy.emptyDescription}
         />
       )}
     </AppShell>

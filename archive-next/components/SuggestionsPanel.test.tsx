@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import type { ArchiveSuggestion } from "@/lib/archive-api";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 const suggestions: ArchiveSuggestion[] = [
   { key: "s1", title: "أضف وسوماً", detail: "12 سجل بلا وسوم", severity: "high", count: 12, actionHref: "/tags" },
@@ -12,15 +14,19 @@ const suggestions: ArchiveSuggestion[] = [
 
 afterEach(cleanup);
 
+function renderPanel(node: ReactNode) {
+  return render(<LocaleProvider initialLocale="ar" hasLocaleCookie>{node}</LocaleProvider>);
+}
+
 describe("SuggestionsPanel bulk actions (V1-744)", () => {
   test("renders no bulk row for a single suggestion", () => {
-    render(<SuggestionsPanel suggestions={[suggestions[0]]} onFeedback={vi.fn()} />);
+    renderPanel(<SuggestionsPanel suggestions={[suggestions[0]]} onFeedback={vi.fn()} />);
     expect(screen.queryByRole("checkbox", { name: "تحديد كل الاقتراحات" })).toBeNull();
   });
 
   test("select-all then bulk-dismiss calls onFeedback for every visible suggestion and removes them", async () => {
     const onFeedback = vi.fn().mockResolvedValue(undefined);
-    render(<SuggestionsPanel suggestions={suggestions} onFeedback={onFeedback} />);
+    renderPanel(<SuggestionsPanel suggestions={suggestions} onFeedback={onFeedback} />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: "تحديد كل الاقتراحات" }));
     fireEvent.click(screen.getByRole("button", { name: /رفض المحدد/ }));
@@ -34,7 +40,7 @@ describe("SuggestionsPanel bulk actions (V1-744)", () => {
 
   test("selecting one suggestion and bulk-approving only calls onFeedback for it", async () => {
     const onFeedback = vi.fn().mockResolvedValue(undefined);
-    render(<SuggestionsPanel suggestions={suggestions} onFeedback={onFeedback} />);
+    renderPanel(<SuggestionsPanel suggestions={suggestions} onFeedback={onFeedback} />);
 
     fireEvent.click(screen.getByRole("checkbox", { name: `تحديد ${suggestions[1].title}` }));
     fireEvent.click(screen.getByRole("button", { name: /اعتماد المحدد/ }));
@@ -45,7 +51,7 @@ describe("SuggestionsPanel bulk actions (V1-744)", () => {
   });
 
   test("bulk buttons are disabled with no selection", () => {
-    render(<SuggestionsPanel suggestions={suggestions} onFeedback={vi.fn()} />);
+    renderPanel(<SuggestionsPanel suggestions={suggestions} onFeedback={vi.fn()} />);
     expect(screen.getByRole("button", { name: /اعتماد المحدد/ })).toBeDisabled();
     expect(screen.getByRole("button", { name: /رفض المحدد/ })).toBeDisabled();
   });

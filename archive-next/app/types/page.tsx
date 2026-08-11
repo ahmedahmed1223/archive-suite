@@ -21,6 +21,7 @@ type TypesState =
 
 export default function TypesPage() {
   const { t } = useLocale();
+  const copy = t.pages.types;
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
   const [state, setState] = useState<TypesState>({ status: "loading", types: [] });
@@ -39,7 +40,7 @@ export default function TypesPage() {
     do {
       const response = await api.types({ cursor, limit: 200 });
       if (!response.ok) {
-        setState({ status: "error", types, message: response.error || "تعذر تحميل الأنواع." });
+        setState({ status: "error", types, message: response.error || copy.loadError });
         return;
       }
       types.push(...response.types);
@@ -48,7 +49,7 @@ export default function TypesPage() {
 
     setState({ status: "ready", types });
     setSelectedTypeId((current) => current && types.some((type) => type.id === current) ? current : types[0]?.id ?? null);
-  }, [api]);
+  }, [api, copy.loadError]);
 
   useEffect(() => {
     void loadTypes();
@@ -63,7 +64,7 @@ export default function TypesPage() {
     setActionMessage("");
     const missing = selectMissingDefaults(state.types.map((type) => type.id));
     if (missing.length === 0) {
-      setActionMessage("كل التصنيفات الافتراضية موجودة بالفعل — لم يتغير شيء.");
+      setActionMessage(copy.defaultsComplete);
       setIsSaving(false);
       return;
     }
@@ -71,14 +72,14 @@ export default function TypesPage() {
     for (const type of missing) {
       const response = await api.saveType(type);
       if (!response.ok) {
-        setActionMessage(`استُورد ${imported} من ${missing.length}؛ توقف عند «${type.name}»: ${response.error}`);
+        setActionMessage(copy.defaultsPartial.replace("{imported}", String(imported)).replace("{total}", String(missing.length)).replace("{name}", type.name).replace("{error}", response.error));
         setIsSaving(false);
         await loadTypes();
         return;
       }
       imported += 1;
     }
-    setActionMessage(`استُوردت ${imported} تصنيفات افتراضية دون المساس بالأنواع الموجودة.`);
+    setActionMessage(copy.defaultsImported.replace("{count}", String(imported)));
     setIsSaving(false);
     await loadTypes();
   }
@@ -93,7 +94,7 @@ export default function TypesPage() {
     setActionMessage("");
     const response = await api.type(type.id);
     if (!response.ok) {
-      setActionMessage(response.error || "تعذر تحميل النوع للتحرير.");
+      setActionMessage(response.error || copy.editLoadError);
       return;
     }
     setSelectedTypeId(response.type.id);
@@ -114,7 +115,7 @@ export default function TypesPage() {
     setIsSaving(false);
 
     if (!response.ok) {
-      setEditorError(response.error || "تعذر حفظ النوع. تحقق من البيانات ثم أعد المحاولة.");
+      setEditorError(response.error || copy.saveError);
       return;
     }
 
@@ -126,15 +127,15 @@ export default function TypesPage() {
       return { status: "ready", types };
     });
     setSelectedTypeId(response.type.id);
-    setActionMessage(`تم حفظ النوع «${response.type.name}».`);
+    setActionMessage(copy.saved.replace("{name}", response.type.name));
     setEditorType(undefined);
   }
 
   async function handleDeleteType(type: ArchiveType) {
     const confirmed = await dialogs.confirm({
-      title: "حذف النوع",
-      message: `هل تريد حذف النوع «${type.name}»؟ لا يمكن التراجع عن هذا الإجراء.`,
-      confirmLabel: "حذف",
+      title: copy.deleteTitle,
+      message: copy.deleteMessage.replace("{name}", type.name),
+      confirmLabel: copy.delete,
       destructive: true
     });
     if (!confirmed) return;
@@ -145,47 +146,47 @@ export default function TypesPage() {
     setDeletingTypeId(null);
 
     if (!response.ok) {
-      setActionMessage(response.error || "تعذر حذف النوع. حاول مجددًا.");
+      setActionMessage(response.error || copy.deleteError);
       return;
     }
 
     setState((current) => ({ status: "ready", types: current.types.filter((item) => item.id !== type.id) }));
     setSelectedTypeId((current) => current === type.id ? null : current);
     if (editorType?.id === type.id) setEditorType(undefined);
-    setActionMessage(`تم حذف النوع «${type.name}».`);
+    setActionMessage(copy.deleted.replace("{name}", type.name));
   }
 
   return (
     <AppShell subtitle={t.pageTitles.types} contentClassName="types-content" tipsPage="types">
       <PageToolbar
-        eyebrow={<span className="badge">تنظيم البيانات</span>}
-        title="الأنواع"
-        description="عرّف مخططات البيانات والحقول وصلاحيات كل دور قبل إدخال السجلات إلى الأرشيف."
-        meta={<span className="badge">{state.types.length} نوع</span>}
+        eyebrow={<span className="badge">{copy.eyebrow}</span>}
+        title={copy.title}
+        description={copy.description}
+        meta={<span className="badge">{copy.count.replace("{count}", String(state.types.length))}</span>}
         actions={(
           <>
-            <Button type="button" variant="secondary" disabled={isSaving} onClick={() => void importDefaults()}>استيراد التصنيفات الافتراضية</Button>
-            <Button type="button" variant="primary" onClick={startCreate}>نوع جديد</Button>
+            <Button type="button" variant="secondary" disabled={isSaving} onClick={() => void importDefaults()}>{copy.importDefaults}</Button>
+            <Button type="button" variant="primary" onClick={startCreate}>{copy.newType}</Button>
           </>
         )}
       />
 
       {actionMessage ? <p className="types-feedback" role="status">{actionMessage}</p> : null}
       <section className="state-banner" role="alert">
-        <strong>معاينة أثر المخطط</strong>
-        <span className="helper-text">تغيير الحقول أو حذف النوع قد يجعل بيانات السجلات الحالية غير متوافقة. راجع الحقول والصلاحيات قبل الحفظ؛ الحذف لا يمكن التراجع عنه.</span>
+        <strong>{copy.impactTitle}</strong>
+        <span className="helper-text">{copy.impactDescription}</span>
       </section>
 
       {state.status === "error" ? (
         <section className="types-state" role="alert">
-          <strong>تعذر تحميل الأنواع</strong>
+          <strong>{copy.loadError}</strong>
           <p>{state.message}</p>
-          <Button type="button" variant="secondary" onClick={() => void loadTypes()}>إعادة المحاولة</Button>
+          <Button type="button" variant="secondary" onClick={() => void loadTypes()}>{copy.retry}</Button>
         </section>
       ) : null}
 
       {state.status === "loading" && state.types.length === 0 ? (
-        <section className="types-state"><Skeleton label="جارٍ تحميل الأنواع…" /></section>
+        <section className="types-state"><Skeleton label={copy.loading} /></section>
       ) : null}
 
       {(state.status === "ready" || state.types.length > 0) ? (
@@ -193,10 +194,10 @@ export default function TypesPage() {
           <section className="schema-sidebar" aria-labelledby="types-list-heading">
             <div className="schema-sidebar__heading">
               <div>
-                <p className="schema-editor__eyebrow">المخططات المتاحة</p>
-                <h2 id="types-list-heading">أنواع الأرشيف</h2>
+                <p className="schema-editor__eyebrow">{copy.availableSchemas}</p>
+                <h2 id="types-list-heading">{copy.archiveTypes}</h2>
               </div>
-              {state.status === "loading" ? <span className="schema-loading">جارٍ التحديث…</span> : null}
+              {state.status === "loading" ? <span className="schema-loading">{copy.refreshing}</span> : null}
             </div>
             <TypesList
               types={state.types}
@@ -214,38 +215,29 @@ export default function TypesPage() {
               <>
                 <div className="schema-preview__heading">
                   <div>
-                    <p className="schema-editor__eyebrow">معاينة المخطط</p>
+                    <p className="schema-editor__eyebrow">{copy.schemaPreview}</p>
                     <h2 id="type-preview-heading">{selectedType.name}</h2>
                     <code dir="ltr">{selectedType.id}</code>
                   </div>
-                  <Button type="button" size="sm" onClick={() => void startEdit(selectedType)}>تحرير</Button>
+                  <Button type="button" size="sm" onClick={() => void startEdit(selectedType)}>{copy.edit}</Button>
                 </div>
                 <dl className="schema-preview__fields">
                   {selectedType.fields.map((field) => (
                     <div key={field.name}>
                       <dt>{field.name}</dt>
-                      <dd>{FIELD_TYPES_LABELS[field.type]}</dd>
+                      <dd>{copy.fieldTypes[field.type]}</dd>
                     </div>
                   ))}
                 </dl>
               </>
             ) : (
-              <EmptyState title="اختر نوعًا لمعاينة حقوله" description="أو أنشئ نوعًا جديدًا للبدء في تنظيم بيانات الأرشيف." actions={<Button type="button" variant="primary" onClick={startCreate}>نوع جديد</Button>} />
+              <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} actions={<Button type="button" variant="primary" onClick={startCreate}>{copy.newType}</Button>} />
             )}
           </section>
 
-          {isEditorOpen ? <TypesEditor initialType={editorType ?? null} isSaving={isSaving} requestError={editorError} onSave={handleSaveType} onCancel={closeEditor} /> : <aside className="schema-editor schema-editor--placeholder"><p>اختر «نوع جديد» أو حرّر نوعًا موجودًا لتعديل المخطط.</p></aside>}
+          {isEditorOpen ? <TypesEditor initialType={editorType ?? null} isSaving={isSaving} requestError={editorError} onSave={handleSaveType} onCancel={closeEditor} /> : <aside className="schema-editor schema-editor--placeholder"><p>{copy.editorPlaceholder}</p></aside>}
         </div>
       ) : null}
     </AppShell>
   );
 }
-
-const FIELD_TYPES_LABELS: Record<ArchiveType["fields"][number]["type"], string> = {
-  text: "نص",
-  number: "رقم",
-  date: "تاريخ",
-  select: "اختيار واحد",
-  multi: "اختيارات متعددة",
-  boolean: "نعم / لا",
-};

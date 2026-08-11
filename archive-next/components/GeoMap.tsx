@@ -8,6 +8,7 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import type { GeoTaggedRecord } from "@/lib/geotag";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 /**
  * V1-703: imperative Leaflet map, not react-leaflet — one fewer dependency,
@@ -21,6 +22,7 @@ export default function GeoMap({
   points: readonly GeoTaggedRecord[];
   onSelect: (recordId: string) => void;
 }>) {
+  const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
@@ -81,5 +83,5 @@ export default function GeoMap({
     // acceptable here (an admin-facing view, not a hot path).
   }, [points]);
 
-  return <div ref={containerRef} className="geo-map" role="img" aria-label="خريطة السجلات ذات الموقع الجغرافي" />;
+  return <div ref={containerRef} className="geo-map" role="img" aria-label={t.pages.map.mapAriaLabel} />;
 }

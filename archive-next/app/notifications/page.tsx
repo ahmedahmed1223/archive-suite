@@ -17,22 +17,15 @@ const typeIcons = {
   mention: AtSign,
 } as const;
 
-const typeLabels = {
-  ingest_complete: "الإدراج",
-  backup_result: "النسخ الاحتياطي",
-  share_event: "المشاركة",
-  restore_result: "الاستعادة",
-  mention: "إشارة",
-} as const;
-
-function NotificationCard({ notification, onRead, onDelete, locale }: {
+function NotificationCard({ notification, onRead, onDelete, locale, copy }: {
   notification: Notification;
   onRead: (id: number) => void;
   onDelete: (id: number) => void;
   locale: "ar" | "en";
+  copy: ReturnType<typeof useLocale>["t"]["pages"]["notifications"];
 }) {
   const Icon = typeIcons[notification.type];
-  const label = locale === "en" ? ({ ingest_complete: "Ingest", backup_result: "Backup", share_event: "Share", restore_result: "Restore", mention: "Mention" }[notification.type]) : typeLabels[notification.type];
+  const label = copy.types[notification.type];
 
   return (
     <article className="notification-card" data-read={notification.is_read}>
@@ -50,9 +43,9 @@ function NotificationCard({ notification, onRead, onDelete, locale }: {
               type="button"
               className="notification-card__mark-read"
               onClick={() => onRead(notification.id)}
-              aria-label={locale === "en" ? "Mark as read" : "وضع كمقروء"}
+              aria-label={copy.markRead}
             >
-              {locale === "en" ? "Mark read" : "وضع كمقروء"}
+              {copy.markRead}
             </button>
           )}
         </div>
@@ -71,7 +64,7 @@ function NotificationCard({ notification, onRead, onDelete, locale }: {
         type="button"
         className="notification-card__delete"
         onClick={() => onDelete(notification.id)}
-        aria-label={locale === "en" ? "Delete" : "حذف"}
+        aria-label={copy.delete}
       >
         <Trash2 size={18} aria-hidden="true" />
       </button>
@@ -96,7 +89,7 @@ export default function NotificationsPage() {
           <h1>{copy.title}</h1>
           {unreadCount > 0 && (
             <p className="notifications-page__subtitle">
-              {locale === "en" ? `You have ${unreadCount} ${copy.unread}` : `لديك ${unreadCount} ${copy.unread}`}
+              {copy.unreadCount.replace("{count}", String(unreadCount))}
             </p>
           )}
         </div>
@@ -160,6 +153,7 @@ export default function NotificationsPage() {
                 onRead={markAsRead}
                 onDelete={deleteNotification}
                 locale={locale}
+                copy={copy}
               />
             ))}
           </div>

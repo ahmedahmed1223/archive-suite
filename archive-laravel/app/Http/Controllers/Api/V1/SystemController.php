@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateDisplaySettingsRequest;
 use App\Http\Requests\UpdateSecuritySettingsRequest;
+use App\Services\Display\DisplaySettingsService;
 use App\Services\Odbc\OdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionProbe;
 use App\Services\Odbc\OdbcReadRepository;
@@ -17,6 +19,30 @@ use Illuminate\Http\Request;
 
 class SystemController extends Controller
 {
+    public function getDisplaySettings(DisplaySettingsService $service): JsonResponse
+    {
+        return response()->json([
+            'ok' => true,
+            'settings' => $service->getSettings(),
+        ]);
+    }
+
+    public function updateDisplaySettings(
+        UpdateDisplaySettingsRequest $request,
+        DisplaySettingsService $service,
+    ): JsonResponse {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        $service->update($request->validated());
+
+        return response()->json([
+            'ok' => true,
+            'settings' => $service->getSettings(),
+        ]);
+    }
+
     public function odbc(Request $request, OdbcConnectionProbe $probe): JsonResponse
     {
         if ($denied = $this->requireAdmin($request)) {
