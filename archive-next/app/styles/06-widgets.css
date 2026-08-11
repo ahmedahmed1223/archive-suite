@@ -864,9 +864,21 @@
 }
 
 .topbar-more__panel {
+  /* V2-807 live-gate fix: an explicit `display` here overrode the native
+     <details> behavior of hiding non-summary content when closed, so the
+     panel (and its Sign-in link) stayed in the layout — and overflowed the
+     mobile viewport — even while collapsed. Gate visibility on [open]. */
+  display: none;
+}
+
+.topbar-more[open] > .topbar-more__panel {
   position: absolute;
   inset-block-start: 100%;
-  inset-inline-end: 0;
+  /* V2-807 live-gate fix: the trigger sits ~16px from the screen's physical
+     edge at mobile widths; anchoring the panel's end edge here made its
+     12rem min-width (.ui-dropdown-content) grow off-screen. Anchor the
+     start edge instead so it grows toward the side with room. */
+  inset-inline-start: 0;
   margin-block-start: var(--space-2);
   display: grid;
   gap: var(--space-2);

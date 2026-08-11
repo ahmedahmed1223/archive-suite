@@ -201,7 +201,7 @@ export default function AppHeader({
           <FocusModeToggle />
         </div>
         <details className="topbar-more">
-          <summary className="icon-action" aria-label={t.shell.moreActions} title={t.shell.moreActions}>
+          <summary className="icon-action" role="button" aria-label={t.shell.moreActions} title={t.shell.moreActions}>
             <Icons.MoreVertical aria-hidden="true" size={18} strokeWidth={2} />
           </summary>
           <div className="topbar-more__panel ui-dropdown-content" role="menu">

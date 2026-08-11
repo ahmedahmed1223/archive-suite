@@ -862,7 +862,12 @@
   .app-shell > .topbar .route-links {
     display: grid;
     gap: var(--space-3);
-    overflow: visible;
+    /* V2-806 live-gate fix: this rule wins the cascade over
+       06-widgets.css's `overflow-y: auto` (same specificity, later import),
+       which silently disabled sidebar scrolling and let the open nav
+       group's last link overlap .sidebar-scroll-control below it. */
+    overflow-y: auto;
+    overflow-x: visible;
     padding-block: var(--space-2);
   }
 
