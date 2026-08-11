@@ -125,6 +125,40 @@
   background: color-mix(in srgb, var(--color-status-success) 7%, var(--color-bg-secondary));
 }
 
+.first-run-step[data-active="true"] {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 1px var(--color-brand-primary);
+}
+
+.first-run-step__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  min-block-size: var(--control-height);
+  border: 0;
+  border-radius: var(--radius-md);
+  padding-inline: var(--space-2);
+  background: transparent;
+  color: var(--color-text-secondary);
+  text-align: start;
+  cursor: pointer;
+}
+
+.first-run-step[data-complete="true"] .first-run-step__summary {
+  color: var(--color-status-success);
+}
+
+.first-run-step__summary:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+}
+
+.first-run-step__summary:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
 .first-run-step__toggle {
   display: inline-grid;
   place-items: center;

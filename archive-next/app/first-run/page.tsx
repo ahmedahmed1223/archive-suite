@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import FirstRunTour from "@/components/FirstRunTour";
+import AsyncStateSurface from "@/components/AsyncStateSurface";
 import { BRAND } from "@/lib/brand";
 import { createArchiveApiClient, type OnboardingProgress, type OnboardingStageId } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { toOnboardingProgressSteps } from "@/lib/onboarding-progress";
 import { deriveSetupJourney, type SetupStepId } from "@/lib/setup-journey";
+import { clampStepIndex } from "@/lib/first-run-steps";
 import {
   ONBOARDING_PRESET_STORAGE_KEY,
   getOnboardingChecklist,
@@ -26,6 +28,7 @@ type HealthState =
 
 const EXPERT_SKIP_STORAGE_KEY = "masar:first-run:expert-skip:v1";
 const INTERACTIVE_TEST_FEEDBACK_STORAGE_KEY = "masar:interactive-test-feedback:v1";
+const PRESET_STEP_STORAGE_KEY = "masar:first-run:preset-step:v1";
 
 type ProgressState =
   | { status: "idle" | "loading" }
@@ -46,6 +49,7 @@ export default function FirstRunPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const auth = useAuthSession();
   const [preset, setPreset] = useState<OnboardingPreset>("quick");
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [progressState, setProgressState] = useState<ProgressState>({ status: "idle" });
   const [updatingStage, setUpdatingStage] = useState<OnboardingStageId | null>(null);
   const [health, setHealth] = useState<HealthState>({ status: "idle" });
@@ -86,6 +90,8 @@ export default function FirstRunPage() {
     setPreset(nextPreset);
     setExpertSkip(window.localStorage.getItem(EXPERT_SKIP_STORAGE_KEY) === "true");
     setInteractiveTestFeedback(window.localStorage.getItem(INTERACTIVE_TEST_FEEDBACK_STORAGE_KEY) || "");
+    const storedStep = Number(window.localStorage.getItem(`${PRESET_STEP_STORAGE_KEY}:${nextPreset}`));
+    setActiveStepIndex(Number.isFinite(storedStep) ? clampStepIndex(storedStep, presets[nextPreset].steps.length) : 0);
   }, []);
 
   useEffect(() => {
@@ -149,6 +155,14 @@ export default function FirstRunPage() {
   function changePreset(nextPreset: OnboardingPreset) {
     setPreset(nextPreset);
     window.localStorage.setItem(ONBOARDING_PRESET_STORAGE_KEY, nextPreset);
+    const storedStep = Number(window.localStorage.getItem(`${PRESET_STEP_STORAGE_KEY}:${nextPreset}`));
+    setActiveStepIndex(Number.isFinite(storedStep) ? clampStepIndex(storedStep, presets[nextPreset].steps.length) : 0);
+  }
+
+  function advanceStep(nextIndex: number) {
+    const clamped = clampStepIndex(nextIndex, currentPreset.steps.length);
+    setActiveStepIndex(clamped);
+    window.localStorage.setItem(`${PRESET_STEP_STORAGE_KEY}:${preset}`, String(clamped));
   }
 
   async function updateProgressStage(stepId: OnboardingStageId, completed: boolean) {
@@ -221,7 +235,7 @@ export default function FirstRunPage() {
             </button>
             <FirstRunTour />
             <a className="button button-secondary" href="/help">{copy.help}</a>
-            {auth.status === "authenticated" ? <a className="button button-primary" href="/">{copy.openWorkspace}</a> : null}
+            {auth.status === "authenticated" ? <a className="button button-secondary" href="/">{copy.openWorkspace}</a> : null}
           </>
         )}
       />
@@ -284,19 +298,53 @@ export default function FirstRunPage() {
             </div>
             <code dir="ltr">{currentPreset.command}</code>
           </div>
-          <ol className="first-run-steps" aria-label={copy.selectedSteps}>
-            {currentPreset.steps.map((step, index) => (
-              <li className="first-run-step" key={step.id}>
-                <div className="first-run-step__body">
-                  <span className="badge">{copy.step} {index + 1}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.description}</p>
-                  {step.command ? <code>{step.command}</code> : null}
-                  {step.href ? <a className="button button-secondary button-sm" href={step.href}>{step.actionLabel}</a> : null}
-                </div>
-              </li>
-            ))}
+          <ol className="first-run-steps first-run-steps--wizard" aria-label={copy.selectedSteps}>
+            {currentPreset.steps.map((step, index) => {
+              const isActive = index === activeStepIndex;
+              const isDone = index < activeStepIndex;
+              const isLastStep = index === currentPreset.steps.length - 1;
+
+              if (!isActive) {
+                return (
+                  <li className="first-run-step" key={step.id} data-complete={isDone ? "true" : "false"}>
+                    <button type="button" className="first-run-step__summary" onClick={() => advanceStep(index)}>
+                      {isDone ? <CheckCircle2 aria-hidden="true" size={16} /> : <span className="badge">{index + 1}</span>}
+                      <span>{step.title}</span>
+                    </button>
+                  </li>
+                );
+              }
+
+              return (
+                <li className="first-run-step" key={step.id} data-active="true">
+                  <div className="first-run-step__body">
+                    <span className="badge">
+                      {copy.presetSteps.stepStatus.replace("{current}", String(index + 1)).replace("{total}", String(currentPreset.steps.length))}
+                    </span>
+                    <h3>{step.title}</h3>
+                    <p>{step.description}</p>
+                    {step.command ? <code dir="ltr">{step.command}</code> : null}
+                    <div className="button-row">
+                      {step.href ? <a className="button button-secondary button-sm" href={step.href}>{step.actionLabel}</a> : null}
+                      {index > 0 ? (
+                        <button type="button" className="button button-secondary button-sm" onClick={() => advanceStep(index - 1)}>
+                          {copy.presetSteps.previous}
+                        </button>
+                      ) : null}
+                      <button type="button" className="button button-primary button-sm" onClick={() => advanceStep(index + 1)}>
+                        {isLastStep ? copy.presetSteps.finish : copy.presetSteps.markDone}
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
           </ol>
+          {activeStepIndex >= currentPreset.steps.length ? (
+            <p className="helper-text" role="status">
+              <CheckCircle2 aria-hidden="true" size={16} /> {copy.presetSteps.completedLabel}
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -324,6 +372,12 @@ export default function FirstRunPage() {
                     ? health.message
                     : copy.startHealth}
               </small>
+              {health.status === "error" || health.status === "idle" ? (
+                <button type="button" className="button button-secondary button-sm" onClick={() => void checkHealth()}>
+                  <RefreshCw aria-hidden="true" size={15} />
+                  {copy.healthCheck}
+                </button>
+              ) : null}
             </div>
           </article>
 
@@ -347,22 +401,20 @@ export default function FirstRunPage() {
               <h2 id="steps-heading">{copy.orgStages}</h2>
               <p>{copy.orgHelp}</p>
             </div>
-            {progressState.status === "error" ? (
-              <button type="button" className="button button-secondary button-sm" onClick={() => void loadProgress()}>
-                <RefreshCw aria-hidden="true" size={15} />
-                {copy.retry}
-              </button>
-            ) : null}
           </div>
 
           {auth.status === "guest" ? (
-            <p className="helper-text">{copy.signInHelp}</p>
-          ) : null}
-          {auth.status === "guest" ? <a className="button button-primary button-sm" href="/login?next=%2Ffirst-run">{copy.signIn}</a> : null}
-          {auth.status !== "guest" && progressState.status !== "ready" ? (
-            <p className="helper-text" role="status">{progressState.status === "error" ? progressState.message : copy.loadingProgress}</p>
-          ) : null}
-          {progressState.status === "ready" ? (
+            <>
+              <p className="helper-text">{copy.signInHelp}</p>
+              <a className="button button-primary button-sm" href="/login?next=%2Ffirst-run">{copy.signIn}</a>
+            </>
+          ) : (
+            <AsyncStateSurface
+              status={progressState.status === "ready" ? "success" : progressState.status === "error" ? "error" : "loading"}
+              title={progressState.status === "error" ? progressState.message : progressState.status !== "ready" ? copy.loadingProgress : undefined}
+              onRetry={progressState.status === "error" ? () => void loadProgress() : undefined}
+              retryLabel={copy.retry}
+            >
             <ol className="first-run-steps">
               {progressSteps.map((step, index) => (
                 <li key={step.id} className="first-run-step" data-complete={step.completed ? "true" : "false"}>
@@ -394,7 +446,8 @@ export default function FirstRunPage() {
                 </li>
               ))}
             </ol>
-          ) : null}
+            </AsyncStateSurface>
+          )}
         </article>
       </section>
 
