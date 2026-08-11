@@ -75,6 +75,30 @@ final class StorageRowRepository
             ->keyBy(fn (stdClass $row): string => $this->key($row->store, $row->uid));
     }
 
+    /**
+     * Full-text search over the generated `search_vector` column (see the
+     * 2026_08_11_000001 migration), narrowed via its GIN index instead of
+     * loading every row. Postgres-only — callers must check
+     * `DB::getDriverName() === 'pgsql'` before calling this; sqlite has no
+     * tsvector type and no search_vector column.
+     *
+     * Ordered by uid (not ts_rank) on purpose: the caller's cursor
+     * pagination is uid-based (see SearchController::index), and the PHP
+     * keyword path this replaces was unranked too — this narrows the
+     * candidate set without changing the pagination contract.
+     *
+     * @return Collection<int, stdClass>
+     */
+    public function fullTextSearch(?string $store, string $query, int $limit): Collection
+    {
+        return $this->query()
+            ->when($store !== null, fn (Builder $q) => $q->where('store', $store))
+            ->whereRaw("search_vector @@ plainto_tsquery('simple', ?)", [$query])
+            ->orderBy('uid')
+            ->limit($limit)
+            ->get();
+    }
+
     /** @param array<string, mixed> $attributes */
     public function insert(string $store, string $uid, array $attributes): void
     {

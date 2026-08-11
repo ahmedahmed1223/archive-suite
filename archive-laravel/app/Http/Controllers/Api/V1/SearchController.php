@@ -10,6 +10,7 @@ use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use stdClass;
 
@@ -61,16 +62,32 @@ class SearchController extends Controller
 
         $cursorUid = isset($validated['cursor']) ? StorageRowPayload::decodeCursor($validated['cursor']) : null;
 
-        $query = $this->storageRows->query()
-            ->orderBy('uid');
+        // V2-708: a plain keyword query on Postgres is narrowed through the
+        // search_vector GIN index instead of loading every storage_rows
+        // record and filtering in PHP. Same pool-then-filter tradeoff as
+        // semanticSearch() below: deep pagination past the pool falls off,
+        // acceptable for a search UI. sqlite (tests/CI) and every other mode
+        // keep the exact previous behavior untouched.
+        $useFullTextSearch = $mode !== 'transcript' && $queryText !== '' && ! $isAdvancedQuery
+            && DB::getDriverName() === 'pgsql';
 
-        if (isset($validated['store'])) {
-            $query->where('store', $validated['store']);
+        if ($useFullTextSearch) {
+            $poolSize = max($limit * 5, 100);
+            $records = $this->storageRows
+                ->fullTextSearch($validated['store'] ?? null, $queryText, $poolSize)
+                ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
+        } else {
+            $query = $this->storageRows->query()
+                ->orderBy('uid');
+
+            if (isset($validated['store'])) {
+                $query->where('store', $validated['store']);
+            }
+
+            $records = $query
+                ->get()
+                ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
         }
-
-        $records = $query
-            ->get()
-            ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
 
         if ($mode === 'transcript') {
             $records = $records
@@ -82,7 +99,7 @@ class SearchController extends Controller
                 ->filter(fn (?array $record): bool => $record !== null);
         } else {
             $records = $records
-                ->filter(fn (array $record): bool => $queryText === '' || $isAdvancedQuery || $this->matchesKeyword($record, $queryText))
+                ->filter(fn (array $record): bool => $useFullTextSearch || $queryText === '' || $isAdvancedQuery || $this->matchesKeyword($record, $queryText))
                 ->filter(fn (array $record): bool => $advancedQuery === null || $this->matchesAdvancedQuery($record, $advancedQuery));
         }
 
