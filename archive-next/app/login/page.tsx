@@ -2,11 +2,12 @@
 
 import { Suspense, useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { Eye, EyeOff, KeyRound, Mail, ShieldCheck } from "lucide-react";
+import { Clock, Eye, EyeOff, KeyRound, Mail, ShieldCheck } from "lucide-react";
 import PublicFooter from "@/components/PublicFooter";
 import PublicHeader from "@/components/PublicHeader";
 import { BRAND } from "@/lib/brand";
 import { safeNextPath, useAuthSession } from "@/lib/auth-session";
+import { DEFAULT_DISPLAY_SETTINGS, formatTime } from "@/lib/display-settings";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useRouter, useSearchParams } from "next/navigation";
 import "./login.css";
@@ -34,13 +35,23 @@ function LoginFallback() {
 }
 
 function LoginPageContent() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const auth = useAuthSession();
   const [state, setState] = useState<LoginState>({ status: "idle" });
   const [showPassword, setShowPassword] = useState(false);
+  // Starts null (not new Date()) so SSR and the client's first render match —
+  // the clock only exists once mounted, avoiding a hydration mismatch from
+  // the SSR and client timestamps differing by however long hydration took.
+  const [now, setNow] = useState<Date | null>(null);
   const nextPath = safeNextPath(searchParams.get("next"));
+
+  useEffect(() => {
+    setNow(new Date());
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (auth.status === "authenticated") {
@@ -74,6 +85,14 @@ function LoginPageContent() {
       <section className="content login-content" aria-label={t.auth.login.title}>
         <div className="login-portal" aria-label={t.auth.login.portal}>
           <section className="login-hero" aria-labelledby="login-title">
+            {now && (
+              <span className="badge login-hero__clock" aria-label={t.auth.login.currentTime}>
+                <Clock size={16} aria-hidden="true" />
+                <time dateTime={now.toISOString()}>
+                  {formatTime(now, { ...DEFAULT_DISPLAY_SETTINGS, showSeconds: true }, locale)}
+                </time>
+              </span>
+            )}
             <div className="login-hero__mark">
               <img src={BRAND.markPath} alt="" width={64} height={64} />
             </div>
@@ -81,14 +100,6 @@ function LoginPageContent() {
             <div className="login-hero__copy">
               <h1 id="login-title">{t.auth.login.heading}</h1>
               <p>{t.auth.login.description}</p>
-            </div>
-            <div className="login-trust-grid" aria-label={t.auth.login.portal}>
-              {t.auth.login.highlights.map((item) => (
-                <span key={item}>
-                  <ShieldCheck size={16} />
-                  {item}
-                </span>
-              ))}
             </div>
           </section>
 

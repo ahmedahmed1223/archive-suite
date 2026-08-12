@@ -15,7 +15,6 @@ export const auth = {
     portal: "Sign-in portal",
     heading: "Sign in to Masar",
     description: "A secure, focused gateway to the records and media workspace.",
-    highlights: ["Secure sessions", "Encrypted connection", "Reliable protection"],
     form: "Sign-in form",
     credentials: "Sign-in details",
     credentialsDescription: "Use your account to continue to the dashboard.",
@@ -35,5 +34,6 @@ export const auth = {
     failureTitle: "Sign-in failed",
     checkServer: "Check server status",
     returnToSetup: "Return to setup journey",
+    currentTime: "Current time",
   },
 } as const satisfies DictionaryShape<typeof arabicAuth>;

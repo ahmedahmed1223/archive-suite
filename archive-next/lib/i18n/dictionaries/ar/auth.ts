@@ -12,7 +12,6 @@ export const auth = {
     portal: "بوابة تسجيل الدخول",
     heading: "تسجيل الدخول إلى مسار",
     description: "بوابة آمنة ومختصرة للوصول إلى مساحة إدارة السجلات والوسائط.",
-    highlights: ["جلسات آمنة", "اتصال مشفّر", "حماية موثوقة"],
     form: "نموذج تسجيل الدخول",
     credentials: "بيانات الدخول",
     credentialsDescription: "استخدم حسابك للمتابعة إلى لوحة التحكم.",
@@ -32,5 +31,6 @@ export const auth = {
     failureTitle: "فشل تسجيل الدخول",
     checkServer: "افحص حالة الخادم",
     returnToSetup: "ارجع إلى رحلة الإعداد",
+    currentTime: "الوقت الحالي",
   },
 } as const;

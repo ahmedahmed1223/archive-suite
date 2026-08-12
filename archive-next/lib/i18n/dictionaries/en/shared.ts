@@ -24,6 +24,7 @@ export const shared = {
     ar: "Arabic",
     en: "English",
   },
+  switchLanguage: "Switch to {language}",
   dataTable: {
     empty: "No data to display.",
     noSort: "No sorting is active.",
