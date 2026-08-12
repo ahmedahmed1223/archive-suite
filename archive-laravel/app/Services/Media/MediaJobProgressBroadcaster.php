@@ -15,6 +15,8 @@ use App\Models\MediaJob;
  */
 class MediaJobProgressBroadcaster
 {
+    public function __construct(private readonly MediaQueueStatusBroadcaster $queueStatus) {}
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -27,5 +29,8 @@ class MediaJobProgressBroadcaster
     public function notify(MediaJob $job): void
     {
         MediaJobProgressUpdated::dispatch($job->id, $job->toApiPayload());
+        // RT-802: any status transition changes queue occupancy — completed/
+        // failed/canceled free a slot, processing moves one out of "queued".
+        $this->queueStatus->notify();
     }
 }

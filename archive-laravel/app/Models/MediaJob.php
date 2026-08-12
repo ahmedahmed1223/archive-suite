@@ -19,6 +19,7 @@ class MediaJob extends Model
         'created_by',
         'operation',
         'status',
+        'queue',
         'executor',
         'contract_version',
         'source_path',

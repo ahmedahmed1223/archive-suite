@@ -2,10 +2,12 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\GpuUnavailableException;
 use App\Exceptions\JobCanceledException;
 use App\Models\MediaJob;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
+use App\Services\Media\MediaQueueStatusBroadcaster;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -122,8 +124,13 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
                 'exception' => $error,
             ]);
 
-            $mediaJob->forceFill(['error' => $this->sanitizeError($error)])->save();
+            $sanitizedError = $this->sanitizeError($error);
+            $mediaJob->forceFill(['error' => $sanitizedError])->save();
             $broadcaster->notify($mediaJob);
+
+            if ($error instanceof GpuUnavailableException) {
+                app(MediaQueueStatusBroadcaster::class)->notify($sanitizedError);
+            }
 
             throw $error;
         }

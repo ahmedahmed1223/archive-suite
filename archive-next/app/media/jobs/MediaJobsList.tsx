@@ -37,6 +37,13 @@ type IngestState =
   | { status: "done"; ingested: number; skipped: number }
   | { status: "error"; message: string };
 
+interface MediaQueueStatus {
+  default: number;
+  gpu: number;
+  device: string;
+  resourceFailure: string | null;
+}
+
 const OPERATIONS: readonly MediaOperation[] = ["thumbnail", "transcode", "transcription"];
 function createMediaJobFormSchema(copy: MediaJobsCopy) {
   return z
@@ -121,6 +128,7 @@ export function MediaJobsList() {
   const [statusFilter, setStatusFilter] = useState<MediaJobStatus | "">("");
   const [loadingMore, setLoadingMore] = useState(false);
   const [connectionState, setConnectionState] = useState<EchoConnectionState | null>(null);
+  const [queueStatus, setQueueStatus] = useState<MediaQueueStatus | null>(null);
   const createForm = useForm<MediaJobFormValues>({
     defaultValues: {
       recordId: "",
@@ -249,6 +257,20 @@ export function MediaJobsList() {
     return onConnectionStateChange(setConnectionState);
   }, [activeJobIds.length]);
 
+  // RT-802: aggregate CPU/GPU queue depth — push-only, no fetch endpoint, so
+  // this stays empty until the first broadcast (next job queued or a status
+  // transition) rather than showing a stale/misleading initial count.
+  useEffect(() => {
+    const echo = getEchoClient();
+    if (!echo) return;
+
+    echo.private("media-queue-status").listen(".media-queue.updated", (event: { status: MediaQueueStatus }) => {
+      setQueueStatus(event.status);
+    });
+
+    return () => echo.leave("media-queue-status");
+  }, []);
+
   const handleCreate = createForm.handleSubmit(async (values) => {
     createForm.clearErrors();
     const parsed = mediaJobFormSchema.safeParse(values);
@@ -372,6 +394,23 @@ export function MediaJobsList() {
           }
         ]}
       />
+
+      {queueStatus && (
+        <div className="state-banner" aria-label={copy.queueStatus.ariaLabel}>
+          <div className="helper-row">
+            <span className="field-note">{copy.queueStatus.defaultQueueLabel}: {queueStatus.default}</span>
+            <span className="field-note">{copy.queueStatus.gpuQueueLabel}: {queueStatus.gpu}</span>
+            <span className="field-note">
+              {copy.queueStatus.deviceLabel}: {queueStatus.device === "cuda" ? copy.queueStatus.deviceCuda : copy.queueStatus.deviceCpu}
+            </span>
+          </div>
+          {queueStatus.resourceFailure && (
+            <p className="form-status status-error" role="alert">
+              {copy.queueStatus.resourceFailure.replace("{error}", queueStatus.resourceFailure)}
+            </p>
+          )}
+        </div>
+      )}
 
       <article className="workspace-panel">
         <div className="workspace-panel__header">

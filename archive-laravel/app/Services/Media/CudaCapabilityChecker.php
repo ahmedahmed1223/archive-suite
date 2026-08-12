@@ -2,6 +2,8 @@
 
 namespace App\Services\Media;
 
+use App\Exceptions\GpuUnavailableException;
+
 class CudaCapabilityChecker
 {
     public function __construct(private readonly ProcessRunner $runner) {}
@@ -18,7 +20,7 @@ class CudaCapabilityChecker
         ]);
 
         if ($result['exitCode'] !== 0 || trim($result['stdout']) === '') {
-            throw new \RuntimeException(
+            throw new GpuUnavailableException(
                 'CUDA transcription requires a GPU worker with the NVIDIA runtime and a visible GPU. '
                 .'Deploy laravel-worker-gpu with NVIDIA Container Toolkit, then retry the job.'
             );

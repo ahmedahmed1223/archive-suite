@@ -105,5 +105,14 @@ export const mediaJobs = {
     loadingMore: "جارٍ التحميل...",
     loadMore: "تحميل المزيد",
     reconnecting: "انقطع الاتصال بالتحديثات المباشرة، يتم تحديث القائمة عبر التحديث الدوري في هذه الأثناء."
+  },
+  queueStatus: {
+    ariaLabel: "حالة طوابير المعالجة",
+    defaultQueueLabel: "طابور المعالجة العام",
+    gpuQueueLabel: "طابور GPU",
+    deviceLabel: "جهاز التفريغ النصي الحالي",
+    deviceCpu: "المعالج (CPU)",
+    deviceCuda: "كرت الرسوميات (CUDA)",
+    resourceFailure: "تعذّر تنفيذ آخر مهمة GPU: {error}"
   }
 } as const;

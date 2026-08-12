@@ -56,3 +56,9 @@ Broadcast::channel('notifications.{userId}', function ($request, string $userId)
 
     return $user instanceof User && (string) $user->id === $userId;
 });
+
+// RT-802: aggregate queue counts only (no per-job data) — any authenticated
+// user may subscribe, same as review.media/collaboration.room above.
+Broadcast::channel('media-queue-status', function ($request) {
+    return $request->attributes->get('archive_user') instanceof User;
+});

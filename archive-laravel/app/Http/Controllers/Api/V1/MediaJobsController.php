@@ -39,6 +39,7 @@ class MediaJobsController extends Controller
         ]);
 
         $executor = app(MediaJobExecutor::class);
+        $queue = app(MediaJobQueueRouter::class)->queueFor($validated['operation']);
 
         $mediaJob = MediaJob::query()->create([
             'id' => (string) Str::uuid(),
@@ -46,6 +47,7 @@ class MediaJobsController extends Controller
             'created_by' => $this->userId($request),
             'operation' => $validated['operation'],
             'status' => 'queued',
+            'queue' => $queue,
             'executor' => $executor->name(),
             'contract_version' => (int) config('media.job_contract_version', 1),
             'source_path' => $validated['sourcePath'] ?? null,
@@ -53,8 +55,8 @@ class MediaJobsController extends Controller
             'queued_at' => now(),
         ]);
 
-        ProcessMediaWorkflow::dispatch($mediaJob->id)
-            ->onQueue(app(MediaJobQueueRouter::class)->queueFor($mediaJob->operation));
+        ProcessMediaWorkflow::dispatch($mediaJob->id)->onQueue($queue);
+        app(MediaJobProgressBroadcaster::class)->notify($mediaJob);
 
         return response()->json([
             'ok' => true,

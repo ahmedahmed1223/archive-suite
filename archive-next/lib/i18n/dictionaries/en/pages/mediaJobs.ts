@@ -105,5 +105,14 @@ export const mediaJobs = {
     loadingMore: "Loading...",
     loadMore: "Load more",
     reconnecting: "Live updates disconnected — the list is still refreshing periodically in the meantime."
+  },
+  queueStatus: {
+    ariaLabel: "Processing queue status",
+    defaultQueueLabel: "General processing queue",
+    gpuQueueLabel: "GPU queue",
+    deviceLabel: "Current transcription device",
+    deviceCpu: "CPU",
+    deviceCuda: "GPU (CUDA)",
+    resourceFailure: "The last GPU job failed to run: {error}"
   }
 } as const;
