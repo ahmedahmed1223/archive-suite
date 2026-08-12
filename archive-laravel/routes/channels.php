@@ -48,3 +48,11 @@ Broadcast::channel('media-job.{jobId}', function ($request, string $jobId) {
 
     return $mediaJob !== null && $mediaJob->isAccessibleBy($user);
 });
+
+// RT-804: strictly the notification's own owner — never a shared/public
+// channel, matching NotificationsController's existing per-user scoping.
+Broadcast::channel('notifications.{userId}', function ($request, string $userId) {
+    $user = $request->attributes->get('archive_user');
+
+    return $user instanceof User && (string) $user->id === $userId;
+});

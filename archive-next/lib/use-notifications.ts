@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuthSession } from "@/lib/auth-session";
+import { getEchoClient } from "@/lib/echo";
 
 export interface Notification {
   id: number;
@@ -117,7 +118,7 @@ export function notificationRequestHeaders(accessToken?: string): HeadersInit {
 }
 
 export function useNotifications() {
-  const { accessToken } = useAuthSession();
+  const { accessToken, user } = useAuthSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -224,13 +225,37 @@ export function useNotifications() {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll for new notifications every 30 seconds
+    // Poll for new notifications every 30 seconds — stays as a fallback
+    // when Reverb isn't configured or the socket drops (RT-804).
     const interval = setInterval(() => {
       fetchNotifications();
     }, 30000);
 
     return () => clearInterval(interval);
   }, [fetchNotifications]);
+
+  // RT-804: push new notifications over the user's private channel instead
+  // of waiting up to 30s for the next poll. The poll above still runs and
+  // will just re-fetch the same row, so there's nothing to reconcile here.
+  useEffect(() => {
+    const echo = getEchoClient({ accessToken });
+    if (!echo || !user) return;
+
+    const channelName = `notifications.${user.id}`;
+    echo.private(channelName).listen(".notification.created", (event: { notification: Notification }) => {
+      const notification = event.notification;
+
+      setNotifications((prev) => (prev.some((n) => n.id === notification.id) ? prev : [notification, ...prev]));
+      if (!notification.is_read) {
+        setUnreadCount((prev) => prev + 1);
+      }
+      if (COMPLETION_NOTIFICATION_TYPES.has(notification.type)) {
+        notifyTaskCompletion(notification);
+      }
+    });
+
+    return () => echo.leave(channelName);
+  }, [accessToken, user]);
 
   return {
     notifications,
