@@ -18,8 +18,23 @@ class RealMediaProcessor implements MediaProcessor
         private readonly ?OcrClient $ocrClient = null,
         private readonly ?AudioPreprocessor $audioPreprocessor = null,
         ?MediaPathGuard $pathGuard = null,
+        private readonly ?MediaJobProgressBroadcaster $progress = null,
     ) {
         $this->pathGuard = $pathGuard ?? new MediaPathGuard;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function updateProgress(MediaJob $job, array $attributes): void
+    {
+        if ($this->progress) {
+            $this->progress->update($job, $attributes);
+
+            return;
+        }
+
+        $job->update($attributes);
     }
 
     /**
@@ -123,7 +138,7 @@ class RealMediaProcessor implements MediaProcessor
         $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
         $outputFormats = $job->options['outputFormats'] ?? ['srt', 'vtt', 'ttml'];
 
-        $job->update([
+        $this->updateProgress($job, [
             'progress_stage' => 'preprocessing',
             'progress_percent' => 5,
         ]);
@@ -135,7 +150,7 @@ class RealMediaProcessor implements MediaProcessor
         $segments = $preprocessor->planSegments($audioPath);
         $totalSegments = count($segments);
 
-        $job->update([
+        $this->updateProgress($job, [
             'progress_stage' => 'preprocessing_complete',
             'progress_percent' => 10,
             'options' => array_merge($job->options, [
@@ -146,7 +161,7 @@ class RealMediaProcessor implements MediaProcessor
 
         if ($totalSegments === 1) {
             // Single segment: transcribe audio directly
-            $job->update([
+            $this->updateProgress($job, [
                 'progress_stage' => 'transcribing',
                 'progress_percent' => 15,
             ]);
@@ -167,7 +182,7 @@ class RealMediaProcessor implements MediaProcessor
             $this->guardNotCanceled($job);
 
             $segmentPercent = 15 + (int) (($index / $totalSegments) * 70);
-            $job->update([
+            $this->updateProgress($job, [
                 'progress_stage' => "transcribing_segment_{$index}_{$totalSegments}",
                 'progress_percent' => $segmentPercent,
             ]);
@@ -211,7 +226,7 @@ class RealMediaProcessor implements MediaProcessor
             }
         }
 
-        $job->update([
+        $this->updateProgress($job, [
             'progress_stage' => 'merging',
             'progress_percent' => 90,
         ]);

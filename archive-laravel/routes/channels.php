@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\MediaJob;
 use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
 
@@ -32,4 +33,18 @@ Broadcast::channel('review.media.{mediaUid}', function ($request, string $mediaU
         'id' => (string) $user->id,
         'name' => $user->name ?: $user->email,
     ];
+});
+
+// RT-801: same admin-or-creator rule as MediaJobsController::canAccess() —
+// live progress for a job is exactly as visible as the job itself already is.
+Broadcast::channel('media-job.{jobId}', function ($request, string $jobId) {
+    $user = $request->attributes->get('archive_user');
+
+    if (! $user instanceof User) {
+        return false;
+    }
+
+    $mediaJob = MediaJob::query()->find($jobId);
+
+    return $mediaJob !== null && $mediaJob->isAccessibleBy($user);
 });

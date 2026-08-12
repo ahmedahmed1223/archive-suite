@@ -15,6 +15,7 @@ use App\Services\Media\FakeMediaProcessor;
 use App\Services\Media\CudaCapabilityChecker;
 use App\Services\Media\LocalMediaJobExecutor;
 use App\Services\Media\MediaJobExecutor;
+use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaProcessor;
 use App\Services\Media\OcrClient;
 use App\Services\Media\ProcessRunner;
@@ -101,6 +102,9 @@ class AppServiceProvider extends ServiceProvider
                     config('media.ffprobe_path'),
                     config('media.watermark', []),
                     $app->make(OcrClient::class),
+                    null,
+                    null,
+                    $app->make(MediaJobProgressBroadcaster::class),
                 )
             );
         } else {

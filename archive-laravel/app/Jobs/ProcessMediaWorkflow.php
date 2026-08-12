@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Exceptions\JobCanceledException;
 use App\Models\MediaJob;
 use App\Services\Media\MediaJobExecutor;
+use App\Services\Media\MediaJobProgressBroadcaster;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -69,8 +70,14 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
         return (array) config('media.job_backoff_seconds', [30, 120, 300]);
     }
 
-    public function handle(MediaJobExecutor $executor): void
+    public function handle(MediaJobExecutor $executor, ?MediaJobProgressBroadcaster $broadcaster = null): void
     {
+        // Optional + container-fallback (rather than a required param) so the
+        // existing tests that call ->handle($executor) directly — bypassing
+        // the queue system's own container method-injection — don't all need
+        // a second explicit argument.
+        $broadcaster ??= app(MediaJobProgressBroadcaster::class);
+
         $mediaJob = MediaJob::query()->find($this->mediaJobId);
 
         if (! $mediaJob || $mediaJob->status === 'canceled') {
@@ -86,6 +93,7 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             'started_at' => now(),
             'error' => null,
         ])->save();
+        $broadcaster->notify($mediaJob);
 
         try {
             $artifacts = $executor->execute($mediaJob);
@@ -100,10 +108,12 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
                 ],
                 'completed_at' => now(),
             ])->save();
+            $broadcaster->notify($mediaJob);
         } catch (JobCanceledException) {
             // Intentional stop, not a failure: leave status as 'canceled'
             // (already set by the cancel endpoint), don't retry.
             $mediaJob->forceFill(['completed_at' => now()])->save();
+            $broadcaster->notify($mediaJob);
         } catch (Throwable $error) {
             Log::error('Media job attempt failed', [
                 'mediaJobId' => $this->mediaJobId,
@@ -113,6 +123,7 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             ]);
 
             $mediaJob->forceFill(['error' => $this->sanitizeError($error)])->save();
+            $broadcaster->notify($mediaJob);
 
             throw $error;
         }
@@ -137,6 +148,7 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             'error' => $this->sanitizeError($exception),
             'completed_at' => now(),
         ])->save();
+        app(MediaJobProgressBroadcaster::class)->notify($mediaJob);
     }
 
     /**

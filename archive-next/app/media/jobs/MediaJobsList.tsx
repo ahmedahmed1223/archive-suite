@@ -8,6 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation, type PaginationMeta } from "@/lib/archive-api";
+import { getEchoClient } from "@/lib/echo";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { mediaJobs } from "@/lib/i18n/dictionaries/ar/pages/mediaJobs";
 import "../media.css";
@@ -144,8 +145,10 @@ export function MediaJobsList() {
   const completedCount = jobs.filter((job) => job.status === "completed").length;
   const failedCount = jobs.filter((job) => job.status === "failed").length;
 
-  const loadJobs = useCallback(async () => {
-    setListState({ status: "loading" });
+  const loadJobs = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setListState({ status: "loading" });
+    }
     const response = await api.mediaJobs({
       limit: 20,
       page: 1,
@@ -153,7 +156,9 @@ export function MediaJobsList() {
     });
 
     if (!response.ok) {
-      setListState({ status: "error", message: response.error });
+      if (!options?.silent) {
+        setListState({ status: "error", message: response.error });
+      }
       return;
     }
 
@@ -185,6 +190,50 @@ export function MediaJobsList() {
   useEffect(() => {
     void loadJobs();
   }, [loadJobs]);
+
+  const activeJobIds = useMemo(
+    () => jobs.filter((job) => job.status === "queued" || job.status === "processing").map((job) => job.id),
+    [jobs]
+  );
+
+  const applyJobUpdate = useCallback((updated: MediaJob) => {
+    setListState((current) =>
+      current.status === "loaded"
+        ? { ...current, jobs: current.jobs.map((job) => (job.id === updated.id ? updated : job)) }
+        : current
+    );
+  }, []);
+
+  // RT-801: subscribe to each active job's private channel for live progress.
+  // getEchoClient() returns null when Reverb isn't configured, so this is a
+  // no-op there — the polling fallback below still covers that case.
+  useEffect(() => {
+    const echo = getEchoClient();
+    if (!echo || activeJobIds.length === 0) return;
+
+    const channelNames = activeJobIds.map((id) => `media-job.${id}`);
+    channelNames.forEach((channelName) => {
+      echo.private(channelName).listen(".media-job.updated", (event: { job: MediaJob }) => {
+        applyJobUpdate(event.job);
+      });
+    });
+
+    return () => {
+      channelNames.forEach((channelName) => echo.leave(channelName));
+    };
+  }, [activeJobIds, applyJobUpdate]);
+
+  // RT-803: safe fallback while jobs are active, regardless of socket state —
+  // reconciles any missed push and covers environments without Reverb.
+  useEffect(() => {
+    if (activeJobIds.length === 0) return;
+
+    const interval = setInterval(() => {
+      void loadJobs({ silent: true });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [activeJobIds.length, loadJobs]);
 
   const handleCreate = createForm.handleSubmit(async (values) => {
     createForm.clearErrors();

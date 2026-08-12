@@ -7,6 +7,7 @@ use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaJob;
 use App\Models\User;
 use App\Services\Media\MediaJobExecutor;
+use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaJobQueueRouter;
 use App\Services\Media\MediaPathGuard;
 use App\Support\ApiError;
@@ -113,7 +114,7 @@ class MediaJobsController extends Controller
         ]);
     }
 
-    public function cancel(Request $request, string $id): JsonResponse
+    public function cancel(Request $request, string $id, MediaJobProgressBroadcaster $broadcaster): JsonResponse
     {
         $mediaJob = MediaJob::query()->find($id);
 
@@ -125,7 +126,7 @@ class MediaJobsController extends Controller
             return response()->json(ApiError::envelope("Cannot cancel job with status: {$mediaJob->status}", 400), 400);
         }
 
-        $mediaJob->update([
+        $broadcaster->update($mediaJob, [
             'status' => 'canceled',
             'completed_at' => now(),
         ]);
@@ -141,13 +142,9 @@ class MediaJobsController extends Controller
      */
     private function canAccess(Request $request, MediaJob $mediaJob): bool
     {
-        if ($this->isAdmin($request)) {
-            return true;
-        }
+        $user = $request->attributes->get('archive_user');
 
-        $userId = $this->userId($request);
-
-        return $userId !== null && $userId === (string) $mediaJob->created_by;
+        return $user instanceof User && $mediaJob->isAccessibleBy($user);
     }
 
     private function isAdmin(Request $request): bool
@@ -169,22 +166,6 @@ class MediaJobsController extends Controller
      */
     private function payload(MediaJob $mediaJob): array
     {
-        return [
-            'id' => $mediaJob->id,
-            'recordId' => $mediaJob->record_id,
-            'operation' => $mediaJob->operation,
-            'status' => $mediaJob->status,
-            'executor' => $mediaJob->executor,
-            'contractVersion' => $mediaJob->contract_version,
-            'sourcePath' => $mediaJob->source_path,
-            'options' => $mediaJob->options ?? [],
-            'result' => $mediaJob->result,
-            'error' => $mediaJob->error,
-            'progressStage' => $mediaJob->progress_stage,
-            'progressPercent' => $mediaJob->progress_percent,
-            'queuedAt' => $mediaJob->queued_at?->toISOString(),
-            'startedAt' => $mediaJob->started_at?->toISOString(),
-            'completedAt' => $mediaJob->completed_at?->toISOString(),
-        ];
+        return $mediaJob->toApiPayload();
     }
 }
