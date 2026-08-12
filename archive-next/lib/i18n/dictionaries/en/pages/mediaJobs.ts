@@ -103,6 +103,7 @@ export const mediaJobs = {
     queuedAtLabel: "Queued at",
     optionsLabel: "Job options",
     loadingMore: "Loading...",
-    loadMore: "Load more"
+    loadMore: "Load more",
+    reconnecting: "Live updates disconnected — the list is still refreshing periodically in the meantime."
   }
 } as const;

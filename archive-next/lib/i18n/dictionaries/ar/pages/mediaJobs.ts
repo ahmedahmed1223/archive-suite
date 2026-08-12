@@ -103,6 +103,7 @@ export const mediaJobs = {
     queuedAtLabel: "وقت الإضافة",
     optionsLabel: "خيارات المهمة",
     loadingMore: "جارٍ التحميل...",
-    loadMore: "تحميل المزيد"
+    loadMore: "تحميل المزيد",
+    reconnecting: "انقطع الاتصال بالتحديثات المباشرة، يتم تحديث القائمة عبر التحديث الدوري في هذه الأثناء."
   }
 } as const;

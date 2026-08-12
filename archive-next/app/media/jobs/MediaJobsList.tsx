@@ -8,7 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation, type PaginationMeta } from "@/lib/archive-api";
-import { getEchoClient } from "@/lib/echo";
+import { getEchoClient, onConnectionStateChange, type EchoConnectionState } from "@/lib/echo";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { mediaJobs } from "@/lib/i18n/dictionaries/ar/pages/mediaJobs";
 import "../media.css";
@@ -120,6 +120,7 @@ export function MediaJobsList() {
   const [ingestState, setIngestState] = useState<IngestState>({ status: "idle" });
   const [statusFilter, setStatusFilter] = useState<MediaJobStatus | "">("");
   const [loadingMore, setLoadingMore] = useState(false);
+  const [connectionState, setConnectionState] = useState<EchoConnectionState | null>(null);
   const createForm = useForm<MediaJobFormValues>({
     defaultValues: {
       recordId: "",
@@ -139,6 +140,7 @@ export function MediaJobsList() {
   });
   const selectedOperation = createForm.watch("operation") as MediaOperation | "";
   const formErrors = createForm.formState.errors;
+  const showReconnectBanner = connectionState === "unavailable" || connectionState === "failed" || connectionState === "disconnected";
   const jobs = listState.status === "loaded" ? listState.jobs : [];
   const queuedCount = jobs.filter((job) => job.status === "queued").length;
   const processingCount = jobs.filter((job) => job.status === "processing").length;
@@ -234,6 +236,18 @@ export function MediaJobsList() {
 
     return () => clearInterval(interval);
   }, [activeJobIds.length, loadJobs]);
+
+  // RT-803: explicit reconnect visibility — the polling fallback above
+  // already keeps data fresh, this just tells the user why live updates
+  // paused instead of leaving it silent.
+  useEffect(() => {
+    if (activeJobIds.length === 0) {
+      setConnectionState(null);
+      return;
+    }
+
+    return onConnectionStateChange(setConnectionState);
+  }, [activeJobIds.length]);
 
   const handleCreate = createForm.handleSubmit(async (values) => {
     createForm.clearErrors();
@@ -533,6 +547,12 @@ export function MediaJobsList() {
           </div>
         </div>
 
+        {showReconnectBanner && (
+          <p className="form-status" role="status" aria-live="polite">
+            <Loader2 className="status-refresh-icon is-spinning" size={16} aria-hidden="true" />
+            {copy.list.reconnecting}
+          </p>
+        )}
         {listState.status === "loading" && (
           <p className="form-status" role="status" aria-live="polite" aria-busy="true">
             <Loader2 className="status-refresh-icon is-spinning" size={16} aria-hidden="true" />

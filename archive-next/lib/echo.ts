@@ -79,3 +79,22 @@ export function disconnectEchoClient(): void {
   echoInstance?.disconnect();
   echoInstance = null;
 }
+
+export type EchoConnectionState = "connecting" | "connected" | "unavailable" | "failed" | "disconnected";
+
+/**
+ * RT-803: surfaces pusher-js's own connection state so the UI can show an
+ * explicit "reconnecting" indicator instead of silently relying on the
+ * polling fallback. No-op (never fires) when Echo isn't configured.
+ */
+export function onConnectionStateChange(callback: (state: EchoConnectionState) => void): () => void {
+  if (!echoInstance) return () => {};
+
+  const connection = (echoInstance.connector as unknown as { pusher: Pusher }).pusher.connection;
+  const handler = ({ current }: { current: EchoConnectionState }) => callback(current);
+
+  connection.bind("state_change", handler);
+  callback(connection.state as EchoConnectionState);
+
+  return () => connection.unbind("state_change", handler);
+}
