@@ -221,10 +221,10 @@ export default function FirstRunPage() {
         description={copy.description}
         meta={(
           <>
-            <span className="badge">setup.bat</span>
-            <span className="badge">Control Center</span>
-            <span className="badge">{completedCount}/5 {copy.stages}</span>
-            <span className="badge">{copy.readiness} {journey.readinessPercentage}%</span>
+            <span className="badge" title={copy.setupHelp}>setup.bat</span>
+            <span className="badge" title={copy.setupHelp}>Control Center</span>
+            <span className="badge" title={copy.orgHelp}>{completedCount}/5 {copy.stages}</span>
+            <span className="badge" title={copy.readinessLabel}>{copy.readiness} {journey.readinessPercentage}%</span>
           </>
         )}
         actions={(
