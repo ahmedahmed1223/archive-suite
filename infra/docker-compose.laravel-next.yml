@@ -153,8 +153,10 @@ services:
       dockerfile: Dockerfile.worker
     restart: unless-stopped
     logging: *local-logging
-    # V1-712: scheduled-uploads first so durable scheduled work isn't starved behind default jobs.
-    command: ["php", "artisan", "queue:work", "--queue=scheduled-uploads,default", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"]
+    # V2-707: Horizon replaces queue:work — same scheduled-uploads,default
+    # queue order (config/horizon.php), plus dashboard + metrics. GPU jobs
+    # still run under plain queue:work (laravel-worker-gpu below).
+    command: ["php", "artisan", "horizon"]
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
@@ -195,9 +197,9 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      # Inspect PID 1 directly: the exec-form command makes the real queue
-      # worker PID 1, while [q] prevents the probe text matching itself.
-      test: ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[q]ueue:work'"]
+      # Inspect PID 1 directly: the exec-form command makes the real Horizon
+      # master supervisor PID 1, while [h] prevents the probe text matching itself.
+      test: ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[h]orizon'"]
       interval: 30s
       timeout: 10s
       retries: 5

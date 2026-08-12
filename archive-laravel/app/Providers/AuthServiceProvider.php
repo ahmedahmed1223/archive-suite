@@ -21,5 +21,11 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('manage-system', fn (User $user): bool => $user->role === 'admin');
 
         Gate::define('manage-content', fn (User $user): bool => in_array($user->role, ['admin', 'editor'], true));
+
+        // V2-707: Pulse dashboard exposes request/queue/exception metrics —
+        // same admin-only rule as manage-system. viewHorizon is defined
+        // separately in HorizonServiceProvider::gate() (Horizon's own
+        // extension point), same rule.
+        Gate::define('viewPulse', fn (User $user): bool => $user->role === 'admin');
     }
 }

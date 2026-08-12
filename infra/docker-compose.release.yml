@@ -56,7 +56,8 @@ services:
   laravel-worker:
     image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL_WORKER:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
-    command: ["php", "artisan", "queue:work", "--queue=default", "--sleep=1", "--tries=3"]
+    # V2-707: Horizon replaces queue:work — see infra/docker-compose.yml.
+    command: ["php", "artisan", "horizon"]
     environment: *laravel-env
     volumes: [storage:/app/storage/app]
     depends_on: { laravel-fpm: { condition: service_started } }

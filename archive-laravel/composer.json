@@ -9,6 +9,8 @@
         "php": "^8.3",
         "azure-oss/storage-blob-flysystem": "^2.2",
         "laravel/framework": "^13.8",
+        "laravel/horizon": "^5.48",
+        "laravel/pulse": "^1.8",
         "laravel/reverb": "^1.0",
         "laravel/tinker": "^3.0",
         "league/flysystem-aws-s3-v3": "^3.35",

@@ -97,6 +97,15 @@ RUN composer install --no-interaction --no-dev --no-scripts
 # Copy application code
 COPY . .
 
+# storage/framework/{cache,sessions,views} and bootstrap/cache/*.php are
+# .dockerignored entirely (always rebuilt locally, never baked stale) so they
+# don't exist in the build context — recreate the directories before anything
+# below needs them. package:discover boots the full app (not just autoload),
+# and packages that touch the Blade compiler during registration (e.g.
+# livewire/livewire, pulled in by laravel/pulse) fail with "Please provide a
+# valid cache path" if storage/framework/views doesn't exist yet.
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache
+
 # Regenerate autoloader + package manifest now that artisan exists
 RUN composer dump-autoload --optimize --no-interaction \
     && php artisan package:discover --ansi \
