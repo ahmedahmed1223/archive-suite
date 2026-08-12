@@ -3,9 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Models\AuditLog;
+use App\Support\AuditRedactor;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -223,7 +223,7 @@ class AuditArchiveApiRequest
     {
         $metadata = [
             'route' => $request->route()?->uri(),
-            'query' => $this->redact($request->query()),
+            'query' => AuditRedactor::redact($request->query()),
             'sessionId' => $request->attributes->get('archive_session')?->getKey(),
             'restoreDecision' => $this->restoreDecision($request, $taxonomy),
         ];
@@ -239,7 +239,7 @@ class AuditArchiveApiRequest
             return $metadata;
         }
 
-        $payload = $this->redact($request->except(['password', 'password_confirmation']));
+        $payload = AuditRedactor::redact($request->except(['password', 'password_confirmation']));
 
         if ($payload !== []) {
             $metadata['request'] = $payload;
@@ -370,12 +370,12 @@ class AuditArchiveApiRequest
 
         $before = [];
         $after = [];
-        foreach ($this->redact($record) as $field => $value) {
-            if ($this->isSensitiveKey((string) $field)) {
+        foreach (AuditRedactor::redact($record) as $field => $value) {
+            if (AuditRedactor::isSensitiveKey((string) $field)) {
                 continue;
             }
 
-            $previous = $this->redact([$field => $recordBefore[$field] ?? null])[$field];
+            $previous = AuditRedactor::redact([$field => $recordBefore[$field] ?? null])[$field];
             if ($previous !== $value) {
                 $before[$field] = $previous;
                 $after[$field] = $value;
@@ -383,11 +383,6 @@ class AuditArchiveApiRequest
         }
 
         return $after === [] ? null : ['before' => $before, 'after' => $after, 'fields' => array_keys($after)];
-    }
-
-    private function isSensitiveKey(string $key): bool
-    {
-        return preg_match('/password|token|secret|key|dsn|credential|authorization/', strtolower($key)) === 1;
     }
 
     /**
@@ -425,56 +420,6 @@ class AuditArchiveApiRequest
             'label' => 'لا يوجد إجراء استعادة آلي',
             'reason' => 'هذا الحدث موثق للمراجعة ولا يحتوي snapshot كافياً لعكسه تلقائياً.',
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $value
-     * @return array<string, mixed>
-     */
-    private function redact(array $value): array
-    {
-        $redacted = [];
-
-        foreach ($value as $key => $item) {
-            $normalizedKey = strtolower((string) $key);
-            if ($this->isSensitiveKey($normalizedKey)) {
-                $redacted[$key] = '[redacted]';
-
-                continue;
-            }
-
-            if (is_array($item)) {
-                $redacted[$key] = $this->redact(array_slice($item, 0, 50, true));
-
-                continue;
-            }
-
-            if ($item instanceof UploadedFile) {
-                $redacted[$key] = [
-                    'name' => $item->getClientOriginalName(),
-                    'size' => $item->getSize(),
-                    'mimeType' => $item->getClientMimeType(),
-                ];
-
-                continue;
-            }
-
-            if (is_object($item)) {
-                $redacted[$key] = '[object '.class_basename($item).']';
-
-                continue;
-            }
-
-            if (is_string($item) && strlen($item) > 500) {
-                $redacted[$key] = substr($item, 0, 500).'...';
-
-                continue;
-            }
-
-            $redacted[$key] = $item;
-        }
-
-        return $redacted;
     }
 
     /**

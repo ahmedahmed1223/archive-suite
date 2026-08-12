@@ -3,6 +3,7 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Resources\RecordResource;
+use App\Mcp\Tools\CreateReviewRequestTool;
 use App\Mcp\Tools\GetRecordTool;
 use App\Mcp\Tools\GetSystemStatusTool;
 use App\Mcp\Tools\ListArchiveTypesTool;
@@ -30,6 +31,7 @@ class ArchiveMcpServer extends Server
         GetRecordTool::class,
         ListArchiveTypesTool::class,
         GetSystemStatusTool::class,
+        CreateReviewRequestTool::class,
     ];
 
     protected array $resources = [
