@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // MCP-801: routes/ai.php registers its own prefix/middleware, so it
+        // isn't passed as `api:` here (that would double-apply /api/v1).
+        then: function (): void {
+            require __DIR__.'/../routes/ai.php';
+        },
     )
     // Channel auth reuses the bearer/cookie session middleware (not the "web"
     // session guard) so the Next.js Echo client can authorize private
