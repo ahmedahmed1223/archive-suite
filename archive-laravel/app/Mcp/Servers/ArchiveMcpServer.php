@@ -2,6 +2,11 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Resources\RecordResource;
+use App\Mcp\Tools\GetRecordTool;
+use App\Mcp\Tools\GetSystemStatusTool;
+use App\Mcp\Tools\ListArchiveTypesTool;
+use App\Mcp\Tools\SearchRecordsTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -21,11 +26,14 @@ use Laravel\Mcp\Server\Attributes\Version;
 class ArchiveMcpServer extends Server
 {
     protected array $tools = [
-        //
+        SearchRecordsTool::class,
+        GetRecordTool::class,
+        ListArchiveTypesTool::class,
+        GetSystemStatusTool::class,
     ];
 
     protected array $resources = [
-        //
+        RecordResource::class,
     ];
 
     protected array $prompts = [
