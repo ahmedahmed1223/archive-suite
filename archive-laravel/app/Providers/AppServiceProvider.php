@@ -11,8 +11,8 @@ use App\Services\Ingest\IngestScanner;
 use App\Services\Ingest\IngestTransport;
 use App\Services\Ingest\PhpFtpClient;
 use App\Services\Ingest\SmbIngestTransport;
-use App\Services\Media\FakeMediaProcessor;
 use App\Services\Media\CudaCapabilityChecker;
+use App\Services\Media\FakeMediaProcessor;
 use App\Services\Media\LocalMediaJobExecutor;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
@@ -35,6 +35,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 use League\Flysystem\Filesystem;
 use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
 use Spatie\Dropbox\Client as DropboxClient;
@@ -209,6 +210,11 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perMinute($perMinute)->by($request->user()?->id ?? $request->ip());
         });
+
+        // MCP-802: the consent screen an MCP client's user sees when
+        // authorizing it (php artisan vendor:publish --tag=mcp-views
+        // published the starter view laravel/mcp ships for this).
+        Passport::authorizationView(fn (array $parameters) => view('mcp.authorize', $parameters));
     }
 
     /**

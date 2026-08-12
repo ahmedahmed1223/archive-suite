@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -94,6 +95,7 @@ final class ApiError
     {
         return match (true) {
             $e instanceof ValidationException => $e->status,
+            $e instanceof AuthenticationException => 401,
             $e instanceof HttpExceptionInterface => $e->getStatusCode(),
             default => 500,
         };

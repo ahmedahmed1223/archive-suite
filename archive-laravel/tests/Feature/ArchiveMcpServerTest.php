@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\Support\AuthenticatesArchiveRequests;
+use Laravel\Passport\Passport;
 use Tests\TestCase;
 
 /**
- * MCP-801: server bootstrap only — one capability definition registered on
- * both the web (api/v1/mcp) and local (stdio) transports. The web route is
- * gated by the existing archive.auth middleware as a baseline; MCP-802
- * replaces this with OAuth 2.1 + MCP scopes before any external client is
- * meant to reach it.
+ * MCP-801/802: server bootstrap plus the OAuth 2.1 gate. The web route is
+ * guarded by Passport's `auth:api` (routes/ai.php) — a translation layer onto
+ * the existing App\Models\User, not a second identity system. The rest of the
+ * API keeps using archive.auth untouched.
  */
 class ArchiveMcpServerTest extends TestCase
 {
-    use AuthenticatesArchiveRequests, RefreshDatabase;
+    use RefreshDatabase;
 
     public function test_the_web_transport_rejects_unauthenticated_requests(): void
     {
@@ -30,8 +30,7 @@ class ArchiveMcpServerTest extends TestCase
 
     public function test_the_web_transport_accepts_authenticated_requests(): void
     {
-        $headers = $this->authHeaders();
-        $headers['Accept'] = 'application/json, text/event-stream';
+        Passport::actingAs(User::factory()->create(), ['mcp:use']);
 
         $this->postJson('/api/v1/mcp', [
             'jsonrpc' => '2.0',
@@ -42,6 +41,6 @@ class ArchiveMcpServerTest extends TestCase
                 'capabilities' => [],
                 'clientInfo' => ['name' => 'test-client', 'version' => '1.0.0'],
             ],
-        ], $headers)->assertOk();
+        ], ['Accept' => 'application/json, text/event-stream'])->assertOk();
     }
 }
