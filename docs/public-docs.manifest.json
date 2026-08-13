@@ -37,6 +37,7 @@
     { "path": "docs/superpowers/", "lifecycle": "internal-design-record" }
   ],
   "excludedFiles": [
+    { "path": "docs/release/v1.2.0-file-review.md", "lifecycle": "internal-release-review" },
     { "path": "docs/evidence/v1.1.0-native/README.md", "lifecycle": "release-evidence-index" },
     { "path": "docs/evidence/v1.1.0-docker/README.md", "lifecycle": "release-evidence-index" }
   ]
