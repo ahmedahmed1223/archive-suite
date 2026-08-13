@@ -74,7 +74,7 @@ export default function WhatsNewDialog() {
           <span>{copy.hide}</span>
         </label>
         <div className="whats-new-actions">
-          <Link className="button button-secondary" href="/help?chapter=whats-new" onClick={acknowledge}>
+          <Link className="button button-secondary" href={`/help/releases/${WHATS_NEW_RELEASE}.0`} onClick={acknowledge}>
             {copy.help}
           </Link>
           <button className="button button-primary" type="button" onClick={acknowledge}>

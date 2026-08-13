@@ -150,6 +150,8 @@ async function checkReleaseWorkflow() {
   }
   assert.match(text, /download-artifact@v4/i, `${file}: publish job must download verified distribution artifacts.`);
   assert.match(text, /sha256sum\s+--check\s+SHA256SUMS/i, `${file}: publish job must verify SHA256SUMS before release creation.`);
+  assert.match(text, /node scripts\/build-release-notes\.mjs/i, `${file}: publish job must build bilingual GitHub Release notes from the canonical files.`);
+  assert.match(text, /--notes-file\s+release-notes\.md/i, `${file}: GitHub Release creation must use the generated bilingual notes.`);
 }
 
 // 5. Shared OpenAPI contract parses and has a version + non-empty paths.
