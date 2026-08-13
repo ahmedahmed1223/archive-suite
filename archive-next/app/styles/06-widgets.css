@@ -23,6 +23,11 @@
   background: color-mix(in srgb, var(--color-status-error) 7%, var(--color-bg-secondary));
 }
 
+.state-banner-info {
+  border-color: color-mix(in srgb, var(--color-status-info) 34%, var(--color-border-secondary));
+  background: color-mix(in srgb, var(--color-status-info) 8%, var(--color-bg-secondary));
+}
+
 .graph-relation-list {
   display: grid;
   gap: var(--space-2);

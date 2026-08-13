@@ -282,6 +282,9 @@ export const archiveDetail = {
     watchingAlone: "أنت تشاهد هذا السجل",
     unavailable: "تعذر تحديث الحضور مؤقتًا."
   },
+  recordEditClaim: {
+    othersEditing: "{name} يحرر هذا السجل الآن. يمكنك المتابعة، لكن راجع التغييرات قبل الحفظ لتفادي التعارض."
+  },
   readiness: {
     panelTitle: "جاهزية المادة",
     panelDescription: "حالة مشتقة من بيانات السجل الحالية، ولا تمنع الحفظ أو تفرض دورة اعتماد.",

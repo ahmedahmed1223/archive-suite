@@ -62,3 +62,9 @@ Broadcast::channel('notifications.{userId}', function ($request, string $userId)
 Broadcast::channel('media-queue-status', function ($request) {
     return $request->attributes->get('archive_user') instanceof User;
 });
+
+// RT-804: edit-claim presence carries no data beyond who's editing which
+// record, same "any authenticated archive user" gate as review.media above.
+Broadcast::channel('record-edit.{recordId}', function ($request) {
+    return $request->attributes->get('archive_user') instanceof User;
+});

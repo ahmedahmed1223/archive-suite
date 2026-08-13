@@ -282,6 +282,9 @@ export const archiveDetail = {
     watchingAlone: "You are viewing this record",
     unavailable: "Presence could not be updated temporarily."
   },
+  recordEditClaim: {
+    othersEditing: "{name} is editing this record now. You can continue, but review changes before saving to avoid a conflict."
+  },
   readiness: {
     panelTitle: "Item readiness",
     panelDescription: "Status derived from current record data; it does not block saving or enforce an approval cycle.",

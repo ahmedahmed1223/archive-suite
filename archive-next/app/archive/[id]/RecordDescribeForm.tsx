@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { ArchiveRecord } from "@/lib/archive-api";
+import RecordEditClaimBanner from "@/components/RecordEditClaimBanner";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { clearEditDraftPosition, getEditDraftPosition, saveEditDraftPosition } from "@/lib/edit-draft-position";
 import { missingDescribeFields } from "@/lib/record-status";
@@ -194,6 +195,7 @@ export function RecordDescribeForm({
           ) : null}
         </div>
       </div>
+      <RecordEditClaimBanner recordId={record.id} />
       <form id="record-describe-form" className="auth-form" onSubmit={handleSubmit}>
         <label>
           {t.pages.recordDescribeForm.titleLabel}
