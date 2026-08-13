@@ -85,6 +85,19 @@ class ArchiveMcpReviewRequestTest extends TestCase
             ->assertHasErrors();
     }
 
+    public function test_a_viewer_cannot_create_a_review_request(): void
+    {
+        ArchiveMcpServer::actingAs(User::factory()->create(['role' => 'viewer']))
+            ->tool(CreateReviewRequestTool::class, [
+                'recordId' => 'item-1',
+                'field' => 'title',
+                'message' => 'A viewer must not create this draft.',
+            ])
+            ->assertHasErrors();
+
+        $this->assertDatabaseCount('record_field_requests', 0);
+    }
+
     /** @param array<string, mixed> $data */
     private function seedRecord(string $uid, array $data): void
     {

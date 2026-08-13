@@ -20,6 +20,10 @@ class GetRecordTool extends Tool
 
     public function handle(Request $request): Response|ResponseFactory
     {
+        if ($rejected = $this->authorizeTool($request, 'get_record')) {
+            return $rejected;
+        }
+
         $args = $request->validate([
             'id' => ['required', 'string', 'max:200'],
             'store' => ['nullable', 'string', 'max:100'],
