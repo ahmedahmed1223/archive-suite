@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\V1\ProjectsController;
 use App\Http\Controllers\Api\V1\ProjectTasksController;
 use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordAiAssistController;
+use App\Http\Controllers\Api\V1\RecordAiSuggestionController;
 use App\Http\Controllers\Api\V1\RecordAttachmentsController;
 use App\Http\Controllers\Api\V1\RecordBroadcastMetadataController;
 use App\Http\Controllers\Api\V1\RecordChangeImpactController;
@@ -336,6 +337,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/{id}/field-requests', [RecordFieldRequestController::class, 'store']);
         Route::post('/field-requests/{id}/resolve', [RecordFieldRequestController::class, 'resolve']);
         Route::delete('/field-requests/{id}', [RecordFieldRequestController::class, 'destroy']);
+        Route::get('/records/{id}/ai-suggestions', [RecordAiSuggestionController::class, 'index']);
+        Route::post('/records/{id}/ai-suggestions', [RecordAiSuggestionController::class, 'store']);
+        Route::post('/ai-suggestions/{id}/approve', [RecordAiSuggestionController::class, 'approve']);
+        Route::post('/ai-suggestions/{id}/reject', [RecordAiSuggestionController::class, 'reject']);
         Route::get('/records/{id}/field-sources', [RecordFieldSourcesController::class, 'index']);
         Route::get('/records/{id}/snapshots', [RecordSnapshotsController::class, 'index']);
         Route::get('/records/{id}/snapshots/{snapshotId}/diff', [RecordSnapshotsController::class, 'diff']);
