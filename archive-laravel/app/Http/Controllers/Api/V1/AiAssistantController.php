@@ -11,8 +11,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * AI-802: the only entry point to ArchiveAssistantAgent. Read-only by
- * construction - see ArchiveAssistantAgent's tools().
+ * AI-802/AI-804: the only entry point to ArchiveAssistantAgent. Read-only
+ * by construction - see ArchiveAssistantAgent's tools(). Structured output
+ * means `sources` is always present, even when empty.
  */
 class AiAssistantController extends Controller
 {
@@ -27,8 +28,12 @@ class AiAssistantController extends Controller
             return response()->json(['ok' => false, 'error' => 'Unauthenticated.'], 401);
         }
 
-        $response = (new ArchiveAssistantAgent($user))->prompt($validated['message']);
+        $result = (new ArchiveAssistantAgent($user))->prompt($validated['message'])->toArray();
 
-        return response()->json(['ok' => true, 'text' => $response->text]);
+        return response()->json([
+            'ok' => true,
+            'answer' => $result['answer'] ?? null,
+            'sources' => $result['sources'] ?? [],
+        ]);
     }
 }

@@ -13,10 +13,10 @@ use Laravel\Ai\Tools\Request;
 use Tests\TestCase;
 
 /**
- * AI-802: the two tools are exercised directly (no LLM involved at all)
- * to prove they return exactly what the read-only HTTP endpoints already
- * return - they delegate to SearchController/RecordsController, not a
- * reimplementation.
+ * AI-802/AI-804: the two tools are exercised directly (no LLM involved at
+ * all) to prove they return exactly what the read-only HTTP endpoints
+ * already return - they delegate to SearchController/RecordsController,
+ * not a reimplementation.
  */
 class ArchiveAssistantToolsTest extends TestCase
 {
@@ -34,6 +34,24 @@ class ArchiveAssistantToolsTest extends TestCase
 
         $this->assertTrue($result['ok']);
         $this->assertSame('item-1', $result['records'][0]['uid'] ?? $result['records'][0]['id'] ?? null);
+    }
+
+    public function test_search_tool_accepts_semantic_mode_and_degrades_safely_without_embeddings(): void
+    {
+        $this->seedRecord('item-4', ['title' => 'Sunset Harbor Interview']);
+        $user = User::factory()->create(['role' => 'editor']);
+
+        // AI-804: on sqlite (no pgvector), SearchController's semantic path
+        // returns null and falls back to keyword - same degrade-safe
+        // behavior V2-708 already established for the HTTP endpoint. This
+        // proves the tool passes `mode` through without breaking that.
+        $result = json_decode(
+            (new SearchArchiveRecordsTool($user))->handle(new Request(['query' => 'Sunset Harbor', 'mode' => 'semantic'])),
+            true
+        );
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('item-4', $result['records'][0]['uid'] ?? $result['records'][0]['id'] ?? null);
     }
 
     public function test_get_record_tool_reads_a_single_record(): void

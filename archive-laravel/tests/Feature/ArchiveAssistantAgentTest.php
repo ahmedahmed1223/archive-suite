@@ -10,9 +10,9 @@ use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 /**
- * AI-802: the HTTP surface for ArchiveAssistantAgent. Exercised entirely
- * through the SDK's own fake (see AI-801's AiSdkProviderTest) so this
- * suite never calls the live OpenRouter API.
+ * AI-802/AI-804: the HTTP surface for ArchiveAssistantAgent. Exercised
+ * entirely through the SDK's own fake (see AI-801's AiSdkProviderTest) so
+ * this suite never calls the live OpenRouter API.
  */
 class ArchiveAssistantAgentTest extends TestCase
 {
@@ -24,15 +24,31 @@ class ArchiveAssistantAgentTest extends TestCase
             ->assertUnauthorized();
     }
 
-    public function test_it_answers_via_the_agent_without_hitting_the_network(): void
+    public function test_it_answers_with_structured_sources_without_hitting_the_network(): void
     {
-        ArchiveAssistantAgent::fake(['There are no matching records.']);
+        ArchiveAssistantAgent::fake([[
+            'answer' => 'The sunset harbor interview covers the 2019 restoration.',
+            'sources' => [['recordId' => 'item-1', 'title' => 'Sunset Harbor Interview']],
+        ]]);
 
         $this->postJson('/api/v1/ai/assistant/ask', ['message' => 'find the sunset harbor interview'], $this->authHeaders())
             ->assertOk()
-            ->assertJson(['ok' => true, 'text' => 'There are no matching records.']);
+            ->assertJson([
+                'ok' => true,
+                'answer' => 'The sunset harbor interview covers the 2019 restoration.',
+                'sources' => [['recordId' => 'item-1', 'title' => 'Sunset Harbor Interview']],
+            ]);
 
         ArchiveAssistantAgent::assertPrompted('find the sunset harbor interview');
+    }
+
+    public function test_sources_default_to_an_empty_array(): void
+    {
+        ArchiveAssistantAgent::fake([['answer' => 'Nothing relevant was found.', 'sources' => []]]);
+
+        $this->postJson('/api/v1/ai/assistant/ask', ['message' => 'find something obscure'], $this->authHeaders())
+            ->assertOk()
+            ->assertJson(['ok' => true, 'sources' => []]);
     }
 
     public function test_it_requires_a_message(): void
