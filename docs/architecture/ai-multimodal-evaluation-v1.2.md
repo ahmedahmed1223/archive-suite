@@ -1,24 +1,17 @@
-# AI-806 — تقييم الذكاء متعدد الوسائط لإصدار 1.2
+# AI-806 — Multimodal AI evaluation for v1.2
 
-## القرار
+[العربية](ai-multimodal-evaluation-v1.2.ar.md)
 
-لا يُفعّل إنشاء الصور أو النسخ الصوتي أو إعادة الترتيب عبر مزود خارجي في
-الإصدار 1.2. تبقى مسارات Whisper وOCR الحالية هي مسارات الإنتاج المعتمدة.
-هذا قرار **No-Go** مقصود، وليس نقصاً في التهيئة: لا تُرسل ملفات أرشيف أو صوت
-إلى مزود جديد لمجرد توفره في Laravel AI SDK.
+## Decision
 
-## ما تم تقييمه
+External image generation, transcription, and reranking are not enabled in
+v1.2. The existing Whisper and OCR production paths remain the approved
+paths. This is an intentional no-go decision: archive files and audio are not
+sent to a new provider merely because the Laravel AI SDK supports it.
 
-| القدرة | الفائدة المحتملة | خطر الإصدار | قرار 1.2 |
-| --- | --- | --- | --- |
-| تحليل الصور | اقتراح وصف أو وسوم | نقل صور الأرشيف خارج بيئة العميل وتكلفة غير متوقعة | مؤجل |
-| النسخ الصوتي | بديل محتمل لمهام Whisper | يلزم قياس دقة العربية والخصوصية لكل مزود | مؤجل |
-| إعادة الترتيب | تحسين ترتيب البحث | يتطلب مجموعة استعلامات عربية محكومة ومقارنة بالمحرك الحالي | مؤجل |
+## Reopening criteria
 
-## شروط إعادة الفتح
-
-لا يُنشأ مسار إنتاج أو واجهة مستخدم لأي قدرة أعلاه قبل توثيق كل ما يلي في مهمة
-مستقلة: عينة عربية ممثلة مع مقياس دقة، سقف تكلفة لكل قسم، موافقة مالك البيانات
-على انتقال المحتوى، وخطة استرجاع تحافظ على Whisper/OCR والبحث الحاليين عند
-تعطل المزود. لا يُستبدل أي ناتج معتمد آلياً؛ تظل أي نتيجة جديدة اقتراحاً يحتاج
-مراجعة بشرية.
+Any future production path requires a representative Arabic accuracy measure,
+a departmental cost ceiling, data-owner approval for content transfer, and a
+rollback plan that preserves the existing paths. Outputs remain suggestions
+requiring human review.
