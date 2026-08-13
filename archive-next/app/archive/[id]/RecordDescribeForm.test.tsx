@@ -8,6 +8,8 @@ vi.mock("@/lib/i18n/LocaleProvider", () => ({
   useLocale: () => ({ locale: "ar", t: { pages: { recordDescribeForm } } })
 }));
 
+vi.mock("@/components/RecordEditClaimBanner", () => ({ default: () => null }));
+
 import { RecordDescribeForm } from "./page";
 
 afterEach(cleanup);
