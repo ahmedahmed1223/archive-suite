@@ -52,9 +52,9 @@ class NativeOdbcConnection implements OdbcConnection
      * @return array<int, array<string, mixed>>
      *
      * @throws RuntimeException if the query fails to execute. Callers must not
-     *   treat a caught exception the same as an empty result set -- a prior
-     *   version returned [] for both, which made a broken query on a
-     *   non-configured dialect indistinguishable from a genuinely empty table.
+     *                          treat a caught exception the same as an empty result set -- a prior
+     *                          version returned [] for both, which made a broken query on a
+     *                          non-configured dialect indistinguishable from a genuinely empty table.
      */
     public function readRows(string $table, int $offset, int $limit): array
     {

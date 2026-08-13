@@ -30,7 +30,7 @@ class BackupService
     // V2-204: 8-byte magic identifying the streamed-chunk AEAD encryption
     // format, checked before any gzip/ndjson sniffing so encrypted archives
     // are detected regardless of the current encryption_enabled setting.
-    private const ENC_MAGIC = "ARCENCV1";
+    private const ENC_MAGIC = 'ARCENCV1';
 
     // Plaintext bytes per AEAD chunk before encryption. Peak memory for
     // encrypt/decrypt is one chunk, not the whole archive.

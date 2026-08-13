@@ -31,7 +31,7 @@ class AiAssistantController extends Controller
 
         $user = $request->attributes->get('archive_user');
         if (! $user instanceof User) {
-            return response()->json(['ok' => false, 'error' => 'Unauthenticated.'], 401);
+            return response()->json(ApiError::envelope('Unauthenticated.', 401), 401);
         }
 
         $departmentId = $validated['departmentId'] ?? null;
