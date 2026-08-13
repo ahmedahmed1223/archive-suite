@@ -15,7 +15,7 @@ use Tests\TestCase;
 
 class BulkMacrosApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_editor_can_create_update_and_delete_an_ordered_macro(): void
     {

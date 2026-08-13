@@ -1,0 +1,63 @@
+# Dedicated NVIDIA GPU queue worker for Whisper. The CPU worker remains
+# Dockerfile.worker and is the default deployment.
+FROM composer:2.10.2@sha256:5946476338742b200bb9ff88f8be56275ddae4b3949c72305cb0dbf10cfcb760 AS composer
+
+# Debian 12 matches the PHP 8.5 base image ABI while supplying the CUDA 12 and
+# cuDNN runtime libraries required by CTranslate2 at inference time.
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04@sha256:2fcc4280646484290cc50dce5e65f388dd04352b07cbe89a635703bd1f9aedb6
+
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+    DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1 \
+    HF_HOME=/models
+
+# PHP 8.4 satisfies Laravel/Symfony's runtime minimum while keeping this CUDA
+# base supported by NVIDIA. The upstream PHP image uses Debian and cannot be
+# copied safely into Ubuntu because its binaries require a newer glibc.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        ffmpeg \
+        python3 \
+        python3-pip \
+        software-properties-common \
+    && add-apt-repository --yes ppa:ondrej/php \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        php8.4-cli \
+        php8.4-curl \
+        php8.4-ftp \
+        php8.4-mbstring \
+        php8.4-odbc \
+        php8.4-pgsql \
+        php8.4-redis \
+        php8.4-xml \
+        php8.4-zip \
+        unixodbc \
+        odbc-postgresql \
+        odbc-mariadb \
+    && php -r "exit(function_exists('odbc_connect') && extension_loaded('redis') ? 0 : 1);" \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# The CUDA image provides cuDNN; this validates that the worker contains both
+# that runtime and the exact Whisper executable the application calls. A live
+# nvidia-smi probe happens at container run time because Docker builds do not
+# receive the host GPU.
+RUN pip3 install --no-cache-dir whisper-ctranslate2==0.5.3 \
+    && ldconfig -p | grep -q 'libcudnn' \
+    && whisper-ctranslate2 --help | grep -q -- '--device'
+
+WORKDIR /app
+
+COPY composer.json composer.lock ./
+COPY --from=composer /usr/bin/composer /usr/local/bin/composer
+RUN composer install --no-interaction --no-dev --no-scripts
+
+COPY . .
+
+RUN composer dump-autoload --optimize --no-interaction \
+    && php artisan package:discover --ansi \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+VOLUME ["/models"]
+
+CMD ["php", "artisan", "queue:work", "--queue=gpu", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"]

@@ -28,9 +28,7 @@ class AutomationRulesController extends Controller
         'create-inbox-item',
     ];
 
-    public function __construct(private readonly AutomationRuleRunner $runner)
-    {
-    }
+    public function __construct(private readonly AutomationRuleRunner $runner) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -272,7 +270,7 @@ class AutomationRulesController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $validated
+     * @param  array<string, mixed>  $validated
      * @return array<string, string>
      */
     private function conditions(array $validated, bool $includeMissing = true): array

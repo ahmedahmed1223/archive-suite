@@ -9,7 +9,7 @@ class VttToTtmlConverterTest extends TestCase
 {
     public function test_converts_single_cue_to_ttml(): void
     {
-        $vtt = <<<VTT
+        $vtt = <<<'VTT'
         WEBVTT
 
         00:00:01.000 --> 00:00:04.000
@@ -27,7 +27,7 @@ class VttToTtmlConverterTest extends TestCase
 
     public function test_converts_multiple_cues(): void
     {
-        $vtt = <<<VTT
+        $vtt = <<<'VTT'
         WEBVTT
 
         00:00:01.000 --> 00:00:02.000
@@ -46,7 +46,7 @@ class VttToTtmlConverterTest extends TestCase
 
     public function test_escapes_html_special_characters(): void
     {
-        $vtt = <<<VTT
+        $vtt = <<<'VTT'
         WEBVTT
 
         00:00:01.000 --> 00:00:02.000

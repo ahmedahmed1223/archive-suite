@@ -252,8 +252,6 @@ jobs:
           tags: ${{ env.NEXT_IMAGE }}:${{ steps.meta.outputs.version }}
           build-args: |
             ARCHIVE_API_BASE_URL=http://laravel:8000/api/v1
-            SENTRY_ENVIRONMENT=production
-            SENTRY_RELEASE=${{ steps.meta.outputs.version }}
 
       - name: Build and push Laravel image
         id: push_laravel
@@ -410,13 +408,15 @@ jobs:
             'بعد التجميع تحقق من الملف: sha256sum --check OFFLINE-BUNDLE-SHA256' \
             > OFFLINE-BUNDLE-README.txt
           cp "release-offline/${evidence_asset}" "${evidence_asset}"
+          node scripts/build-release-notes.mjs "${GITHUB_REF_NAME#v}" release-notes.md
           mapfile -t native_assets < <(find native-release-assets -type f -print | sort)
           artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json OFFLINE-BUNDLE-README.txt OFFLINE-BUNDLE-SHA256 "${offline_parts[@]}" "${evidence_asset}" "${native_assets[@]}")
           sha256sum "${artifacts[@]}" > SHA256SUMS
           sha256sum --check SHA256SUMS
-          flags=(--generate-notes --title "${GITHUB_REF_NAME}")
+          flags=(--title "${GITHUB_REF_NAME}" --notes-file release-notes.md)
           [[ "${{ steps.meta.outputs.prerelease }}" == "true" ]] && flags+=(--prerelease)
           if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release edit "${GITHUB_REF_NAME}" --notes-file release-notes.md
             gh release upload "${GITHUB_REF_NAME}" "${artifacts[@]}" SHA256SUMS --clobber
           else
             gh release create "${GITHUB_REF_NAME}" "${flags[@]}" "${artifacts[@]}" SHA256SUMS

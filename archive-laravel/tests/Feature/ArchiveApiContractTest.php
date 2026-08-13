@@ -13,16 +13,16 @@ class ArchiveApiContractTest extends TestCase
 
         $this->assertSame(200, $response->status(), $response->getContent());
         $response->assertJson(fn (AssertableJson $json) => $json
-                ->where('ok', true)
-                ->where('backend', 'laravel')
-                ->has('engine')
-                ->where('uptimeSec', fn ($value) => is_int($value) && $value >= 0)
-                ->has('version')
-                ->has('authRequired')
-                ->has('checks') // V1-202: deep db/redis/storage health checks
-                ->has('degraded') // V1-712: scheduled-uploads scheduler/queue-depth signal
-                ->has('scheduledUploads')
-            );
+            ->where('ok', true)
+            ->where('backend', 'laravel')
+            ->has('engine')
+            ->where('uptimeSec', fn ($value) => is_int($value) && $value >= 0)
+            ->has('version')
+            ->has('authRequired')
+            ->has('checks') // V1-202: deep db/redis/storage health checks
+            ->has('degraded') // V1-712: scheduled-uploads scheduler/queue-depth signal
+            ->has('scheduledUploads')
+        );
     }
 
     public function test_it_serves_the_shared_openapi_contract(): void

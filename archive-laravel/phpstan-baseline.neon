@@ -1,0 +1,187 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to an undefined static method App\\Models\\User\:\:find\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/DropboxController.php
+
+		-
+			message: '#^Call to an undefined static method App\\Models\\Notification\:\:where\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 6
+			path: app/Http/Controllers/Api/V1/NotificationsController.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$attempts\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$failure_code\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$failure_message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$file_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$record_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$record_payload\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$scheduled_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$time_zone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScheduledUploadResource\:\:\$version\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScheduledUploadResource.php
+
+		-
+			message: '#^Call to an undefined static method App\\Models\\User\:\:find\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: app/Jobs/ProcessDropboxWebhook.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditLog\:\:\$action\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditLog\:\:\$actor_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditLog\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditLog\:\:\$event\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditLog\:\:\$metadata\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditLog\:\:\$outcome\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditLog\:\:\$prev_hash\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditLog\:\:\$resource_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditLog\:\:\$resource_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\AuditLog\:\:\$status_code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/AuditLog.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\DelegatedAccess\:\:\$expires_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/DelegatedAccess.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\DelegatedAccess\:\:\$revoked_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/DelegatedAccess.php
+
+		-
+			message: '#^Unknown parameter \$serialize in call to static method Illuminate\\Support\\Facades\\Crypt\:\:decrypt\(\)\.$#'
+			identifier: argument.unknown
+			count: 1
+			path: app/Services/Backup/BackupService.php
+
+		-
+			message: '#^Call to an undefined static method App\\Models\\Notification\:\:create\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 5
+			path: app/Services/Notification/NotificationService.php
+
+		-
+			message: '#^Call to an undefined static method App\\Models\\Notification\:\:where\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: app/Services/Notification/NotificationService.php

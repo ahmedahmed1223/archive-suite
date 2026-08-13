@@ -1,15 +1,13 @@
 "use client";
 
 import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { openCommandPalette } from "@/components/CommandPalette";
 import { getDailyNavigation, getLocalizedNavigation, isActivePath } from "@/lib/navigation";
 import { useAuthSession } from "@/lib/auth-session";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
-
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
+import { resolveIcon } from "@/lib/icon-registry";
 
 export default function MobilePrimaryNav() {
   const { locale, t } = useLocale();
@@ -27,7 +25,7 @@ export default function MobilePrimaryNav() {
   return (
     <nav className="mobile-primary-nav" aria-label={t.shell.dailyNavigation}>
       {mobileItems.map((item) => {
-        const Icon = iconRegistry[item.icon] || Icons.Circle;
+        const Icon = resolveIcon(item.icon, Icons.Circle);
         const active = isActivePath(pathname, item.href);
 
         return (
@@ -37,7 +35,7 @@ export default function MobilePrimaryNav() {
           </Link>
         );
       })}
-      <button type="button" className="mobile-primary-nav__command" onClick={openCommandPalette} aria-label={t.shell.openCommands}>
+      <button type="button" className="mobile-primary-nav__command" data-testid="mobile-command-palette-trigger" onClick={openCommandPalette} aria-label={t.shell.openCommands}>
         <Icons.Search aria-hidden="true" size={20} strokeWidth={2} />
         <span>{t.shell.commands}</span>
       </button>

@@ -13,9 +13,7 @@ class RecordBroadcastMetadataController extends Controller
 {
     private const ARCHIVE_STORE = 'archive-items';
 
-    public function __construct(private readonly BroadcastMetadataService $broadcast)
-    {
-    }
+    public function __construct(private readonly BroadcastMetadataService $broadcast) {}
 
     public function show(string $recordId): JsonResponse
     {

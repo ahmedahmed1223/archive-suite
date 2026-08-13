@@ -2,8 +2,16 @@
 
 namespace Tests\Feature;
 
+use AzureOss\Storage\Blob\BlobServiceClient;
+use AzureOss\Storage\BlobFlysystem\AzureBlobStorageAdapter;
+use Google\Cloud\Storage\StorageClient;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\Ftp\FtpAdapter;
+use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
+use League\Flysystem\PhpseclibV3\SftpAdapter;
+use Spatie\Dropbox\Client;
+use Spatie\FlysystemDropbox\DropboxAdapter;
 use Tests\TestCase;
 
 /**
@@ -24,8 +32,8 @@ class CloudStorageConfigTest extends TestCase
     public function test_azure_disk_is_configured_and_adapter_class_exists(): void
     {
         $this->assertSame('azure', config('filesystems.disks.azure.driver'));
-        $this->assertTrue(class_exists(\AzureOss\Storage\BlobFlysystem\AzureBlobStorageAdapter::class));
-        $this->assertTrue(class_exists(\AzureOss\Storage\Blob\BlobServiceClient::class));
+        $this->assertTrue(class_exists(AzureBlobStorageAdapter::class));
+        $this->assertTrue(class_exists(BlobServiceClient::class));
     }
 
     public function test_azure_disk_resolves_with_fake_development_connection_string(): void
@@ -41,8 +49,8 @@ class CloudStorageConfigTest extends TestCase
     public function test_gcs_disk_is_configured_and_adapter_class_exists(): void
     {
         $this->assertSame('gcs', config('filesystems.disks.gcs.driver'));
-        $this->assertTrue(class_exists(\League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter::class));
-        $this->assertTrue(class_exists(\Google\Cloud\Storage\StorageClient::class));
+        $this->assertTrue(class_exists(GoogleCloudStorageAdapter::class));
+        $this->assertTrue(class_exists(StorageClient::class));
     }
 
     public function test_gcs_disk_resolves_with_fake_project_and_no_key_file(): void
@@ -61,8 +69,8 @@ class CloudStorageConfigTest extends TestCase
     public function test_dropbox_disk_is_configured_and_adapter_class_exists(): void
     {
         $this->assertSame('dropbox', config('filesystems.disks.dropbox.driver'));
-        $this->assertTrue(class_exists(\Spatie\FlysystemDropbox\DropboxAdapter::class));
-        $this->assertTrue(class_exists(\Spatie\Dropbox\Client::class));
+        $this->assertTrue(class_exists(DropboxAdapter::class));
+        $this->assertTrue(class_exists(Client::class));
     }
 
     public function test_dropbox_disk_resolves_with_fake_token(): void
@@ -77,7 +85,7 @@ class CloudStorageConfigTest extends TestCase
     public function test_sftp_disk_is_configured_and_adapter_class_exists(): void
     {
         $this->assertSame('sftp', config('filesystems.disks.sftp.driver'));
-        $this->assertTrue(class_exists(\League\Flysystem\PhpseclibV3\SftpAdapter::class));
+        $this->assertTrue(class_exists(SftpAdapter::class));
     }
 
     public function test_sftp_disk_resolves_with_fake_credentials(): void
@@ -96,7 +104,7 @@ class CloudStorageConfigTest extends TestCase
     public function test_ftp_disk_is_configured_and_adapter_class_exists(): void
     {
         $this->assertSame('ftp', config('filesystems.disks.ftp.driver'));
-        $this->assertTrue(class_exists(\League\Flysystem\Ftp\FtpAdapter::class));
+        $this->assertTrue(class_exists(FtpAdapter::class));
     }
 
     public function test_ftp_disk_resolves_with_fake_credentials(): void

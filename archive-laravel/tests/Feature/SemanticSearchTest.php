@@ -4,12 +4,12 @@ namespace Tests\Feature;
 
 use App\Services\Search\EmbeddingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Tests\Support\AuthenticatesArchiveRequests;
+use Tests\TestCase;
 
 class SemanticSearchTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_semantic_search_degrades_to_keyword_fallback_on_sqlite(): void
     {

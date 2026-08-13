@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "@/lib/i18n/LocaleProvider";
+
 export interface DataViewOption<TValue extends string> {
   value: TValue;
   label: string;
@@ -10,15 +12,17 @@ export default function DataViewSwitcher<TValue extends string>({
   value,
   options,
   onChange,
-  label = "طريقة العرض"
+  label
 }: Readonly<{
   value: TValue;
   options: readonly DataViewOption<TValue>[];
   onChange: (value: TValue) => void;
   label?: string;
 }>) {
+  const { t } = useLocale();
+
   return (
-    <div className="view-switcher" role="group" aria-label={label}>
+    <div className="view-switcher" role="group" aria-label={label ?? t.shared.dataViewSwitcher.label}>
       {options.map((option) => (
         <button
           key={option.value}

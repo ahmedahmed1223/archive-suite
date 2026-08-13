@@ -2,23 +2,41 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { clearAllMintedLinks, listMintedLinks, removeMintedLink, type MintedLink } from "@/lib/minted-shares";
 import { buildShareExpiry } from "@/lib/admin-action-summary";
 
-function formatLocalDate(value?: string) {
+function formatLocalDate(value: string | undefined, locale: "ar" | "en") {
   if (!value) return "-";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("ar-SA");
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(locale === "en" ? "en-US" : "ar-SA");
+}
+
+type ExpiryStatus = "noExpiry" | "invalidDate" | "expired" | "expiresSoon" | "active";
+
+function getExpiryStatus(expiresAt: string | undefined, tone: string): ExpiryStatus {
+  if (!expiresAt) return "noExpiry";
+  if (Number.isNaN(new Date(expiresAt).getTime())) return "invalidDate";
+  if (tone === "danger") return "expired";
+  if (tone === "warning") return "expiresSoon";
+  return "active";
 }
 
 export default function SharesPage() {
+  const { locale, t } = useLocale();
+  const copy = t.pages.shares;
   const dialogs = useConfirmDialog();
   const [links, setLinks] = useState<MintedLink[]>([]);
   const [copied, setCopied] = useState<string | null>(null);
   const [cleared, setCleared] = useState(false);
+  const getExpiry = (expiresAt?: string) => {
+    const expiry = buildShareExpiry(expiresAt);
+    const status = copy.expiry[getExpiryStatus(expiresAt, expiry.tone)];
+    return { ...expiry, label: status.label, detail: status.detail };
+  };
 
   useEffect(() => {
     setLinks(listMintedLinks());
@@ -36,9 +54,9 @@ export default function SharesPage() {
 
   const handleRemove = async (token: string) => {
     const confirmed = await dialogs.confirm({
-      title: "حذف الرابط",
-      message: "حذف هذا الرابط من سجل هذا المتصفح فقط؟ لن يؤدي ذلك إلى إبطال الرابط على الخادم.",
-      confirmLabel: "حذف",
+      title: copy.dialogs.remove.title,
+      message: copy.dialogs.remove.message,
+      confirmLabel: copy.dialogs.remove.confirm,
       destructive: true
     });
     if (!confirmed) return;
@@ -50,9 +68,9 @@ export default function SharesPage() {
     if (
       links.length > 0 &&
       !(await dialogs.confirm({
-        title: "مسح السجل المحلي",
-        message: "مسح سجل الروابط المحلية فقط؟ لن يؤدي ذلك إلى إبطال روابط المشاركة.",
-        confirmLabel: "مسح",
+        title: copy.dialogs.clear.title,
+        message: copy.dialogs.clear.message,
+        confirmLabel: copy.dialogs.clear.confirm,
         destructive: true
       }))
     )
@@ -64,27 +82,27 @@ export default function SharesPage() {
   };
 
   return (
-    <AppShell subtitle="روابط المشاركة" navLabel="المشاركات" contentClassName="local-list-content" tipsPage="shares">
+    <AppShell subtitle={t.pageTitles.shareLinks} navLabel={t.pageTitles.shares} contentClassName="local-list-content" tipsPage="shares">
       <PageToolbar
-        eyebrow={<span className="badge">محلي على الجهاز</span>}
-        title="روابط المشاركة"
-        description="الروابط التي أنشأها المستخدم من هذا المتصفح، مع نسخ سريع ومتابعة تاريخ الإنشاء والانتهاء."
+        eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={
           <>
-            <span className="badge">المشاركات المحلية</span>
-            <span className="badge">{links.length} رابط</span>
+            <span className="badge">{copy.toolbar.localShares}</span>
+            <span className="badge">{copy.toolbar.linkCount.replace("{count}", String(links.length))}</span>
           </>
         }
         actions={
           <div className="button-row">
-            <a className="button button-secondary" href="/shares/with-me">المشاركات الواردة</a>
+            <a className="button button-secondary" href="/shares/with-me">{copy.toolbar.incomingShares}</a>
             <button
               type="button"
               className="button button-danger"
               onClick={handleClearAll}
               disabled={links.length === 0}
             >
-              {cleared ? "تم المسح" : "مسح الكل"}
+              {cleared ? copy.toolbar.cleared : copy.toolbar.clearAll}
             </button>
           </div>
         }
@@ -92,76 +110,79 @@ export default function SharesPage() {
 
       {links.length === 0 ? (
         <EmptyState
-          title="لم تنشئ أي روابط مشاركة بعد"
-          description="انتقل إلى صفحة الملفات وحدد عناصر لإنشاء رابط مشاركة."
-          actions={<a className="button button-secondary" href="/files">فتح الملفات</a>}
+          title={copy.empty.title}
+          description={copy.empty.description}
+          actions={<a className="button button-secondary" href="/files">{copy.empty.openFiles}</a>}
         />
       ) : (
-        <section className="panel" aria-label="روابط المشاركة المنشأة">
+        <section className="panel" aria-label={copy.list.ariaLabel}>
           <div className="panel-title-row">
             <div>
-              <h2>قائمة الروابط</h2>
-              <p>تدار هذه الروابط محليا لتسهيل الرجوع والنسخ دون مزامنة عبر الأجهزة.</p>
+              <h2>{copy.list.title}</h2>
+              <p>{copy.list.description}</p>
             </div>
-            <span className="badge">{links.length} رابط</span>
+            <span className="badge">{copy.toolbar.linkCount.replace("{count}", String(links.length))}</span>
           </div>
 
-          <div className="mobile-card-list" role="list" aria-label="بطاقات روابط المشاركة">
-            {links.map((link) => (
-              <article className="local-list-card" key={link.token} role="listitem">
-                <div className="local-list-card__main">
-                  <div>
-                    <span className="badge">مشاركة</span>
-                    <h3>{link.itemLabel || "رابط مشاركة"}</h3>
+          <div className="mobile-card-list" role="list" aria-label={copy.list.cardsAriaLabel}>
+            {links.map((link) => {
+              const expiry = getExpiry(link.expiresAt);
+              return (
+                <article className="local-list-card" key={link.token} role="listitem">
+                  <div className="local-list-card__main">
+                    <div>
+                      <span className="badge">{copy.list.share}</span>
+                      <h3>{link.itemLabel || copy.list.fallbackLink}</h3>
+                    </div>
+                    <span className={`badge badge-${expiry.tone}`}>{expiry.label} {copy.expiry.estimate}</span>
                   </div>
-                  <span className={`badge badge-${buildShareExpiry(link.expiresAt).tone}`}>{buildShareExpiry(link.expiresAt).label} (تقدير)</span>
-                </div>
-                <p className="mono-text wrap-anywhere" dir="ltr">{link.url}</p>
-                <dl className="mobile-field-list">
-                  <div>
-                    <dt>الإنشاء</dt>
-                    <dd>{formatLocalDate(link.createdAt)}</dd>
+                  <p className="mono-text wrap-anywhere" dir="ltr">{link.url}</p>
+                  <dl className="mobile-field-list">
+                    <div>
+                      <dt>{copy.list.createdAt}</dt>
+                      <dd>{formatLocalDate(link.createdAt, locale)}</dd>
+                    </div>
+                    <div>
+                      <dt>{copy.list.expiresAt}</dt>
+                      <dd>{copy.list.expiryDescription.replace("{date}", formatLocalDate(link.expiresAt, locale)).replace("{detail}", expiry.detail)}</dd>
+                    </div>
+                  </dl>
+                  <div className="button-row">
+                    <button
+                      type="button"
+                      className="button button-secondary button-sm"
+                      onClick={() => void handleCopyLink(link.url)}
+                    >
+                      {copied === link.url ? copy.list.copied : copy.list.copy}
+                    </button>
+                    <a
+                      href={`/share/${encodeURIComponent(link.token)}`}
+                      className="button button-secondary button-sm"
+                    >
+                      {copy.list.open}
+                    </a>
+                    <button
+                      type="button"
+                      className="button button-danger button-sm"
+                      onClick={() => handleRemove(link.token)}
+                    >
+                      {copy.list.remove}
+                    </button>
                   </div>
-                  <div>
-                    <dt>الانتهاء</dt>
-                    <dd>{formatLocalDate(link.expiresAt)} — {buildShareExpiry(link.expiresAt).detail} تقدير محلي حسب التاريخ المعلن؛ الإنفاذ بالخادم.</dd>
-                  </div>
-                </dl>
-                <div className="button-row">
-                  <button
-                    type="button"
-                    className="button button-secondary button-sm"
-                    onClick={() => void handleCopyLink(link.url)}
-                  >
-                    {copied === link.url ? "تم النسخ" : "نسخ"}
-                  </button>
-                  <a
-                    href={`/share/${encodeURIComponent(link.token)}`}
-                    className="button button-secondary button-sm"
-                  >
-                    فتح
-                  </a>
-                  <button
-                    type="button"
-                    className="button button-danger button-sm"
-                    onClick={() => handleRemove(link.token)}
-                  >
-                    حذف
-                  </button>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
 
           <div className="scroll-x desktop-table-wrap">
-            <table className="data-table" role="grid" aria-label="قائمة روابط المشاركة">
+            <table className="data-table" role="grid" aria-label={copy.table.ariaLabel}>
               <thead>
                 <tr>
-                  <th>العنصر</th>
-                  <th>الرابط</th>
-                  <th>الإنشاء</th>
-                  <th>الانتهاء</th>
-                  <th className="data-table-sticky-end">الإجراءات</th>
+                  <th>{copy.table.item}</th>
+                  <th>{copy.table.link}</th>
+                  <th>{copy.table.createdAt}</th>
+                  <th>{copy.table.expiresAt}</th>
+                  <th className="data-table-sticky-end">{copy.table.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -174,10 +195,10 @@ export default function SharesPage() {
                       {link.url}
                     </td>
                     <td className="mono-text">
-                      {formatLocalDate(link.createdAt)}
+                      {formatLocalDate(link.createdAt, locale)}
                     </td>
                     <td className="mono-text">
-                      {formatLocalDate(link.expiresAt)}
+                      {formatLocalDate(link.expiresAt, locale)}
                     </td>
                     <td className="data-table-sticky-end">
                       <div className="button-row">
@@ -186,20 +207,20 @@ export default function SharesPage() {
                           className="button button-secondary button-sm"
                           onClick={() => void handleCopyLink(link.url)}
                         >
-                          {copied === link.url ? "تم النسخ" : "نسخ"}
+                          {copied === link.url ? copy.list.copied : copy.list.copy}
                         </button>
                         <a
                           href={`/share/${encodeURIComponent(link.token)}`}
                           className="button button-secondary button-sm"
                         >
-                          فتح
+                          {copy.list.open}
                         </a>
                         <button
                           type="button"
                           className="button button-danger button-sm"
                           onClick={() => handleRemove(link.token)}
                         >
-                          حذف
+                          {copy.list.remove}
                         </button>
                       </div>
                     </td>

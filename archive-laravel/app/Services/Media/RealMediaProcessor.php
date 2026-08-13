@@ -18,8 +18,23 @@ class RealMediaProcessor implements MediaProcessor
         private readonly ?OcrClient $ocrClient = null,
         private readonly ?AudioPreprocessor $audioPreprocessor = null,
         ?MediaPathGuard $pathGuard = null,
+        private readonly ?MediaJobProgressBroadcaster $progress = null,
     ) {
-        $this->pathGuard = $pathGuard ?? new MediaPathGuard();
+        $this->pathGuard = $pathGuard ?? new MediaPathGuard;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function updateProgress(MediaJob $job, array $attributes): void
+    {
+        if ($this->progress) {
+            $this->progress->update($job, $attributes);
+
+            return;
+        }
+
+        $job->update($attributes);
     }
 
     /**
@@ -121,20 +136,9 @@ class RealMediaProcessor implements MediaProcessor
     {
         $preprocessor = $this->audioPreprocessor ?? new AudioPreprocessor($this->runner, $this->ffmpegPath, pathGuard: $this->pathGuard);
         $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
-        $device = $job->options['device'] ?? 'cpu';
         $outputFormats = $job->options['outputFormats'] ?? ['srt', 'vtt', 'ttml'];
 
-        // Resolve 'auto' device to 'cpu' (GPU detection deferred)
-        if ($device === 'auto') {
-            $device = 'cpu';
-        }
-
-        $computeType = match ($device) {
-            'gpu' => 'float16',
-            default => 'int8',
-        };
-
-        $job->update([
+        $this->updateProgress($job, [
             'progress_stage' => 'preprocessing',
             'progress_percent' => 5,
         ]);
@@ -146,7 +150,7 @@ class RealMediaProcessor implements MediaProcessor
         $segments = $preprocessor->planSegments($audioPath);
         $totalSegments = count($segments);
 
-        $job->update([
+        $this->updateProgress($job, [
             'progress_stage' => 'preprocessing_complete',
             'progress_percent' => 10,
             'options' => array_merge($job->options, [
@@ -157,14 +161,12 @@ class RealMediaProcessor implements MediaProcessor
 
         if ($totalSegments === 1) {
             // Single segment: transcribe audio directly
-            $job->update([
+            $this->updateProgress($job, [
                 'progress_stage' => 'transcribing',
                 'progress_percent' => 15,
             ]);
 
             return $this->transcriber->transcribe($audioPath, $job->record_id, [
-                'device' => $device,
-                'computeType' => $computeType,
                 'outputFormats' => $outputFormats,
             ]);
         }
@@ -180,7 +182,7 @@ class RealMediaProcessor implements MediaProcessor
             $this->guardNotCanceled($job);
 
             $segmentPercent = 15 + (int) (($index / $totalSegments) * 70);
-            $job->update([
+            $this->updateProgress($job, [
                 'progress_stage' => "transcribing_segment_{$index}_{$totalSegments}",
                 'progress_percent' => $segmentPercent,
             ]);
@@ -201,13 +203,11 @@ class RealMediaProcessor implements MediaProcessor
             $segmentRecordId = "{$job->record_id}/segments/{$index}";
             $this->pathGuard->resolveOutputDir($segmentRecordId, 'segment transcript directory');
             $segmentArtifacts = $this->transcriber->transcribe($segmentPath, $segmentRecordId, [
-                'device' => $device,
-                'computeType' => $computeType,
                 'outputFormats' => $outputFormats,
             ]);
 
             // Store segment artifacts keyed by index for merging
-            if (!isset($allArtifacts['by_format'])) {
+            if (! isset($allArtifacts['by_format'])) {
                 $allArtifacts['by_format'] = [];
                 foreach ($outputFormats as $fmt) {
                     $allArtifacts['by_format'][$fmt] = [];
@@ -226,7 +226,7 @@ class RealMediaProcessor implements MediaProcessor
             }
         }
 
-        $job->update([
+        $this->updateProgress($job, [
             'progress_stage' => 'merging',
             'progress_percent' => 90,
         ]);
@@ -253,7 +253,7 @@ class RealMediaProcessor implements MediaProcessor
         $merged = [];
 
         foreach ($outputFormats as $format) {
-            if (!isset($byFormat[$format]) || empty($byFormat[$format])) {
+            if (! isset($byFormat[$format]) || empty($byFormat[$format])) {
                 continue;
             }
 
@@ -291,7 +291,7 @@ class RealMediaProcessor implements MediaProcessor
             }
 
             $content = match ($format) {
-                'vtt' => "WEBVTT\n\n" . implode("\n\n", array_filter($chunks)),
+                'vtt' => "WEBVTT\n\n".implode("\n\n", array_filter($chunks)),
                 'ttml' => $this->mergeTtmlChunks($chunks),
                 default => implode("\n\n", array_filter($chunks)),
             };
@@ -319,7 +319,7 @@ class RealMediaProcessor implements MediaProcessor
         if ($format === 'ttml') {
             return preg_replace_callback(
                 '/\\b(begin|end)=(["\'])([^"\']+)\\2/',
-                fn (array $match): string => "{$match[1]}={$match[2]}" . $this->shiftTimestamp($match[3], $offsetSec) . $match[2],
+                fn (array $match): string => "{$match[1]}={$match[2]}".$this->shiftTimestamp($match[3], $offsetSec).$match[2],
                 $content
             ) ?? $content;
         }
@@ -330,8 +330,8 @@ class RealMediaProcessor implements MediaProcessor
                 [$start, $end] = preg_split('/\\s*-->\\s*/', $match[0]) ?: [];
 
                 return $this->shiftTimestamp($start, $offsetSec)
-                    . ' --> '
-                    . $this->shiftTimestamp($end, $offsetSec);
+                    .' --> '
+                    .$this->shiftTimestamp($end, $offsetSec);
             },
             $content
         ) ?? $content;
@@ -339,7 +339,7 @@ class RealMediaProcessor implements MediaProcessor
 
     private function shiftTimestamp(string $timestamp, float $offsetSec): string
     {
-        if (!preg_match('/^(?:(\\d{2,}):)?(\\d{2}):(\\d{2})([,.])(\\d{3})$/', trim($timestamp), $match)) {
+        if (! preg_match('/^(?:(\\d{2,}):)?(\\d{2}):(\\d{2})([,.])(\\d{3})$/', trim($timestamp), $match)) {
             return $timestamp;
         }
 
@@ -360,7 +360,7 @@ class RealMediaProcessor implements MediaProcessor
     {
         return preg_replace_callback(
             '/^\\d+\\R(?=\\d{2}:\\d{2}:\\d{2},\\d{3}\\s*-->)/m',
-            fn (): string => (++$nextCueIndex) . "\n",
+            fn (): string => (++$nextCueIndex)."\n",
             $content
         ) ?? $content;
     }
@@ -388,9 +388,9 @@ class RealMediaProcessor implements MediaProcessor
         }
 
         return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-            . "<tt xmlns=\"http://www.w3.org/ns/ttml\">\n  <body>\n    <div>\n      "
-            . implode("\n      ", $paragraphs)
-            . "\n    </div>\n  </body>\n</tt>";
+            ."<tt xmlns=\"http://www.w3.org/ns/ttml\">\n  <body>\n    <div>\n      "
+            .implode("\n      ", $paragraphs)
+            ."\n    </div>\n  </body>\n</tt>";
     }
 
     /**
@@ -479,7 +479,7 @@ class RealMediaProcessor implements MediaProcessor
 
     private function processOcr(MediaJob $job): array
     {
-        $client = $this->ocrClient ?? new OcrClient();
+        $client = $this->ocrClient ?? new OcrClient;
         $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
         $text = $client->extractText($sourcePath);
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Filter, GitBranch, Link2, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
@@ -48,11 +49,11 @@ function edgeSummary(edge: RelationGraphEdge) {
   return edge.label;
 }
 
-function nodeDate(node: RelationGraphNode) {
+function nodeDate(node: RelationGraphNode, locale: string, unavailableDate: string) {
   const value = node.record?.updatedAt || node.record?.createdAt;
-  if (!value) return "غير محدد";
+  if (!value) return unavailableDate;
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("ar-SA");
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US");
 }
 
 function useGraphLayout(nodes: RelationGraphNode[], edges: RelationGraphEdge[], layoutMode: string) {
@@ -108,6 +109,8 @@ function GraphCanvas({
   layoutMode: string;
   onSelect: (id: string) => void;
 }>) {
+  const { t } = useLocale();
+  const copy = t.pages.graph;
   const positions = useGraphLayout(nodes, edges, layoutMode);
   const nodeIds = useMemo(() => new Set(nodes.map((node) => node.id)), [nodes]);
   const normalizedQuery = normalize(searchQuery);
@@ -124,7 +127,7 @@ function GraphCanvas({
 
   return (
     <div className="graph-canvas-shell" dir="ltr">
-      <svg className="graph-canvas" viewBox={`0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}`} role="img" aria-label="خريطة علاقات السجلات">
+      <svg className="graph-canvas" viewBox={`0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}`} role="img" aria-label={copy.canvasAriaLabel}>
         <defs>
           <marker id="graph-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
             <path d="M 0 0 L 8 4 L 0 8 z" fill="currentColor" />
@@ -212,11 +215,13 @@ function NodePanel({
   onDelete: (edge: RelationGraphEdge) => void;
   canEdit: boolean;
 }>) {
+  const { locale, t } = useLocale();
+  const copy = t.pages.graph.nodePanel;
   if (!node) {
     return (
       <article className="panel panel-compact">
-        <h2>تفاصيل العقدة</h2>
-        <p className="helper-text">اختر عقدة من الرسم لعرض روابطها وتفاصيلها التشغيلية.</p>
+        <h2>{copy.emptyTitle}</h2>
+        <p className="helper-text">{copy.emptyDescription}</p>
       </article>
     );
   }
@@ -225,19 +230,19 @@ function NodePanel({
     <article className="panel panel-compact graph-side-panel">
       <div className="panel-title-row">
         <div>
-          <span className="badge">{node.type || "سجل"}</span>
+          <span className="badge">{node.type || copy.record}</span>
           <h2>{node.label}</h2>
         </div>
-        <span className="badge">{node.degree} صلات</span>
+        <span className="badge">{copy.connections.replace("{count}", String(node.degree))}</span>
       </div>
       <div className="kv-grid">
         <div className="kv-item">
-          <strong>المعرف</strong>
+          <strong>{copy.identifier}</strong>
           <span className="wrap-anywhere">{node.id}</span>
         </div>
         <div className="kv-item">
-          <strong>آخر تحديث</strong>
-          <span>{nodeDate(node)}</span>
+          <strong>{copy.lastUpdated}</strong>
+          <span>{nodeDate(node, locale, t.pages.graph.unavailableDate)}</span>
         </div>
       </div>
       {node.tags.length ? (
@@ -248,10 +253,10 @@ function NodePanel({
         </div>
       ) : null}
       <a className="button button-primary" href={`/archive/${encodeURIComponent(node.id)}`}>
-        فتح السجل
+        {copy.openRecord}
       </a>
       <div className="section-divider">
-        <strong>الروابط القريبة</strong>
+        <strong>{copy.nearbyLinks}</strong>
         {relatedEdges.length ? (
           <ul className="graph-relation-list">
             {relatedEdges.slice(0, 8).map((edge) => (
@@ -261,7 +266,7 @@ function NodePanel({
                   <small>{edgeSummary(edge)}</small>
                 </span>
                 {canEdit && edge.kind === "manual" && edge.relationId ? (
-                  <button type="button" className="icon-action" aria-label="حذف العلاقة" onClick={() => onDelete(edge)}>
+                  <button type="button" className="icon-action" aria-label={copy.deleteRelation} onClick={() => onDelete(edge)}>
                     <Trash2 aria-hidden="true" size={16} />
                   </button>
                 ) : null}
@@ -269,7 +274,7 @@ function NodePanel({
             ))}
           </ul>
         ) : (
-          <p className="helper-text">لا توجد روابط ظاهرة ضمن الفلاتر الحالية.</p>
+          <p className="helper-text">{copy.noVisibleLinks}</p>
         )}
       </div>
     </article>
@@ -287,6 +292,8 @@ function RelationForm({
   selectedId: string;
   onCreate: (payload: { sourceId: string; targetId: string; type: RelationTypeKey; note?: string }) => Promise<void>;
 }>) {
+  const { t } = useLocale();
+  const copy = t.pages.graph.relationForm;
   const [sourceId, setSourceId] = useState(selectedId);
   const [targetId, setTargetId] = useState("");
   const [type, setType] = useState<RelationTypeKey>(DEFAULT_RELATION_TYPE);
@@ -302,12 +309,12 @@ function RelationForm({
     setStatus("");
 
     if (!sourceId || !targetId) {
-      setStatus("اختر مصدر العلاقة والهدف.");
+      setStatus(copy.sourceTargetRequired);
       return;
     }
 
     if (sourceId === targetId) {
-      setStatus("لا يمكن ربط السجل بنفسه.");
+      setStatus(copy.selfRelation);
       return;
     }
 
@@ -315,29 +322,29 @@ function RelationForm({
       await onCreate({ sourceId, targetId, type, note: note.trim() || undefined });
       setTargetId("");
       setNote("");
-      setStatus("تم حفظ العلاقة.");
+      setStatus(copy.saved);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "تعذر حفظ العلاقة.");
+      setStatus(error instanceof Error ? error.message : copy.saveFailed);
     }
   }
 
   return (
     <form className="panel panel-compact auth-form graph-relation-form" onSubmit={handleSubmit}>
       <div className="panel-title-row">
-        <h2>إضافة علاقة يدوية</h2>
+        <h2>{copy.title}</h2>
         <Plus aria-hidden="true" size={18} className="text-accent" />
       </div>
       <label>
-        من
+        {copy.from}
         <select value={sourceId} onChange={(event) => setSourceId(event.target.value)}>
-          <option value="">اختر السجل المصدر</option>
+          <option value="">{copy.sourcePlaceholder}</option>
           {nodes.map((node) => (
             <option key={node.id} value={node.id}>{node.label}</option>
           ))}
         </select>
       </label>
       <label>
-        نوع العلاقة
+        {copy.type}
         <select value={type} onChange={(event) => setType(event.target.value as RelationTypeKey)}>
           {relationTypes.map((option) => (
             <option key={option.key} value={option.key}>{option.label}</option>
@@ -345,20 +352,20 @@ function RelationForm({
         </select>
       </label>
       <label>
-        إلى
+        {copy.to}
         <select value={targetId} onChange={(event) => setTargetId(event.target.value)}>
-          <option value="">اختر السجل الهدف</option>
+          <option value="">{copy.targetPlaceholder}</option>
           {nodes.filter((node) => node.id !== sourceId).map((node) => (
             <option key={node.id} value={node.id}>{node.label}</option>
           ))}
         </select>
       </label>
       <label>
-        ملاحظة
-        <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="سبب العلاقة أو سياقها" />
+        {copy.note}
+        <input value={note} onChange={(event) => setNote(event.target.value)} placeholder={copy.notePlaceholder} />
       </label>
       <button type="submit" className="button button-primary">
-        حفظ العلاقة
+        {copy.save}
       </button>
       {status ? <p className="form-status">{status}</p> : null}
     </form>
@@ -366,6 +373,8 @@ function RelationForm({
 }
 
 export default function GraphPage() {
+  const { t } = useLocale();
+  const copy = t.pages.graph;
   const api = useMemo(() => createArchiveApiClient(), []);
   const canEditRelations = useCapability("records.edit");
   const [state, setState] = useState<GraphState>({ status: "loading" });
@@ -390,7 +399,7 @@ export default function GraphPage() {
     try {
       const response = await api.relationGraph({ recordId: focusId || undefined, limit });
       if (!response.ok) {
-        setState({ status: "error", message: response.error || "تعذر تحميل خريطة العلاقات." });
+        setState({ status: "error", message: response.error || copy.errors.load });
         return;
       }
       setState({ status: "ready", graph: response });
@@ -398,17 +407,17 @@ export default function GraphPage() {
         setSelectedId(response.stats.focusId);
       }
     } catch (error) {
-      setState({ status: "error", message: error instanceof Error ? error.message : "تعذر تحميل خريطة العلاقات." });
+      setState({ status: "error", message: error instanceof Error ? error.message : copy.errors.load });
     }
-  }, [api, focusId, limit]);
+  }, [api, copy.errors.load, focusId, limit]);
 
   useEffect(() => {
     void loadGraph();
   }, [loadGraph]);
 
   const graph = state.status === "ready" ? state.graph : null;
-  const allNodes = graph?.nodes ?? [];
-  const allEdges = graph?.edges ?? [];
+  const allNodes = useMemo(() => graph?.nodes ?? [], [graph]);
+  const allEdges = useMemo(() => graph?.edges ?? [], [graph]);
 
   const graphLenses = useMemo(() => buildGraphLenses(allNodes), [allNodes]);
 
@@ -452,7 +461,7 @@ export default function GraphPage() {
   const createRelation = async (payload: { sourceId: string; targetId: string; type: RelationTypeKey; note?: string }) => {
     const response = await api.createRelation(payload);
     if (!response.ok) {
-      throw new Error(response.error || "تعذر حفظ العلاقة.");
+      throw new Error(response.error || copy.errors.save);
     }
     setSelectedId(payload.sourceId);
     await loadGraph();
@@ -462,30 +471,30 @@ export default function GraphPage() {
     if (!edge.relationId) return;
     const response = await api.deleteRelation(edge.relationId);
     if (!response.ok) {
-      setState({ status: "error", message: response.error || "تعذر حذف العلاقة." });
+      setState({ status: "error", message: response.error || copy.errors.delete });
       return;
     }
     await loadGraph();
   };
 
   return (
-    <AppShell subtitle="خريطة العلاقات" navLabel="العلاقات" tipsPage="graph">
+    <AppShell subtitle={t.pageTitles.relationshipMap} navLabel={t.pageTitles.relationships} tipsPage="graph">
       <PageToolbar
-        eyebrow={<span className="badge">خريطة العلاقات</span>}
-        title="خريطة العلاقات"
-        description="اربط مواد الأرشيف يدوياً، واستكشف الروابط المستنتجة من الوسوم والأنواع في مساحة واحدة."
+        eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={graph ? (
           <>
-            <span className="badge">{graph.stats.nodeCount} عقدة</span>
-            <span className="badge">{graph.stats.edgeCount} صلة</span>
-            <span className="badge">{graph.stats.manualEdgeCount} يدوية</span>
-            <span className="badge">{graph.stats.inferredEdgeCount} مستنتجة</span>
+            <span className="badge">{copy.toolbar.nodes.replace("{count}", String(graph.stats.nodeCount))}</span>
+            <span className="badge">{copy.toolbar.connections.replace("{count}", String(graph.stats.edgeCount))}</span>
+            <span className="badge">{copy.toolbar.manual.replace("{count}", String(graph.stats.manualEdgeCount))}</span>
+            <span className="badge">{copy.toolbar.inferred.replace("{count}", String(graph.stats.inferredEdgeCount))}</span>
           </>
         ) : null}
         actions={(
           <button type="button" className="button button-primary" onClick={() => void loadGraph()}>
             <RefreshCw aria-hidden="true" size={16} />
-            تحديث
+            {copy.toolbar.refresh}
           </button>
         )}
       >
@@ -496,14 +505,14 @@ export default function GraphPage() {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               className="search-input"
-              placeholder="بحث داخل العقد"
-              aria-label="بحث داخل عقد خريطة العلاقات"
+              placeholder={copy.toolbar.searchPlaceholder}
+              aria-label={copy.toolbar.searchAriaLabel}
             />
           </label>
           <label>
             <Link2 aria-hidden="true" size={16} />
-            <select aria-label="تصفية بالوسم" value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
-              <option value="">كل الوسوم</option>
+            <select aria-label={copy.toolbar.tagFilterAriaLabel} value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
+              <option value="">{copy.toolbar.allTags}</option>
               {tagOptions.map(([tag, count]) => (
                 <option key={tag} value={tag}>{tag} ({count})</option>
               ))}
@@ -511,18 +520,18 @@ export default function GraphPage() {
           </label>
           <label>
             <GitBranch aria-hidden="true" size={16} />
-            <select aria-label="نمط التخطيط" value={layoutMode} onChange={(event) => setLayoutMode(event.target.value)}>
-              <option value="auto">تلقائي</option>
-              <option value="organic">عضوي</option>
-              <option value="concentric">حلقات</option>
-              <option value="circle">دائرة</option>
+            <select aria-label={copy.toolbar.layoutAriaLabel} value={layoutMode} onChange={(event) => setLayoutMode(event.target.value)}>
+              <option value="auto">{copy.toolbar.layoutAuto}</option>
+              <option value="organic">{copy.toolbar.layoutOrganic}</option>
+              <option value="concentric">{copy.toolbar.layoutConcentric}</option>
+              <option value="circle">{copy.toolbar.layoutCircle}</option>
             </select>
           </label>
         </div>
       </PageToolbar>
 
       {graphLenses.length > 1 ? (
-        <div className="graph-lenses" role="group" aria-label="عدسات تجميع خريطة العلاقات حسب النوع">
+        <div className="graph-lenses" role="group" aria-label={copy.lenses.ariaLabel}>
           <Filter aria-hidden="true" size={17} />
           {graphLenses.map((lens) => (
             <button
@@ -533,7 +542,7 @@ export default function GraphPage() {
               key={lens.id}
               onClick={() => selectGraphLens(lens.id)}
             >
-              {lens.label} <span aria-label={`${lens.count} سجل`}>{lens.count}</span>
+              {lens.label} <span aria-label={copy.lenses.recordCount.replace("{count}", String(lens.count))}>{lens.count}</span>
             </button>
           ))}
         </div>
@@ -542,7 +551,7 @@ export default function GraphPage() {
       {state.status === "loading" ? (
         <section className="page-section" role="status" aria-live="polite">
           <div className="panel panel-compact">
-            <Skeleton label="جار تحميل خريطة العلاقات..." />
+            <Skeleton label={copy.loading} />
           </div>
         </section>
       ) : null}
@@ -550,7 +559,7 @@ export default function GraphPage() {
       {state.status === "error" ? (
         <section className="page-section">
           <div className="state-banner state-banner-error" role="alert">
-            <strong>تعذر تحميل العلاقات</strong>
+            <strong>{copy.loadErrorTitle}</strong>
             <span className="helper-text">{state.message}</span>
           </div>
         </section>
@@ -559,29 +568,29 @@ export default function GraphPage() {
       {graph && allNodes.length === 0 ? (
         <section className="page-section">
           <EmptyState
-            title="لا توجد سجلات كافية لرسم العلاقات"
-            description="أضف مواد إلى الأرشيف ثم عد إلى هذه الصفحة لرؤية الشبكة."
-            actions={<a className="button button-primary" href="/uploads">إضافة سجل</a>}
+            title={copy.emptyGraph.title}
+            description={copy.emptyGraph.description}
+            actions={<a className="button button-primary" href="/uploads">{copy.emptyGraph.addRecord}</a>}
           />
         </section>
       ) : null}
 
       {graph && allNodes.length > 0 ? (
-        <section className="graph-workspace" aria-label="مساحة خريطة العلاقات">
+        <section className="graph-workspace" aria-label={copy.workspace.ariaLabel}>
           <div className="graph-main-panel">
             <div className="toolbar-row">
               <div className="button-row">
-                <button type="button" className="badge" data-active={!focusId} onClick={() => setFocusId("")}>كل الشبكة</button>
+                <button type="button" className="badge" data-active={!focusId} onClick={() => setFocusId("")}>{copy.workspace.allNetwork}</button>
                 {selectedId ? (
                   <button type="button" className="badge" data-active={focusId === selectedId} onClick={() => setFocusId(selectedId)}>
-                    تركيز على المحدد
+                    {copy.workspace.focusSelected}
                   </button>
                 ) : null}
                 <button type="button" className="badge" onClick={() => setLimit((value) => Math.min(200, value + 40))}>
-                  تحميل أكثر
+                  {copy.workspace.loadMore}
                 </button>
               </div>
-              <span className="helper-text">{visibleNodes.length} عقدة ضمن الفلاتر الحالية</span>
+              <span className="helper-text">{copy.workspace.filteredNodes.replace("{count}", String(visibleNodes.length))}</span>
             </div>
             {visibleNodes.length ? (
               <GraphCanvas
@@ -594,8 +603,8 @@ export default function GraphPage() {
               />
             ) : (
               <EmptyState
-                title="لا توجد عقد مطابقة"
-                description="خفف فلاتر النوع أو الوسم لرؤية الشبكة."
+                title={copy.workspace.noMatchingNodes}
+                description={copy.workspace.noMatchingNodesDescription}
               />
             )}
           </div>
@@ -610,7 +619,7 @@ export default function GraphPage() {
                 onCreate={createRelation}
               />
             ) : (
-              <p className="helper-text">لا تملك صلاحية إنشاء علاقات جديدة بين السجلات.</p>
+              <p className="helper-text">{copy.workspace.cannotCreate}</p>
             )}
           </aside>
         </section>

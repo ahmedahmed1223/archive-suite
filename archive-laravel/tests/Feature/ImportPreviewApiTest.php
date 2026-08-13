@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class ImportPreviewApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_previews_metadata_for_a_valid_public_url(): void
     {

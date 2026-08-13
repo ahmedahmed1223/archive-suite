@@ -7,6 +7,7 @@ use App\Services\Ingest\IngestScanner;
 use App\Services\Ingest\IngestTransport;
 use App\Services\Ingest\WatchedIngestService;
 use App\Services\Notification\NotificationService;
+use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,20 +18,27 @@ class IngestController extends Controller
         private readonly IngestTransport $transport,
         private readonly NotificationService $notificationService,
         private readonly WatchedIngestService $watchedIngest
-    ) {
-    }
+    ) {}
 
     public function watchedScan(Request $request): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         return response()->json(['ok' => true, 'batch' => $this->watchedIngest->preview()], 201);
     }
 
     public function watchedApply(Request $request, string $batchId): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $batch = $this->watchedIngest->apply($batchId);
-        if ($batch === null) return response()->json(['message' => 'Watched ingest batch not found.'], 404);
+        if ($batch === null) {
+            return response()->json(['message' => 'Watched ingest batch not found.'], 404);
+        }
+
         return response()->json(['ok' => true, 'batch' => $batch]);
     }
 
@@ -138,7 +146,7 @@ class IngestController extends Controller
         try {
             $this->transport->pull(['user' => $request->attributes->get('archive_user')]);
         } catch (\RuntimeException $e) {
-            return response()->json(\App\Support\ApiError::envelope($e->getMessage(), 409), 409);
+            return response()->json(ApiError::envelope($e->getMessage(), 409), 409);
         }
 
         $result = $this->scanner->scan();

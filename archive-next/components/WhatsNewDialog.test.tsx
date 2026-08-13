@@ -9,7 +9,18 @@ import {
   WHATS_NEW_STORAGE_KEY,
 } from "@/lib/whats-new";
 
-vi.mock("@/lib/i18n/LocaleProvider", () => ({ useLocale: () => ({ locale: "ar" }) }));
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+
+  return {
+    useLocale: () => ({
+      locale: "ar",
+      direction: "rtl",
+      t: getDictionary("ar"),
+      setLocale: vi.fn(),
+    }),
+  };
+});
 
 describe("WhatsNewDialog", () => {
   beforeEach(() => window.localStorage.clear());
@@ -17,18 +28,18 @@ describe("WhatsNewDialog", () => {
   it("opens once for a new release and records acknowledgement", async () => {
     render(<WhatsNewDialog />);
 
-    expect(await screen.findByRole("dialog", { name: "ما الجديد في مسار 1.1" })).toBeTruthy();
-    expect(screen.getByText("المساعدة والدليل باللغتين")).toBeTruthy();
-    expect(screen.getByText("ما الذي ينبغي عليك فعله الآن؟")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "فتح ما الجديد في المساعدة" })).toHaveAttribute(
+    expect(await screen.findByRole("dialog", { name: "ما الجديد في Archive Suite 1.2" })).toBeTruthy();
+    expect(screen.getByText("بدء استخدام موجه")).toBeTruthy();
+    expect(screen.getByText("اكتشف تفاصيل الإصدار")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "عرض تفاصيل الإصدار" })).toHaveAttribute(
       "href",
-      "/help?chapter=whats-new",
+      "/help/releases/1.2.0",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "ابدأ العمل" }));
 
     expect(window.localStorage.getItem(WHATS_NEW_STORAGE_KEY)).toBe(WHATS_NEW_RELEASE);
-    expect(screen.queryByRole("dialog", { name: "ما الجديد في مسار 1.1" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "ما الجديد في Archive Suite 1.2" })).toBeNull();
   });
 
   it("stays closed after the current release was acknowledged", () => {
@@ -41,7 +52,7 @@ describe("WhatsNewDialog", () => {
   it("can permanently hide future whats-new dialogs on this device", async () => {
     render(<WhatsNewDialog />);
 
-    await screen.findByRole("dialog", { name: "ما الجديد في مسار 1.1" });
+    await screen.findByRole("dialog", { name: "ما الجديد في Archive Suite 1.2" });
     fireEvent.click(screen.getByRole("checkbox", { name: "لا تعرض تحديثات ما الجديد مرة أخرى" }));
     fireEvent.click(screen.getByRole("button", { name: "ابدأ العمل" }));
 

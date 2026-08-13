@@ -12,6 +12,7 @@ import OfflineStatusBanner from "@/components/OfflineStatusBanner";
 import RouteProgress from "@/components/ui/RouteProgress";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthGate, AuthProvider } from "@/lib/auth-session";
+import { DisplaySettingsProvider } from "@/lib/display-settings-context";
 import { LocaleAccountSync } from "@/lib/i18n/LocaleAccountSync";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import type { AppLocale } from "@/lib/i18n/types";
@@ -51,19 +52,21 @@ export default function AppProviders({ children, initialLocale, hasLocaleCookie 
       <ThemeProvider>
         <LocaleProvider initialLocale={initialLocale} hasLocaleCookie={hasLocaleCookie}>
           <AuthProvider>
-            <LocaleAccountSync />
-            <TooltipProvider delayDuration={180}>
-              <ToastProvider swipeDirection="right">
-                <ConfirmDialogProvider>
-                  <RouteProgress />
-                  <OfflineStatusBanner />
-                  <AuthGate>{children}</AuthGate>
-                  <CommandPalette />
-                  <ToastHub />
-                  <ToastViewport />
-                </ConfirmDialogProvider>
-              </ToastProvider>
-            </TooltipProvider>
+            <DisplaySettingsProvider>
+              <LocaleAccountSync />
+              <TooltipProvider delayDuration={180}>
+                <ToastProvider swipeDirection="right">
+                  <ConfirmDialogProvider>
+                    <RouteProgress />
+                    <OfflineStatusBanner />
+                    <AuthGate>{children}</AuthGate>
+                    <CommandPalette />
+                    <ToastHub />
+                    <ToastViewport />
+                  </ConfirmDialogProvider>
+                </ToastProvider>
+              </TooltipProvider>
+            </DisplaySettingsProvider>
           </AuthProvider>
         </LocaleProvider>
       </ThemeProvider>

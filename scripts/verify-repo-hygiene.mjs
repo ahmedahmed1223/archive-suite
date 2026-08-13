@@ -89,6 +89,7 @@ assert.deepEqual(
 
 const forbiddenTrackedPrefixes = [
   ".superpowers/",
+  "docs/superpowers/",
   "output/",
   ".fallow/",
   ".agents/",

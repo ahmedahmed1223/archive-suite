@@ -32,8 +32,8 @@ function titleKey(record: ArchiveRecord) {
 }
 
 export default function DuplicatesPage() {
-  const { locale } = useLocale();
-  const copy = locale === "en" ? { loadError: "Could not load records.", checksumReason: "Matching checksum", titleReason: "Similar normalized title", eyebrow: "Quality", title: "Duplicate detection", description: "An initial duplicate scan based on a checksum when available or title similarity. Merging and deletion remain manual decisions until a dedicated API endpoint is available.", groups: "groups", recordsChecked: "records checked", openArchive: "Open archive", byChecksum: "By checksum", byTitle: "By title", loading: "Scanning records for duplicates…", error: "Could not scan for duplicates", retry: "Try again", emptyTitle: "No visible duplicates.", emptyDescription: "There are no matching groups with the current scan method.", groupsLabel: "Duplicate groups", items: "items", unspecified: "Unspecified", open: "Open", preview: "Preview only: merging and deletion are unavailable until a reviewable server operation is provided.", impactEntity: "similar records" } : { loadError: "تعذر تحميل السجلات.", checksumReason: "تطابق checksum", titleReason: "تشابه عنوان بعد التطبيع", eyebrow: "الجودة", title: "كشف المكررات", description: "كشف مبدئي للمكررات اعتماداً على checksum عند توفره أو تشابه العنوان. الدمج والحذف يبقيان قراراً يدوياً حتى تتوفر نقطة نهاية API مخصصة.", groups: "مجموعة", recordsChecked: "سجل مفحوص", openArchive: "فتح الأرشيف", byChecksum: "حسب checksum", byTitle: "حسب العنوان", loading: "جارٍ فحص السجلات بحثاً عن مكررات…", error: "تعذر فحص المكررات", retry: "إعادة المحاولة", emptyTitle: "لا توجد مكررات ظاهرة.", emptyDescription: "لا توجد مجموعات مطابقة ضمن طريقة الفحص الحالية.", groupsLabel: "مجموعات المكررات", items: "عنصر", unspecified: "غير محدد", open: "فتح", preview: "هذه معاينة فقط: لا يوجد دمج أو حذف مفعّل حتى تتوفر عملية خادم قابلة للمراجعة.", impactEntity: "السجلات المتشابهة" };
+  const { locale, t } = useLocale();
+  const copy = t.pages.duplicates;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [recordsState, setRecordsState] = useState<RecordsState>({ status: "loading" });
   const [mode, setMode] = useState<"checksum" | "title">("checksum");
@@ -48,10 +48,10 @@ export default function DuplicatesPage() {
 
   useEffect(() => {
     void loadRecords();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadRecords is redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
-  const records = recordsState.status === "ready" ? recordsState.records : [];
+  const records = useMemo(() => (recordsState.status === "ready" ? recordsState.records : []), [recordsState]);
 
   const groups = useMemo<DuplicateGroup[]>(() => {
     const buckets = new Map<string, ArchiveRecord[]>();
@@ -71,7 +71,7 @@ export default function DuplicatesPage() {
   }, [copy.checksumReason, copy.titleReason, mode, records]);
 
   return (
-    <AppShell subtitle="المكررات" contentClassName="local-list-content" tipsPage="duplicates">
+    <AppShell subtitle={t.pageTitles.duplicates} contentClassName="local-list-content" tipsPage="duplicates">
       <PageToolbar
         eyebrow={<span className="badge">{copy.eyebrow}</span>}
         title={copy.title}

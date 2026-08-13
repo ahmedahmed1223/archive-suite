@@ -5,15 +5,7 @@ import { createArchiveApiClient } from "@/lib/archive-api";
 import type { ScheduledUpload, ScheduledUploadStatus } from "@/lib/archive-api";
 import { scheduleSummary, validateScheduleTime } from "@/lib/scheduled-upload";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-
-const STATUS_LABELS: Record<ScheduledUploadStatus, string> = {
-  scheduled: "مجدولة",
-  claimed: "قيد المعالجة",
-  processing: "قيد المعالجة",
-  completed: "مكتملة",
-  cancelled: "ملغاة",
-  failed: "فشلت"
-};
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_BADGE_CLASS: Record<ScheduledUploadStatus, string> = {
   scheduled: "badge",
@@ -26,14 +18,7 @@ const STATUS_BADGE_CLASS: Record<ScheduledUploadStatus, string> = {
 
 type StatusTab = "all" | "scheduled" | "processing" | "completed" | "failed" | "cancelled";
 
-const TABS: ReadonlyArray<{ value: StatusTab; label: string }> = [
-  { value: "all", label: "الكل" },
-  { value: "scheduled", label: "مجدولة" },
-  { value: "processing", label: "قيد المعالجة" },
-  { value: "completed", label: "مكتملة" },
-  { value: "failed", label: "فشلت" },
-  { value: "cancelled", label: "ملغاة" }
-];
+const TAB_VALUES: readonly StatusTab[] = ["all", "scheduled", "processing", "completed", "failed", "cancelled"];
 
 function matchesTab(status: ScheduledUploadStatus, tab: StatusTab): boolean {
   if (tab === "all") return true;
@@ -47,6 +32,8 @@ const POLL_MAX_MS = 60_000;
 const FETCH_LIMIT = 200;
 
 export default function ScheduledUploadsClient() {
+  const { locale, t } = useLocale();
+  const tc = t.pages.scheduledUploadsClient;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [schedules, setSchedules] = useState<ScheduledUpload[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -158,7 +145,7 @@ export default function ScheduledUploadsClient() {
   }, [api, rescheduleTarget, rescheduleValue, load]);
 
   if (schedules === null && !error) {
-    return <p className="helper-text">جارٍ التحميل…</p>;
+    return <p className="helper-text">{tc.loadingText}</p>;
   }
 
   if (error && schedules === null) {
@@ -168,45 +155,45 @@ export default function ScheduledUploadsClient() {
   return (
     <div className="stack scheduled-uploads">
       <Tabs value={tab} onValueChange={(value) => setTab(value as StatusTab)}>
-        <TabsList aria-label="تصفية حسب الحالة">
-          {TABS.map((item) => (
-            <TabsTrigger key={item.value} value={item.value} onClick={() => setTab(item.value)}>
-              {item.label}
+        <TabsList aria-label={tc.tabsAriaLabel}>
+          {TAB_VALUES.map((value) => (
+            <TabsTrigger key={value} value={value} onClick={() => setTab(value)}>
+              {tc.tabLabels[value]}
             </TabsTrigger>
           ))}
         </TabsList>
 
         <TabsContent value={tab}>
           <div className="scheduled-uploads-search">
-            <span id="scheduled-uploads-search-label">بحث بالملف أو العنوان</span>
+            <span id="scheduled-uploads-search-label">{tc.searchLabel}</span>
             <input
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              aria-label="بحث بالملف أو العنوان"
+              aria-label={tc.searchLabel}
             />
           </div>
 
           {error ? <p className="state-banner state-banner-error">{error}</p> : null}
 
           {filtered.length === 0 ? (
-            <p className="helper-text">لا توجد رفعات مجدولة تطابق الفلترة الحالية.</p>
+            <p className="helper-text">{tc.emptyText}</p>
           ) : (
             <ul className="scheduled-uploads-list">
               {filtered.map((item) => (
                 <li key={item.id} className="scheduled-upload-row">
                   <div className="scheduled-upload-row__main">
                     <span className="scheduled-upload-row__name">{item.fileName}</span>
-                    <span className={STATUS_BADGE_CLASS[item.status]}>{STATUS_LABELS[item.status]}</span>
+                    <span className={STATUS_BADGE_CLASS[item.status]}>{tc.statusLabels[item.status]}</span>
                     {item.scheduledAt ? (
-                      <span className="helper-text">{scheduleSummary(item.scheduledAt, item.timeZone, "ar")}</span>
+                      <span className="helper-text">{scheduleSummary(item.scheduledAt, item.timeZone, locale === "en" ? "en-US" : "ar-SA")}</span>
                     ) : null}
                     {item.failureMessage ? <span className="helper-text">{item.failureMessage}</span> : null}
                   </div>
                   <div className="scheduled-upload-row__actions">
                     {item.status === "completed" && item.recordId ? (
                       <a className="button button-secondary" href={`/archive/${item.recordId}`}>
-                        فتح السجل
+                        {tc.openRecordButton}
                       </a>
                     ) : null}
                     {item.canReschedule ? (
@@ -216,7 +203,7 @@ export default function ScheduledUploadsClient() {
                         onClick={() => openReschedule(item)}
                         disabled={busyId === item.id}
                       >
-                        إعادة الجدولة
+                        {tc.rescheduleButton}
                       </button>
                     ) : null}
                     {item.canCancel ? (
@@ -226,7 +213,7 @@ export default function ScheduledUploadsClient() {
                         onClick={() => setCancelTarget(item)}
                         disabled={busyId === item.id}
                       >
-                        إلغاء
+                        {tc.cancelButton}
                       </button>
                     ) : null}
                     {item.canRetry ? (
@@ -236,7 +223,7 @@ export default function ScheduledUploadsClient() {
                         onClick={() => handleRetry(item)}
                         disabled={busyId === item.id}
                       >
-                        إعادة المحاولة
+                        {tc.retryButton}
                       </button>
                     ) : null}
                   </div>
@@ -254,16 +241,16 @@ export default function ScheduledUploadsClient() {
           aria-labelledby="cancel-schedule-title"
           aria-describedby="cancel-schedule-desc"
         >
-          <h2 id="cancel-schedule-title">إلغاء الرفع المجدول</h2>
+          <h2 id="cancel-schedule-title">{tc.cancelDialogTitle}</h2>
           <p id="cancel-schedule-desc">
-            سيُلغى جدول رفع &quot;{cancelTarget.fileName}&quot; ولن تتم معالجته. يمكن الاحتفاظ بالملف الأصلي مؤقتاً بحسب سياسة الاستبقاء.
+            {tc.cancelDialogDescription.replace("{fileName}", cancelTarget.fileName)}
           </p>
           <div className="panel-actions">
             <button type="button" className="button button-secondary" onClick={() => setCancelTarget(null)}>
-              تراجع
+              {tc.dialogDismiss}
             </button>
             <button type="button" className="button button-danger" onClick={handleCancelConfirm}>
-              إلغاء الجدولة
+              {tc.confirmCancelButton}
             </button>
           </div>
         </section>
@@ -271,20 +258,20 @@ export default function ScheduledUploadsClient() {
 
       {rescheduleTarget ? (
         <section className="panel scheduled-upload-dialog" aria-labelledby="reschedule-title">
-          <h2 id="reschedule-title">إعادة جدولة الرفع</h2>
+          <h2 id="reschedule-title">{tc.rescheduleDialogTitle}</h2>
           <div className="scheduled-uploads-search">
-            <span id="reschedule-input-label">موعد المعالجة الجديد</span>
+            <span id="reschedule-input-label">{tc.rescheduleInputLabel}</span>
             <input
               type="datetime-local"
               value={rescheduleValue}
               onChange={(event) => setRescheduleValue(event.target.value)}
-              aria-label="موعد المعالجة الجديد"
+              aria-label={tc.rescheduleInputLabel}
             />
           </div>
           {rescheduleError ? <p className="state-banner state-banner-error">{rescheduleError}</p> : null}
           <div className="panel-actions">
             <button type="button" className="button button-secondary" onClick={() => setRescheduleTarget(null)}>
-              إلغاء
+              {tc.cancelButton}
             </button>
             <button
               type="button"
@@ -292,7 +279,7 @@ export default function ScheduledUploadsClient() {
               onClick={handleRescheduleSubmit}
               disabled={busyId === rescheduleTarget.id}
             >
-              حفظ الموعد الجديد
+              {tc.saveRescheduleButton}
             </button>
           </div>
         </section>

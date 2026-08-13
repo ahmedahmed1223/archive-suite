@@ -10,13 +10,22 @@ type ReviewLinkState =
   | { status: "ready"; data: ReviewLinkDetails }
   | { status: "error"; message: string };
 
+function localizedExpiryLabel(
+  expiresAt: string | null | undefined,
+  labels: { noExpiry: string; unavailable: string; expired: string; soon: string; active: string }
+): string {
+  if (!expiresAt) return labels.noExpiry;
+  const expiryTime = new Date(expiresAt).getTime();
+  if (Number.isNaN(expiryTime)) return labels.unavailable;
+  const remaining = expiryTime - Date.now();
+  if (remaining <= 0) return labels.expired;
+  if (remaining <= 48 * 60 * 60 * 1000) return labels.soon;
+  return labels.active;
+}
+
 export function ReviewLinkViewer({ token }: { token: string }) {
-  const { locale } = useLocale();
-  const copy = locale === "en" ? {
-    loading: "Loading review link", loadingDescription: "Retrieving the comments and data allowed by this link.", error: "Could not load the review link", content: "Review link content", notice: "This public review link does not allow asset management or permission changes.", asset: "Asset", permission: "Permission", expires: "Expires", expiryEstimate: "Access estimate", expiryHint: "A local estimate based on the stated date; enforcement is handled by the server.", empty: "There are no comments available through this link.",
-  } : {
-    loading: "جارٍ تحميل رابط المراجعة", loadingDescription: "يتم جلب التعليقات والبيانات المسموحة لهذا الرابط.", error: "تعذر تحميل رابط المراجعة", content: "محتوى رابط المراجعة", notice: "رابط مراجعة عام؛ لا يتيح إدارة الأصل أو تغيير صلاحياته.", asset: "المادة", permission: "الصلاحية", expires: "ينتهي", expiryEstimate: "تقدير الصلاحية", expiryHint: "تقدير محلي حسب التاريخ المعلن؛ الإنفاذ بالخادم.", empty: "لا توجد تعليقات متاحة لهذا الرابط.",
-  };
+  const { locale, t } = useLocale();
+  const copy = t.pages.reviewLink.viewer;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<ReviewLinkState>({ status: "loading" });
 
@@ -59,9 +68,7 @@ export function ReviewLinkViewer({ token }: { token: string }) {
 
   const { data } = state;
   const expiry = buildShareExpiry(data.review.expiresAt);
-  const expiryLabel = locale === "en"
-    ? ({ "بلا انتهاء": "No expiry", "تاريخ غير واضح": "Date unavailable", "منتهية": "Expired", "تنتهي قريباً": "Expires soon", "نشطة": "Active" }[expiry.label] ?? expiry.label)
-    : expiry.label;
+  const expiryLabel = localizedExpiryLabel(data.review.expiresAt, copy.expiryLabels);
 
   return (
     <main className="share-list" aria-label={copy.content}>

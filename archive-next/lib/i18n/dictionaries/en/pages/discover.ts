@@ -1,0 +1,23 @@
+export const discover = {
+  loadError: "Could not load discovery paths.",
+  feedbackError: "Could not save suggestion feedback.",
+  eyebrow: "Discovery paths",
+  title: "Discover",
+  description: "Explore popular, random, active, forgotten, or incomplete material so the archive is more than a long list.",
+  paths: "paths",
+  items: "items shown",
+  refresh: "Refresh",
+  loading: "Loading discovery paths…",
+  error: "Could not load discovery",
+  suggestions: "Suggested archive improvements",
+  emptyTitle: "Not enough material to discover",
+  emptyDescription: "Add records or open the archive to work with the current material.",
+  openArchive: "Open archive",
+  total: "total",
+  noItems: "No items are currently shown in this path.",
+  noAdditionalDescription: "No additional description",
+  record: "Record",
+  unspecified: "Unspecified",
+  untitled: "Untitled",
+  openRecord: "Open record"
+} as const;

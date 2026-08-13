@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use Carbon\CarbonImmutable;
+use Faker\Factory;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Ramsey\Uuid\Uuid;
@@ -98,7 +100,7 @@ class GenerateBenchmarkDatasetCommand extends Command
             return [];
         }
 
-        $faker = \Faker\Factory::create('ar_SA');
+        $faker = Factory::create('ar_SA');
         $faker->seed($seed);
 
         $timestampOrigin = CarbonImmutable::parse(self::TIMESTAMP_ORIGIN);
@@ -157,7 +159,7 @@ class GenerateBenchmarkDatasetCommand extends Command
     }
 
     /**
-     * @param list<string> $recordUids
+     * @param  list<string>  $recordUids
      * @return array{count: int, bytes: int}
      */
     private function generateFiles(int $seed, int $count, int $totalSize, string $disk, array $recordUids, int $chunkSize): array
@@ -252,7 +254,7 @@ class GenerateBenchmarkDatasetCommand extends Command
      * chunks (never buffers the whole file in memory, so this is safe for the
      * 1GB-scale production run) and returns its sha256 checksum.
      */
-    private function writeDeterministicFile(\Illuminate\Contracts\Filesystem\Filesystem $storage, string $path, int $seed, int $index, int $size): string
+    private function writeDeterministicFile(Filesystem $storage, string $path, int $seed, int $index, int $size): string
     {
         $chunkBytes = 65536;
         $seedBlock = hash('sha256', $seed.':'.$index, true);

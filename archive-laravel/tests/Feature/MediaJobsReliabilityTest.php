@@ -7,6 +7,7 @@ use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaJob;
 use App\Services\Media\AudioPreprocessor;
 use App\Services\Media\FakeProcessRunner;
+use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaPathGuard;
 use App\Services\Media\MediaProcessor;
 use App\Services\Media\OcrClient;
@@ -91,7 +92,7 @@ class MediaJobsReliabilityTest extends TestCase
         });
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])
-            ->handle($this->app->make(\App\Services\Media\MediaJobExecutor::class));
+            ->handle($this->app->make(MediaJobExecutor::class));
 
         $this->assertSame('canceled', $mediaJob->refresh()->status);
     }
@@ -108,7 +109,7 @@ class MediaJobsReliabilityTest extends TestCase
             'queued_at' => now(),
         ]);
 
-        $runner = new FakeProcessRunner();
+        $runner = new FakeProcessRunner;
         $processor = $this->realProcessor($runner);
 
         $this->expectException(JobCanceledException::class);
@@ -132,8 +133,9 @@ class MediaJobsReliabilityTest extends TestCase
             'queued_at' => now(),
         ]);
 
-        $runner = new FakeProcessRunner();
-        $preprocessor = new class($mediaJob, $runner) extends AudioPreprocessor {
+        $runner = new FakeProcessRunner;
+        $preprocessor = new class($mediaJob, $runner) extends AudioPreprocessor
+        {
             public int $extractSegmentCalls = 0;
 
             public function __construct(private readonly MediaJob $job, ProcessRunner $runner)
@@ -193,12 +195,12 @@ class MediaJobsReliabilityTest extends TestCase
             'queued_at' => now(),
         ]);
 
-        $this->mock(MediaProcessor::class, function ($mock) use ($mediaJob): void {
+        $this->mock(MediaProcessor::class, function ($mock): void {
             $mock->shouldNotReceive('process');
         });
 
         $job = $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id]);
-        $job->handle($this->app->make(\App\Services\Media\MediaJobExecutor::class));
+        $job->handle($this->app->make(MediaJobExecutor::class));
 
         $this->assertSame('canceled', $mediaJob->refresh()->status);
         $this->assertNull($mediaJob->error);
@@ -225,7 +227,7 @@ class MediaJobsReliabilityTest extends TestCase
         $job = $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id]);
 
         try {
-            $job->handle($this->app->make(\App\Services\Media\MediaJobExecutor::class));
+            $job->handle($this->app->make(MediaJobExecutor::class));
             $this->fail('Expected the underlying exception to propagate for queue retry.');
         } catch (RuntimeException) {
             // expected — handle() rethrows so Laravel's retry/backoff can act.

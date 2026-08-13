@@ -1,81 +1,77 @@
-export const primaryNav = [
+import { getDictionary } from "./i18n/dictionaries";
+
+const navItemMeta = [
   // ── الإدخال والمعالجة ──
-  { href: "/uploads", label: "إضافة مادة", section: "capture", icon: "UploadCloud" },
-  { href: "/uploads/scheduled", label: "الرفعات المجدولة", section: "capture", icon: "CalendarClock" },
-  { href: "/inbox", label: "الوارد", section: "capture", icon: "Inbox" },
-  { href: "/ingest", label: "الاستيراد", section: "capture", icon: "FileInput" },
-  { href: "/media/jobs", label: "الوسائط", section: "capture", icon: "Film" },
-  { href: "/transcriber", label: "التفريغ", section: "capture", icon: "Mic2" },
+  { href: "/uploads", section: "capture", icon: "UploadCloud" },
+  { href: "/uploads/scheduled", section: "capture", icon: "CalendarClock" },
+  { href: "/inbox", section: "capture", icon: "Inbox" },
+  { href: "/ingest", section: "capture", icon: "FileInput" },
+  { href: "/media/jobs", section: "capture", icon: "Film" },
+  { href: "/transcriber", section: "capture", icon: "Mic2" },
   // ── المكتبة (البحث والتصفح) ──
-  { href: "/", label: "اللوحة", section: "library", icon: "Home" },
-  { href: "/daily", label: "يومي", section: "library", icon: "Sunrise" },
-  { href: "/archive", label: "الأرشيف", section: "library", icon: "Archive" },
-  { href: "/search", label: "البحث", section: "library", icon: "Search" },
-  { href: "/discover", label: "الاكتشاف", section: "library", icon: "Compass" },
-  { href: "/favorites", label: "المفضلة", section: "library", icon: "Star" },
-  { href: "/reading-lists", label: "قوائم القراءة", section: "library", icon: "BookOpen" },
-  { href: "/timeline", label: "الخط الزمني", section: "library", icon: "Clock3" },
-  { href: "/graph", label: "العلاقات", section: "library", icon: "GitBranch" },
-  { href: "/map", label: "الخريطة", section: "library", icon: "Map" },
-  { href: "/files", label: "الملفات", section: "library", icon: "Files" },
+  { href: "/", section: "library", icon: "Home" },
+  { href: "/daily", section: "library", icon: "Sunrise" },
+  { href: "/archive", section: "library", icon: "Archive" },
+  { href: "/search", section: "library", icon: "Search" },
+  { href: "/discover", section: "library", icon: "Compass" },
+  { href: "/favorites", section: "library", icon: "Star" },
+  { href: "/reading-lists", section: "library", icon: "BookOpen" },
+  { href: "/timeline", section: "library", icon: "Clock3" },
+  { href: "/graph", section: "library", icon: "GitBranch" },
+  { href: "/map", section: "library", icon: "Map" },
+  { href: "/files", section: "library", icon: "Files" },
   // ── التنظيم ──
-  { href: "/collections", label: "المجموعات", section: "organize", icon: "FolderOpen" },
-  { href: "/types", label: "الأنواع", section: "organize", icon: "FileType" },
-  { href: "/vocabulary", label: "المفردات", section: "organize", icon: "Library" },
-  { href: "/tags", label: "الوسوم", section: "organize", icon: "Tags" },
-  { href: "/duplicates", label: "المكررات", section: "organize", icon: "CopyCheck" },
-  { href: "/trash", label: "سلة المهملات", section: "organize", icon: "Trash2" },
-  { href: "/kanban", label: "كانبان", section: "organize", icon: "Columns3" },
-  { href: "/projects", label: "المشاريع", section: "organize", icon: "BriefcaseBusiness" },
+  { href: "/collections", section: "organize", icon: "FolderOpen" },
+  { href: "/types", section: "organize", icon: "FileType" },
+  { href: "/vocabulary", section: "organize", icon: "Library" },
+  { href: "/tags", section: "organize", icon: "Tags" },
+  { href: "/duplicates", section: "organize", icon: "CopyCheck" },
+  { href: "/trash", section: "organize", icon: "Trash2" },
+  { href: "/kanban", section: "organize", icon: "Columns3" },
+  { href: "/projects", section: "organize", icon: "BriefcaseBusiness" },
   // ── المشاركة والتعاون ──
-  { href: "/shares", label: "المشاركات", section: "collaborate", icon: "Share2" },
-  { href: "/shares/with-me", label: "وارد المشاركة", section: "collaborate", icon: "MailCheck" },
-  { href: "/collaboration", label: "التعاون", section: "collaborate", icon: "Users" },
-  { href: "/broadcast", label: "البث", section: "collaborate", icon: "Radio" },
-  { href: "/automation", label: "الأتمتة", section: "collaborate", icon: "Bot" },
-  { href: "/copilot", label: "مساعد الأرشيف", section: "collaborate", icon: "BotMessageSquare" },
-  { href: "/rights", label: "الحقوق", section: "collaborate", icon: "ShieldCheck" },
-  { href: "/safety-preview", label: "معاينة السلامة", section: "collaborate", icon: "ShieldCheck" },
+  { href: "/shares", section: "collaborate", icon: "Share2" },
+  { href: "/shares/with-me", section: "collaborate", icon: "MailCheck" },
+  { href: "/collaboration", section: "collaborate", icon: "Users" },
+  { href: "/broadcast", section: "collaborate", icon: "Radio" },
+  { href: "/automation", section: "collaborate", icon: "Bot" },
+  { href: "/copilot", section: "collaborate", icon: "BotMessageSquare" },
+  { href: "/rights", section: "collaborate", icon: "ShieldCheck" },
+  { href: "/safety-preview", section: "collaborate", icon: "ShieldCheck" },
   // ── المؤشرات والمراقبة ──
-  { href: "/activity", label: "النشاط", section: "insights", icon: "Activity" },
-  { href: "/analytics", label: "التحليلات", section: "insights", icon: "BarChart3" },
-  { href: "/reports", label: "التقارير", section: "insights", icon: "FileBarChart" },
-  { href: "/status", label: "الحالة", section: "insights", icon: "Gauge" },
-  { href: "/sync", label: "المزامنة", section: "insights", icon: "RefreshCw" },
-  { href: "/errors", label: "الأخطاء", section: "insights", icon: "AlertTriangle" },
+  { href: "/activity", section: "insights", icon: "Activity" },
+  { href: "/analytics", section: "insights", icon: "BarChart3" },
+  { href: "/reports", section: "insights", icon: "FileBarChart" },
+  { href: "/status", section: "insights", icon: "Gauge" },
+  { href: "/sync", section: "insights", icon: "RefreshCw" },
+  { href: "/errors", section: "insights", icon: "AlertTriangle" },
   // ── النظام ──
-  { href: "/search/saved", label: "بحوث محفوظة", section: "system", icon: "Bookmark" },
-  { href: "/plugins", label: "الإضافات", section: "system", icon: "PlugZap" },
-  { href: "/backup", label: "النسخ الاحتياطي", section: "system", icon: "HardDriveDownload" },
-  { href: "/data-center", label: "مركز البيانات", section: "system", icon: "Database" },
-  { href: "/system/control", label: "التحكم بالنظام", section: "system", icon: "MonitorCog" },
-  { href: "/first-run", label: "أول تشغيل", section: "system", icon: "Sparkles" },
-  { href: "/settings", label: "الإعدادات", section: "system", icon: "Settings" },
-  { href: "/help", label: "المساعدة", section: "system", icon: "HelpCircle" }
+  { href: "/search/saved", section: "system", icon: "Bookmark" },
+  { href: "/plugins", section: "system", icon: "PlugZap" },
+  { href: "/backup", section: "system", icon: "HardDriveDownload" },
+  { href: "/data-center", section: "system", icon: "Database" },
+  { href: "/system/control", section: "system", icon: "MonitorCog" },
+  { href: "/first-run", section: "system", icon: "Sparkles" },
+  { href: "/settings", section: "system", icon: "Settings" },
+  { href: "/help", section: "system", icon: "HelpCircle" }
 ] as const;
 
-export type NavSection = (typeof primaryNav)[number]["section"];
+export type NavSection = (typeof navItemMeta)[number]["section"];
 export type NavigationRole = "admin" | "editor" | "viewer";
-export type NavigationItem = (typeof primaryNav)[number];
+export type NavigationItem = (typeof navItemMeta)[number] & { label: string };
 
-const englishNavigationLabels: Record<NavigationItem["href"], string> = {
-  "/uploads": "Add material", "/uploads/scheduled": "Scheduled uploads", "/inbox": "Inbox", "/ingest": "Import", "/media/jobs": "Media", "/transcriber": "Transcription", "/": "Dashboard", "/daily": "Daily", "/archive": "Archive", "/search": "Search", "/discover": "Discover", "/favorites": "Favorites", "/reading-lists": "Reading lists", "/timeline": "Timeline", "/graph": "Relationships", "/map": "Map", "/files": "Files", "/collections": "Groups", "/types": "Types", "/vocabulary": "Vocabulary", "/tags": "Tags", "/duplicates": "Duplicates", "/trash": "Trash", "/kanban": "Kanban", "/projects": "Projects", "/shares": "Shares", "/shares/with-me": "Shared with me", "/collaboration": "Collaboration", "/broadcast": "Broadcast", "/automation": "Automation", "/copilot": "Archive assistant", "/rights": "Rights", "/safety-preview": "Safety preview", "/activity": "Activity", "/analytics": "Analytics", "/reports": "Reports", "/status": "Status", "/sync": "Sync", "/errors": "Errors", "/search/saved": "Saved searches", "/plugins": "Plugins", "/backup": "Backups", "/data-center": "Data center", "/system/control": "System control", "/first-run": "Getting started", "/settings": "Settings", "/help": "Help",
-};
+function localizeNavItems(locale: "ar" | "en"): NavigationItem[] {
+  const labels = getDictionary(locale).nav.items;
+  return navItemMeta.map((item) => ({ ...item, label: labels[item.href] ?? item.href }));
+}
 
-const englishSectionLabels: Record<NavSection, string> = { capture: "Capture", library: "Library", organize: "Organize", collaborate: "Collaborate", insights: "Insights", system: "System" };
+export const primaryNav: NavigationItem[] = localizeNavItems("ar");
 
-export const navSectionLabels: Record<NavSection, string> = {
-  capture: "الإدخال",
-  library: "المكتبة",
-  organize: "التنظيم",
-  collaborate: "المشاركة",
-  insights: "المؤشرات",
-  system: "النظام"
-};
+export const navSectionLabels: Record<NavSection, string> = getDictionary("ar").nav.sections;
 
 export function getLocalizedNavigation(locale: "ar" | "en") {
   if (locale === "ar") return { items: primaryNav, sections: navSectionLabels };
-  return { items: primaryNav.map((item) => ({ ...item, label: englishNavigationLabels[item.href] })), sections: englishSectionLabels };
+  return { items: localizeNavItems("en"), sections: getDictionary("en").nav.sections };
 }
 
 const dailyRoutes: Record<NavSection, readonly string[]> = {

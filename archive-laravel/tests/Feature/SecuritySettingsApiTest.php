@@ -91,7 +91,7 @@ class SecuritySettingsApiTest extends TestCase
 
     public function test_whisper_device_setting_is_used_by_new_transcription_jobs(): void
     {
-        $runner = new FakeProcessRunner();
+        $runner = new FakeProcessRunner;
         $this->app->instance(ProcessRunner::class, $runner);
         $this->app->forgetInstance(WhisperTranscriber::class);
 

@@ -27,7 +27,7 @@ class StorageRowPayload
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      * @return array{status: string, complete: int, total: int, missing: list<string>}
      */
     private static function descriptorCompletion(array $payload): array

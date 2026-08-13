@@ -10,14 +10,15 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
  * once, without competing with page-specific upload/search status messages.
  */
 export default function RouteAnnouncer() {
-  const { locale } = useLocale();
+  const { t } = useLocale();
+  const copy = t.shell.routeAnnouncer;
   const pathname = usePathname() || "/";
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     const title = document.title.trim();
-    setMessage(locale === "en" ? (title ? `Opened ${title}` : "Opened page") : (title ? `تم فتح ${title}` : "تم فتح الصفحة"));
-  }, [locale, pathname]);
+    setMessage(title ? copy.opened.replace("{title}", title) : copy.openedPage);
+  }, [copy, pathname]);
 
   return (
     <p className="ui-visually-hidden" role="status" aria-live="polite" aria-atomic="true" data-testid="route-announcer">

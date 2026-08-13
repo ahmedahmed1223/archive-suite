@@ -3,22 +3,24 @@
 import { useState } from "react";
 import { EyeOff, Lightbulb, ThumbsDown, ThumbsUp } from "lucide-react";
 import type { ArchiveSuggestion, SuggestionFeedbackValue } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
-const severityLabel: Record<string, string> = {
-  high: "مهم",
-  medium: "تحسين",
-  low: "ملاحظة"
-};
+function labelFor(labels: object, value: string): string {
+  const label = (labels as Record<string, unknown>)[value];
+  return typeof label === "string" ? label : value;
+}
 
 export default function SuggestionsPanel({
   suggestions,
-  title = "اقتراحات تحسين",
+  title,
   onFeedback
 }: Readonly<{
   suggestions: ArchiveSuggestion[];
   title?: string;
   onFeedback: (suggestion: ArchiveSuggestion, value: SuggestionFeedbackValue) => Promise<void>;
 }>) {
+  const { t } = useLocale();
+  const copy = t.shared.suggestions;
   const [busyKeys, setBusyKeys] = useState<Set<string>>(new Set());
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -42,7 +44,7 @@ export default function SuggestionsPanel({
         });
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "تعذر حفظ تقييم الاقتراح.");
+      setError(cause instanceof Error ? cause.message : copy.feedbackError);
     } finally {
       setBusyKeys((current) => {
         const next = new Set(current);
@@ -80,7 +82,7 @@ export default function SuggestionsPanel({
       <div className="panel-section-header">
         <div className="toolbar-row toolbar-start">
           <Lightbulb aria-hidden="true" size={18} className="text-accent" />
-          <h2 id="suggestions-title">{title}</h2>
+          <h2 id="suggestions-title">{title ?? copy.title}</h2>
         </div>
         <span className="badge">{visibleSuggestions.length}</span>
       </div>
@@ -91,9 +93,9 @@ export default function SuggestionsPanel({
               type="checkbox"
               checked={allSelected}
               onChange={(event) => toggleSelectAll(event.target.checked)}
-              aria-label="تحديد كل الاقتراحات"
+              aria-label={copy.selectAllAriaLabel}
             />
-            <span>{selectedVisible.length > 0 ? `${selectedVisible.length} محدد` : "تحديد الكل"}</span>
+            <span>{selectedVisible.length > 0 ? copy.selectedCount.replace("{count}", String(selectedVisible.length)) : copy.selectAll}</span>
           </label>
           <button
             type="button"
@@ -101,7 +103,7 @@ export default function SuggestionsPanel({
             disabled={selectedVisible.length === 0}
             onClick={() => void handleBulkFeedback("useful")}
           >
-            <ThumbsUp aria-hidden="true" size={15} /> اعتماد المحدد
+            <ThumbsUp aria-hidden="true" size={15} /> {copy.approveSelected}
           </button>
           <button
             type="button"
@@ -109,7 +111,7 @@ export default function SuggestionsPanel({
             disabled={selectedVisible.length === 0}
             onClick={() => void handleBulkFeedback("dismissed")}
           >
-            <EyeOff aria-hidden="true" size={15} /> رفض المحدد
+            <EyeOff aria-hidden="true" size={15} /> {copy.dismissSelected}
           </button>
         </div>
       ) : null}
@@ -124,26 +126,26 @@ export default function SuggestionsPanel({
                     type="checkbox"
                     checked={selected.has(suggestion.key)}
                     onChange={(event) => toggleSelected(suggestion.key, event.target.checked)}
-                    aria-label={`تحديد ${suggestion.title}`}
+                    aria-label={copy.selectItemAriaLabel.replace("{title}", suggestion.title)}
                   />
                   <div>
-                    <span className="badge">{severityLabel[suggestion.severity] || "تحسين"}</span>
+                    <span className="badge">{labelFor(copy.severity, suggestion.severity)}</span>
                     <h3>{suggestion.title}</h3>
                   </div>
                 </div>
-                <span className="badge">{suggestion.count} مادة</span>
+                <span className="badge">{copy.itemCount.replace("{count}", String(suggestion.count))}</span>
               </div>
               <p className="helper-text">{suggestion.detail}</p>
               <div className="button-row">
-                <a className="button button-primary button-sm" href={suggestion.actionHref}>فتح</a>
+                <a className="button button-primary button-sm" href={suggestion.actionHref}>{copy.open}</a>
                 <button type="button" className="button button-secondary button-sm" disabled={busy} onClick={() => void handleFeedback(suggestion, "useful")}>
-                  <ThumbsUp aria-hidden="true" size={15} /> مفيد
+                  <ThumbsUp aria-hidden="true" size={15} /> {copy.useful}
                 </button>
                 <button type="button" className="button button-secondary button-sm" disabled={busy} onClick={() => void handleFeedback(suggestion, "not-useful")}>
-                  <ThumbsDown aria-hidden="true" size={15} /> غير مفيد
+                  <ThumbsDown aria-hidden="true" size={15} /> {copy.notUseful}
                 </button>
                 <button type="button" className="button button-secondary button-sm" disabled={busy} onClick={() => void handleFeedback(suggestion, "dismissed")}>
-                  <EyeOff aria-hidden="true" size={15} /> إخفاء
+                  <EyeOff aria-hidden="true" size={15} /> {copy.dismiss}
                 </button>
               </div>
             </article>

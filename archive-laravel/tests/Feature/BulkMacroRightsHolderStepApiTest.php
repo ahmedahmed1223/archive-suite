@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class BulkMacroRightsHolderStepApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_sets_the_rights_holder_for_each_target(): void
     {

@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class RecordHistoryApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_lists_audit_backed_history_for_a_record(): void
     {

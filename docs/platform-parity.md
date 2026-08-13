@@ -10,8 +10,8 @@ service, data-path, and port information.
 | --- | --- | --- | --- |
 | Windows 10/11 | Docker | `Setup-Archive.bat` | Docker Desktop with Compose v2 |
 | Linux | Docker | `setup.sh` | Docker Engine with Compose v2 |
-| Windows 10/11 | Native | `pnpm bundle:windows-native` | PostgreSQL and Redis reachable by the host |
-| Linux | Native | `pnpm bundle:linux-native` | `systemd`, PostgreSQL, and Redis |
+| Windows 10/11 | Native | `pnpm bundle:windows-native` | PostgreSQL reachable by the host (Redis optional) |
+| Linux | Native | `pnpm bundle:linux-native` | `systemd` and PostgreSQL (Redis optional) |
 
 Use `node scripts/control-center.mjs doctor` before installation. Choose Docker
 when the organisation operates containers; choose Native when it manages host

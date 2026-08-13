@@ -15,12 +15,13 @@ class IngestTransportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->testDir = sys_get_temp_dir() . '/ingest_test_' . uniqid();
+        $this->testDir = sys_get_temp_dir().'/ingest_test_'.uniqid();
         mkdir($this->testDir, 0755, true);
 
         // Mock the config functions
-        if (!function_exists('config')) {
-            function config($key, $default = null) {
+        if (! function_exists('config')) {
+            function config($key, $default = null)
+            {
                 $configs = [
                     'ingest.disk' => 'local',
                     'ingest.directory' => 'ingest',
@@ -36,7 +37,7 @@ class IngestTransportTest extends TestCase
         parent::tearDown();
         // Clean up test directory
         if (is_dir($this->testDir)) {
-            array_map('unlink', glob($this->testDir . '/*'));
+            array_map('unlink', glob($this->testDir.'/*'));
             rmdir($this->testDir);
         }
     }
@@ -44,7 +45,7 @@ class IngestTransportTest extends TestCase
     public function test_ftp_transport_throws_on_missing_params(): void
     {
         // Arrange
-        $ftpClient = new FakeFtpClient();
+        $ftpClient = new FakeFtpClient;
         $transport = new FtpIngestTransport($ftpClient);
 
         // Act & Assert
@@ -61,7 +62,7 @@ class IngestTransportTest extends TestCase
     public function test_ftp_client_fake_stores_and_retrieves_files(): void
     {
         // Arrange
-        $ftpClient = new FakeFtpClient();
+        $ftpClient = new FakeFtpClient;
         $ftpClient->setFileList('/uploads', [
             ['name' => 'video1.mp4', 'size' => 1024, 'type' => 'file'],
             ['name' => 'video2.mp4', 'size' => 2048, 'type' => 'file'],
@@ -78,7 +79,7 @@ class IngestTransportTest extends TestCase
         $this->assertSame('video2.mp4', $files[1]['name']);
 
         // Verify download works
-        $tempFile = $this->testDir . '/download.mp4';
+        $tempFile = $this->testDir.'/download.mp4';
         $ftpClient->downloadFile('/uploads/video1.mp4', $tempFile);
         $this->assertTrue(file_exists($tempFile));
         $this->assertSame('fake video 1 content', file_get_contents($tempFile));
@@ -87,20 +88,20 @@ class IngestTransportTest extends TestCase
     public function test_ftp_client_fake_throws_on_missing_file(): void
     {
         // Arrange
-        $ftpClient = new FakeFtpClient();
+        $ftpClient = new FakeFtpClient;
 
         // Act & Assert
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('file not found');
 
-        $tempFile = $this->testDir . '/download.mp4';
+        $tempFile = $this->testDir.'/download.mp4';
         $ftpClient->downloadFile('/nonexistent.mp4', $tempFile);
     }
 
     public function test_smb_transport_throws_on_list_failure(): void
     {
         // Arrange
-        $runner = new FakeProcessRunner();
+        $runner = new FakeProcessRunner;
         $runner->setResponse('default', [
             'exitCode' => 1,
             'stdout' => '',
@@ -124,7 +125,7 @@ class IngestTransportTest extends TestCase
     public function test_smb_transport_throws_on_missing_params(): void
     {
         // Arrange
-        $runner = new FakeProcessRunner();
+        $runner = new FakeProcessRunner;
         $transport = new SmbIngestTransport($runner);
 
         // Act & Assert
@@ -144,7 +145,7 @@ class IngestTransportTest extends TestCase
         // When real SMB servers are available, add a feature test against live server.
 
         // Arrange - test the parsing logic via reflection
-        $runner = new FakeProcessRunner();
+        $runner = new FakeProcessRunner;
         $transport = new SmbIngestTransport($runner);
 
         $lsOutput = <<<'EOF'

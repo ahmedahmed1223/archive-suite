@@ -54,7 +54,10 @@ EXPOSE 3000
 
 # Debian slim ships neither wget nor curl by default (unlike Alpine's busybox
 # wget); use node itself so the healthcheck needs no extra apt-get install.
+# V2-502: was hitting "/", which returns 200 from Next's own router even when
+# the Laravel upstream this app depends on for nearly everything is down.
+# /api/health (app/api/health/route.ts) actually checks that connectivity.
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD node -e "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+  CMD node -e "require('http').get('http://127.0.0.1:3000/api/health',r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))"
 
 CMD ["node", "archive-next/server.js"]

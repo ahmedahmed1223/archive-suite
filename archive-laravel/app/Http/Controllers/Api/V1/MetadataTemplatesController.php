@@ -55,7 +55,7 @@ class MetadataTemplatesController extends Controller
                 'type_id' => $validated['typeId'] ?? null,
                 'department_id' => $validated['departmentId'] ?? null,
                 'name' => $validated['name'],
-                'fields' => json_encode($validated['fields'] ?? new stdClass(), JSON_THROW_ON_ERROR),
+                'fields' => json_encode($validated['fields'] ?? new stdClass, JSON_THROW_ON_ERROR),
                 'tags' => json_encode($validated['tags'] ?? [], JSON_THROW_ON_ERROR),
                 'enabled' => $validated['enabled'] ?? true,
                 'usage_roles' => json_encode($validated['usageRoles'] ?? [], JSON_THROW_ON_ERROR),
@@ -92,13 +92,27 @@ class MetadataTemplatesController extends Controller
         $actorId = (string) $request->attributes->get('archive_user')?->getKey();
         $updates = ['updated_at' => now(), 'updated_by_id' => $actorId ?: null, 'current_version' => $template->current_version + 1];
 
-        if (array_key_exists('name', $validated)) $updates['name'] = $validated['name'];
-        if (array_key_exists('typeId', $validated)) $updates['type_id'] = $validated['typeId'];
-        if (array_key_exists('departmentId', $validated)) $updates['department_id'] = $validated['departmentId'];
-        if (array_key_exists('fields', $validated)) $updates['fields'] = json_encode($validated['fields'], JSON_THROW_ON_ERROR);
-        if (array_key_exists('tags', $validated)) $updates['tags'] = json_encode($validated['tags'], JSON_THROW_ON_ERROR);
-        if (array_key_exists('enabled', $validated)) $updates['enabled'] = $validated['enabled'];
-        if (array_key_exists('usageRoles', $validated)) $updates['usage_roles'] = json_encode($validated['usageRoles'], JSON_THROW_ON_ERROR);
+        if (array_key_exists('name', $validated)) {
+            $updates['name'] = $validated['name'];
+        }
+        if (array_key_exists('typeId', $validated)) {
+            $updates['type_id'] = $validated['typeId'];
+        }
+        if (array_key_exists('departmentId', $validated)) {
+            $updates['department_id'] = $validated['departmentId'];
+        }
+        if (array_key_exists('fields', $validated)) {
+            $updates['fields'] = json_encode($validated['fields'], JSON_THROW_ON_ERROR);
+        }
+        if (array_key_exists('tags', $validated)) {
+            $updates['tags'] = json_encode($validated['tags'], JSON_THROW_ON_ERROR);
+        }
+        if (array_key_exists('enabled', $validated)) {
+            $updates['enabled'] = $validated['enabled'];
+        }
+        if (array_key_exists('usageRoles', $validated)) {
+            $updates['usage_roles'] = json_encode($validated['usageRoles'], JSON_THROW_ON_ERROR);
+        }
 
         DB::transaction(function () use ($id, $updates, $actorId): void {
             DB::table('metadata_templates')->where('id', $id)->update($updates);
@@ -130,9 +144,13 @@ class MetadataTemplatesController extends Controller
 
     public function publish(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireAdmin($request)) return $denied;
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
         $template = DB::table('metadata_templates')->where('id', $id)->first();
-        if (! $template instanceof stdClass) return $this->notFound();
+        if (! $template instanceof stdClass) {
+            return $this->notFound();
+        }
 
         DB::table('metadata_templates')->where('id', $id)->update([
             'published_version' => $template->current_version,
@@ -146,10 +164,14 @@ class MetadataTemplatesController extends Controller
 
     public function restorePublished(Request $request, string $id, int $version): JsonResponse
     {
-        if ($denied = $this->requireAdmin($request)) return $denied;
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
         $template = DB::table('metadata_templates')->where('id', $id)->first();
         $snapshot = DB::table('metadata_template_versions')->where('template_id', $id)->where('version', $version)->exists();
-        if (! $template instanceof stdClass || ! $snapshot) return $this->notFound();
+        if (! $template instanceof stdClass || ! $snapshot) {
+            return $this->notFound();
+        }
 
         DB::table('metadata_templates')->where('id', $id)->update([
             'published_version' => $version,

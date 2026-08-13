@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Notification;
 
+use App\Events\UserNotificationCreated;
 use App\Models\Notification;
 use App\Models\User;
+use Illuminate\Support\Facades\Event;
 
 class NotificationService
 {
     public function createIngestNotification(User $user, int $ingested, int $skipped): Notification
     {
-        return Notification::create([
+        return $this->record([
             'user_id' => $user->id,
             'type' => 'ingest_complete',
             'title' => 'اكتمل الإدراج',
@@ -30,7 +32,7 @@ class NotificationService
             ? sprintf('اكتمل النسخ الاحتياطي بنجاح: %s', $name ?? 'نسخة احتياطية جديدة')
             : sprintf('فشل النسخ الاحتياطي: %s', $error ?? 'خطأ غير معروف');
 
-        return Notification::create([
+        return $this->record([
             'user_id' => $user->id,
             'type' => 'backup_result',
             'title' => $title,
@@ -53,7 +55,7 @@ class NotificationService
             default => sprintf('حدث تغيير في المشاركة: %s', $title ?? 'مشاركة'),
         };
 
-        return Notification::create([
+        return $this->record([
             'user_id' => $user->id,
             'type' => 'share_event',
             'title' => $notificationTitle,
@@ -73,7 +75,7 @@ class NotificationService
             ? sprintf('تمت استعادة النسخة الاحتياطية بنجاح: %s', $backupName ?? 'نسخة احتياطية')
             : sprintf('فشلت استعادة النسخة الاحتياطية: %s', $error ?? 'خطأ غير معروف');
 
-        return Notification::create([
+        return $this->record([
             'user_id' => $user->id,
             'type' => 'restore_result',
             'title' => $title,
@@ -90,7 +92,7 @@ class NotificationService
     {
         $contextLabel = $context === 'comment' ? 'تعليق' : 'ملاحظة';
 
-        return Notification::create([
+        return $this->record([
             'user_id' => $mentioned->id,
             'type' => 'mention',
             'title' => sprintf('أشار إليك %s في %s', $author->name, $contextLabel),
@@ -103,6 +105,23 @@ class NotificationService
                 'store' => $store,
             ],
         ]);
+    }
+
+    /**
+     * Single choke point for every notification type above: create the row,
+     * then broadcast it live (RT-804) so useNotifications on the frontend
+     * doesn't wait for its 30s poll. One place so a new notification type
+     * can never forget to broadcast.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    private function record(array $attributes): Notification
+    {
+        $notification = Notification::create($attributes);
+
+        Event::dispatch(new UserNotificationCreated((string) $attributes['user_id'], $notification->toArray()));
+
+        return $notification;
     }
 
     public function getUnreadCount(User $user): int

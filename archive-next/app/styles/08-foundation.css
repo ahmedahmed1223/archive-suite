@@ -718,6 +718,20 @@
   }
 }
 
+/* V2-802: below the tablet breakpoint, swap the always-visible session chip
+   + density/focus toggles for a single "more actions" disclosure so the
+   phone header doesn't have to fit every icon in one scrolling row. */
+@media (max-width: 760px) {
+  .topbar-session--inline {
+    display: none;
+  }
+
+  .topbar-more {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
 /* The 761–1119px range is neither the compact phone layout nor the desktop
    sidebar. Keep the command bar visible and move the long route inventory into
    the existing drawer pattern so it cannot dominate the tablet viewport. */
@@ -848,7 +862,12 @@
   .app-shell > .topbar .route-links {
     display: grid;
     gap: var(--space-3);
-    overflow: visible;
+    /* V2-806 live-gate fix: this rule wins the cascade over
+       06-widgets.css's `overflow-y: auto` (same specificity, later import),
+       which silently disabled sidebar scrolling and let the open nav
+       group's last link overlap .sidebar-scroll-control below it. */
+    overflow-y: auto;
+    overflow-x: visible;
     padding-block: var(--space-2);
   }
 

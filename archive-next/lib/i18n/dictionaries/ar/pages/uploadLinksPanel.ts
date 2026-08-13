@@ -1,0 +1,23 @@
+export const uploadLinksPanel = {
+  title: "روابط رفع خارجية",
+  description: "أنشئ رابطًا مؤقتًا لطرف خارجي لرفع الملفات إلى مجلد محدد دون منحه صلاحية كاملة.",
+  loadError: "تعذر تحميل روابط الرفع.",
+  revokeError: "تعذر إلغاء الرابط.",
+  labelLabel: "تسمية الرابط (اختياري)",
+  labelPlaceholder: "فريق الميدان",
+  folderLabel: "مجلّد الوجهة (اختياري)",
+  folderPlaceholder: "incoming/field",
+  expiryLabel: "صلاحية الرابط (ساعات)",
+  creating: "جار الإنشاء...",
+  createButton: "إنشاء رابط",
+  loading: "جار تحميل روابط الرفع...",
+  loadErrorHeading: "تعذر تحميل روابط الرفع",
+  retry: "إعادة المحاولة",
+  empty: "لا توجد روابط رفع بعد.",
+  unlabeled: "بدون تسمية",
+  revoked: "ملغى",
+  active: "فعّال",
+  uploadedFilesCount: "{count} ملف مرفوع",
+  revoking: "جار الإلغاء...",
+  revokeButton: "إلغاء"
+};

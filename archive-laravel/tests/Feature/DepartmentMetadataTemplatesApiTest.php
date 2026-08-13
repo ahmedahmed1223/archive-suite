@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class DepartmentMetadataTemplatesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_department_template_keeps_an_immutable_version_history_and_can_be_disabled(): void
     {

@@ -24,7 +24,7 @@ class DeliverWebhook implements ShouldQueue
     public int $tries = 4;
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function __construct(
         public readonly string $subscriptionId,

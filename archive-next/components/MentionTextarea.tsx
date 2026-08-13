@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createArchiveApiClient } from "@/lib/archive-api";
 import type { MentionableUser } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 interface MentionTextareaProps {
   value: string;
@@ -16,6 +17,7 @@ interface MentionTextareaProps {
 // ponytail: fixed dropdown below the textarea, not caret-anchored — a caret-position
 // popup needs measuring text metrics or a library; add if the flat layout ever feels wrong.
 export default function MentionTextarea({ value, onChange, placeholder, rows = 4, id, "aria-label": ariaLabel }: MentionTextareaProps) {
+  const { t } = useLocale();
   const [users, setUsers] = useState<MentionableUser[]>([]);
   const [query, setQuery] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -78,7 +80,7 @@ export default function MentionTextarea({ value, onChange, placeholder, rows = 4
         rows={rows}
       />
       {suggestions.length > 0 ? (
-        <ul className="mention-suggestions" role="listbox" aria-label="اقتراحات الإشارة">
+        <ul className="mention-suggestions" role="listbox" aria-label={t.pages.archiveDetail.mentionSuggestionsAriaLabel}>
           {suggestions.map((user) => (
             <li key={user.id}>
               <button type="button" role="option" aria-selected="false" onClick={() => selectUser(user)}>

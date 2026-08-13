@@ -12,7 +12,7 @@ use Tests\TestCase;
 
 class UploadsApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -21,7 +21,7 @@ class UploadsApiTest extends TestCase
     }
 
     /** Minimal but real MP4 "ftyp" box header — enough for finfo to sniff video/mp4. */
-    private const REAL_MP4_HEADER = "\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom" . "\x00\x00\x00\x00\x00\x00\x00\x00";
+    private const REAL_MP4_HEADER = "\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom"."\x00\x00\x00\x00\x00\x00\x00\x00";
 
     public function test_it_uploads_a_file_and_creates_an_archive_record(): void
     {

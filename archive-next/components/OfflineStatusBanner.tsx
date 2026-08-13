@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { connectivityStore, type ConnectivityStatus } from "@/lib/connectivity-probe";
+import { connectivityStore } from "@/lib/connectivity-probe";
 import { offlineQueueStore } from "@/lib/offline-queue";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
@@ -10,7 +10,8 @@ type Props = {
 };
 
 export default function OfflineStatusBanner({ className = "" }: Props) {
-  const { locale } = useLocale();
+  const { t } = useLocale();
+  const copy = t.shell.offlineStatus;
   const connectivity = useSyncExternalStore(
     connectivityStore.subscribe,
     connectivityStore.getSnapshot,
@@ -32,16 +33,15 @@ export default function OfflineStatusBanner({ className = "" }: Props) {
 
   const tone = isOffline ? "offline" : isDegraded ? "degraded" : "pending";
 
-  // Determine message
   let message = "";
   if (isOffline) {
-    message = locale === "en"
-      ? (hasPending ? `You are offline. ${queuedMutations.length} operations will be sent when the connection returns.` : "You are offline. The app will retry automatically when the connection returns.")
-      : (hasPending ? `أنت غير متصل. ${queuedMutations.length} عملية في الانتظار للإرسال عند استعادة الاتصال.` : "أنت غير متصل. ستُعاد المحاولة تلقائياً عند استعادة الاتصال.");
+    message = hasPending
+      ? copy.offlineWithPending.replace("{count}", String(queuedMutations.length))
+      : copy.offline;
   } else if (isDegraded) {
-    message = locale === "en" ? "The connection is slow or unstable. Some operations may take longer." : "الاتصال بطيء أو غير مستقر. قد تحتاج بعض العمليات وقتاً أطول.";
+    message = copy.degraded;
   } else if (hasPending) {
-    message = locale === "en" ? `${queuedMutations.length} operations are waiting to be sent…` : `${queuedMutations.length} عملية في الانتظار للإرسال…`;
+    message = copy.pending.replace("{count}", String(queuedMutations.length));
   }
 
   return (
@@ -49,7 +49,7 @@ export default function OfflineStatusBanner({ className = "" }: Props) {
       className={`offline-status-banner offline-status-banner--${tone} ${className}`.trim()}
       role="status"
       aria-live="polite"
-      aria-label={locale === "en" ? (isOffline ? "Offline notice" : isDegraded ? "Connection warning" : "Pending operations notice") : (isOffline ? "تنبيه بعدم الاتصال" : isDegraded ? "تنبيه بضعف الاتصال" : "تنبيه بعمليات معلقة")}
+      aria-label={isOffline ? copy.offlineAriaLabel : isDegraded ? copy.degradedAriaLabel : copy.pendingAriaLabel}
     >
       <span className="offline-status-banner__icon" aria-hidden="true">
         {isOffline && (

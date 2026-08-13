@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-const dockerfiles = ["archive-next/Dockerfile", "archive-laravel/Dockerfile.worker", "infra/ocr-service/Dockerfile"];
+const dockerfiles = ["archive-next/Dockerfile", "archive-laravel/Dockerfile.worker", "archive-laravel/Dockerfile.worker-gpu", "infra/ocr-service/Dockerfile"];
 const productionWorkflows = [".github/workflows/release.yml", ".github/workflows/docker.yml"];
 const productionCompose = ["infra/docker-compose.yml", "infra/docker-compose.laravel-next.yml"];
 

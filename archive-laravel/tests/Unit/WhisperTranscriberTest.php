@@ -17,7 +17,7 @@ class WhisperTranscriberTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runner = new FakeProcessRunner();
+        $this->runner = new FakeProcessRunner;
         $this->transcriber = new WhisperTranscriber(
             $this->runner,
             'whisper-ctranslate2',
@@ -52,7 +52,7 @@ class WhisperTranscriberTest extends TestCase
 
     private function removeMockDirectory(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
         array_map('unlink', glob("{$dir}/*"));
@@ -219,9 +219,33 @@ class WhisperTranscriberTest extends TestCase
         $this->assertContains('float16', $command);
     }
 
+    public function test_cuda_requires_a_healthy_nvidia_runtime(): void
+    {
+        $this->runner->setResponse('cuda-capability', [
+            'exitCode' => 1,
+            'stdout' => '',
+            'stderr' => 'NVIDIA-SMI has failed because it could not communicate with the NVIDIA driver.',
+        ]);
+
+        $transcriber = new WhisperTranscriber(
+            $this->runner,
+            'whisper-ctranslate2',
+            'large-v3',
+            'ar',
+            'vtt',
+            'cuda',
+            'float16'
+        );
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('CUDA transcription requires a GPU worker');
+
+        $transcriber->transcribe('archive/audio.mp3', 'record-gpu');
+    }
+
     public function test_real_processor_delegates_to_transcriber(): void
     {
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-whisper';
         $job->record_id = 'record-whisper';
         $job->operation = 'transcription';

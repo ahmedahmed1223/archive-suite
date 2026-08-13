@@ -12,7 +12,7 @@ class AudioPreprocessor
         private readonly int $segmentDurationSeconds = 300,
         ?MediaPathGuard $pathGuard = null,
     ) {
-        $this->pathGuard = $pathGuard ?? new MediaPathGuard();
+        $this->pathGuard = $pathGuard ?? new MediaPathGuard;
     }
 
     /**
@@ -41,7 +41,7 @@ class AudioPreprocessor
             throw new \RuntimeException("Audio extraction failed: {$result['stderr']}");
         }
 
-        if (!is_file($audioPath)) {
+        if (! is_file($audioPath)) {
             throw new \RuntimeException("Audio extraction completed but file not found: {$audioPath}");
         }
 
@@ -69,7 +69,7 @@ class AudioPreprocessor
 
         // Try silence detection; fall back to hard-split if unavailable
         $silenceBoundaries = $this->detectSilenceBoundaries($audioPath);
-        if (!empty($silenceBoundaries)) {
+        if (! empty($silenceBoundaries)) {
             return $this->segmentAtSilence($silenceBoundaries, $durationSec);
         }
 
@@ -99,7 +99,7 @@ class AudioPreprocessor
             throw new \RuntimeException("Segment extraction failed: {$result['stderr']}");
         }
 
-        if (!is_file($segmentPath)) {
+        if (! is_file($segmentPath)) {
             throw new \RuntimeException("Segment extraction completed but file not found: {$segmentPath}");
         }
 
@@ -122,6 +122,7 @@ class AudioPreprocessor
         }
 
         $duration = (float) trim($result['stdout']);
+
         return max(0.1, $duration); // Ensure at least 0.1s
     }
 
@@ -149,7 +150,7 @@ class AudioPreprocessor
         }
 
         $boundaries = [];
-        $stderr = $result['stderr'] . $result['stdout'];
+        $stderr = $result['stderr'].$result['stdout'];
         if (preg_match_all('/silence_end:\s*([\d.]+)/', $stderr, $matches)) {
             foreach ($matches[1] as $endTime) {
                 $boundaries[] = (float) $endTime;
@@ -191,7 +192,7 @@ class AudioPreprocessor
             ];
         }
 
-        return !empty($segments) ? $segments : [[
+        return ! empty($segments) ? $segments : [[
             'startSec' => 0,
             'endSec' => $totalDuration,
             'durationSec' => $totalDuration,

@@ -12,7 +12,9 @@ class TypesControllerTest extends TestCase
     use RefreshDatabase;
 
     protected User $adminUser;
+
     protected User $editorUser;
+
     protected User $viewerUser;
 
     protected function setUp(): void

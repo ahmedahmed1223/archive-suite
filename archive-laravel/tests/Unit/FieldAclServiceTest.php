@@ -16,7 +16,7 @@ class FieldAclServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new FieldAclService();
+        $this->service = new FieldAclService;
     }
 
     public function test_get_field_acl_returns_empty_for_nonexistent_type(): void

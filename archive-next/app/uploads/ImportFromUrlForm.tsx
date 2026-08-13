@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { createArchiveApiClient, type ImportPreview } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type PreviewState =
   | { status: "idle" }
@@ -11,6 +12,7 @@ type PreviewState =
   | { status: "error"; message: string };
 
 export function ImportFromUrlForm() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [url, setUrl] = useState("");
   const [state, setState] = useState<PreviewState>({ status: "idle" });
@@ -34,19 +36,19 @@ export function ImportFromUrlForm() {
     <article className="panel">
       <div className="toolbar-row">
         <div>
-          <h2>استيراد من رابط</h2>
-          <p className="field-note">أدخل رابط ملف عام (http/https) لمعاينة نوعه وحجمه قبل إنشاء سجل.</p>
+          <h2>{t.pages.importFromUrlForm.title}</h2>
+          <p className="field-note">{t.pages.importFromUrlForm.description}</p>
         </div>
       </div>
 
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>
-          رابط الملف
+          {t.pages.importFromUrlForm.urlLabel}
           <input
             type="url"
             value={url}
             onChange={(event) => setUrl(event.target.value)}
-            placeholder="https://example.com/video.mp4"
+            placeholder={t.pages.importFromUrlForm.urlPlaceholder}
             dir="ltr"
             required
             disabled={state.status === "loading"}
@@ -54,7 +56,7 @@ export function ImportFromUrlForm() {
         </label>
 
         <button type="submit" className="button button-primary" disabled={state.status === "loading" || !url.trim()}>
-          {state.status === "loading" ? "جار المعاينة..." : "معاينة الرابط"}
+          {state.status === "loading" ? t.pages.importFromUrlForm.previewing : t.pages.importFromUrlForm.previewButton}
         </button>
 
         {state.status === "error" ? (
@@ -65,26 +67,26 @@ export function ImportFromUrlForm() {
 
         {state.status === "ready" ? (
           <div className="state-banner state-banner-success">
-            <strong>معاينة الاستيراد</strong>
+            <strong>{t.pages.importFromUrlForm.previewHeading}</strong>
             <div className="kv-grid">
               <div className="kv-item">
-                <strong>النوع المقترح</strong>
+                <strong>{t.pages.importFromUrlForm.suggestedType}</strong>
                 <span>{state.preview.suggestedType}</span>
               </div>
               <div className="kv-item">
-                <strong>نوع المحتوى</strong>
+                <strong>{t.pages.importFromUrlForm.contentType}</strong>
                 <span dir="ltr">{state.preview.contentType}</span>
               </div>
               <div className="kv-item">
-                <strong>الحجم</strong>
-                <span>{state.preview.contentLength ? `${Math.round(state.preview.contentLength / 1024)} KB` : "غير معروف"}</span>
+                <strong>{t.pages.importFromUrlForm.size}</strong>
+                <span>{state.preview.contentLength ? `${Math.round(state.preview.contentLength / 1024)} KB` : t.pages.importFromUrlForm.sizeUnknown}</span>
               </div>
               <div className="kv-item">
-                <strong>العنوان المقترح</strong>
+                <strong>{t.pages.importFromUrlForm.suggestedTitle}</strong>
                 <span>{state.preview.suggestedTitle}</span>
               </div>
             </div>
-            <p className="helper-text">استخدم نموذج الرفع أعلاه أو أداة الاستيراد المجدولة لإنشاء السجل فعليًا.</p>
+            <p className="helper-text">{t.pages.importFromUrlForm.helperText}</p>
           </div>
         ) : null}
       </form>

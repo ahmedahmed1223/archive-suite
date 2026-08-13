@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\RecordEditClaimBroadcasted;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use stdClass;
 
 // V1-848: a light, time-limited edit claim — informational only, never blocks
@@ -41,13 +43,16 @@ class RecordEditClaimController extends Controller
         );
 
         $claim = DB::table('record_edit_claims')->where('record_id', $recordId)->first();
+        $formatted = $this->format($claim);
+        Event::dispatch(new RecordEditClaimBroadcasted($recordId, $formatted));
 
-        return response()->json(['ok' => true, 'claim' => $this->format($claim)]);
+        return response()->json(['ok' => true, 'claim' => $formatted]);
     }
 
     public function release(Request $request, string $recordId): JsonResponse
     {
         DB::table('record_edit_claims')->where('record_id', $recordId)->delete();
+        Event::dispatch(new RecordEditClaimBroadcasted($recordId, null));
 
         return response()->json(['ok' => true, 'deleted' => true]);
     }

@@ -85,8 +85,8 @@ class PublicCatalogController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $record
+     * @param  array<string, mixed>  $filters
      */
     private function matchesFilters(array $record, array $filters): bool
     {
@@ -125,7 +125,7 @@ class PublicCatalogController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      */
     private function isPublished(array $record): bool
     {
@@ -135,7 +135,7 @@ class PublicCatalogController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      * @return array<string, mixed>
      */
     private function publicRecord(array $record): array

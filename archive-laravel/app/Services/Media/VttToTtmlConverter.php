@@ -21,6 +21,7 @@ class VttToTtmlConverter
                     $cues[] = $current;
                 }
                 $current = ['start' => $m[1], 'end' => $m[2], 'text' => []];
+
                 continue;
             }
 

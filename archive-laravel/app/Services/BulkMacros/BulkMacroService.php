@@ -42,10 +42,18 @@ class BulkMacroService
     public function validateConfirmation(string $token, BulkMacro $macro, User $user, array $targets): ?string
     {
         $claims = $this->claims($token);
-        if (! is_array($claims)) return 'invalid_preview';
-        if (($claims['userId'] ?? null) !== (string) $user->id || ($claims['macroId'] ?? null) !== $macro->id || ($claims['targets'] ?? null) !== $this->normalizeTargets($targets)) return 'invalid_preview';
-        if (! is_int($claims['expiresAt'] ?? null) || $claims['expiresAt'] <= now()->getTimestamp()) return 'expired_preview';
-        if (($claims['version'] ?? null) !== $macro->version) return 'stale_preview';
+        if (! is_array($claims)) {
+            return 'invalid_preview';
+        }
+        if (($claims['userId'] ?? null) !== (string) $user->id || ($claims['macroId'] ?? null) !== $macro->id || ($claims['targets'] ?? null) !== $this->normalizeTargets($targets)) {
+            return 'invalid_preview';
+        }
+        if (! is_int($claims['expiresAt'] ?? null) || $claims['expiresAt'] <= now()->getTimestamp()) {
+            return 'expired_preview';
+        }
+        if (($claims['version'] ?? null) !== $macro->version) {
+            return 'stale_preview';
+        }
 
         return null;
     }
@@ -106,7 +114,9 @@ class BulkMacroService
             $store = (string) ($target['store'] ?? '');
             $id = (string) ($target['id'] ?? '');
             $key = $store."\0".$id;
-            if ($store !== '' && $id !== '' && ! isset($normalized[$key])) $normalized[$key] = ['store' => $store, 'id' => $id];
+            if ($store !== '' && $id !== '' && ! isset($normalized[$key])) {
+                $normalized[$key] = ['store' => $store, 'id' => $id];
+            }
         }
 
         return array_values($normalized);
@@ -122,7 +132,9 @@ class BulkMacroService
     private function processTarget(BulkMacro $macro, array $target, ?User $user = null): array
     {
         $row = $this->findRow($target);
-        if (! $row instanceof stdClass) return ['store' => $target['store'], 'id' => $target['id'], 'status' => 'missing', 'steps' => []];
+        if (! $row instanceof stdClass) {
+            return ['store' => $target['store'], 'id' => $target['id'], 'status' => 'missing', 'steps' => []];
+        }
 
         $executing = $user instanceof User;
         $record = $this->decode($row->data);
@@ -132,12 +144,14 @@ class BulkMacroService
         foreach ($macro->steps as $index => $step) {
             if ($deleted) {
                 $steps[] = ['index' => $index, 'type' => $step['type'], 'status' => 'skipped', 'reason' => 'deleted'];
+
                 continue;
             }
             // V1-828: rights live in a separate table, not the record JSON — handled
             // on its own path rather than forced through the generic storage_rows update.
             if ($step['type'] === 'set-rights-holder') {
                 $steps[] = $this->applyRightsHolderStep($row, $step, $index, $executing);
+
                 continue;
             }
 
@@ -145,7 +159,10 @@ class BulkMacroService
             $outcome = $this->simulate($record, $step, $index);
             if (! $executing) {
                 $steps[] = $outcome;
-                if ($step['type'] === 'delete') $deleted = true;
+                if ($step['type'] === 'delete') {
+                    $deleted = true;
+                }
+
                 continue;
             }
 
@@ -154,7 +171,9 @@ class BulkMacroService
                     DB::transaction(function () use ($row, $user): void {
                         TrashController::trashRow($row, $user);
                         $affected = DB::table('storage_rows')->where('store', $row->store)->where('uid', $row->uid)->delete();
-                        if ($affected !== 1) throw new RuntimeException('Bulk macro delete did not affect exactly one row.');
+                        if ($affected !== 1) {
+                            throw new RuntimeException('Bulk macro delete did not affect exactly one row.');
+                        }
                     });
                     $deleted = true;
                 } else {
@@ -163,7 +182,9 @@ class BulkMacroService
                             'data' => json_encode($record, JSON_THROW_ON_ERROR),
                             'updated_at' => now(),
                         ]);
-                        if ($affected !== 1) throw new RuntimeException('Bulk macro mutation did not affect exactly one row.');
+                        if ($affected !== 1) {
+                            throw new RuntimeException('Bulk macro mutation did not affect exactly one row.');
+                        }
                     });
                     $mutated = true;
                 }
@@ -213,11 +234,16 @@ class BulkMacroService
             $itemId = (string) ($row->uid ?? $this->decode($row->data)['id'] ?? '');
             DB::transaction(function () use ($itemId, $rightsHolder): void {
                 $record = RightsRecord::query()->firstOrNew(['item_id' => $itemId]);
-                if (! $record->exists) $record->id = (string) Str::uuid();
+                if (! $record->exists) {
+                    $record->id = (string) Str::uuid();
+                }
                 $record->rights_holder = $rightsHolder;
-                if (! $record->license_type) $record->license_type = 'UNKNOWN';
+                if (! $record->license_type) {
+                    $record->license_type = 'UNKNOWN';
+                }
                 $record->save();
             });
+
             return ['index' => $index, 'type' => 'set-rights-holder', 'status' => 'completed', 'after' => $rightsHolder];
         } catch (Throwable) {
             return ['index' => $index, 'type' => 'set-rights-holder', 'status' => 'failed', 'reason' => 'mutation_failed'];
@@ -248,11 +274,13 @@ class BulkMacroService
         if ($step['type'] === 'add-tag') {
             $before = array_values(array_filter((array) ($record['tags'] ?? []), 'is_string'));
             $record['tags'] = array_values(array_unique([...$before, $step['tag']]));
+
             return ['index' => $index, 'type' => 'add-tag', 'status' => 'would_apply', 'before' => $before, 'after' => $record['tags']];
         }
         if ($step['type'] === 'set-workflow-status') {
             $before = $record['workflowStatus'] ?? null;
             $record['workflowStatus'] = $step['status'];
+
             return ['index' => $index, 'type' => 'set-workflow-status', 'status' => 'would_apply', 'before' => $before, 'after' => $step['status']];
         }
 
@@ -265,6 +293,7 @@ class BulkMacroService
         $row = DB::table('storage_rows')->where('store', $target['store'])->where(function ($query) use ($target): void {
             $query->where('uid', $target['id'])->orWhereRaw("data->>'id' = ?", [$target['id']]);
         })->first();
+
         return $row instanceof stdClass ? $row : null;
     }
 
@@ -272,6 +301,7 @@ class BulkMacroService
     private function decode(string $json): array
     {
         $data = json_decode($json, true);
+
         return is_array($data) ? $data : [];
     }
 
@@ -279,6 +309,7 @@ class BulkMacroService
     private function sign(array $claims): string
     {
         $payload = rtrim(strtr(base64_encode(json_encode($claims, JSON_THROW_ON_ERROR)), '+/', '-_'), '=');
+
         return $payload.'.'.hash_hmac('sha256', $payload, (string) config('app.key'));
     }
 
@@ -286,9 +317,12 @@ class BulkMacroService
     private function claims(string $token): ?array
     {
         [$payload, $signature] = array_pad(explode('.', $token, 2), 2, null);
-        if (! is_string($payload) || ! is_string($signature) || ! hash_equals(hash_hmac('sha256', $payload, (string) config('app.key')), $signature)) return null;
+        if (! is_string($payload) || ! is_string($signature) || ! hash_equals(hash_hmac('sha256', $payload, (string) config('app.key')), $signature)) {
+            return null;
+        }
         $decoded = base64_decode(strtr($payload, '-_', '+/').str_repeat('=', (4 - strlen($payload) % 4) % 4), true);
         $claims = is_string($decoded) ? json_decode($decoded, true) : null;
+
         return is_array($claims) ? $claims : null;
     }
 }

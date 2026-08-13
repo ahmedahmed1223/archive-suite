@@ -8,7 +8,6 @@ import EmptyState from "@/components/EmptyState";
 import MetricStrip, { type MetricStripItem } from "@/components/MetricStrip";
 import { useAuthSession } from "@/lib/auth-session";
 import { createArchiveApiClient, type ArchiveRecord, type SearchFacets } from "@/lib/archive-api";
-import { formatDate } from "@/lib/record-utils";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { getLocalizedNavigation } from "@/lib/navigation";
@@ -19,39 +18,23 @@ type LoadState =
   | { status: "ready"; records: ArchiveRecord[]; facets?: SearchFacets };
 
 const quickLinks = [
-  { href: "/uploads", label: "إضافة مادة", icon: UploadCloud, tone: "accent" as const },
-  { href: "/search", label: "البحث", icon: Search },
-  { href: "/collections", label: "المجموعات", icon: Layers },
-  { href: "/tags", label: "الوسوم", icon: Tags },
-  { href: "/types", label: "الأنواع", icon: FileType2 }
-];
+  { href: "/uploads", labelKey: "uploads", icon: UploadCloud, tone: "accent" as const },
+  { href: "/search", labelKey: "search", icon: Search, tone: "default" as const },
+  { href: "/collections", labelKey: "collections", icon: Layers, tone: "default" as const },
+  { href: "/tags", labelKey: "tags", icon: Tags, tone: "default" as const },
+  { href: "/types", labelKey: "types", icon: FileType2, tone: "default" as const }
+] as const;
 
 const RECENT_LIMIT = 8;
 
-const roleLabels: Record<string, string> = {
-  admin: "مدير الأرشيف",
-  editor: "محرر إعلامي",
-  viewer: "مشاهد/باحث"
-};
-
-const roleGreetings: Record<string, string> = {
-  admin: "مرحباً بعودتك، أدر أرشيفك بثقة",
-  editor: "مرحباً بعودتك، هيا نكمل التوصيف",
-  viewer: "مرحباً بعودتك، اكتشف ما هو جديد"
-};
-
-const todayLabel = () =>
-  new Intl.DateTimeFormat("ar", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date());
+const todayLabel = (locale: "ar" | "en") =>
+  new Intl.DateTimeFormat(locale === "en" ? "en-US" : "ar", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date());
 
 export default function HomeDashboard() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const localizedNavigation = getLocalizedNavigation(locale).items;
   const en = locale === "en";
-  const copy = en ? {
-    add: "Add material", loading: "Loading dashboard data…", error: "Unable to load dashboard data.", errorTitle: "Dashboard unavailable", openArchive: "Open archive", metrics: "Archive metrics", quick: "Quick actions", recent: "Recently added", all: "View all", empty: "No records yet", emptyDescription: "Start by adding your first item to the archive.", untitled: "Untitled", total: "Total records", types: "Types", tags: "Tags", stores: "Storage locations", most: "Most common", roles: { admin: "Archive manager", editor: "Media editor", viewer: "Viewer / researcher" }, greetings: { admin: "Welcome back — manage your archive with confidence", editor: "Welcome back — let’s continue describing materials", viewer: "Welcome back — discover what is new" },
-  } : {
-    add: "إضافة مادة", loading: "جارٍ تحميل بيانات اللوحة…", error: "تعذر تحميل بيانات اللوحة.", errorTitle: "تعذر تحميل اللوحة", openArchive: "فتح الأرشيف", metrics: "مؤشرات الأرشيف", quick: "مهام سريعة", recent: "أُضيف حديثاً", all: "عرض الكل", empty: "لا توجد سجلات بعد", emptyDescription: "ابدأ بإضافة أول مادة إلى الأرشيف.", untitled: "بدون عنوان", total: "إجمالي السجلات", types: "الأنواع", tags: "الوسوم", stores: "المخازن", most: "الأكثر", roles: roleLabels, greetings: roleGreetings,
-  };
+  const copy = t.pages.home;
   const api = useMemo(() => createArchiveApiClient(), []);
   const auth = useAuthSession();
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -97,11 +80,11 @@ export default function HomeDashboard() {
   const roleLabel = copy.roles[role as keyof typeof copy.roles] ?? copy.roles.viewer;
 
   return (
-    <AppShell subtitle="لوحة المتابعة" tipsPage="dashboard">
+    <AppShell subtitle={t.pageTitles.dashboard} tipsPage="dashboard">
       <header className="dashboard-greeting">
         <div className="dashboard-greeting__intro">
           <h1>{greeting}</h1>
-          <p>{roleLabel} · {todayLabel()}</p>
+          <p>{roleLabel} · {todayLabel(locale)}</p>
         </div>
         <Link className="ui-button ui-button-primary" href="/uploads">
           <UploadCloud aria-hidden="true" size={16} strokeWidth={2} />
@@ -132,7 +115,7 @@ export default function HomeDashboard() {
             <nav className="dashboard-quick" aria-label={copy.quick}>
               {quickLinks.map((link) => {
                 const Icon = link.icon;
-                const label = localizedNavigation.find((item) => item.href === link.href)?.label ?? link.label;
+                const label = localizedNavigation.find((item) => item.href === link.href)?.label ?? copy.quickLinks[link.labelKey];
                 return (
                   <Link
                     key={link.href}
@@ -170,7 +153,7 @@ export default function HomeDashboard() {
                       <Link className="dashboard-recent__card" href={`/archive/${encodeURIComponent(record.id)}`}>
                         {record.type ? <span className="dashboard-recent__card-type">{record.type}</span> : null}
                         <span className="dashboard-recent__card-title">{record.title || copy.untitled}</span>
-                        {record.updatedAt ? <span className="dashboard-recent__card-date">{formatDate(record.updatedAt)}</span> : null}
+                        {record.updatedAt ? <span className="dashboard-recent__card-date">{new Date(record.updatedAt).toLocaleDateString(en ? "en-US" : "ar-SA")}</span> : null}
                       </Link>
                     </li>
                   ))}

@@ -13,7 +13,7 @@ export default function AsyncStateSurface({
   description,
   action,
   onRetry,
-  retryLabel = "إعادة المحاولة",
+  retryLabel,
   children
 }: Readonly<{
   status: "loading" | "empty" | "error" | "success";
@@ -24,21 +24,19 @@ export default function AsyncStateSurface({
   retryLabel?: string;
   children?: ReactNode;
 }>) {
-  const { locale } = useLocale();
+  const { t } = useLocale();
   if (status === "success") {
     return <>{children}</>;
   }
 
-  const defaultTitle = locale === "en"
-    ? (status === "loading" ? "Loading…" : status === "error" ? "The request could not be completed" : "No results")
-    : (status === "loading" ? "جارٍ التحميل…" : status === "error" ? "تعذر إكمال الطلب" : "لا توجد نتائج");
+  const defaultTitle = status === "loading" ? t.shared.feedback.loading : status === "error" ? t.shared.feedback.genericError : t.shared.feedback.noResults;
   const primaryAction = action ? (
     <button type="button" className="button primary" onClick={action.onClick}>
       {action.label}
     </button>
   ) : onRetry ? (
     <button type="button" className="button primary" onClick={onRetry}>
-      {retryLabel === "إعادة المحاولة" && locale === "en" ? "Try again" : retryLabel}
+      {retryLabel ?? t.shared.actions.retry}
     </button>
   ) : undefined;
 

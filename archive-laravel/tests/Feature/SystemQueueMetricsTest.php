@@ -54,7 +54,7 @@ final class SystemQueueMetricsTest extends TestCase
         $this->pushJob('ingest', $now);
         $this->pushJob('media', $now);
 
-        $queues = collect((new SystemMetricsService())->snapshot()['queues']);
+        $queues = collect((new SystemMetricsService)->snapshot()['queues']);
 
         $this->assertSame(2, $queues->firstWhere('name', 'ingest')['depth']);
         $this->assertSame(1, $queues->firstWhere('name', 'media')['depth']);
@@ -68,7 +68,7 @@ final class SystemQueueMetricsTest extends TestCase
         $this->pushJob('ingest', $now - 600);
         $this->pushJob('ingest', $now - 5);
 
-        $ingest = collect((new SystemMetricsService())->snapshot()['queues'])->firstWhere('name', 'ingest');
+        $ingest = collect((new SystemMetricsService)->snapshot()['queues'])->firstWhere('name', 'ingest');
 
         $this->assertGreaterThanOrEqual(600, $ingest['oldestJobAgeSec']);
         $this->assertLessThan(660, $ingest['oldestJobAgeSec']);
@@ -81,7 +81,7 @@ final class SystemQueueMetricsTest extends TestCase
         $this->failJob('media');
         $this->failJob('backups');
 
-        $queues = collect((new SystemMetricsService())->snapshot()['queues']);
+        $queues = collect((new SystemMetricsService)->snapshot()['queues']);
 
         $this->assertSame(2, $queues->firstWhere('name', 'media')['failed']);
         $this->assertSame(1, $queues->firstWhere('name', 'backups')['failed']);
@@ -93,7 +93,7 @@ final class SystemQueueMetricsTest extends TestCase
         // needs attention.
         $this->failJob('backups');
 
-        $backups = collect((new SystemMetricsService())->snapshot()['queues'])->firstWhere('name', 'backups');
+        $backups = collect((new SystemMetricsService)->snapshot()['queues'])->firstWhere('name', 'backups');
 
         $this->assertNotNull($backups);
         $this->assertSame(0, $backups['depth']);
@@ -104,14 +104,14 @@ final class SystemQueueMetricsTest extends TestCase
     {
         $this->failJob('backups');
 
-        $backups = collect((new SystemMetricsService())->snapshot()['queues'])->firstWhere('name', 'backups');
+        $backups = collect((new SystemMetricsService)->snapshot()['queues'])->firstWhere('name', 'backups');
 
         $this->assertSame(0, $backups['oldestJobAgeSec']);
     }
 
     public function test_snapshot_reports_no_queues_when_nothing_is_pending_or_failed(): void
     {
-        $this->assertSame([], (new SystemMetricsService())->snapshot()['queues']);
+        $this->assertSame([], (new SystemMetricsService)->snapshot()['queues']);
     }
 
     public function test_aggregate_queue_depth_still_matches_the_sum_of_the_breakdown(): void
@@ -123,7 +123,7 @@ final class SystemQueueMetricsTest extends TestCase
         $this->pushJob('media', $now);
         $this->pushJob('media', $now);
 
-        $snapshot = (new SystemMetricsService())->snapshot();
+        $snapshot = (new SystemMetricsService)->snapshot();
 
         $this->assertSame(3, $snapshot['queueDepth']);
         $this->assertSame(3, collect($snapshot['queues'])->sum('depth'));

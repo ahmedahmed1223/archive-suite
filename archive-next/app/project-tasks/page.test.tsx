@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 const projects = vi.fn();
 const projectTasks = vi.fn();
@@ -18,17 +19,40 @@ vi.mock("@/components/EmptyState", () => ({ default: ({ title }: { title: string
 
 import ProjectTasksPage from "./page";
 
+function renderPage() {
+  return render(
+    <LocaleProvider initialLocale="ar" hasLocaleCookie={false}>
+      <ProjectTasksPage />
+    </LocaleProvider>
+  );
+}
+
 afterEach(cleanup);
 beforeEach(() => {
   projects.mockResolvedValue({ ok: true, projects: [{ id: "project-1", name: "وثائقي", notes: null, sortOrder: 0, createdAt: "2026-01-01", updatedAt: "2026-01-01" }] });
   projectTasks.mockResolvedValue({ ok: true, tasks: [] });
   createProjectTask.mockReset();
   updateProjectTask.mockReset();
+
+  const values = new Map<string, string>();
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: {
+      get length() {
+        return values.size;
+      },
+      clear: () => values.clear(),
+      getItem: (key: string) => values.get(key) ?? null,
+      key: (index: number) => [...values.keys()][index] ?? null,
+      removeItem: (key: string) => values.delete(key),
+      setItem: (key: string, value: string) => values.set(key, value),
+    } satisfies Storage,
+  });
 });
 
 test("creates a project task with its optional due date", async () => {
   createProjectTask.mockResolvedValue({ ok: true, task: { id: "task-1", projectId: "project-1", title: "مراجعة", status: "todo", assignee: null, recordId: null, dueDate: "2026-08-15", createdAt: "2026-01-01", updatedAt: "2026-01-01" } });
-  render(<ProjectTasksPage />);
+  renderPage();
   await screen.findByRole("option", { name: "وثائقي" });
 
   fireEvent.change(screen.getByLabelText("المشروع"), { target: { value: "project-1" } });

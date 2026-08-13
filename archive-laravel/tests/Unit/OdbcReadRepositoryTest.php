@@ -10,7 +10,7 @@ class OdbcReadRepositoryTest extends TestCase
 {
     public function test_get_allowed_core_tables_returns_filtered_list(): void
     {
-        $repository = new OdbcReadRepository(new FakeOdbcReadConnection());
+        $repository = new OdbcReadRepository(new FakeOdbcReadConnection);
 
         $tables = $repository->getAllowedCoreTables();
 
@@ -19,7 +19,7 @@ class OdbcReadRepositoryTest extends TestCase
 
     public function test_read_rows_from_allowed_table_respects_limit(): void
     {
-        $repository = new OdbcReadRepository(new FakeOdbcReadConnection());
+        $repository = new OdbcReadRepository(new FakeOdbcReadConnection);
 
         $rows = $repository->readRows('items', 10);
 
@@ -30,7 +30,7 @@ class OdbcReadRepositoryTest extends TestCase
 
     public function test_read_rows_returns_empty_for_disallowed_table(): void
     {
-        $repository = new OdbcReadRepository(new FakeOdbcReadConnection());
+        $repository = new OdbcReadRepository(new FakeOdbcReadConnection);
 
         $rows = $repository->readRows('admin_secrets', 5);
 
@@ -39,7 +39,7 @@ class OdbcReadRepositoryTest extends TestCase
 
     public function test_read_rows_masks_password_like_columns(): void
     {
-        $connection = new FakeOdbcReadConnection();
+        $connection = new FakeOdbcReadConnection;
         $connection->setRowsForTable('users', [
             [
                 'id' => 1,
@@ -63,7 +63,7 @@ class OdbcReadRepositoryTest extends TestCase
 
     public function test_read_rows_defaults_to_config_limit(): void
     {
-        $connection = new FakeOdbcReadConnection();
+        $connection = new FakeOdbcReadConnection;
         $connection->setRowCount(100);
 
         $repository = new OdbcReadRepository($connection, ['table_limit' => 25]);
@@ -75,7 +75,7 @@ class OdbcReadRepositoryTest extends TestCase
 
     public function test_read_rows_enforces_max_limit_of_250(): void
     {
-        $connection = new FakeOdbcReadConnection();
+        $connection = new FakeOdbcReadConnection;
 
         // Add 500 rows to the fake connection
         $items = [];
@@ -97,7 +97,7 @@ class OdbcReadRepositoryTest extends TestCase
 
     public function test_insert_row_writes_allowed_scalar_columns(): void
     {
-        $connection = new FakeOdbcReadConnection();
+        $connection = new FakeOdbcReadConnection;
         $repository = new OdbcReadRepository($connection);
 
         $result = $repository->insertRow('items', [
@@ -113,7 +113,7 @@ class OdbcReadRepositoryTest extends TestCase
 
     public function test_insert_row_rejects_sensitive_columns(): void
     {
-        $repository = new OdbcReadRepository(new FakeOdbcReadConnection());
+        $repository = new OdbcReadRepository(new FakeOdbcReadConnection);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Column password_hash is not writable.');
@@ -126,7 +126,7 @@ class OdbcReadRepositoryTest extends TestCase
 
     public function test_update_row_uses_allowed_key_column(): void
     {
-        $connection = new FakeOdbcReadConnection();
+        $connection = new FakeOdbcReadConnection;
         $repository = new OdbcReadRepository($connection);
 
         $result = $repository->updateRow('settings', 'key', 'app_name', [
@@ -142,7 +142,7 @@ class OdbcReadRepositoryTest extends TestCase
 
     public function test_update_row_rejects_disallowed_key_column(): void
     {
-        $repository = new OdbcReadRepository(new FakeOdbcReadConnection());
+        $repository = new OdbcReadRepository(new FakeOdbcReadConnection);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Column email is not a permitted key for users.');
@@ -154,7 +154,7 @@ class OdbcReadRepositoryTest extends TestCase
 
     public function test_delete_row_uses_allowed_key_column(): void
     {
-        $connection = new FakeOdbcReadConnection();
+        $connection = new FakeOdbcReadConnection;
         $repository = new OdbcReadRepository($connection);
 
         $result = $repository->deleteRow('items', 'id', 5);

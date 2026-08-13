@@ -2,13 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class VocabularyApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_creates_lists_and_deletes_vocabulary_terms(): void
     {
@@ -103,9 +105,9 @@ class VocabularyApiTest extends TestCase
             'term' => 'Mine',
         ], $this->authHeaders())->assertCreated();
 
-        \App\Models\User::query()->firstOrCreate(
+        User::query()->firstOrCreate(
             ['email' => 'other@example.test'],
-            ['name' => 'Other User', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password')]
+            ['name' => 'Other User', 'password' => Hash::make('secret-password')]
         );
         $otherToken = $this->postJson('/api/v1/auth/login', [
             'email' => 'other@example.test',
@@ -158,9 +160,9 @@ class VocabularyApiTest extends TestCase
 
     public function test_department_preferences_reject_terms_owned_by_another_user(): void
     {
-        \App\Models\User::query()->firstOrCreate(
+        User::query()->firstOrCreate(
             ['email' => 'other-preference@example.test'],
-            ['name' => 'Other User', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password'), 'role' => 'editor']
+            ['name' => 'Other User', 'password' => Hash::make('secret-password'), 'role' => 'editor']
         );
         $otherToken = $this->postJson('/api/v1/auth/login', [
             'email' => 'other-preference@example.test',

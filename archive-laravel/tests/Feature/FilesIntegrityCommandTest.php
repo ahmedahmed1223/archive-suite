@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 class FilesIntegrityCommandTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     protected function setUp(): void
     {

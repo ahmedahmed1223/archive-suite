@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 class RecordNotesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_creates_lists_updates_and_deletes_record_notes(): void
     {
@@ -189,6 +189,7 @@ class RecordNotesApiTest extends TestCase
     {
         User::query()->create(['name' => $role, 'email' => $email, 'password' => Hash::make('secret-password'), 'role' => $role]);
         $token = $this->postJson('/api/v1/auth/login', ['email' => $email, 'password' => 'secret-password'])->assertOk()->json('accessToken');
+
         return ['Authorization' => 'Bearer '.$token];
     }
 }

@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/Dialog";
-import { formatShortcutDisplay, getAllShortcuts, getShortcut, isTypingTarget, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
+import { formatShortcutDisplay, getAllShortcuts, getShortcut, isTypingTarget, matchesKeyEvent, type ShortcutKey } from "@/lib/keyboard-shortcuts";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export default function ShortcutsOverlay() {
+  const { t } = useLocale();
+  const copy = t.shared.shortcutsOverlay;
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -26,13 +29,13 @@ export default function ShortcutsOverlay() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
         className="shortcuts-overlay"
-        title="اختصارات لوحة المفاتيح"
-        description="نظرة سريعة على اختصارات لوحة المفاتيح المتاحة حاليًا."
+        title={copy.title}
+        description={copy.description}
       >
         <ul className="shortcuts-overlay__list">
-          {Object.entries(shortcuts).map(([key, { label, binding }]) => (
+          {Object.entries(shortcuts).map(([key, { binding }]) => (
             <li key={key} className="shortcuts-overlay__item">
-              <span>{label}</span>
+              <span>{copy.labels[key as ShortcutKey]}</span>
               <kbd>{formatShortcutDisplay(binding)}</kbd>
             </li>
           ))}

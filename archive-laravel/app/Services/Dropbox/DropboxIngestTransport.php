@@ -6,6 +6,7 @@ namespace App\Services\Dropbox;
 
 use App\Models\User;
 use App\Services\Ingest\IngestTransport;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -25,16 +26,15 @@ class DropboxIngestTransport implements IngestTransport
     public function __construct(
         private readonly DropboxConnectionService $connections,
         private readonly DropboxGateway $gateway,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $params  Only 'user' is required: the
-     *   already-authenticated User whose Dropbox connection and folder_path
-     *   to pull from. Unlike FTP/SMB there is no host/user/password to pass
-     *   per call -- OAuth tokens are already stored against the connection.
+     *                                        already-authenticated User whose Dropbox connection and folder_path
+     *                                        to pull from. Unlike FTP/SMB there is no host/user/password to pass
+     *                                        per call -- OAuth tokens are already stored against the connection.
      * @return array<int, string> Local ingest-disk keys, one per file pulled
-     *   or already fully downloaded from an earlier interrupted attempt.
+     *                            or already fully downloaded from an earlier interrupted attempt.
      */
     public function pull(array $params): array
     {
@@ -75,7 +75,7 @@ class DropboxIngestTransport implements IngestTransport
     }
 
     private function downloadResumable(
-        \Illuminate\Contracts\Filesystem\Filesystem $disk,
+        Filesystem $disk,
         string $ingestDir,
         object $connection,
         string $token,
@@ -126,7 +126,7 @@ class DropboxIngestTransport implements IngestTransport
     }
 
     private function assembleAndFinish(
-        \Illuminate\Contracts\Filesystem\Filesystem $disk,
+        Filesystem $disk,
         string $chunkDir,
         string $localKey,
         object $connection,

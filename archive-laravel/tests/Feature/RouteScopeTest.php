@@ -17,7 +17,7 @@ use Tests\TestCase;
  */
 class RouteScopeTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     private const V1 = 'v1';
 
@@ -305,8 +305,10 @@ class RouteScopeTest extends TestCase
         'POST api/v1/system/odbc/tables/{table}/rows' => self::EXPERIMENTAL,
         'PATCH api/v1/system/odbc/tables/{table}/rows' => self::EXPERIMENTAL,
         'DELETE api/v1/system/odbc/tables/{table}/rows' => self::EXPERIMENTAL,
+        'GET api/v1/system/display-settings' => self::V1,
         'GET api/v1/system/security-settings' => self::ADMIN,
         'PATCH api/v1/system/security-settings' => self::ADMIN,
+        'PATCH api/v1/system/display-settings' => self::ADMIN,
         'POST api/v1/system/test-storage' => self::ADMIN,
         'POST api/v1/system/test-database' => self::ADMIN,
         'GET api/v1/system/backups' => self::ADMIN,
@@ -328,6 +330,13 @@ class RouteScopeTest extends TestCase
         'POST api/v1/notifications/{id}/unread' => self::V1,
         'POST api/v1/notifications/mark-all-read' => self::V1,
         'DELETE api/v1/notifications/{id}' => self::V1,
+
+        // MCP-801/802: laravel/mcp's Streamable HTTP transport (routes/ai.php).
+        // Gated by Passport OAuth (auth:api), not archive.auth — an emerging
+        // protocol surface, still being built out through MCP-805.
+        'GET api/v1/mcp' => self::EXPERIMENTAL,
+        'POST api/v1/mcp' => self::EXPERIMENTAL,
+        'DELETE api/v1/mcp' => self::EXPERIMENTAL,
     ];
 
     private const ROLE_ADMIN = 'admin';
@@ -642,8 +651,10 @@ class RouteScopeTest extends TestCase
         'POST api/v1/system/odbc/tables/{table}/rows' => self::ROLE_ADMIN,
         'PATCH api/v1/system/odbc/tables/{table}/rows' => self::ROLE_ADMIN,
         'DELETE api/v1/system/odbc/tables/{table}/rows' => self::ROLE_ADMIN,
+        'GET api/v1/system/display-settings' => self::ROLE_ANY,
         'GET api/v1/system/security-settings' => self::ROLE_ADMIN,
         'PATCH api/v1/system/security-settings' => self::ROLE_ADMIN,
+        'PATCH api/v1/system/display-settings' => self::ROLE_ADMIN,
         'POST api/v1/system/test-storage' => self::ROLE_ADMIN,
         'POST api/v1/system/test-database' => self::ROLE_ADMIN,
         'GET api/v1/system/backups' => self::ROLE_ADMIN,
@@ -665,6 +676,13 @@ class RouteScopeTest extends TestCase
         'POST api/v1/notifications/{id}/unread' => self::ROLE_ANY,
         'POST api/v1/notifications/mark-all-read' => self::ROLE_ANY,
         'DELETE api/v1/notifications/{id}' => self::ROLE_ANY,
+
+        // MCP-801/802: no archive.auth role check at the route level — Passport
+        // (auth:api) is the gate, and per-tool authorization happens inside
+        // each Tool's handle()/shouldRegister() via the caller's own role.
+        'GET api/v1/mcp' => self::ROLE_ANY,
+        'POST api/v1/mcp' => self::ROLE_ANY,
+        'DELETE api/v1/mcp' => self::ROLE_ANY,
     ];
 
     public function test_every_registered_v1_route_is_classified(): void

@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type UploadLink } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type UploadLinksState =
   | { status: "loading" }
@@ -11,6 +12,7 @@ type UploadLinksState =
   | { status: "error"; message: string };
 
 export function UploadLinksPanel() {
+  const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [links, setLinks] = useState<UploadLink[]>([]);
   const [linksState, setLinksState] = useState<UploadLinksState>({ status: "loading" });
@@ -28,13 +30,13 @@ export function UploadLinksPanel() {
       setLinks(response.links);
       setLinksState({ status: "ready" });
     } else {
-      setLinksState({ status: "error", message: response.error || "تعذر تحميل روابط الرفع." });
+      setLinksState({ status: "error", message: response.error || t.pages.uploadLinksPanel.loadError });
     }
   }
 
   useEffect(() => {
     void refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh is redefined every render; this effect should run once on mount only
   }, []);
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
@@ -64,7 +66,7 @@ export function UploadLinksPanel() {
     setRevokingId(id);
     const response = await api.revokeUploadLink(id);
     if (response.ok) await refresh();
-    else setError(response.error || "تعذر إلغاء الرابط.");
+    else setError(response.error || t.pages.uploadLinksPanel.revokeError);
     setRevokingId(null);
   }
 
@@ -72,22 +74,22 @@ export function UploadLinksPanel() {
     <article className="panel">
       <div className="toolbar-row">
         <div>
-          <h2>روابط رفع خارجية</h2>
-          <p className="field-note">أنشئ رابطًا مؤقتًا لطرف خارجي لرفع الملفات إلى مجلد محدد دون منحه صلاحية كاملة.</p>
+          <h2>{t.pages.uploadLinksPanel.title}</h2>
+          <p className="field-note">{t.pages.uploadLinksPanel.description}</p>
         </div>
       </div>
 
       <form className="auth-form" onSubmit={handleCreate}>
         <label>
-          تسمية الرابط (اختياري)
-          <input type="text" value={label} onChange={(event) => setLabel(event.target.value)} placeholder="فريق الميدان" />
+          {t.pages.uploadLinksPanel.labelLabel}
+          <input type="text" value={label} onChange={(event) => setLabel(event.target.value)} placeholder={t.pages.uploadLinksPanel.labelPlaceholder} />
         </label>
         <label>
-          مجلّد الوجهة (اختياري)
-          <input type="text" value={folder} onChange={(event) => setFolder(event.target.value)} dir="ltr" placeholder="incoming/field" />
+          {t.pages.uploadLinksPanel.folderLabel}
+          <input type="text" value={folder} onChange={(event) => setFolder(event.target.value)} dir="ltr" placeholder={t.pages.uploadLinksPanel.folderPlaceholder} />
         </label>
         <label>
-          صلاحية الرابط (ساعات)
+          {t.pages.uploadLinksPanel.expiryLabel}
           <input
             type="number"
             min={1}
@@ -96,7 +98,7 @@ export function UploadLinksPanel() {
             onChange={(event) => setExpiresInHours(Number(event.target.value) || 1)}
           />
         </label>
-        <button type="submit" className="button button-primary" disabled={isCreating}>{isCreating ? "جار الإنشاء..." : "إنشاء رابط"}</button>
+        <button type="submit" className="button button-primary" disabled={isCreating}>{isCreating ? t.pages.uploadLinksPanel.creating : t.pages.uploadLinksPanel.createButton}</button>
         {error ? (
           <p className="form-status" role="alert">
             {error}
@@ -105,26 +107,26 @@ export function UploadLinksPanel() {
       </form>
 
       {linksState.status === "loading" ? (
-        <div className="panel panel-compact"><Skeleton label="جار تحميل روابط الرفع..." /></div>
+        <div className="panel panel-compact"><Skeleton label={t.pages.uploadLinksPanel.loading} /></div>
       ) : linksState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل روابط الرفع</strong>
+          <strong>{t.pages.uploadLinksPanel.loadErrorHeading}</strong>
           <span className="helper-text">{linksState.message}</span>
-          <div><button type="button" className="button button-secondary button-sm" onClick={() => void refresh()}>إعادة المحاولة</button></div>
+          <div><button type="button" className="button button-secondary button-sm" onClick={() => void refresh()}>{t.pages.uploadLinksPanel.retry}</button></div>
         </div>
       ) : links.length === 0 ? (
-        <p className="helper-text">لا توجد روابط رفع بعد.</p>
+        <p className="helper-text">{t.pages.uploadLinksPanel.empty}</p>
       ) : (
         <ul className="stack">
           {links.map((link) => (
             <li key={link.id} className="record-meta">
-              <span className="badge">{link.label || "بدون تسمية"}</span>
+              <span className="badge">{link.label || t.pages.uploadLinksPanel.unlabeled}</span>
               {link.folder ? <span className="badge">{link.folder}</span> : null}
-              <span className="badge">{link.revoked ? "ملغى" : "فعّال"}</span>
-              <span className="badge">{link.uploadCount} ملف مرفوع</span>
+              <span className="badge">{link.revoked ? t.pages.uploadLinksPanel.revoked : t.pages.uploadLinksPanel.active}</span>
+              <span className="badge">{t.pages.uploadLinksPanel.uploadedFilesCount.replace("{count}", String(link.uploadCount))}</span>
               {!link.revoked ? (
                 <button type="button" className="button button-secondary button-sm" disabled={revokingId === link.id} onClick={() => void handleRevoke(link.id)}>
-                  {revokingId === link.id ? "جار الإلغاء..." : "إلغاء"}
+                  {revokingId === link.id ? t.pages.uploadLinksPanel.revoking : t.pages.uploadLinksPanel.revokeButton}
                 </button>
               ) : null}
             </li>

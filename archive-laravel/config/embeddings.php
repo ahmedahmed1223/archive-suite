@@ -27,4 +27,11 @@ return [
     // Override for OpenAI-compatible endpoints (OpenRouter, local proxies, etc).
     'base_url' => env('EMBEDDINGS_BASE_URL', 'https://api.openai.com/v1'),
 
+    // V2-203: embeddings:sync used to loop over an entire store issuing one
+    // paid API call per changed row with no ceiling and no pacing. These cap
+    // spend per invocation and space out calls; --limit/--rate-limit on the
+    // command override them per run.
+    'sync_max_calls_per_run' => (int) env('EMBEDDINGS_SYNC_MAX_CALLS_PER_RUN', 1000),
+    'sync_rate_limit_per_minute' => (int) env('EMBEDDINGS_SYNC_RATE_LIMIT_PER_MINUTE', 60),
+
 ];

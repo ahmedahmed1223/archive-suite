@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Uploads\UploadCapacityGuard;
 use App\Services\Uploads\UploadFinalizer;
 use App\Services\Uploads\UploadStager;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -218,7 +219,7 @@ class UploadSessionsController extends Controller
      * max_chunk_bytes) and hashes incrementally while building the assembled
      * content — no second read pass to compute the checksum afterward.
      */
-    private function assembleChunks(\Illuminate\Contracts\Filesystem\Filesystem $storage, object $session, string $assembledPath): string
+    private function assembleChunks(Filesystem $storage, object $session, string $assembledPath): string
     {
         $hashContext = hash_init('sha256');
         $assembled = '';
@@ -256,7 +257,7 @@ class UploadSessionsController extends Controller
         return "{$directory}/quarantine/sessions/{$session->id}";
     }
 
-    private function deleteChunks(\Illuminate\Contracts\Filesystem\Filesystem $storage, object $session): void
+    private function deleteChunks(Filesystem $storage, object $session): void
     {
         $storage->deleteDirectory($this->chunkDirectory($session));
     }

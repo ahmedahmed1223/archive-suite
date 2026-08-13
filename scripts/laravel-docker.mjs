@@ -96,6 +96,16 @@ function laravelTestFiles(directory, relativeDirectory = "tests") {
     .sort();
 }
 
+// Batched (not run as one `artisan test` invocation): confirmed 2026-08-10 that
+// running all ~146 files in a single PHP process crashes partway through —
+// "Allowed memory size of 134217728 bytes exhausted" (PHP CLI's default 128M
+// memory_limit) after ~92 Feature test classes, inside RelationsGraphApiTest.
+// Laravel's TestCase does not fully release per-test state between tests in
+// one process, so memory grows across the run. Each batch gets a fresh
+// container (fresh PHP process), resetting that growth before it hits the
+// ceiling. Root-causing the retention (or raising memory_limit) is a separate,
+// deliberate change — not done here since it wasn't verified safe in this
+// session.
 async function runLaravelTestBatches() {
   const files = laravelTestFiles(path.join(ROOT, "archive-laravel", "tests"));
   const batchSize = 30;
@@ -121,11 +131,12 @@ const commands = {
   ],
   artisan: ["php", "artisan", ...rest],
   composer: ["composer", ...rest],
+  lint: ["composer", "pint:test", ...rest],
   serve: ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000", ...rest],
 };
 
 if (!mode || !commands[mode]) {
-  console.error("Usage: node scripts/laravel-docker.mjs <test|migrate-fresh-integration|artisan> [args...]");
+  console.error("Usage: node scripts/laravel-docker.mjs <test|lint|migrate-fresh-integration|artisan> [args...]");
   process.exit(2);
 }
 

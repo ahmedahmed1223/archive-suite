@@ -183,6 +183,61 @@ class BackupCommandsTest extends TestCase
         $this->assertSame(['a-001', 'a-002'], $uids);
     }
 
+    public function test_backup_run_with_encryption_enabled_produces_a_streamed_encrypted_archive_and_restores_it(): void
+    {
+        config(['archive.backups.encryption_enabled' => true]);
+        $this->seedRecords(['a-001' => 'First', 'a-002' => 'Second']);
+
+        $exitCode = Artisan::call('archive:backup-run', ['--json' => true]);
+        $payload = $this->decodeSingleJsonLine(Artisan::output());
+        $name = $payload['details']['backup']['name'];
+        $path = $this->backupDir.DIRECTORY_SEPARATOR.$name;
+
+        $this->assertSame(0, $exitCode);
+        // V2-204 magic marker -- proves the streamed AEAD encryptor ran, not
+        // the old buffered Crypt::encrypt() path.
+        $this->assertSame('ARCENCV1', substr((string) file_get_contents($path), 0, 8));
+
+        DB::table('storage_rows')->where('uid', 'a-002')->delete();
+
+        $restoreExit = Artisan::call('archive:backup-restore', ['name' => $name, '--force' => true, '--json' => true]);
+        $restorePayload = $this->decodeSingleJsonLine(Artisan::output());
+
+        $this->assertSame(0, $restoreExit);
+        $this->assertTrue($restorePayload['ok']);
+        $this->assertTrue($restorePayload['details']['result']['verified']);
+
+        $uids = DB::table('storage_rows')->where('store', 'archive-items')->orderBy('uid')->pluck('uid')->all();
+        $this->assertSame(['a-001', 'a-002'], $uids);
+    }
+
+    public function test_backup_restore_refuses_a_tampered_encrypted_backup_and_leaves_live_data_untouched(): void
+    {
+        config(['archive.backups.encryption_enabled' => true]);
+        $this->seedRecords(['a-001' => 'First']);
+        Artisan::call('archive:backup-run', ['--json' => true]);
+        $name = $this->decodeSingleJsonLine(Artisan::output())['details']['backup']['name'];
+
+        $path = $this->backupDir.DIRECTORY_SEPARATOR.$name;
+        $bytes = (string) file_get_contents($path);
+        // Flip one byte well inside the first chunk's ciphertext (past the
+        // 8-byte magic + 4-byte length + 5-byte AAD + 12-byte nonce header),
+        // so the GCM tag must fail to verify.
+        $bytes[40] = chr(ord($bytes[40]) ^ 0xFF);
+        file_put_contents($path, $bytes);
+
+        $before = DB::table('storage_rows')->orderBy('uid')->get();
+
+        $exitCode = Artisan::call('archive:backup-restore', ['name' => $name, '--force' => true, '--json' => true]);
+        $payload = $this->decodeSingleJsonLine(Artisan::output());
+
+        $this->assertNotSame(0, $exitCode);
+        $this->assertFalse($payload['ok']);
+
+        $after = DB::table('storage_rows')->orderBy('uid')->get();
+        $this->assertEquals($before, $after);
+    }
+
     /**
      * @param  array<string, string>  $titles
      */

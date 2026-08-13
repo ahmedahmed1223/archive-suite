@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { BulkMacroRecorder } from "./BulkMacroRecorder";
+
+function renderRecorder(node: ReactElement) {
+  return render(<LocaleProvider initialLocale="ar" hasLocaleCookie={false}>{node}</LocaleProvider>);
+}
 
 afterEach(cleanup);
 
@@ -23,7 +29,7 @@ function apiFixture() {
 describe("BulkMacroRecorder", () => {
   test("does not issue a run before preview and invalidates it after targets change", async () => {
     const api = apiFixture();
-    const { rerender } = render(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
+    const { rerender } = renderRecorder(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
     fireEvent.change(screen.getByRole("textbox", { name: "اسم الماكرو" }), { target: { value: "وسم" } });
     fireEvent.change(screen.getByRole("textbox", { name: "الوسم الجديد" }), { target: { value: "مهم" } });
     fireEvent.click(screen.getByRole("button", { name: "إضافة وسم" }));
@@ -39,13 +45,13 @@ describe("BulkMacroRecorder", () => {
     fireEvent.click(screen.getByRole("button", { name: "تنفيذ الماكرو" }));
     await waitFor(() => expect(api.runBulkMacro).toHaveBeenCalledWith("m1", expect.objectContaining({ previewToken: "signed" }), undefined));
     expect(screen.getByText(/نتيجة التنفيذ/)).toBeTruthy();
-    rerender(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "2" }]} />);
+    rerender(<LocaleProvider initialLocale="ar" hasLocaleCookie={false}><BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "2" }]} /></LocaleProvider>);
     expect(screen.getByRole("button", { name: "تنفيذ الماكرو" })).toBeDisabled();
   });
 
   test("requires saving definition and name edits and clears a prior preview after name-only save", async () => {
     const api = apiFixture();
-    render(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
+    renderRecorder(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
     fireEvent.change(screen.getByRole("textbox", { name: "اسم الماكرو" }), { target: { value: "وسم" } });
     fireEvent.change(screen.getByRole("textbox", { name: "الوسم الجديد" }), { target: { value: "مهم" } });
     fireEvent.click(screen.getByRole("button", { name: "إضافة وسم" }));
@@ -68,7 +74,7 @@ describe("BulkMacroRecorder", () => {
     api.bulkMacros.mockResolvedValue({ ok: true, macros: [{ id: "m1", name: "وسم", version: 1, steps: [{ type: "add-tag", tag: "مهم" }], createdAt: null, updatedAt: null }] });
     api.previewBulkMacro.mockResolvedValue({ ok: true, previewToken: "short-lived", expiresAt: new Date(Date.now() + 60_000).toISOString(), summary: { affectedCount: 1, missingCount: 0, targetCount: 1 }, results: [] });
     try {
-      render(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
+      renderRecorder(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
       await act(async () => { await Promise.resolve(); });
       fireEvent.change(screen.getByRole("combobox", { name: "الماكرو المحفوظ" }), { target: { value: "m1" } });
       fireEvent.click(screen.getByRole("button", { name: "معاينة التنفيذ" }));
@@ -86,7 +92,7 @@ describe("BulkMacroRecorder", () => {
     const api = apiFixture();
     api.bulkMacros.mockResolvedValue({ ok: true, macros: [{ id: "m1", name: "حالة", version: 1, steps: [{ type: "set-workflow-status", status: "review" }], createdAt: null, updatedAt: null }] });
     api.bulkMacroRuns.mockResolvedValue({ ok: true, runs: [detailedRun] });
-    render(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
+    renderRecorder(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
     await waitFor(() => expect(screen.getByRole("option", { name: "حالة" })).toBeTruthy());
     fireEvent.change(screen.getByRole("combobox", { name: "الماكرو المحفوظ" }), { target: { value: "m1" } });
     await waitFor(() => expect(screen.getByText("تعيين الحالة: قيد المراجعة")).toBeTruthy());
@@ -106,7 +112,7 @@ describe("BulkMacroRecorder", () => {
     const failedRun = { ...detailedRun, id: "failed-run", failedCount: 1, completedCount: 0, results: [{ ...detailedResult, status: "failed", reason: "target_failed", steps: [] }] };
     api.bulkMacros.mockResolvedValue({ ok: true, macros: [{ id: "m1", name: "فشل محفوظ", version: 1, steps: [{ type: "delete" }], createdAt: null, updatedAt: null }] });
     api.bulkMacroRuns.mockResolvedValue({ ok: true, runs: [failedRun] });
-    render(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
+    renderRecorder(<BulkMacroRecorder api={api as never} targets={[{ store: "main", id: "1" }]} />);
     await waitFor(() => expect(screen.getByRole("option", { name: "فشل محفوظ" })).toBeTruthy());
     fireEvent.change(screen.getByRole("combobox", { name: "الماكرو المحفوظ" }), { target: { value: "m1" } });
     const historyResult = await screen.findByRole("article", { name: "تشغيل محفوظ 1" });

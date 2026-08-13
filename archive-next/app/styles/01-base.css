@@ -320,6 +320,11 @@ a:hover {
   min-inline-size: 0;
 }
 
+.public-topbar__language {
+  justify-self: end;
+  flex: 0 0 auto;
+}
+
 .public-footer {
   border-block-start: 1px solid var(--color-border-secondary);
   padding-block: var(--space-4);

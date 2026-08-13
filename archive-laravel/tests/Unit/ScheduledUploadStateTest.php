@@ -5,12 +5,13 @@ namespace Tests\Unit;
 use App\Exceptions\ScheduledUploadConflict;
 use App\Models\ScheduledUpload;
 use App\Services\Uploads\ScheduledUploadState;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ScheduledUploadStateTest extends TestCase
 {
-    use \Illuminate\Foundation\Testing\RefreshDatabase;
+    use RefreshDatabase;
 
     public function test_only_legal_transitions_increment_version(): void
     {

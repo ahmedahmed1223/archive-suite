@@ -9,12 +9,15 @@ import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
 import styles from "./compare.module.css";
 import "../media.css";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type SyncMode = "off" | "on";
 
 const TIME_THRESHOLD = 0.3;
 
 export default function ComparePage() {
+  const { t } = useLocale();
+  const copy = t.pages.mediaCompare;
   const [pathA, setPathA] = useState("");
   const [pathB, setPathB] = useState("");
   const [syncMode, setSyncMode] = useState<SyncMode>("off");
@@ -47,44 +50,44 @@ export default function ComparePage() {
   const isValidPaths = pathA.trim() && pathB.trim();
 
   return (
-    <AppShell subtitle="مقارنة الوسائط" contentClassName={styles.compareContent} tipsPage="media-compare">
+    <AppShell subtitle={t.pageTitles.mediaComparison} contentClassName={styles.compareContent} tipsPage="media-compare">
       <PageToolbar
-        eyebrow={<span className="badge">مقارنة جنبًا إلى جنب</span>}
-        title="مقارنة الوسائط"
-        description="ضع نسختين من المادة جنباً إلى جنب، ثم فعّل المزامنة لمطابقة التشغيل والإيقاف والانتقال الزمني أثناء المراجعة."
+        eyebrow={<span className="badge">{copy.eyebrow}</span>}
+        title={copy.title}
+        description={copy.description}
         meta={(
           <>
             <span className={`badge ${styles.statusIndicator}`} data-status={syncMode === "on" ? "viewing" : "idle"}>
-              {syncMode === "on" ? "المزامنة مفعلة" : "المزامنة متوقفة"}
+              {syncMode === "on" ? copy.syncEnabled : copy.syncDisabled}
             </span>
-            <span className="badge">{isValidPaths ? "جاهز للتشغيل" : "بانتظار مسارين"}</span>
+            <span className="badge">{isValidPaths ? copy.ready : copy.waiting}</span>
           </>
         )}
       >
-        <form className={`auth-form ${styles.pathInputForm}`} aria-label="مسارات المقارنة">
+        <form className={`auth-form ${styles.pathInputForm}`} aria-label={copy.pathsAriaLabel}>
           <div className={`media-compare-grid ${styles.pathInputGrid}`}>
             <label>
-              مسار الملف أ
+              {copy.fileAPath}
               <input
                 type="text"
                 value={pathA}
                 onChange={(event) => setPathA(event.target.value)}
                 placeholder="media/file-a.mp4"
-                aria-label="مسار الملف أ"
+                aria-label={copy.fileAPathAriaLabel}
               />
             </label>
-            <MediaSourcePicker label="تصفح الملف أ" onSelect={setPathA} />
+            <MediaSourcePicker label={copy.browseFileA} onSelect={setPathA} />
             <label>
-              مسار الملف ب
+              {copy.fileBPath}
               <input
                 type="text"
                 value={pathB}
                 onChange={(event) => setPathB(event.target.value)}
                 placeholder="media/file-b.mp4"
-                aria-label="مسار الملف ب"
+                aria-label={copy.fileBPathAriaLabel}
               />
             </label>
-            <MediaSourcePicker label="تصفح الملف ب" onSelect={setPathB} />
+            <MediaSourcePicker label={copy.browseFileB} onSelect={setPathB} />
           </div>
 
           <label className="checkbox-row">
@@ -93,18 +96,18 @@ export default function ComparePage() {
               checked={syncMode === "on"}
               onChange={(event) => setSyncMode(event.target.checked ? "on" : "off")}
             />
-            مزامنة التشغيل بين الملفين
+            {copy.syncLabel}
           </label>
         </form>
       </PageToolbar>
 
-      <OperationalSafetyPanel action="مقارنة النسختين" dryRun confidence={92} auditHref="/activity" />
+      <OperationalSafetyPanel action={copy.safetyAction} dryRun confidence={92} auditHref="/activity" />
 
       {isValidPaths ? (
-        <div className={`media-compare-grid ${styles.playersGrid}`} aria-label="مشغلات المقارنة">
+        <div className={`media-compare-grid ${styles.playersGrid}`} aria-label={copy.playersAriaLabel}>
           <article className={`panel ${styles.playerPanel}`}>
             <div className={`panel-title-row ${styles.playerHeader}`}>
-              <h2>الملف أ</h2>
+              <h2>{copy.fileA}</h2>
               <span className={`badge ${styles.sideBadge}`}>A</span>
             </div>
             <MediaPlayer
@@ -119,7 +122,7 @@ export default function ComparePage() {
 
           <article className={`panel ${styles.playerPanel}`}>
             <div className={`panel-title-row ${styles.playerHeader}`}>
-              <h2>الملف ب</h2>
+              <h2>{copy.fileB}</h2>
               <span className={`badge ${styles.sideBadge}`}>B</span>
             </div>
             <MediaPlayer
@@ -134,8 +137,8 @@ export default function ComparePage() {
         </div>
       ) : (
         <EmptyState
-          title="أدخل مساري الملفات لبدء المقارنة."
-          description="حدّد مسار كل ملف نسبي داخل الأرشيف، ثم فعّل المزامنة إن أردت تشغيلاً متطابقاً."
+          title={copy.emptyTitle}
+          description={copy.emptyDescription}
         />
       )}
     </AppShell>

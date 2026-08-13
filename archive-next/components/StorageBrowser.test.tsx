@@ -3,6 +3,13 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import StorageBrowser, { type StorageProvider } from "./StorageBrowser";
 
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+  return {
+    useLocale: () => ({ locale: "ar", direction: "rtl", t: getDictionary("ar"), setLocale: vi.fn() }),
+  };
+});
+
 const providers: StorageProvider[] = [
   { id: "local", label: "التخزين المحلي", type: "local", status: "ready", capabilities: ["browse", "download", "upload", "move"] },
   { id: "dropbox", label: "Dropbox", type: "dropbox", status: "ready", capabilities: ["browse", "download"] },

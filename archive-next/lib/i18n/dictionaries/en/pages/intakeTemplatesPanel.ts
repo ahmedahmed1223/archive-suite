@@ -1,0 +1,20 @@
+export const intakeTemplatesPanel = {
+  title: "Intake templates",
+  description: "Save a recurring set of fields (folder, tags) to speed up entry of similar records.",
+  loadError: "Failed to load intake templates.",
+  fieldRequiredError: "Add at least one field to the template (folder or tags).",
+  deleteError: "Failed to delete the template.",
+  nameLabel: "Template name",
+  typeLabel: "Type (optional)",
+  typePlaceholder: "video",
+  folderLabel: "Default folder (optional)",
+  tagsLabel: "Default tags (comma-separated)",
+  saving: "Saving...",
+  saveButton: "Save template",
+  loading: "Loading intake templates...",
+  loadErrorHeading: "Failed to load intake templates",
+  retry: "Retry",
+  empty: "No templates saved yet.",
+  deleting: "Deleting...",
+  deleteButton: "Delete"
+};

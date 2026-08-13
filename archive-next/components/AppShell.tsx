@@ -16,7 +16,6 @@ import type { BreadcrumbItem } from "@/components/Breadcrumb";
 import WhatsNewDialog from "@/components/WhatsNewDialog";
 import RouteAnnouncer from "@/components/RouteAnnouncer";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
-import { localizePageLabel } from "@/lib/i18n/page-labels";
 
 export default function AppShell({
   subtitle,
@@ -26,16 +25,16 @@ export default function AppShell({
   tipsPage,
   breadcrumbExtra
 }: Readonly<{
+  /** Already-localized copy from the dictionary layer (`t.pageTitles.*`), never a raw interface literal. */
   subtitle: string;
   navLabel?: string;
   children: ReactNode;
   contentClassName?: string;
   tipsPage?: PageKey;
-  /** عناصر إضافية تُلحق بمسار التنقل الأساسي (مثل اسم العنصر المفتوح حاليًا). */
+  /** Additional items appended to the base breadcrumb, such as the currently open record name. */
   breadcrumbExtra?: BreadcrumbItem[];
 }>) {
-  const { locale, t } = useLocale();
-  const localizedSubtitle = localizePageLabel(subtitle, locale);
+  const { t } = useLocale();
   const [isFocus, setIsFocus] = useState(false);
   const [density, setDensityState] = useState(getDensity());
 
@@ -62,7 +61,7 @@ export default function AppShell({
       <a className="skip-link" href="#main-content">
         {t.shell.skipToContent}
       </a>
-      <AppHeader subtitle={localizedSubtitle} navLabel={navLabel ? localizePageLabel(navLabel, locale) : undefined} breadcrumbExtra={breadcrumbExtra} />
+      <AppHeader subtitle={subtitle} navLabel={navLabel} breadcrumbExtra={breadcrumbExtra} />
       <RouteAnnouncer />
       <WorkspacePositionRestorer />
       <ShortcutsOverlay />

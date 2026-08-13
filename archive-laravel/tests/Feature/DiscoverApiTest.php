@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class DiscoverApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_returns_discovery_sections_from_archive_records(): void
     {

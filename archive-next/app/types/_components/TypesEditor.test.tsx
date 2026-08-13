@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import TypesEditor from "./TypesEditor";
 import { loadDraft } from "@/lib/local-draft";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 afterEach(() => {
   cleanup();
@@ -13,13 +14,15 @@ function renderEditor(overrides: Partial<React.ComponentProps<typeof TypesEditor
   const onSave = vi.fn().mockResolvedValue(undefined);
   const onCancel = vi.fn();
   const result = render(
-    <TypesEditor
-      initialType={null}
-      isSaving={false}
-      onSave={onSave}
-      onCancel={onCancel}
-      {...overrides}
-    />
+    <LocaleProvider initialLocale="ar" hasLocaleCookie>
+      <TypesEditor
+        initialType={null}
+        isSaving={false}
+        onSave={onSave}
+        onCancel={onCancel}
+        {...overrides}
+      />
+    </LocaleProvider>
   );
   return { onSave, onCancel, ...result };
 }

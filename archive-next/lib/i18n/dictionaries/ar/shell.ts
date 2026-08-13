@@ -5,6 +5,7 @@ export const shell = {
   closeNavigation: "إغلاق التنقل",
   routes: "المسارات",
   interfaceTools: "أدوات الواجهة",
+  moreActions: "إجراءات إضافية",
   pageHelp: "كيف تعمل هذه الصفحة؟",
   addMaterial: "إضافة مادة",
   signOut: "تسجيل الخروج",
@@ -40,4 +41,61 @@ export const shell = {
   onboardingDescription: "راجع مسار التهيئة قبل بدء العمل اليومي.",
   openTour: "فتح الجولة",
   dismissReminder: "إخفاء التذكير",
+  offlineStatus: {
+    offlineWithPending: "أنت غير متصل. توجد {count} عملية في الانتظار للإرسال عند استعادة الاتصال.",
+    offline: "أنت غير متصل. ستُعاد المحاولة تلقائيًا عند استعادة الاتصال.",
+    degraded: "الاتصال بطيء أو غير مستقر. قد تحتاج بعض العمليات إلى وقت أطول.",
+    pending: "توجد {count} عملية في الانتظار للإرسال…",
+    offlineAriaLabel: "تنبيه بعدم الاتصال",
+    degradedAriaLabel: "تنبيه بضعف الاتصال",
+    pendingAriaLabel: "تنبيه بعمليات معلقة"
+  },
+  contextualTips: {
+    triggerAriaLabel: "نصائح سريعة",
+    triggerTitle: "نصائح، اضغط لإظهارها",
+    heading: "نصائح سريعة",
+    closeAriaLabel: "إغلاق",
+    dismissSession: "إخفاء لهذه الجلسة (تظهر بعد التحديث)",
+    dismissPermanently: "عدم إظهار مرة أخرى"
+  },
+  density: {
+    switchToComfortable: "التبديل إلى تباعد مريح",
+    switchToCompact: "التبديل إلى تباعد مضغوط",
+    compactTitle: "تباعد مضغوط (اضغط للتبديل إلى مريح)",
+    comfortableTitle: "تباعد مريح (اضغط للتبديل إلى مضغوط)",
+    compact: "مضغوط",
+    comfortable: "مريح"
+  },
+  focusMode: {
+    deactivateAriaLabel: "إيقاف وضع التركيز",
+    activateAriaLabel: "تفعيل وضع التركيز",
+    deactivateTitle: "إيقاف (F11)",
+    activateTitle: "تفعيل (F11)",
+    exitLabel: "إنهاء التركيز",
+    enterLabel: "وضع التركيز"
+  },
+  breadcrumbAriaLabel: "مسار التنقل",
+  operationalSafety: {
+    ariaLabel: "ملخص السلامة التشغيلية",
+    title: "ملخص السلامة التشغيلية"
+  },
+  notifications: {
+    open: "فتح الإشعارات",
+    title: "الإشعارات",
+    close: "إغلاق",
+    enable: "تفعيل تنبيهات المتصفح",
+    markAll: "وضع الكل كمقروء",
+    loading: "جارٍ تحميل الإشعارات…",
+    empty: "لا توجد إشعارات",
+    unreadCount: "{count} إشعارات جديدة",
+    deleteNotification: "حذف الإشعار",
+    delete: "حذف"
+  },
+  routeAnnouncer: {
+    opened: "تم فتح {title}",
+    openedPage: "تم فتح الصفحة"
+  },
+  metricStrip: {
+    ariaLabel: "مؤشرات"
+  },
 } as const;

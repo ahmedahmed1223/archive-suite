@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 class FileHealthApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_a_matching_checksum_reports_match(): void
     {

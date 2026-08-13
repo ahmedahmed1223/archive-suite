@@ -35,7 +35,7 @@ abstract class Controller
      * colleague time-boxed write access to a specific set of records
      * without changing that colleague's global role.
      *
-     * @param array<int, string> $itemIds
+     * @param  array<int, string>  $itemIds
      */
     protected function requireEditorOrDelegatedAccess(Request $request, array $itemIds): ?JsonResponse
     {

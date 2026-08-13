@@ -1,16 +1,22 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "archive-suite/laravel",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Archive Suite Laravel API (archive-laravel) -- canonical backend for the pnpm-workspace Next.js frontend.",
+    "keywords": ["laravel", "archive-suite"],
     "license": "MIT",
     "require": {
         "php": "^8.3",
         "azure-oss/storage-blob-flysystem": "^2.2",
+        "guzzlehttp/guzzle": "^7.15.2",
         "laravel/framework": "^13.8",
+        "laravel/horizon": "^5.48",
+        "laravel/mcp": "^0.9.3",
+        "laravel/passport": "^13.7",
+        "laravel/pulse": "^1.8",
         "laravel/reverb": "^1.0",
         "laravel/tinker": "^3.0",
+        "league/commonmark": "^2.9.1",
         "league/flysystem-aws-s3-v3": "^3.35",
         "league/flysystem-ftp": "^3.31",
         "league/flysystem-google-cloud-storage": "^3.34",
@@ -25,6 +31,7 @@
         "laravel/pint": "^1.27",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.9.5",
+        "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^12.5.12"
     },
     "autoload": {
@@ -54,6 +61,10 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "pint": "pint",
+        "pint:test": "pint --test",
+        "phpstan": "phpstan analyse --memory-limit=512M",
+        "phpstan:baseline": "phpstan analyse --memory-limit=512M --generate-baseline",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
@@ -83,7 +94,6 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "allow-plugins": {
-            "pestphp/pest-plugin": true,
             "php-http/discovery": true
         }
     },

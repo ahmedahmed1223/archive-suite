@@ -14,5 +14,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void { Schema::table('record_field_requests', fn (Blueprint $table) => $table->dropColumn(['department_id', 'field_owner'])); }
+    public function down(): void
+    {
+        Schema::table('record_field_requests', fn (Blueprint $table) => $table->dropColumn(['department_id', 'field_owner']));
+    }
 };

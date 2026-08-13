@@ -1,0 +1,23 @@
+export const discover = {
+  loadError: "تعذر تحميل مسارات الاكتشاف.",
+  feedbackError: "تعذر حفظ تقييم الاقتراح.",
+  eyebrow: "مسارات الاكتشاف",
+  title: "الاكتشاف",
+  description: "استعرض مواد رائجة، عشوائية، نشطة، منسية، أو ناقصة البيانات حتى لا يبقى الأرشيف مجرد قائمة طويلة.",
+  paths: "مسارات",
+  items: "عنصر ظاهر",
+  refresh: "تحديث",
+  loading: "جارٍ تحميل مسارات الاكتشاف…",
+  error: "تعذر تحميل الاكتشاف",
+  suggestions: "تحسينات مقترحة للأرشيف",
+  emptyTitle: "لا توجد مواد كافية للاكتشاف",
+  emptyDescription: "أضف سجلات أو افتح الأرشيف للعمل على المواد الحالية.",
+  openArchive: "فتح الأرشيف",
+  total: "إجمالي",
+  noItems: "لا توجد عناصر ظاهرة في هذا المسار حالياً.",
+  noAdditionalDescription: "لا يوجد وصف إضافي",
+  record: "سجل",
+  unspecified: "غير محدد",
+  untitled: "بلا عنوان",
+  openRecord: "فتح السجل"
+} as const;

@@ -42,6 +42,15 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // MCP-802: Passport-backed guard used only by the MCP OAuth 2.1
+        // route (routes/ai.php, `auth:api`). The rest of the API keeps
+        // using the existing archive.auth bearer/cookie middleware — this
+        // guard is not wired into any other route.
+        'api' => [
+            'driver' => 'passport',
+            'provider' => 'users',
+        ],
     ],
 
     /*

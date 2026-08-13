@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import FirstRunTour from "@/components/FirstRunTour";
+import AsyncStateSurface from "@/components/AsyncStateSurface";
 import { BRAND } from "@/lib/brand";
 import { createArchiveApiClient, type OnboardingProgress, type OnboardingStageId } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { toOnboardingProgressSteps } from "@/lib/onboarding-progress";
 import { deriveSetupJourney, type SetupStepId } from "@/lib/setup-journey";
+import { clampStepIndex } from "@/lib/first-run-steps";
 import {
   ONBOARDING_PRESET_STORAGE_KEY,
   getOnboardingChecklist,
@@ -26,26 +28,28 @@ type HealthState =
 
 const EXPERT_SKIP_STORAGE_KEY = "masar:first-run:expert-skip:v1";
 const INTERACTIVE_TEST_FEEDBACK_STORAGE_KEY = "masar:interactive-test-feedback:v1";
+const PRESET_STEP_STORAGE_KEY = "masar:first-run:preset-step:v1";
 
 type ProgressState =
   | { status: "idle" | "loading" }
   | { status: "ready"; progress: OnboardingProgress }
   | { status: "error"; message: string };
 
-function formatUptime(seconds: number, locale: "ar" | "en") {
-  if (!Number.isFinite(seconds) || seconds < 0) return locale === "en" ? "Unknown" : "غير معروف";
+function formatUptime(seconds: number, copy: { unknown: string; seconds: string; minutes: string; hoursAndMinutes: string }) {
+  if (!Number.isFinite(seconds) || seconds < 0) return copy.unknown;
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 1) return locale === "en" ? `${Math.floor(seconds)} seconds` : `${Math.floor(seconds)} ثانية`;
+  if (minutes < 1) return copy.seconds.replace("{count}", String(Math.floor(seconds)));
   const hours = Math.floor(minutes / 60);
-  if (hours < 1) return locale === "en" ? `${minutes} minutes` : `${minutes} دقيقة`;
-  return locale === "en" ? `${hours} hours ${minutes % 60} minutes` : `${hours} ساعة و${minutes % 60} دقيقة`;
+  if (hours < 1) return copy.minutes.replace("{count}", String(minutes));
+  return copy.hoursAndMinutes.replace("{hours}", String(hours)).replace("{minutes}", String(minutes % 60));
 }
 
 export default function FirstRunPage() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const auth = useAuthSession();
   const [preset, setPreset] = useState<OnboardingPreset>("quick");
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [progressState, setProgressState] = useState<ProgressState>({ status: "idle" });
   const [updatingStage, setUpdatingStage] = useState<OnboardingStageId | null>(null);
   const [health, setHealth] = useState<HealthState>({ status: "idle" });
@@ -71,15 +75,13 @@ export default function FirstRunPage() {
       skipGuidedSetup: expertSkip
     }
   );
-  const copy = locale === "en" ? {
-    subtitle: "First run", navLabel: "Setup journey", eyebrow: "First run", title: `Set up ${BRAND.latinName}`, description: "Follow the current step, then complete the instructions for the path you selected. Sign-in appears only when it is needed to resume setup.", stages: "organization stages complete", readiness: "Readiness", healthCheck: "Check health", help: "Help", openWorkspace: "Open workspace", journey: "Unified setup journey", currentStep: "Current step", readinessLabel: "System readiness", skip: "Skip the settings review for an expert user", skipHelp: "This skips only the settings review; it never bypasses the server check or sign-in.", step: "Step", choose: "Choose a setup path", presetLabel: "Choose a setup preset", setupHelp: "Both paths use setup.bat as a safe interface for scripts/control-center.mjs; secrets appear only when the administrator password is generated for the first time.", selectedSteps: "Selected setup steps", server: "Server", connected: "Connected", checking: "Checking", offline: "Offline", notChecked: "Not checked", startHealth: "Use Check health after starting the stack.", startupReady: "Startup readiness", complete: "Complete", configuring: "Being configured", completeHelp: "The startup reminder will no longer appear in pages.", incompleteHelp: "Complete the steps, or open the tour later from Help or Settings.", orgStages: "Organization first-use stages", orgHelp: "This organization-wide state is saved and resumes after sign-in or on another device.", retry: "Try again", signInHelp: "Sign in to view the saved organization progress and resume the next step.", signIn: "Sign in", loadingProgress: "Loading first-run progress…", undo: "Mark incomplete", mark: "Mark complete", stage: "Stage", defaults: "Ready-to-use default types and tags", defaultsHelp: "Optional, additive imports only — they never overwrite an existing type or tag.", importTypes: "Import default types", importTags: "Import default tags", feedback: "Interactive test notes", feedbackHelp: "Record any change needed during testing. Notes stay on this device; then copy them into the follow-up conversation.", feedbackLabel: "Interactive test notes", feedbackPlaceholder: "Example: On the add-record step, I would like the classification field to be simpler…", copyNotes: "Copy test notes", copied: "Copied. Paste the notes into the follow-up conversation.", copyFailed: "Could not copy automatically. Copy the text from the field and send it in the follow-up conversation.", security: "Safe first-run reminders", apiError: "Could not reach the API.", progressError: "Could not load first-run progress.", progressSaveError: "Could not save first-run progress.", notesHeading: "Interactive test notes"
-  } : {
-    subtitle: "أول تشغيل", navLabel: "مسار التهيئة", eyebrow: "أول تشغيل", title: `تهيئة ${BRAND.arabicName}`, description: "اتبع الخطوة الحالية، ثم نفّذ تعليمات المسار الذي اخترته. لا يظهر تسجيل الدخول إلا عندما يصبح مطلوبًا لاستئناف التهيئة.", stages: "مراحل مؤسسية مكتملة", readiness: "الجاهزية", healthCheck: "فحص الصحة", help: "المساعدة", openWorkspace: "فتح مساحة العمل", journey: "رحلة الإعداد الموحدة", currentStep: "الخطوة الحالية", readinessLabel: "جاهزية النظام", skip: "تخطي مراجعة الإعدادات للمستخدم الخبير", skipHelp: "يتخطى هذا الخيار مراجعة الإعدادات فقط؛ لا يتجاوز فحص الخادم أو تسجيل الدخول.", step: "خطوة", choose: "اختر مسار التهيئة", presetLabel: "اختيار preset التهيئة", setupHelp: "المساران يستخدمان setup.bat كواجهة آمنة لـ scripts/control-center.mjs؛ لا تعرض الأسرار إلا عند توليد كلمة مرور المدير أول مرة.", selectedSteps: "خطوات التهيئة المختارة", server: "الخادم", connected: "متصل", checking: "جار الفحص", offline: "غير متصل", notChecked: "لم يفحص بعد", startHealth: "استخدم فحص الصحة بعد تشغيل stack.", startupReady: "جاهزية البداية", complete: "مكتملة", configuring: "قيد التهيئة", completeHelp: "لن يظهر تذكير البداية في الصفحات.", incompleteHelp: "أكمل الخطوات أو افتح الجولة لاحقاً من المساعدة/الإعدادات.", orgStages: "مراحل أول استخدام المؤسسة", orgHelp: "هذه الحالة محفوظة للمؤسسة وتُستأنف بعد تسجيل الدخول أو من جهاز آخر.", retry: "إعادة المحاولة", signInHelp: "سجّل الدخول لعرض تقدم المؤسسة المحفوظ واستئناف الخطوة التالية.", signIn: "تسجيل الدخول", loadingProgress: "جار تحميل تقدم أول تشغيل...", undo: "إلغاء إكمال", mark: "إكمال", stage: "مرحلة", defaults: "تصنيفات ووسوم افتراضية جاهزة", defaultsHelp: "استيراد اختياري وإضافي فقط — لا يكتب فوق أي نوع أو وسم موجود مسبقاً.", importTypes: "استيراد التصنيفات الافتراضية", importTags: "استيراد الوسوم الافتراضية", feedback: "ملاحظات الفحص التفاعلي", feedbackHelp: "دوّن أي تعديل مطلوب أثناء الفحص. تُحفظ الملاحظات على هذا الجهاز، ثم انسخها وأرسلها في محادثة المتابعة.", feedbackLabel: "ملاحظات الفحص التفاعلي", feedbackPlaceholder: "مثال: في خطوة إضافة مادة، أريد تبسيط حقل التصنيف…", copyNotes: "نسخ ملاحظات الفحص", copied: "تم النسخ. ألصق الملاحظات في محادثة المتابعة.", copyFailed: "تعذر النسخ تلقائيًا. انسخ النص من الحقل وأرسله في محادثة المتابعة.", security: "تنبيهات آمنة لأول تشغيل", apiError: "تعذر الوصول إلى API.", progressError: "تعذر تحميل تقدم أول تشغيل.", progressSaveError: "تعذر حفظ تقدم أول تشغيل.", notesHeading: "ملاحظات الفحص التفاعلي"
-  };
-  const journeySteps: Array<{ id: SetupStepId; title: string; description: string }> = locale === "en" ? [
-    { id: "server", title: "Start the server", description: "Checks the API and data engine automatically." }, { id: "account", title: "Confirm sign-in", description: "Sign in when needed to resume saved setup." }, { id: "settings", title: "Review settings", description: "Test connections and review operating settings." }, { id: "ready", title: "Start working", description: "Move to the workspace after readiness is complete." }
-  ] : [
-    { id: "server", title: "تشغيل الخادم", description: "فحص API ومحرك البيانات تلقائياً." }, { id: "account", title: "تأكيد الدخول", description: "سجّل الدخول عند الحاجة لاستئناف التهيئة المحفوظة." }, { id: "settings", title: "مراجعة الإعدادات", description: "اختبار الاتصالات ومراجعة إعدادات التشغيل." }, { id: "ready", title: "بدء العمل", description: "الانتقال إلى مساحة العمل بعد اكتمال الجاهزية." }
+  const copy = t.pages.firstRun;
+  const title = copy.title.replace("{brand}", locale === "en" ? BRAND.latinName : BRAND.arabicName);
+  const journeySteps: Array<{ id: SetupStepId; title: string; description: string }> = [
+    { id: "server", ...copy.journeySteps.server },
+    { id: "account", ...copy.journeySteps.account },
+    { id: "settings", ...copy.journeySteps.settings },
+    { id: "ready", ...copy.journeySteps.ready }
   ];
 
   useEffect(() => {
@@ -88,19 +90,21 @@ export default function FirstRunPage() {
     setPreset(nextPreset);
     setExpertSkip(window.localStorage.getItem(EXPERT_SKIP_STORAGE_KEY) === "true");
     setInteractiveTestFeedback(window.localStorage.getItem(INTERACTIVE_TEST_FEEDBACK_STORAGE_KEY) || "");
+    const storedStep = Number(window.localStorage.getItem(`${PRESET_STEP_STORAGE_KEY}:${nextPreset}`));
+    setActiveStepIndex(Number.isFinite(storedStep) ? clampStepIndex(storedStep, presets[nextPreset].steps.length) : 0);
   }, []);
 
   useEffect(() => {
     if (auth.status === "authenticated") {
       void loadProgress();
     }
-    // تغيّر الجلسة هو سبب إعادة التحميل الوحيد؛ العميل ثابت داخل الصفحة.
+    // A session change is the only reason to reload; the client is stable on this page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.status]);
 
   useEffect(() => {
     void checkHealth();
-    // الفحص تلقائي مرة واحدة عند فتح الرحلة؛ يظل زر إعادة الفحص متاحاً.
+    // The health check runs once when the journey opens; the recheck button remains available.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -151,6 +155,14 @@ export default function FirstRunPage() {
   function changePreset(nextPreset: OnboardingPreset) {
     setPreset(nextPreset);
     window.localStorage.setItem(ONBOARDING_PRESET_STORAGE_KEY, nextPreset);
+    const storedStep = Number(window.localStorage.getItem(`${PRESET_STEP_STORAGE_KEY}:${nextPreset}`));
+    setActiveStepIndex(Number.isFinite(storedStep) ? clampStepIndex(storedStep, presets[nextPreset].steps.length) : 0);
+  }
+
+  function advanceStep(nextIndex: number) {
+    const clamped = clampStepIndex(nextIndex, currentPreset.steps.length);
+    setActiveStepIndex(clamped);
+    window.localStorage.setItem(`${PRESET_STEP_STORAGE_KEY}:${preset}`, String(clamped));
   }
 
   async function updateProgressStage(stepId: OnboardingStageId, completed: boolean) {
@@ -205,14 +217,14 @@ export default function FirstRunPage() {
     <AppShell subtitle={copy.subtitle} navLabel={copy.navLabel} contentClassName="first-run-content" tipsPage="first-run">
       <PageToolbar
         eyebrow={<span className="badge">{copy.eyebrow}</span>}
-        title={copy.title}
+        title={title}
         description={copy.description}
         meta={(
           <>
-            <span className="badge">setup.bat</span>
-            <span className="badge">Control Center</span>
-            <span className="badge">{completedCount}/5 {copy.stages}</span>
-            <span className="badge">{copy.readiness} {journey.readinessPercentage}%</span>
+            <span className="badge" title={copy.setupHelp}>setup.bat</span>
+            <span className="badge" title={copy.setupHelp}>Control Center</span>
+            <span className="badge" title={copy.orgHelp}>{completedCount}/5 {copy.stages}</span>
+            <span className="badge" title={copy.readinessLabel}>{copy.readiness} {journey.readinessPercentage}%</span>
           </>
         )}
         actions={(
@@ -223,7 +235,7 @@ export default function FirstRunPage() {
             </button>
             <FirstRunTour />
             <a className="button button-secondary" href="/help">{copy.help}</a>
-            {auth.status === "authenticated" ? <a className="button button-primary" href="/">{copy.openWorkspace}</a> : null}
+            {auth.status === "authenticated" ? <a className="button button-secondary" href="/">{copy.openWorkspace}</a> : null}
           </>
         )}
       />
@@ -286,19 +298,53 @@ export default function FirstRunPage() {
             </div>
             <code dir="ltr">{currentPreset.command}</code>
           </div>
-          <ol className="first-run-steps" aria-label={copy.selectedSteps}>
-            {currentPreset.steps.map((step, index) => (
-              <li className="first-run-step" key={step.id}>
-                <div className="first-run-step__body">
-                  <span className="badge">{copy.step} {index + 1}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.description}</p>
-                  {step.command ? <code>{step.command}</code> : null}
-                  {step.href ? <a className="button button-secondary button-sm" href={step.href}>{step.actionLabel}</a> : null}
-                </div>
-              </li>
-            ))}
+          <ol className="first-run-steps first-run-steps--wizard" aria-label={copy.selectedSteps}>
+            {currentPreset.steps.map((step, index) => {
+              const isActive = index === activeStepIndex;
+              const isDone = index < activeStepIndex;
+              const isLastStep = index === currentPreset.steps.length - 1;
+
+              if (!isActive) {
+                return (
+                  <li className="first-run-step" key={step.id} data-complete={isDone ? "true" : "false"}>
+                    <button type="button" className="first-run-step__summary" onClick={() => advanceStep(index)}>
+                      {isDone ? <CheckCircle2 aria-hidden="true" size={16} /> : <span className="badge">{index + 1}</span>}
+                      <span>{step.title}</span>
+                    </button>
+                  </li>
+                );
+              }
+
+              return (
+                <li className="first-run-step" key={step.id} data-active="true">
+                  <div className="first-run-step__body">
+                    <span className="badge">
+                      {copy.presetSteps.stepStatus.replace("{current}", String(index + 1)).replace("{total}", String(currentPreset.steps.length))}
+                    </span>
+                    <h3>{step.title}</h3>
+                    <p>{step.description}</p>
+                    {step.command ? <code dir="ltr">{step.command}</code> : null}
+                    <div className="button-row">
+                      {step.href ? <a className="button button-secondary button-sm" href={step.href}>{step.actionLabel}</a> : null}
+                      {index > 0 ? (
+                        <button type="button" className="button button-secondary button-sm" onClick={() => advanceStep(index - 1)}>
+                          {copy.presetSteps.previous}
+                        </button>
+                      ) : null}
+                      <button type="button" className="button button-primary button-sm" onClick={() => advanceStep(index + 1)}>
+                        {isLastStep ? copy.presetSteps.finish : copy.presetSteps.markDone}
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
           </ol>
+          {activeStepIndex >= currentPreset.steps.length ? (
+            <p className="helper-text" role="status">
+              <CheckCircle2 aria-hidden="true" size={16} /> {copy.presetSteps.completedLabel}
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -321,11 +367,17 @@ export default function FirstRunPage() {
               </strong>
               <small>
                 {health.status === "ready"
-                  ? `${health.backend} · ${health.engine} · ${formatUptime(health.uptimeSec, locale)}`
+                  ? `${health.backend} · ${health.engine} · ${formatUptime(health.uptimeSec, copy.uptime)}`
                   : health.status === "error"
                     ? health.message
                     : copy.startHealth}
               </small>
+              {health.status === "error" || health.status === "idle" ? (
+                <button type="button" className="button button-secondary button-sm" onClick={() => void checkHealth()}>
+                  <RefreshCw aria-hidden="true" size={15} />
+                  {copy.healthCheck}
+                </button>
+              ) : null}
             </div>
           </article>
 
@@ -349,22 +401,20 @@ export default function FirstRunPage() {
               <h2 id="steps-heading">{copy.orgStages}</h2>
               <p>{copy.orgHelp}</p>
             </div>
-            {progressState.status === "error" ? (
-              <button type="button" className="button button-secondary button-sm" onClick={() => void loadProgress()}>
-                <RefreshCw aria-hidden="true" size={15} />
-                {copy.retry}
-              </button>
-            ) : null}
           </div>
 
           {auth.status === "guest" ? (
-            <p className="helper-text">{copy.signInHelp}</p>
-          ) : null}
-          {auth.status === "guest" ? <a className="button button-primary button-sm" href="/login?next=%2Ffirst-run">{copy.signIn}</a> : null}
-          {auth.status !== "guest" && progressState.status !== "ready" ? (
-            <p className="helper-text" role="status">{progressState.status === "error" ? progressState.message : copy.loadingProgress}</p>
-          ) : null}
-          {progressState.status === "ready" ? (
+            <>
+              <p className="helper-text">{copy.signInHelp}</p>
+              <a className="button button-primary button-sm" href="/login?next=%2Ffirst-run">{copy.signIn}</a>
+            </>
+          ) : (
+            <AsyncStateSurface
+              status={progressState.status === "ready" ? "success" : progressState.status === "error" ? "error" : "loading"}
+              title={progressState.status === "error" ? progressState.message : progressState.status !== "ready" ? copy.loadingProgress : undefined}
+              onRetry={progressState.status === "error" ? () => void loadProgress() : undefined}
+              retryLabel={copy.retry}
+            >
             <ol className="first-run-steps">
               {progressSteps.map((step, index) => (
                 <li key={step.id} className="first-run-step" data-complete={step.completed ? "true" : "false"}>
@@ -396,7 +446,8 @@ export default function FirstRunPage() {
                 </li>
               ))}
             </ol>
-          ) : null}
+            </AsyncStateSurface>
+          )}
         </article>
       </section>
 

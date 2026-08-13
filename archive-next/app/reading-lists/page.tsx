@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 interface ReadingListItem {
   recordId: string;
@@ -39,14 +40,16 @@ function writeLists(lists: ReadingList[]) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
 }
 
-function formatDate(value?: string) {
+function formatDate(value: string | undefined, locale: "ar" | "en") {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("ar-SA");
+  return date.toLocaleDateString(locale === "en" ? "en-US" : "ar-SA");
 }
 
 export default function ReadingListsPage() {
+  const { locale, t } = useLocale();
+  const copy = t.pages.readingLists;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
   const [recordsError, setRecordsError] = useState("");
@@ -136,49 +139,49 @@ export default function ReadingListsPage() {
   }
 
   return (
-    <AppShell subtitle="قوائم القراءة" navLabel="قوائم القراءة" contentClassName="local-list-content" tipsPage="reading-lists">
+    <AppShell subtitle={t.pageTitles.readingLists} navLabel={t.pageTitles.readingLists} contentClassName="local-list-content" tipsPage="reading-lists">
       <PageToolbar
-        eyebrow={<span className="badge">قوائم القراءة</span>}
-        title="قوائم القراءة"
-        description="مساحة تشغيلية لتجميع سجلات تحتاج مراجعة أو قراءة لاحقة، مستقلة عن المجموعات حتى لا تختلط مع التصنيف الرسمي."
+        eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={(
           <>
-            <span className="badge">{lists.length} قائمة</span>
-            <span className="badge">{remainingCount} متبقّي</span>
-            <span className="badge">{completedCount} مكتمل</span>
+            <span className="badge">{copy.toolbar.listCount.replace("{count}", String(lists.length))}</span>
+            <span className="badge">{copy.toolbar.remainingCount.replace("{count}", String(remainingCount))}</span>
+            <span className="badge">{copy.toolbar.completedCount.replace("{count}", String(completedCount))}</span>
           </>
         )}
-        actions={<a className="button button-secondary" href="/collections">المجموعات الرسمية</a>}
+        actions={<a className="button button-secondary" href="/collections">{copy.toolbar.officialCollections}</a>}
       >
         <form className="archive-toolbar-grid" onSubmit={createList}>
           <label>
-            <span>اسم القائمة</span>
+            <span>{copy.create.name}</span>
             <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} />
           </label>
           <label>
-            <span>وصف مختصر</span>
+            <span>{copy.create.description}</span>
             <input className="search-input" value={description} onChange={(event) => setDescription(event.target.value)} />
           </label>
           <div className="archive-toolbar-actions">
-            <button type="submit" className="button button-primary" disabled={!name.trim()}>إنشاء قائمة</button>
+            <button type="submit" className="button button-primary" disabled={!name.trim()}>{copy.create.submit}</button>
           </div>
         </form>
       </PageToolbar>
 
       {recordsError ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل سجلات الأرشيف</strong>
+          <strong>{copy.errors.recordsLoad}</strong>
           <span className="helper-text">{recordsError}</span>
         </div>
       ) : null}
 
       {lists.length === 0 ? (
-        <EmptyState title="لا توجد قوائم قراءة." description="أنشئ قائمة لتجميع سجلات تريد مراجعتها لاحقاً." />
+        <EmptyState title={copy.empty.title} description={copy.empty.description} />
       ) : (
-        <section className="split-layout" aria-label="قوائم القراءة">
+        <section className="split-layout" aria-label={copy.layout.ariaLabel}>
           <aside className="panel">
             <div className="panel-title-row">
-              <h2>القوائم</h2>
+              <h2>{copy.layout.listsTitle}</h2>
               <span className="badge">{lists.length}</span>
             </div>
             <div className="mobile-card-list">
@@ -189,10 +192,10 @@ export default function ReadingListsPage() {
                   </button>
                   {list.description ? <p className="helper-text">{list.description}</p> : null}
                   <div className="record-meta">
-                    <span className="badge">{list.items.length} عنصر</span>
-                    <span className="badge">{formatDate(list.updatedAt)}</span>
+                    <span className="badge">{copy.layout.itemCount.replace("{count}", String(list.items.length))}</span>
+                    <span className="badge">{formatDate(list.updatedAt, locale)}</span>
                   </div>
-                  <button type="button" className="button button-danger button-sm" onClick={() => deleteList(list.id)}>حذف</button>
+                  <button type="button" className="button button-danger button-sm" onClick={() => deleteList(list.id)}>{copy.layout.remove}</button>
                 </article>
               ))}
             </div>
@@ -206,24 +209,24 @@ export default function ReadingListsPage() {
                     <h2>{activeList.name}</h2>
                     {activeList.description ? <p>{activeList.description}</p> : null}
                   </div>
-                  <span className="badge">{activeList.items.length} عنصر</span>
+                  <span className="badge">{copy.layout.itemCount.replace("{count}", String(activeList.items.length))}</span>
                 </div>
 
                 <form className="archive-toolbar-row" onSubmit={addRecord}>
                   <label>
-                    <span>إضافة سجل</span>
+                    <span>{copy.layout.addRecord}</span>
                     <select value={recordId} onChange={(event) => setRecordId(event.target.value)}>
-                      <option value="">اختر سجلاً...</option>
+                      <option value="">{copy.layout.selectRecord}</option>
                       {records.map((record) => (
                         <option key={record.id} value={record.id}>{record.title || record.id}</option>
                       ))}
                     </select>
                   </label>
-                  <button type="submit" className="button button-secondary" disabled={!recordId}>إضافة</button>
+                  <button type="submit" className="button button-secondary" disabled={!recordId}>{copy.layout.add}</button>
                 </form>
 
                 {activeList.items.length === 0 ? (
-                  <EmptyState title="القائمة فارغة." description="أضف سجلاً من القائمة العلوية لبدء المتابعة." />
+                  <EmptyState title={copy.layout.emptyListTitle} description={copy.layout.emptyListDescription} />
                 ) : (
                   <div className="mobile-card-list">
                     {activeList.items.map((item) => {
@@ -232,19 +235,19 @@ export default function ReadingListsPage() {
                         <article className="local-list-card" key={item.recordId} data-enabled={!item.done ? "true" : "false"}>
                           <div className="local-list-card__main">
                             <div>
-                              <span className="badge">{item.done ? "مكتمل" : "متبقّي"}</span>
+                              <span className="badge">{item.done ? copy.layout.completed : copy.layout.remaining}</span>
                               <h3>{record?.title || item.recordId}</h3>
                             </div>
-                            <span className="badge">{record?.type || "سجل"}</span>
+                            <span className="badge">{record?.type || copy.layout.record}</span>
                           </div>
                           {record?.description ? <p className="helper-text">{record.description}</p> : null}
-                          <p className="helper-text">أضيف في {formatDate(item.addedAt)}</p>
+                          <p className="helper-text">{copy.layout.addedAt.replace("{date}", formatDate(item.addedAt, locale))}</p>
                           <div className="button-row">
                             <button type="button" className="button button-secondary button-sm" onClick={() => toggleItem(activeList.id, item.recordId)}>
-                              {item.done ? "إلغاء الاكتمال" : "تمت القراءة"}
+                              {item.done ? copy.layout.markUnread : copy.layout.markRead}
                             </button>
-                            <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(item.recordId)}`}>فتح السجل</a>
-                            <button type="button" className="button button-danger button-sm" onClick={() => removeItem(activeList.id, item.recordId)}>إزالة</button>
+                            <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(item.recordId)}`}>{copy.layout.openRecord}</a>
+                            <button type="button" className="button button-danger button-sm" onClick={() => removeItem(activeList.id, item.recordId)}>{copy.layout.removeItem}</button>
                           </div>
                         </article>
                       );
@@ -253,7 +256,7 @@ export default function ReadingListsPage() {
                 )}
               </>
             ) : (
-              <EmptyState title="اختر قائمة." description="حدد قائمة من العمود الجانبي لإدارة عناصرها." />
+              <EmptyState title={copy.layout.noActiveTitle} description={copy.layout.noActiveDescription} />
             )}
           </article>
         </section>

@@ -19,7 +19,7 @@ use Tests\TestCase;
  */
 class OdbcReadApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_odbc_read_endpoint_requires_authentication(): void
     {
@@ -45,7 +45,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_viewer_cannot_read_an_odbc_table(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $this->getJson('/api/v1/system/odbc/tables/items', $this->viewerHeaders())
             ->assertForbidden()
@@ -54,7 +54,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_editor_cannot_read_an_odbc_table(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $this->getJson('/api/v1/system/odbc/tables/items', $this->editorHeaders())
             ->assertForbidden()
@@ -63,7 +63,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_viewer_cannot_write_an_odbc_row(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $this->postJson(
             '/api/v1/system/odbc/tables/items/rows',
@@ -86,7 +86,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_editor_cannot_write_an_odbc_row(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $this->postJson(
             '/api/v1/system/odbc/tables/items/rows',
@@ -109,7 +109,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_odbc_read_returns_rows_from_allowed_table(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $response = $this->getJson(
             '/api/v1/system/odbc/tables/items?limit=5',
@@ -128,7 +128,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_odbc_read_rejects_disallowed_table(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $this->getJson(
             '/api/v1/system/odbc/tables/admin_secrets',
@@ -141,7 +141,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_odbc_read_masks_password_columns(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $response = $this->getJson(
             '/api/v1/system/odbc/tables/users?limit=1',
@@ -157,7 +157,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_odbc_read_respects_limit_parameter(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $response = $this->getJson(
             '/api/v1/system/odbc/tables/items?limit=10',
@@ -171,7 +171,7 @@ class OdbcReadApiTest extends TestCase
     public function test_odbc_read_defaults_to_config_limit(): void
     {
         config(['odbc.table_limit' => 15]);
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $response = $this->getJson(
             '/api/v1/system/odbc/tables/items',
@@ -184,7 +184,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_odbc_read_enforces_max_limit(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $response = $this->getJson(
             '/api/v1/system/odbc/tables/items?limit=999',
@@ -197,7 +197,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_odbc_create_row_returns_write_result(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $this->postJson(
             '/api/v1/system/odbc/tables/items/rows',
@@ -213,7 +213,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_odbc_update_row_requires_allowed_key(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $this->patchJson(
             '/api/v1/system/odbc/tables/users/rows',
@@ -226,7 +226,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_odbc_update_row_returns_write_result(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $this->patchJson(
             '/api/v1/system/odbc/tables/settings/rows',
@@ -241,7 +241,7 @@ class OdbcReadApiTest extends TestCase
 
     public function test_odbc_delete_row_returns_write_result(): void
     {
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new OdbcReadFeatureFakeFactory);
 
         $this->deleteJson(
             '/api/v1/system/odbc/tables/items/rows',
@@ -315,7 +315,7 @@ class OdbcReadFeatureFakeFactory implements OdbcConnectionFactory
 
     public function connect(string $dsn, ?string $username, ?string $password): OdbcConnection
     {
-        return new OdbcReadFeatureFakeConnection();
+        return new OdbcReadFeatureFakeConnection;
     }
 }
 

@@ -1,0 +1,10 @@
+export const inbox = {
+  statuses: { new: "New inbox item", triage: "In triage", ready: "Ready to archive", done: "Complete" },
+  errors: { load: "Unable to load the inbox.", update: "Unable to update the status.", add: "Unable to add the item.", remove: "Unable to remove the item.", previewRoute: "Unable to preview routing.", repeatedRoute: "Repeated routing was prevented.", applyRoute: "Routing was prevented or could not be completed." },
+  messages: { saving: "Saving...", added: "Added to the inbox.", addedToast: "The item was added to the inbox.", removed: "The item was removed.", routePreview: "The item can be routed to department {department}. Nothing will run before confirmation.", routed: "The item was routed to department {department}.", routeLogged: "Routing was completed and recorded in the log." },
+  toolbar: { eyebrow: "Quick capture", title: "Inbox", description: "Quickly capture materials or ideas before archiving; saved on the server for each user.", items: "{count} items", ready: "{count} ready to archive", endTriage: "End quick triage", startTriage: "Start quick triage", upload: "Upload file" },
+  form: { title: "Title", titlePlaceholder: "Item or triage task", source: "Source", sourcePlaceholder: "Folder, organization, link...", note: "Note", add: "Add to inbox", all: "All · {count}" },
+  triage: { active: "Quick triage is active", instructions: "J/K or arrows to move · 1 new · 2 triage · 3 ready · 4 complete · Enter to open" },
+  states: { loading: "Loading inbox items...", loadFailed: "Unable to load inbox items", retry: "Try again", emptyTitle: "There are no items in this view.", emptyDescription: "Add a quick item or change the status filter.", ariaLabel: "Inbox items" },
+  item: { source: "Source", note: "Note", department: "Department", unrouted: "Not routed", statusFor: "Status for {title}", searchSimilar: "Search similar", startArchiving: "Start archiving", openArchive: "Open archive", remove: "Remove", targetDepartmentPlaceholder: "Target department ID", targetDepartmentFor: "Target department for {title}", previewRoute: "Preview routing", routeDepartment: "Route to department" }
+} as const;

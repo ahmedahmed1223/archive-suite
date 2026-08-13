@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class MetadataTemplatesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_creates_lists_updates_and_deletes_a_template(): void
     {

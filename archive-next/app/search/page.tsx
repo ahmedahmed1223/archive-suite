@@ -20,6 +20,8 @@ import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted
 import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useDisplaySettings } from "@/lib/display-settings-context";
+import { formatDate as formatDisplayDate } from "@/lib/display-settings";
 
 type SearchState =
   | { status: "idle" }
@@ -30,16 +32,9 @@ type SearchState =
 type SearchViewMode = "cards" | "list";
 type SearchMode = "keyword" | "semantic" | "transcript";
 
-const searchViewOptions: DataViewOption<SearchViewMode>[] = [
-  { value: "cards", label: "بطاقات" },
-  { value: "list", label: "قائمة" }
-];
-
-function formatDate(value?: string) {
+function formatDate(value: string | undefined, settings: import("@/lib/display-settings").DisplaySettings, locale: import("@/lib/i18n/types").AppLocale) {
   if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("ar-SA");
+  return formatDisplayDate(value, settings, locale, value);
 }
 
 function formatPlaybackTime(seconds: number) {
@@ -82,8 +77,8 @@ function facetLabel(items: SearchFacetBucket[] | undefined, value: string) {
 }
 
 export default function SearchPage() {
-  const { locale } = useLocale();
-  const copy = locale === "en" ? { title: "Advanced search", loading: "Loading search…" } : { title: "بحث متقدم", loading: "جارٍ تحميل البحث…" };
+  const { t } = useLocale();
+  const copy = t.pages.search;
   return (
     <Suspense fallback={(
       <AppShell subtitle={copy.title}>
@@ -98,13 +93,14 @@ export default function SearchPage() {
 }
 
 function SearchPageContent() {
-  const { locale } = useLocale();
-  const searchCopy = locale === "en" ? {
-    title: "Advanced search", workspace: "Search workspace", description: "Search records, apply server-provided classifications, save recurring searches, and preview results without leaving the page.", keywords: "Keywords", search: "Search", advanced: "Advanced filters", store: "Storage location", type: "Type", tag: "Tag", from: "From date", to: "To date", save: "Save search", reset: "Reset", loading: "Searching…", results: "Search results", empty: "Start by entering a search term.", emptyDescription: "Search records, then save a recurring search for later.", unavailable: "Search could not be completed", noResults: "No records found.",
-  } : {
-    title: "بحث متقدم", workspace: "مساحة البحث", description: "بحث موحد في السجلات مع تصنيفات من الخادم، وحفظ بحث دائم، ومعاينة سريعة للنتائج دون مغادرة الصفحة.", keywords: "الكلمات المفتاحية", search: "بحث", advanced: "تصفية متقدمة", store: "المخزن", type: "النوع", tag: "الوسم", from: "من التاريخ", to: "إلى التاريخ", save: "حفظ البحث", reset: "تصفير", loading: "جارٍ البحث…", results: "نتائج البحث", empty: "ابدأ بكتابة كلمة بحث.", emptyDescription: "استخدم البحث العام للوصول إلى السجلات، ثم احفظ البحث في الخادم إذا كان يتكرر في عملك اليومي.", unavailable: "تعذر تنفيذ البحث", noResults: "لم يتم العثور على سجلات.",
-  };
+  const { locale, t } = useLocale();
+  const { settings: displaySettings } = useDisplaySettings();
+  const searchCopy = t.pages.searchResults;
   const pageTitle = searchCopy.title;
+  const searchViewOptions: DataViewOption<SearchViewMode>[] = useMemo(() => [
+    { value: "cards", label: searchCopy.viewCards },
+    { value: "list", label: searchCopy.viewList }
+  ], [searchCopy.viewCards, searchCopy.viewList]);
   const dialogs = useConfirmDialog();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -169,7 +165,7 @@ function SearchPageContent() {
     } catch {
       // Local preferences are optional.
     }
-  }, [currentPage, previewId, query, store, tagFilter, typeFilter, viewMode]);
+  }, [currentPage, previewId, query, searchParams, store, tagFilter, typeFilter, viewMode]);
 
   const updateParams = useCallback(
     (q: string, s: string, page: number, type: string, tag: string, mode: SearchMode = searchMode) => {
@@ -191,13 +187,13 @@ function SearchPageContent() {
   const refreshSavedSearches = useCallback(async () => {
     const response = await api.savedSearches();
     if (!response.ok) {
-      setSavedStatus(response.error || "تعذر تحميل البحوث المحفوظة.");
+      setSavedStatus(response.error || searchCopy.loadSavedSearchesError);
       return;
     }
 
     setSavedSearches(response.searches.filter(isSearchWorkbenchItem));
     setSavedStatus("");
-  }, [api]);
+  }, [api, searchCopy.loadSavedSearchesError]);
 
   const search = useCallback(
     async (q: string, s: string, page: number = 1, type: string = typeFilter, tag: string = tagFilter, mode: SearchMode = searchMode) => {
@@ -279,7 +275,7 @@ function SearchPageContent() {
     if (initialQuery || initialStore || initialType !== "all" || initialTag) {
       void search(initialQuery, initialStore, initialPage, initialType, initialTag);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restores from URL/local state once on mount; search is redefined every render and would retrigger this
   }, []);
 
   const facets = state.status === "ready" ? state.facets : undefined;
@@ -335,13 +331,13 @@ function SearchPageContent() {
   const saveCurrentSearch = async () => {
     if (!query.trim() && !store && typeFilter === "all" && !tagFilter) return;
     const name = await dialogs.prompt({
-      title: "حفظ البحث",
-      message: "اسم البحث المحفوظ",
-      defaultValue: query.trim() || "بحث مخصص"
+      title: searchCopy.savePromptTitle,
+      message: searchCopy.savePromptMessage,
+      defaultValue: query.trim() || searchCopy.savePromptDefault
     });
     if (!name?.trim()) return;
 
-    setSavedStatus("جار حفظ البحث...");
+    setSavedStatus(searchCopy.savingStatus);
     const response = await api.createSavedSearch({
       name: name.trim(),
       query: query || undefined,
@@ -354,12 +350,12 @@ function SearchPageContent() {
     });
 
     if (!response.ok) {
-      setSavedStatus(response.error || "تعذر حفظ البحث.");
+      setSavedStatus(response.error || searchCopy.saveError);
       return;
     }
 
     await refreshSavedSearches();
-    setSavedStatus("تم حفظ البحث.");
+    setSavedStatus(searchCopy.saveSuccess);
   };
 
   const applySavedSearch = async (saved: SavedSearch) => {
@@ -378,7 +374,7 @@ function SearchPageContent() {
   const removeSavedSearch = async (id: string) => {
     const response = await api.deleteSavedSearch(id);
     if (!response.ok) {
-      setSavedStatus(response.error || "تعذر حذف البحث.");
+      setSavedStatus(response.error || searchCopy.deleteError);
       return;
     }
     await refreshSavedSearches();
@@ -397,7 +393,7 @@ function SearchPageContent() {
 
   const handleSuggestionFeedback = async (suggestion: ArchiveSuggestion, value: SuggestionFeedbackValue) => {
     const response = await api.submitSuggestionFeedback(suggestion.key, { value, context: "search" });
-    if (!response.ok) throw new Error(response.error || "تعذر حفظ تقييم الاقتراح.");
+    if (!response.ok) throw new Error(response.error || searchCopy.suggestionFeedbackError);
     if (value === "dismissed") setSuggestions((current) => current.filter((item) => item.key !== suggestion.key));
   };
 
@@ -427,27 +423,27 @@ function SearchPageContent() {
     <article className="search-result-card" key={record.id} data-view={viewMode} onMouseEnter={() => setPreviewId(record.id)}>
       <div className="search-result-card__body">
         <div className="panel-title-row">
-          <h2>{record.title || "بدون عنوان"}</h2>
+          <h2>{record.title || searchCopy.untitled}</h2>
           {record.type ? <span className="badge">{record.type}</span> : null}
         </div>
         {record.description ? <p className="helper-text">{record.description}</p> : null}
         {record.match?.excerpt ? <p className="search-result-card__excerpt">{record.match.excerpt}</p> : null}
         <div className="record-meta">
           {record.store ? <span className="badge">{record.store}</span> : null}
-          <span className="badge">{formatDate(record.updatedAt || record.createdAt)}</span>
+          <span className="badge">{formatDate(record.updatedAt || record.createdAt, displaySettings, locale)}</span>
           {record.tags?.slice(0, 4).map((tag) => <span key={tag} className="tag">{tag}</span>)}
         </div>
       </div>
       <div className="button-row">
         {playbackHref ? (
           <a href={playbackHref} className="button button-primary button-sm">
-            تشغيل من {formatPlaybackTime(timestamp ?? 0)}
+            {searchCopy.playFrom.replace("{time}", formatPlaybackTime(timestamp ?? 0))}
           </a>
         ) : (
-          <a href={`/archive/${encodeURIComponent(record.id)}`} className="button button-primary button-sm">فتح التفاصيل</a>
+          <a href={`/archive/${encodeURIComponent(record.id)}`} className="button button-primary button-sm">{searchCopy.openDetails}</a>
         )}
         <button type="button" className="button button-secondary button-sm" onClick={() => setPreviewId(record.id)}>
-          معاينة
+          {searchCopy.preview}
         </button>
       </div>
     </article>
@@ -462,9 +458,9 @@ function SearchPageContent() {
         description={searchCopy.description}
         meta={(
           <>
-            <span className="badge">{filteredRecords.length} نتيجة</span>
-            <span className="badge">{typeOptions.length} نوع</span>
-            <span className="badge">{savedSearches.length} بحث محفوظ</span>
+            <span className="badge">{searchCopy.resultsCount.replace("{count}", String(filteredRecords.length))}</span>
+            <span className="badge">{searchCopy.typesCount.replace("{count}", String(typeOptions.length))}</span>
+            <span className="badge">{searchCopy.savedSearchesCount.replace("{count}", String(savedSearches.length))}</span>
           </>
         )}
       >
@@ -477,11 +473,11 @@ function SearchPageContent() {
                 onChange={setQuery}
                 onSelect={(suggestion) => setQuery(suggestion.value)}
                 fetchSuggestions={fetchSearchSuggestions}
-                placeholder={'العنوان، الوسوم، الوصف... أو type:video AND tag:"تاريخ شفهي"'}
+                placeholder={searchCopy.queryPlaceholder}
                 className="search-input"
               />
               <span id="advanced-search-hint" className="helper-text">
-                للبحث المهيكل استخدم مثلاً: <code dir="ltr">type:video AND tag:"تاريخ شفهي"</code>
+                {searchCopy.structuredSearchHint} <code dir="ltr">{searchCopy.structuredSearchExample}</code>
               </span>
             </label>
             <button type="submit" className="button button-primary">{searchCopy.search}</button>
@@ -491,36 +487,36 @@ function SearchPageContent() {
             <div className="archive-toolbar-grid">
               <label>
                 <span>{searchCopy.store}</span>
-                <input type="text" placeholder="اتركه فارغاً لكل المخازن" value={store} onChange={(event) => setStore(event.target.value)} className="search-input" />
+                <input type="text" placeholder={searchCopy.storePlaceholder} value={store} onChange={(event) => setStore(event.target.value)} className="search-input" />
               </label>
               <label>
                 <span>{searchCopy.type}</span>
                 <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-                  <option value="all">كل الأنواع</option>
+                  <option value="all">{searchCopy.allTypes}</option>
                   {typeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
                 </select>
               </label>
               <label>
                 <span>{searchCopy.tag}</span>
                 <select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}>
-                  <option value="">كل الوسوم</option>
+                  <option value="">{searchCopy.allTags}</option>
                   {tagOptions.map((tag) => <option key={tag.value} value={tag.value}>{tag.label} ({tag.count})</option>)}
                 </select>
               </label>
               <label><span>{searchCopy.from}</span><input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
               <label><span>{searchCopy.to}</span><input type="date" min={dateFrom || undefined} value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
               <label>
-                <span>اكتمال التوصيف</span>
+                <span>{searchCopy.descriptionStateLabel}</span>
                 <select value={descriptionState} onChange={(event) => setDescriptionState(event.target.value as "" | "complete" | "incomplete")}>
-                  <option value="">كل المواد</option><option value="complete">مكتمل</option><option value="incomplete">ناقص</option>
+                  <option value="">{searchCopy.descriptionStateAll}</option><option value="complete">{searchCopy.descriptionStateComplete}</option><option value="incomplete">{searchCopy.descriptionStateIncomplete}</option>
                 </select>
               </label>
               <label>
-                <span>نمط البحث</span>
+                <span>{searchCopy.searchModeLabel}</span>
                 <select value={searchMode} onChange={(event) => setSearchMode(event.target.value as SearchMode)}>
-                  <option value="keyword">عادي</option>
-                  <option value="semantic">دلالي</option>
-                  <option value="transcript">داخل التفريغات الزمنية</option>
+                  <option value="keyword">{searchCopy.searchModeKeyword}</option>
+                  <option value="semantic">{searchCopy.searchModeSemantic}</option>
+                  <option value="transcript">{searchCopy.searchModeTranscript}</option>
                 </select>
               </label>
             </div>
@@ -535,29 +531,29 @@ function SearchPageContent() {
             {searchCopy.reset}
           </button>
           <a className="button button-secondary" href="/search/saved">
-            إدارة البحوث المحفوظة
+            {searchCopy.manageSavedSearches}
           </a>
         </div>
-        {searchMode === "transcript" ? <p className="helper-text">يعرض هذا النمط المقاطع ذات التوقيت الموثوق فقط، ويتيح تشغيل الفيديو مباشرةً من لحظة التطابق.</p> : null}
-        {searchMode === "semantic" && facets?.mode === "keyword-fallback" ? <p className="form-status">تعذر تنفيذ البحث الدلالي حاليًا؛ عُرضت نتائج البحث العادي بدلًا منه.</p> : null}
+        {searchMode === "transcript" ? <p className="helper-text">{searchCopy.transcriptModeHint}</p> : null}
+        {searchMode === "semantic" && facets?.mode === "keyword-fallback" ? <p className="form-status">{searchCopy.semanticFallbackHint}</p> : null}
         <div className="archive-toolbar-row">
-          <DataViewSwitcher value={viewMode} options={searchViewOptions} onChange={setViewMode} label="طريقة عرض البحث" />
+          <DataViewSwitcher value={viewMode} options={searchViewOptions} onChange={setViewMode} label={searchCopy.viewModeLabel} />
           {savedSearches.length > 0 ? (
-            <div className="saved-views-strip" aria-label="بحوث محفوظة">
+            <div className="saved-views-strip" aria-label={searchCopy.savedSearchesAriaLabel}>
               {savedSearches.map((saved) => (
                 <span key={saved.id} className="saved-view-chip">
                   <button type="button" onClick={() => void applySavedSearch(saved)}>{saved.name}</button>
-                  <button type="button" aria-label={`حذف ${saved.name}`} onClick={() => void removeSavedSearch(saved.id)}>×</button>
+                  <button type="button" aria-label={searchCopy.deleteSavedSearchAriaLabel.replace("{name}", saved.name)} onClick={() => void removeSavedSearch(saved.id)}>×</button>
                 </span>
               ))}
             </div>
           ) : null}
         </div>
         {recentSearches.length > 0 ? (
-          <section className="recent-searches-strip" aria-label="عمليات البحث الأخيرة">
+          <section className="recent-searches-strip" aria-label={searchCopy.recentSearches}>
             <div className="recent-searches-strip__header">
-              <span>عمليات البحث الأخيرة</span>
-              <button type="button" className="button button-ghost button-sm" onClick={clearSearchHistory}>مسح السجل</button>
+              <span>{searchCopy.recentSearches}</span>
+              <button type="button" className="button button-ghost button-sm" onClick={clearSearchHistory}>{searchCopy.clearHistory}</button>
             </div>
             <div className="saved-views-strip">
               {recentSearches.map((recent) => (
@@ -567,7 +563,7 @@ function SearchPageContent() {
           </section>
         ) : null}
         {facets ? (
-              <div className="facet-strip" aria-label="ملخص التصنيفات">
+              <div className="facet-strip" aria-label={searchCopy.facetsSummaryAriaLabel}>
             {facets.types?.slice(0, 5).map((item) => (
               <button key={item.value} type="button" className="facet-chip" onClick={() => setTypeFilter(item.value)}>
                 {item.label} · {item.count}
@@ -606,8 +602,8 @@ function SearchPageContent() {
       {state.status === "ready" && visibleRecords.length === 0 ? (
         <EmptyState
           title={searchCopy.noResults}
-          description="جرّب بحثاً مختلفاً، أو أزل فلتر النوع/الوسم، أو راجع المخزن المحدد."
-          actions={<button type="button" className="button button-secondary" onClick={resetSearch}>تصفير البحث</button>}
+          description={searchCopy.noResultsDescription}
+          actions={<button type="button" className="button button-secondary" onClick={resetSearch}>{searchCopy.resetSearch}</button>}
         />
       ) : null}
 
@@ -617,29 +613,29 @@ function SearchPageContent() {
             <div className="panel panel-compact">
               <p className="form-status">
                 {resultCount.label}
-                {typeof state.total === "number" ? ` · الإجمالي في الخادم: ${state.total}` : ""}
-                {query ? ` · البحث عن: "${query}"` : ""}
+                {typeof state.total === "number" ? searchCopy.totalOnServerTemplate.replace("{total}", String(state.total)) : ""}
+                {query ? searchCopy.searchingForTemplate.replace("{query}", query) : ""}
               </p>
             </div>
 
             {visibleRecords.map(renderRecord)}
 
             {localEnrichment.suggestedTags.length > 0 || localEnrichment.entities.length > 0 ? (
-              <section className="panel stack" aria-label="إثراء محلي للبحث">
+              <section className="panel stack" aria-label={searchCopy.localEnrichmentAriaLabel}>
                 <div className="panel-title-row">
                   <div>
-                    <span className="badge">بديل دلالي محلي</span>
-                    <h2>وسوم وكيانات مقترحة محلياً</h2>
+                    <span className="badge">{searchCopy.localEnrichmentBadge}</span>
+                    <h2>{searchCopy.localEnrichmentHeading}</h2>
                     <p className="helper-text">
-                      قواعد محلية آمنة فوق النتائج الحالية؛ لا ترسل البيانات لأي مزود خارجي ولا تعدّل السجلات تلقائياً.
+                      {searchCopy.localEnrichmentDescription}
                     </p>
                   </div>
-                  <span className="badge">{localEnrichment.coverage.recordsWithSuggestions} سجل قابل للتحسين</span>
+                  <span className="badge">{searchCopy.localEnrichmentCoverageTemplate.replace("{count}", String(localEnrichment.coverage.recordsWithSuggestions))}</span>
                 </div>
 
                 {localEnrichment.suggestedTags.length > 0 ? (
                   <div>
-                    <strong>وسوم مقترحة</strong>
+                    <strong>{searchCopy.suggestedTagsHeading}</strong>
                     <div className="tag-list">
                       {localEnrichment.suggestedTags.slice(0, 8).map((suggestion) => (
                         <button
@@ -658,7 +654,7 @@ function SearchPageContent() {
 
                 {localEnrichment.entities.length > 0 ? (
                   <div>
-                    <strong>كيانات مستخرجة</strong>
+                    <strong>{searchCopy.extractedEntitiesHeading}</strong>
                     <div className="tag-list">
                       {localEnrichment.entities.slice(0, 10).map((entity) => (
                         <span className="badge" key={`${entity.kind}:${entity.label}`}>
@@ -671,7 +667,7 @@ function SearchPageContent() {
               </section>
             ) : null}
 
-            <SuggestionsPanel suggestions={suggestions} title="تحسينات مقترحة للبحث والأرشيف" onFeedback={handleSuggestionFeedback} />
+            <SuggestionsPanel suggestions={suggestions} title={searchCopy.suggestionsPanelTitle} onFeedback={handleSuggestionFeedback} />
 
             {totalPages > 1 ? (
               <div className="pagination">
@@ -681,10 +677,10 @@ function SearchPageContent() {
                   disabled={currentPage <= 1}
                   className="button button-secondary"
                 >
-                  السابق
+                  {searchCopy.previousPage}
                 </button>
                 <span className="form-status">
-                  الصفحة {currentPage} من {totalPages}
+                  {searchCopy.pageOfTemplate.replace("{current}", String(currentPage)).replace("{total}", String(totalPages))}
                 </span>
                 <button
                   type="button"
@@ -692,36 +688,36 @@ function SearchPageContent() {
                   disabled={currentPage >= totalPages}
                   className="button button-secondary"
                 >
-                  التالي
+                  {searchCopy.nextPage}
                 </button>
               </div>
             ) : null}
           </div>
 
-          <aside className="record-preview-rail" aria-label="معاينة نتيجة البحث">
+          <aside className="record-preview-rail" aria-label={searchCopy.previewRailAriaLabel}>
             {previewRecord ? (
               <>
                 <div className="panel-section-header">
-                  <span className="badge">معاينة</span>
-                  <h2>{previewRecord.title || "بدون عنوان"}</h2>
+                  <span className="badge">{searchCopy.preview}</span>
+                  <h2>{previewRecord.title || searchCopy.untitled}</h2>
                 </div>
-                <p>{previewRecord.description || "لا يوجد وصف محفوظ لهذا السجل."}</p>
+                <p>{previewRecord.description || searchCopy.noDescription}</p>
                 <div className="kv-grid">
                   <div className="kv-item">
-                    <strong>المخزن</strong>
+                    <strong>{searchCopy.store}</strong>
                     <span>{previewRecord.store || "-"}</span>
                   </div>
                   <div className="kv-item">
-                    <strong>النوع</strong>
+                    <strong>{searchCopy.type}</strong>
                     <span>{previewRecord.type || "-"}</span>
                   </div>
                   <div className="kv-item">
-                    <strong>الوسم المحدد</strong>
+                    <strong>{searchCopy.selectedTagLabel}</strong>
                     <span>{tagFilter ? facetLabel(tagOptions, tagFilter) : "-"}</span>
                   </div>
                   <div className="kv-item">
-                    <strong>التحديث</strong>
-                    <span>{formatDate(previewRecord.updatedAt || previewRecord.createdAt)}</span>
+                    <strong>{searchCopy.updatedLabel}</strong>
+                    <span>{formatDate(previewRecord.updatedAt || previewRecord.createdAt, displaySettings, locale)}</span>
                   </div>
                 </div>
                 {previewRecord.tags && previewRecord.tags.length > 0 ? (
@@ -730,11 +726,11 @@ function SearchPageContent() {
                   </div>
                 ) : null}
                 <a className="button button-primary" href={`/archive/${encodeURIComponent(previewRecord.id)}`}>
-                  فتح التفاصيل
+                  {searchCopy.openDetails}
                 </a>
               </>
             ) : (
-              <EmptyState title="لا توجد معاينة." description="اختر نتيجة من القائمة لعرض ملخصها." />
+              <EmptyState title={searchCopy.noPreviewTitle} description={searchCopy.noPreviewDescription} />
             )}
           </aside>
         </section>

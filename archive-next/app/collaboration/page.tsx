@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
@@ -14,21 +15,15 @@ import {
 } from "@/lib/archive-api";
 import { getEchoClient } from "@/lib/echo";
 
-const statusLabels: Record<CollaborationStatus, string> = {
-  active: "نشط",
-  viewing: "يشاهد",
-  reviewing: "يراجع",
-  editing: "يحرر",
-  idle: "خامل"
-};
-
 function StatusPill({ status }: { status: CollaborationStatus }) {
+  const { t } = useLocale();
+
   return (
     <span
       className="badge status-pill"
       data-status={status}
     >
-      {statusLabels[status] ?? status}
+      {t.pages.collaboration.statusLabels[status] ?? status}
     </span>
   );
 }
@@ -58,6 +53,9 @@ function SectionHeader({
 }
 
 export default function CollaborationPage() {
+  const { locale, t } = useLocale();
+  const copy = t.pages.collaboration;
+  const timeLocale = locale === "ar" ? "ar-EG" : "en-US";
   const api = useMemo(() => createArchiveApiClient(), []);
   const [roomKey, setRoomKey] = useState("review-1");
   const [resourceId, setResourceId] = useState("media-123");
@@ -65,13 +63,13 @@ export default function CollaborationPage() {
   const [participants, setParticipants] = useState<CollaborationParticipant[]>([]);
   const [locks, setLocks] = useState<CollaborationLock[]>([]);
   const [activeWindowSeconds, setActiveWindowSeconds] = useState(45);
-  const [message, setMessage] = useState("جاهز");
+  const [message, setMessage] = useState(copy.initial.ready);
   const [error, setError] = useState<string | null>(null);
-  const [lockMessage, setLockMessage] = useState("لا توجد أقفال محملة بعد");
+  const [lockMessage, setLockMessage] = useState(copy.initial.noLocksLoaded);
   const [documentContent, setDocumentContent] = useState("");
   const [documentVersion, setDocumentVersion] = useState(0);
   const [documentMeta, setDocumentMeta] = useState<Pick<CollaborationDocument, "updatedByDisplayName" | "updatedAt">>({});
-  const [documentMessage, setDocumentMessage] = useState("لم يتم تحميل مسودة بعد");
+  const [documentMessage, setDocumentMessage] = useState(copy.initial.noDocumentLoaded);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLocking, setIsLocking] = useState<"acquire" | "release" | null>(null);
@@ -99,7 +97,7 @@ export default function CollaborationPage() {
         if (response.ok) {
           setParticipants(response.participants);
           setActiveWindowSeconds(response.activeWindowSeconds);
-          setMessage(`آخر مزامنة: ${new Date().toLocaleTimeString("ar-EG")}`);
+          setMessage(copy.messages.lastSync.replace("{time}", new Date().toLocaleTimeString(timeLocale)));
           setError(null);
         } else {
           setError(response.error);
@@ -112,7 +110,7 @@ export default function CollaborationPage() {
         }
       } catch (err) {
         if (active) {
-          setError(err instanceof Error ? err.message : "تعذر تحديث التعاون الحي.");
+          setError(err instanceof Error ? err.message : copy.errors.liveCollaboration);
         }
       } finally {
         if (active) {
@@ -128,7 +126,7 @@ export default function CollaborationPage() {
       active = false;
       if (interval) clearInterval(interval);
     };
-  }, [api, resourceId, roomKey, status]);
+  }, [api, copy.errors.liveCollaboration, copy.messages.lastSync, resourceId, roomKey, status, timeLocale]);
 
   useEffect(() => {
     let active = true;
@@ -149,13 +147,13 @@ export default function CollaborationPage() {
             updatedAt: response.document.updatedAt,
             updatedByDisplayName: response.document.updatedByDisplayName
           });
-          setDocumentMessage(response.document.version > 0 ? "تم تحميل آخر نسخة" : "مسودة جديدة");
+          setDocumentMessage(response.document.version > 0 ? copy.messages.loadedLatestVersion : copy.messages.newDraft);
         } else {
           setDocumentMessage(response.error);
         }
       } catch (err) {
         if (active) {
-          setDocumentMessage(err instanceof Error ? err.message : "تعذر تحميل المسودة.");
+          setDocumentMessage(err instanceof Error ? err.message : copy.errors.loadDocument);
         }
       } finally {
         if (active) {
@@ -169,7 +167,7 @@ export default function CollaborationPage() {
     return () => {
       active = false;
     };
-  }, [api, resourceId, roomKey]);
+  }, [api, copy.errors.loadDocument, copy.messages.loadedLatestVersion, copy.messages.newDraft, resourceId, roomKey]);
 
   // Reverb push is additive to the heartbeat polling above: it merges live
   // deltas immediately, while polling stays as the fallback/reconciliation
@@ -198,13 +196,13 @@ export default function CollaborationPage() {
         updatedAt: event.document.updatedAt,
         updatedByDisplayName: event.document.updatedByDisplayName
       });
-      setDocumentMessage(`تحديث حي من ${event.document.updatedByDisplayName ?? "مشارك آخر"}`);
+      setDocumentMessage(copy.messages.liveUpdate.replace("{name}", event.document.updatedByDisplayName ?? copy.messages.anotherParticipant));
     });
 
     return () => {
       echo.leave(`collaboration.room.${currentRoomKey}`);
     };
-  }, [resourceId, roomKey]);
+  }, [copy.messages.anotherParticipant, copy.messages.liveUpdate, resourceId, roomKey]);
 
   const refreshPresence = async () => {
     const currentRoomKey = roomKey.trim();
@@ -216,13 +214,13 @@ export default function CollaborationPage() {
       if (response.ok) {
         setParticipants(response.participants);
         setActiveWindowSeconds(response.activeWindowSeconds);
-        setMessage(`تحديث يدوي: ${new Date().toLocaleTimeString("ar-EG")}`);
+        setMessage(copy.messages.manualUpdate.replace("{time}", new Date().toLocaleTimeString(timeLocale)));
         setError(null);
       } else {
         setError(response.error);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تحديث الحضور.");
+      setError(err instanceof Error ? err.message : copy.errors.refreshPresence);
     } finally {
       setIsRefreshing(false);
     }
@@ -230,7 +228,7 @@ export default function CollaborationPage() {
 
   const acquireLock = async () => {
     if (!resourceId.trim()) {
-      setLockMessage("اختر مورداً قبل طلب القفل.");
+      setLockMessage(copy.validation.selectResourceToAcquire);
       return;
     }
 
@@ -243,7 +241,7 @@ export default function CollaborationPage() {
 
       if (response.ok) {
         setLocks(response.locks);
-        setLockMessage(`تم حجز ${response.lock.resourceId} حتى ${response.lock.expiresAt ?? "وقت غير محدد"}`);
+        setLockMessage(copy.messages.lockReserved.replace("{resource}", response.lock.resourceId).replace("{expires}", response.lock.expiresAt ?? copy.messages.unspecifiedTime));
         return;
       }
 
@@ -255,7 +253,7 @@ export default function CollaborationPage() {
         }
       }
     } catch (err) {
-      setLockMessage(err instanceof Error ? err.message : "تعذر حجز المورد.");
+      setLockMessage(err instanceof Error ? err.message : copy.errors.acquireLock);
     } finally {
       setIsLocking(null);
     }
@@ -263,7 +261,7 @@ export default function CollaborationPage() {
 
   const releaseLock = async () => {
     if (!resourceId.trim()) {
-      setLockMessage("اختر مورداً قبل تحرير القفل.");
+      setLockMessage(copy.validation.selectResourceToRelease);
       return;
     }
 
@@ -275,12 +273,12 @@ export default function CollaborationPage() {
 
       if (response.ok) {
         setLocks(response.locks);
-        setLockMessage(response.released ? "تم تحرير القفل." : "لا يوجد قفل لك على هذا المورد.");
+        setLockMessage(response.released ? copy.messages.lockReleased : copy.messages.noOwnedLock);
       } else {
         setLockMessage(response.error);
       }
     } catch (err) {
-      setLockMessage(err instanceof Error ? err.message : "تعذر تحرير القفل.");
+      setLockMessage(err instanceof Error ? err.message : copy.errors.releaseLock);
     } finally {
       setIsLocking(null);
     }
@@ -290,7 +288,7 @@ export default function CollaborationPage() {
     const currentRoomKey = roomKey.trim();
     const currentResourceId = resourceId.trim();
     if (!currentRoomKey || !currentResourceId) {
-      setDocumentMessage("اختر غرفة ومورداً قبل حفظ المسودة.");
+      setDocumentMessage(copy.validation.selectRoomAndResource);
       return;
     }
 
@@ -308,7 +306,7 @@ export default function CollaborationPage() {
           updatedAt: response.document.updatedAt,
           updatedByDisplayName: response.document.updatedByDisplayName
         });
-        setDocumentMessage(`تم حفظ النسخة ${response.document.version}`);
+        setDocumentMessage(copy.messages.savedVersion.replace("{version}", String(response.document.version)));
         return;
       }
 
@@ -323,71 +321,71 @@ export default function CollaborationPage() {
       }
       setDocumentMessage(response.error);
     } catch (err) {
-      setDocumentMessage(err instanceof Error ? err.message : "تعذر حفظ المسودة.");
+      setDocumentMessage(err instanceof Error ? err.message : copy.errors.saveDocument);
     } finally {
       setIsDocumentSaving(false);
     }
   };
 
   return (
-    <AppShell subtitle="التعاون الحي" navLabel="التعاون الحي" contentClassName="collaboration-content" tipsPage="collaboration">
+    <AppShell subtitle={t.pageTitles.liveCollaboration} navLabel={t.pageTitles.liveCollaboration} contentClassName="collaboration-content" tipsPage="collaboration">
       <PageToolbar
-        eyebrow={<span className="badge">{isSyncing ? "جار المزامنة" : "مزامنة نشطة"}</span>}
-        title="التعاون الحي"
-        description="غرفة تشغيلية لإظهار الحضور النشط، حجز موارد التحرير، وحفظ مسودة مشتركة عبر الخادم."
+        eyebrow={<span className="badge">{isSyncing ? copy.toolbar.syncing : copy.toolbar.activeSync}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={
           <>
-            <span className="badge">نافذة النشاط {activeWindowSeconds} ثانية</span>
-            <span className="badge">{participants.length} مشارك نشط</span>
-            <span className="badge">{locks.length} قفل تحرير</span>
+            <span className="badge">{copy.toolbar.activeWindow.replace("{seconds}", String(activeWindowSeconds))}</span>
+            <span className="badge">{copy.toolbar.activeParticipants.replace("{count}", String(participants.length))}</span>
+            <span className="badge">{copy.toolbar.editingLocks.replace("{count}", String(locks.length))}</span>
             <StatusPill status={status} />
           </>
         }
       />
 
-      <OperationalSafetyPanel action="مراجعة حالة التعاون" dryRun confidence={90} auditHref="/activity" />
+      <OperationalSafetyPanel action={copy.toolbar.safetyAction} dryRun confidence={90} auditHref="/activity" />
 
-      <div className="split-layout" aria-label="التعاون الحي">
+      <div className="split-layout" aria-label={copy.toolbar.title}>
           <article className="panel auth-form">
             <div className="panel-title-row panel-section-header">
               <div>
-                <h2>إعداد الغرفة</h2>
-                <p>اضبط الغرفة والمورد والحالة، ثم اترك الصفحة ترسل heartbeat تلقائياً.</p>
+                <h2>{copy.room.title}</h2>
+                <p>{copy.room.description}</p>
               </div>
             </div>
 
             <div className="stack">
               <div className="field-row">
                 <label>
-                  <span>مفتاح الغرفة</span>
+                  <span>{copy.room.roomKey}</span>
                   <input value={roomKey} onChange={(event) => setRoomKey(event.target.value)} />
                 </label>
                 <label>
-                  <span>المورد</span>
+                  <span>{copy.room.resource}</span>
                   <input value={resourceId} onChange={(event) => setResourceId(event.target.value)} />
                 </label>
               </div>
               <label>
-                <span>الحالة</span>
+                <span>{copy.room.status}</span>
                 <select value={status} onChange={(event) => setStatus(event.target.value as CollaborationStatus)}>
-                  {Object.entries(statusLabels).map(([value, label]) => (
+                  {Object.entries(copy.statusLabels).map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
               </label>
               <div className="toolbar-row toolbar-start">
                 <button className="button button-primary" type="button" onClick={refreshPresence} disabled={isRefreshing || isSyncing}>
-                  {isRefreshing ? "جاري التحديث" : "تحديث الحضور"}
+                  {isRefreshing ? copy.room.refreshing : copy.room.refreshPresence}
                 </button>
                 <button className="button button-secondary" type="button" onClick={acquireLock} disabled={isLocking !== null}>
-                  {isLocking === "acquire" ? "جاري الحجز" : "حجز المورد"}
+                  {isLocking === "acquire" ? copy.room.acquiring : copy.room.acquireResource}
                 </button>
                 <button className="button button-secondary" type="button" onClick={releaseLock} disabled={isLocking !== null}>
-                  {isLocking === "release" ? "جاري التحرير" : "تحرير القفل"}
+                  {isLocking === "release" ? copy.room.releasing : copy.room.releaseLock}
                 </button>
               </div>
               <div className="state-banner">
-                <strong>حالة القفل</strong>
+                <strong>{copy.room.lockStatus}</strong>
                 <p className="helper-text">{lockMessage}</p>
               </div>
             </div>
@@ -395,29 +393,29 @@ export default function CollaborationPage() {
 
           <article className="panel">
             <SectionHeader
-              title="المشاركون الآن"
-              description="آخر حضور نشط داخل الغرفة الحالية."
+              title={copy.participants.title}
+              description={copy.participants.description}
               count={participants.length}
             />
 
             <div className="stack">
               {error && (
                 <div className="state-banner state-banner-error" role="alert">
-                  <strong>تعذر تحديث الحضور</strong>
+                  <strong>{copy.participants.refreshError}</strong>
                   <p className="helper-text">{error}</p>
                 </div>
               )}
               {!error && (
                 <div className="state-banner state-banner-success">
-                  <strong>الاتصال نشط</strong>
+                  <strong>{copy.participants.connectionActive}</strong>
                   <p className="helper-text">{message}</p>
                 </div>
               )}
 
               {participants.length === 0 ? (
                 <EmptyState
-                  title="لا يوجد مشاركون نشطون حالياً."
-                  description="ستظهر هنا آخر نبضات الحضور عند دخول مشاركين إلى الغرفة."
+                  title={copy.participants.emptyTitle}
+                  description={copy.participants.emptyDescription}
                 />
               ) : (
                 participants.map((participant) => (
@@ -427,7 +425,7 @@ export default function CollaborationPage() {
                       <StatusPill status={participant.status} />
                     </div>
                     <p className="helper-text">
-                      {participant.resourceId || "لا يوجد مورد محدد"} · {participant.lastSeenAt || "بدون وقت"}
+                      {participant.resourceId || copy.participants.unspecifiedResource} · {participant.lastSeenAt || copy.participants.noTime}
                     </p>
                   </div>
                 ))
@@ -437,13 +435,13 @@ export default function CollaborationPage() {
 
           <article className="panel full-span">
             <SectionHeader
-              title="مسودة المورد"
-              description="نص مشترك بإصدار متفائل مرتبط بالمورد الحالي."
+              title={copy.document.title}
+              description={copy.document.description}
             />
 
             <div className="stack">
               <textarea
-                aria-label="محتوى مسودة المورد"
+                aria-label={copy.document.contentLabel}
                 value={documentContent}
                 onChange={(event) => setDocumentContent(event.target.value)}
                 rows={8}
@@ -457,7 +455,7 @@ export default function CollaborationPage() {
                   onClick={saveDocument}
                   disabled={isDocumentSaving || isDocumentLoading}
                 >
-                  {isDocumentSaving ? "جاري الحفظ" : "حفظ المسودة"}
+                  {isDocumentSaving ? copy.document.saving : copy.document.save}
                 </button>
                 <span className="badge">v{documentVersion}</span>
                 {documentMeta.updatedByDisplayName ? (
@@ -470,16 +468,16 @@ export default function CollaborationPage() {
 
           <article className="panel full-span">
             <SectionHeader
-              title="أقفال التحرير"
-              description="تمنع الأقفال تعارض الكتابة على المورد نفسه حتى انتهاء المدة أو التحرير اليدوي."
+              title={copy.locks.title}
+              description={copy.locks.description}
               count={locks.length}
             />
 
             <div className="stack">
               {locks.length === 0 ? (
                 <EmptyState
-                  title="لا توجد أقفال نشطة في هذه الغرفة."
-                  description="استخدم حجز المورد لمنع تعارض التحرير عند العمل على نفس العنصر."
+                  title={copy.locks.emptyTitle}
+                  description={copy.locks.emptyDescription}
                 />
               ) : (
                 locks.map((lock) => (
@@ -488,7 +486,7 @@ export default function CollaborationPage() {
                       <strong>{lock.resourceId}</strong>
                       <span className="badge">{lock.displayName}</span>
                     </div>
-                    <p className="helper-text">ينتهي: {lock.expiresAt || "غير محدد"}</p>
+                    <p className="helper-text">{copy.locks.expiresAt.replace("{expires}", lock.expiresAt || copy.locks.unspecified)}</p>
                   </div>
                 ))
               )}

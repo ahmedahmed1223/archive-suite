@@ -742,7 +742,7 @@
   /* V1-772: without this, touch-scrolling the board can fight dnd-kit's
      pointer handling on the handle (dnd-kit's own touch guidance). Larger
      padding/min-block-size than a desktop-only button needs, since this is
-     the sole touch target for drag — the "نقل" select below is the fully
+     the sole touch target for drag — the Move select below is the fully
      accessible non-drag alternative, not this handle. */
   touch-action: none;
 }
@@ -792,7 +792,7 @@
   }
 }
 
-/* ── Skeleton: حالة تحميل موحّدة (V1-767) ── */
+/* ── Skeleton: unified loading state (V1-767) ── */
 .ui-skeleton {
   display: block;
   inline-size: 100%;
@@ -842,7 +842,7 @@
   }
 }
 
-/* ── Route progress: شريط تقدّم علوي رفيع (V1-780) ── */
+/* ── Route progress: slim top progress bar (V1-780) ── */
 .ui-route-progress {
   position: fixed;
   inset-block-start: 0;
@@ -856,7 +856,7 @@
   block-size: 100%;
   inline-size: 100%;
   background: linear-gradient(90deg, var(--color-accent-primary), var(--color-accent-primary-hover));
-  /* المستند RTL: التعبئة تنمو من الحافة اليمنى. */
+  /* RTL document: fill grows from the right edge. */
   transform-origin: right center;
 }
 

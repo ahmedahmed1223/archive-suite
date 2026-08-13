@@ -7,7 +7,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 final class DepartmentFieldOwnersController extends Controller
 {
@@ -21,7 +20,9 @@ final class DepartmentFieldOwnersController extends Controller
 
     public function replace(Request $request): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $validated = $request->validate([
             'departmentId' => ['required', 'string', 'max:100'],
             'owners' => ['present', 'array', 'max:100'],
@@ -33,12 +34,17 @@ final class DepartmentFieldOwnersController extends Controller
             DB::table('department_field_owners')->where('department_id', $validated['departmentId'])->delete();
             $now = now();
             $rows = array_map(fn (array $owner): array => ['id' => (string) Str::uuid(), 'department_id' => $validated['departmentId'], 'field' => $owner['field'], 'owner' => $owner['owner'], 'created_at' => $now, 'updated_at' => $now], $validated['owners']);
-            if ($rows !== []) DB::table('department_field_owners')->insert($rows);
+            if ($rows !== []) {
+                DB::table('department_field_owners')->insert($rows);
+            }
         });
 
         return $this->index($request);
     }
 
     /** @return array{id: string, departmentId: string, field: string, owner: string} */
-    private function format(object $row): array { return ['id' => $row->id, 'departmentId' => $row->department_id, 'field' => $row->field, 'owner' => $row->owner]; }
+    private function format(object $row): array
+    {
+        return ['id' => $row->id, 'departmentId' => $row->department_id, 'field' => $row->field, 'owner' => $row->owner];
+    }
 }

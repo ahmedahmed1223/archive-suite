@@ -10,6 +10,7 @@ use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use stdClass;
 
@@ -21,9 +22,7 @@ class SearchController extends Controller
         private readonly EmbeddingService $embeddings,
         private readonly TranscriptSearchService $transcripts,
         private readonly StorageRowRepository $storageRows,
-    )
-    {
-    }
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -63,16 +62,32 @@ class SearchController extends Controller
 
         $cursorUid = isset($validated['cursor']) ? StorageRowPayload::decodeCursor($validated['cursor']) : null;
 
-        $query = $this->storageRows->query()
-            ->orderBy('uid');
+        // V2-708: a plain keyword query on Postgres is narrowed through the
+        // search_vector GIN index instead of loading every storage_rows
+        // record and filtering in PHP. Same pool-then-filter tradeoff as
+        // semanticSearch() below: deep pagination past the pool falls off,
+        // acceptable for a search UI. sqlite (tests/CI) and every other mode
+        // keep the exact previous behavior untouched.
+        $useFullTextSearch = $mode !== 'transcript' && $queryText !== '' && ! $isAdvancedQuery
+            && DB::getDriverName() === 'pgsql';
 
-        if (isset($validated['store'])) {
-            $query->where('store', $validated['store']);
+        if ($useFullTextSearch) {
+            $poolSize = max($limit * 5, 100);
+            $records = $this->storageRows
+                ->fullTextSearch($validated['store'] ?? null, $queryText, $poolSize)
+                ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
+        } else {
+            $query = $this->storageRows->query()
+                ->orderBy('uid');
+
+            if (isset($validated['store'])) {
+                $query->where('store', $validated['store']);
+            }
+
+            $records = $query
+                ->get()
+                ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
         }
-
-        $records = $query
-            ->get()
-            ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
 
         if ($mode === 'transcript') {
             $records = $records
@@ -84,7 +99,7 @@ class SearchController extends Controller
                 ->filter(fn (?array $record): bool => $record !== null);
         } else {
             $records = $records
-                ->filter(fn (array $record): bool => $queryText === '' || $isAdvancedQuery || $this->matchesKeyword($record, $queryText))
+                ->filter(fn (array $record): bool => $useFullTextSearch || $queryText === '' || $isAdvancedQuery || $this->matchesKeyword($record, $queryText))
                 ->filter(fn (array $record): bool => $advancedQuery === null || $this->matchesAdvancedQuery($record, $advancedQuery));
         }
 
@@ -120,7 +135,7 @@ class SearchController extends Controller
      * — simplest correct pagination for a ranked (non-sorted-by-key) list.
      * Deep pagination beyond the pool size falls off; fine for a search UI.
      *
-     * @param array<string, mixed> $validated
+     * @param  array<string, mixed>  $validated
      * @return array<string, mixed>|null
      */
     private function semanticSearch(string $queryText, ?string $store, int $limit, array $validated): ?array
@@ -266,11 +281,13 @@ class SearchController extends Controller
                     }
                 }
                 $this->appendAdvancedToken($tokens, ['type' => 'predicate', 'field' => $field, 'value' => $value]);
+
                 continue;
             }
 
             if (in_array($word, ['AND', 'OR', 'NOT'], true) && ($offset === $length || preg_match('/\s/u', $query[$offset]) === 1)) {
                 $this->appendAdvancedToken($tokens, ['type' => $word]);
+
                 continue;
             }
 
@@ -285,8 +302,8 @@ class SearchController extends Controller
     }
 
     /**
-     * @param array<int, array{type: string, field?: string, value?: string}> $tokens
-     * @param array{type: string, field?: string, value?: string} $token
+     * @param  array<int, array{type: string, field?: string, value?: string}>  $tokens
+     * @param  array{type: string, field?: string, value?: string}  $token
      */
     private function appendAdvancedToken(array &$tokens, array $token): void
     {
@@ -377,8 +394,8 @@ class SearchController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $record
+     * @param  array<string, mixed>  $filters
      */
     private function matchesFilters(array $record, array $filters): bool
     {
@@ -421,8 +438,8 @@ class SearchController extends Controller
     }
 
     /**
-     * @param Collection<int, array<string, mixed>> $records
-     * @param array<string, mixed> $validated
+     * @param  Collection<int, array<string, mixed>>  $records
+     * @param  array<string, mixed>  $validated
      * @return array<string, mixed>
      */
     private function buildFacets(Collection $records, array $validated, string $mode): array
@@ -447,9 +464,9 @@ class SearchController extends Controller
     }
 
     /**
-     * @param Collection<int, array<string, mixed>> $records
-     * @param callable(array<string, mixed>): mixed $extractor
-     * @param array<string, string> $labels
+     * @param  Collection<int, array<string, mixed>>  $records
+     * @param  callable(array<string, mixed>): mixed  $extractor
+     * @param  array<string, string>  $labels
      * @return array<int, array{value: string, label: string, count: int}>
      */
     private function facetCounts(Collection $records, callable $extractor, array $labels = []): array
@@ -469,7 +486,7 @@ class SearchController extends Controller
     }
 
     /**
-     * @param Collection<int, array<string, mixed>> $records
+     * @param  Collection<int, array<string, mixed>>  $records
      * @return array<int, array{value: string, label: string, count: int}>
      */
     private function tagFacetCounts(Collection $records): array
@@ -494,8 +511,8 @@ class SearchController extends Controller
     }
 
     /**
-     * @param array<string, int> $counts
-     * @param array<string, string> $labels
+     * @param  array<string, int>  $counts
+     * @param  array<string, string>  $labels
      * @return array<int, array{value: string, label: string, count: int}>
      */
     private function formatFacetCounts(array $counts, array $labels = [], int $limit = 20): array
@@ -515,7 +532,7 @@ class SearchController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      */
     private function workflowStatus(array $record): string
     {

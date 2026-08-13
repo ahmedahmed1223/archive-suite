@@ -5,8 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
-import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import IconPicker from "@/components/IconPicker";
 import { useCapability } from "@/components/RoleGate";
@@ -17,6 +15,8 @@ import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-u
 import { toastError, toastSuccess } from "@/lib/toast";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { iconRegistry } from "@/lib/icon-registry";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type LoadState =
   | { status: "loading" }
@@ -28,9 +28,10 @@ type CollectionsLoadState =
   | { status: "ready" }
   | { status: "error"; message: string };
 
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
 
 export default function CollectionsPage() {
+  const { t } = useLocale();
+  const copy = t.pages.collections;
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -53,7 +54,7 @@ export default function CollectionsPage() {
       setCollections(response.collections);
       setCollectionsState({ status: "ready" });
     } else {
-      const message = response.error || "تعذر تحميل المجموعات.";
+      const message = response.error || copy.loadFailed;
       setCollectionsState({ status: "error", message });
       setStatusMessage(message);
     }
@@ -65,32 +66,34 @@ export default function CollectionsPage() {
       const response = await api.search({ limit: 1000 });
       setState(response.ok ? { status: "ready", records: response.records } : { status: "error", message: response.error });
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshCollections and the inline search callback are redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
-  const records = state.status === "ready" ? state.records : [];
+  const records = useMemo(
+    () => (state.status === "ready" ? state.records : []),
+    [state]
+  );
   const types = useMemo(() => uniqueSorted(records.map((record) => record.type)), [records]);
   const tags = useMemo(() => uniqueSorted(records.flatMap((record) => record.tags || [])), [records]);
   const smartSuggestions = useMemo(() => {
     const topTypes = countBy(records.map((record) => record.type || "").filter(Boolean)).slice(0, 4);
     const topTags = countBy(records.flatMap((record) => record.tags || [])).slice(0, 4);
     return [
-      ...topTypes.map(([value, count]) => ({ label: `نوع: ${value}`, type: value, tag: "all", count })),
-      ...topTags.map(([value, count]) => ({ label: `وسم: ${value}`, type: "all", tag: value, count }))
+      ...topTypes.map(([value, count]) => ({ label: copy.typeSuggestion.replace("{value}", value), type: value, tag: "all", count })),
+      ...topTags.map(([value, count]) => ({ label: copy.tagSuggestion.replace("{value}", value), type: "all", tag: value, count }))
     ].slice(0, 6);
-  }, [records]);
+  }, [records, copy]);
 
   async function createCollection(payload: { name: string; query?: string; type?: string; tag?: string; icon?: string }) {
-    setStatusMessage("جار حفظ المجموعة...");
+    setStatusMessage(copy.saving);
     const response = await api.createCollection(payload);
     if (!response.ok) {
-      const message = response.error || "تعذر حفظ المجموعة.";
+      const message = response.error || copy.saveFailed;
       setStatusMessage(message);
       toastError(message);
       return;
     }
-    setStatusMessage("تم حفظ المجموعة.");
-    toastSuccess("تم حفظ المجموعة.");
+    setStatusMessage(copy.saved); toastSuccess(copy.saved);
     await refreshCollections();
   }
 
@@ -108,27 +111,25 @@ export default function CollectionsPage() {
 
   async function removeCollection(id: string) {
     if (state.status !== "ready") {
-      setStatusMessage("تعذر تأكيد عدد السجلات قبل اكتمال التحميل.");
+      setStatusMessage(copy.countUnavailable);
       return;
     }
     const collection = collections.find((item) => item.id === id);
     if (
       collection &&
       !(await dialogs.confirm({
-        title: "حذف المجموعة",
-        message: `حذف المجموعة لا يحذف السجلات نفسها. تحتوي المجموعة حالياً على ${records.filter((record) => recordMatches(record, collection)).length} سجل. هل تريد المتابعة؟`,
-        confirmLabel: "حذف",
+        title: copy.deleteTitle, message: copy.deleteMessage.replace("{count}", String(records.filter((record) => recordMatches(record, collection)).length)), confirmLabel: copy.delete,
         destructive: true
       }))
     )
       return;
     const response = await api.deleteCollection(id);
     if (!response.ok) {
-      setStatusMessage(response.error || "تعذر حذف المجموعة.");
+      setStatusMessage(response.error || copy.deleteFailed);
       await refreshCollections();
       return;
     }
-    setStatusMessage("تم حذف المجموعة.");
+    setStatusMessage(copy.deleted);
     if (collection) {
       setDeleteStack((stack) =>
         pushUndo(stack, { name: collection.name, query: collection.query || undefined, type: collection.type, tag: collection.tag, icon: collection.icon || undefined })
@@ -142,10 +143,10 @@ export default function CollectionsPage() {
     if (!result) return;
     const response = await api.createCollection(result.entry);
     if (!response.ok) {
-      setStatusMessage(response.error || "تعذر التراجع عن حذف المجموعة.");
+      setStatusMessage(response.error || copy.undoFailed);
       return;
     }
-    setStatusMessage("تم استرجاع المجموعة.");
+    setStatusMessage(copy.restored);
     setDeleteStack(result.stack);
     await refreshCollections();
   }
@@ -155,15 +156,15 @@ export default function CollectionsPage() {
     if (!result) return;
     const current = collections.find((item) => item.name === result.entry.name);
     if (!current) {
-      setStatusMessage(`تعذرت إعادة الحذف: المجموعة "${result.entry.name}" غير موجودة حالياً.`);
+      setStatusMessage(copy.redoMissing.replace("{name}", result.entry.name));
       return;
     }
     const response = await api.deleteCollection(current.id);
     if (!response.ok) {
-      setStatusMessage(response.error || "تعذرت إعادة الحذف.");
+      setStatusMessage(response.error || copy.redoFailed);
       return;
     }
-    setStatusMessage("أُعيد حذف المجموعة.");
+    setStatusMessage(copy.redone);
     setDeleteStack(result.stack);
     await refreshCollections();
   }
@@ -173,59 +174,53 @@ export default function CollectionsPage() {
   }
 
   return (
-    <AppShell subtitle="المجموعات" contentClassName="local-list-content" tipsPage="collections">
+    <AppShell subtitle={t.pageTitles.groups} contentClassName="local-list-content" tipsPage="collections">
       <PageToolbar
-        eyebrow={<span className="badge">تنظيم</span>}
-        title="المجموعات"
-        description="تجميعات يدوية وذكية خفيفة فوق السجلات الحالية، محفوظة في الخادم لكل مستخدم."
+        eyebrow={<span className="badge">{copy.eyebrow}</span>} title={copy.title} description={copy.description}
         meta={(
           <>
-            <span className="badge">{collections.length} مجموعة</span>
-            <span className="badge">{records.length} سجل قابل للتجميع</span>
+            <span className="badge">{copy.collectionCount.replace("{count}", String(collections.length))}</span><span className="badge">{copy.recordCount.replace("{count}", String(records.length))}</span>
           </>
         )}
-        actions={<a className="button button-secondary" href="/archive">فتح الأرشيف</a>}
+        actions={<a className="button button-secondary" href="/archive">{copy.openArchive}</a>}
       >
         {canManageCollections ? (
           showCreateForm ? (
             <form className="archive-toolbar-grid" onSubmit={addCollection}>
               <label>
-                <span>اسم المجموعة</span>
-                <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} placeholder="مثال: مواد تحتاج مراجعة" />
+                <span>{copy.name}</span><input className="search-input" value={name} onChange={(event) => setName(event.target.value)} placeholder={copy.namePlaceholder} />
               </label>
               <label>
-                <span>بحث داخلي</span>
-                <input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="كلمة أو وصف" />
+                <span>{copy.query}</span><input className="search-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.queryPlaceholder} />
               </label>
               <label>
-                <span>النوع</span>
+                <span>{copy.type}</span>
                 <select value={type} onChange={(event) => setType(event.target.value)}>
-                  <option value="all">كل الأنواع</option>
+                  <option value="all">{copy.allTypes}</option>
                   {types.map((item) => <option key={item} value={item}>{item}</option>)}
                 </select>
               </label>
               <label>
-                <span>وسم</span>
+                <span>{copy.tag}</span>
                 <select value={tag} onChange={(event) => setTag(event.target.value)}>
-                  <option value="all">كل الوسوم</option>
+                  <option value="all">{copy.allTags}</option>
                   {tags.map((item) => <option key={item} value={item}>{item}</option>)}
                 </select>
               </label>
               <div className="full-span">
-                <IconPicker value={icon} onChange={setIcon} label="أيقونة المجموعة (اختياري)" />
+                <IconPicker value={icon} onChange={setIcon} label={copy.iconLabel} />
               </div>
               <div className="archive-toolbar-actions">
-                <button className="button button-primary" type="submit" disabled={!name.trim()}>حفظ المجموعة</button>
-                <button className="button button-secondary" type="button" onClick={() => setShowCreateForm(false)}>إلغاء</button>
+                <button className="button button-primary" type="submit" disabled={!name.trim()}>{copy.save}</button><button className="button button-secondary" type="button" onClick={() => setShowCreateForm(false)}>{copy.cancel}</button>
               </div>
             </form>
           ) : (
             <div className="archive-toolbar-actions">
-              <button className="button button-primary" type="button" onClick={() => setShowCreateForm(true)}>+ مجموعة جديدة</button>
+              <button className="button button-primary" type="button" onClick={() => setShowCreateForm(true)}>{copy.newCollection}</button>
             </div>
           )
         ) : (
-          <p className="helper-text">لا تملك صلاحية إنشاء مجموعات جديدة.</p>
+          <p className="helper-text">{copy.noPermission}</p>
         )}
         {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
       </PageToolbar>
@@ -238,7 +233,7 @@ export default function CollectionsPage() {
             disabled={!canUndo(deleteStack)}
             onClick={() => void handleUndoRemoveCollection()}
           >
-            تراجع عن الحذف{deleteStack.past.length > 0 ? ` (${deleteStack.past.length})` : ""}
+            {copy.undo}{deleteStack.past.length > 0 ? ` (${deleteStack.past.length})` : ""}
           </button>
           <button
             type="button"
@@ -246,35 +241,34 @@ export default function CollectionsPage() {
             disabled={!canRedo(deleteStack)}
             onClick={() => void handleRedoRemoveCollection()}
           >
-            إعادة الحذف{deleteStack.future.length > 0 ? ` (${deleteStack.future.length})` : ""}
+            {copy.redo}{deleteStack.future.length > 0 ? ` (${deleteStack.future.length})` : ""}
           </button>
         </div>
       ) : null}
 
-      {state.status === "loading" ? <div className="panel panel-compact"><Skeleton label="جار تحميل السجلات..." /></div> : null}
+      {state.status === "loading" ? <div className="panel panel-compact"><Skeleton label={copy.loadingRecords} /></div> : null}
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل السجلات</strong>
+          <strong>{copy.loadRecordsFailed}</strong>
           <span className="helper-text">{state.message}</span>
         </div>
       ) : null}
 
-      {collectionsState.status === "loading" ? <div className="panel panel-compact"><Skeleton label="جار تحميل المجموعات..." /></div> : null}
+      {collectionsState.status === "loading" ? <div className="panel panel-compact"><Skeleton label={copy.loadingCollections} /></div> : null}
       {collectionsState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل المجموعات</strong>
+          <strong>{copy.loadFailed}</strong>
           <span className="helper-text">{collectionsState.message}</span>
-          <div><button className="button button-secondary button-sm" type="button" onClick={() => void refreshCollections()}>إعادة المحاولة</button></div>
+          <div><button className="button button-secondary button-sm" type="button" onClick={() => void refreshCollections()}>{copy.retry}</button></div>
         </div>
       ) : null}
 
       {collectionsState.status === "ready" && collections.length === 0 ? (
         <EmptyState
-          title="لا توجد مجموعات محفوظة بعد."
-          description="أنشئ مجموعة حسب بحث أو نوع أو وسم، أو استخدم أحد الاقتراحات الذكية أدناه."
+          title={copy.empty} description={copy.emptyDescription}
         />
       ) : collectionsState.status === "ready" ? (
-        <section className="dense-grid" aria-label="المجموعات المحفوظة">
+        <section className="dense-grid" aria-label={copy.savedCollections}>
           {collections.map((collection) => {
             const matches = state.status === "ready" ? records.filter((record) => recordMatches(record, collection)) : [];
             const searchTerm = collection.query || (collection.tag !== "all" ? collection.tag : collection.name);
@@ -286,23 +280,20 @@ export default function CollectionsPage() {
                   <div>
                     <span className="badge">
                       {CollectionIcon && <CollectionIcon aria-hidden="true" size={14} strokeWidth={2} />}
-                      مجموعة
+                      {copy.collection}
                     </span>
                     <h3>{collection.name}</h3>
                   </div>
                   <strong className="metric-value">{matches.length}</strong>
                 </div>
                 <dl className="mobile-field-list">
-                  <div><dt>النوع</dt><dd>{collection.type === "all" ? "كل الأنواع" : collection.type}</dd></div>
-                  <div><dt>الوسم</dt><dd>{collection.tag === "all" ? "كل الوسوم" : collection.tag}</dd></div>
-                  <div><dt>الإنشاء</dt><dd>{collection.createdAt ? formatDate(collection.createdAt) : "-"}</dd></div>
+                  <div><dt>{copy.type}</dt><dd>{collection.type === "all" ? copy.allTypes : collection.type}</dd></div><div><dt>{copy.tag}</dt><dd>{collection.tag === "all" ? copy.allTags : collection.tag}</dd></div><div><dt>{copy.created}</dt><dd>{collection.createdAt ? formatDate(collection.createdAt) : "-"}</dd></div>
                 </dl>
-                <ChangeImpactPreview impact={buildChangeImpact({ action: "update", entity: "المجموعة", affectedCount: 0 })} />
-                <p className="helper-text">{state.status === "ready" ? `المعاينة الحالية تشمل ${matches.length} سجل؛ حذف المجموعة لا يغيّر هذه السجلات.` : "تعذر تأكيد عدد السجلات قبل اكتمال التحميل."}</p>
+                <ChangeImpactPreview impact={buildChangeImpact({ action: "update", entity: copy.entity, affectedCount: 0 })} /><p className="helper-text">{state.status === "ready" ? copy.preview.replace("{count}", String(matches.length)) : copy.countUnavailable}</p>
                 <div className="button-row">
-                  <a className="button button-primary button-sm" href={searchHref}>عرض النتائج</a>
+                  <a className="button button-primary button-sm" href={searchHref}>{copy.results}</a>
                   {canManageCollections && (
-                    <button className="button button-danger button-sm" type="button" disabled={state.status !== "ready"} onClick={() => void removeCollection(collection.id)}>حذف</button>
+                    <button className="button button-danger button-sm" type="button" disabled={state.status !== "ready"} onClick={() => void removeCollection(collection.id)}>{copy.delete}</button>
                   )}
                 </div>
               </article>
@@ -314,8 +305,7 @@ export default function CollectionsPage() {
       {canManageCollections && smartSuggestions.length > 0 ? (
         <section className="page-section" aria-labelledby="smart-collections-heading">
           <div className="toolbar-row toolbar-start">
-            <h2 id="smart-collections-heading" className="section-heading">اقتراحات ذكية</h2>
-            <span className="badge">من بيانات الأرشيف</span>
+            <h2 id="smart-collections-heading" className="section-heading">{copy.suggestions}</h2><span className="badge">{copy.archiveData}</span>
           </div>
           <div className="analytics-tag-list">
             {smartSuggestions.map((suggestion) => (
@@ -323,7 +313,7 @@ export default function CollectionsPage() {
                 <span>{suggestion.label}</span>
                 <div className="button-row">
                   <strong>{suggestion.count}</strong>
-                  <button type="button" className="button button-secondary button-sm" onClick={() => void saveSuggestion(suggestion)}>حفظ</button>
+                  <button type="button" className="button button-secondary button-sm" onClick={() => void saveSuggestion(suggestion)}>{copy.save}</button>
                 </div>
               </div>
             ))}

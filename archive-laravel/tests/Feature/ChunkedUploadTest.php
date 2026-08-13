@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -17,7 +18,7 @@ use Tests\TestCase;
  */
 class ChunkedUploadTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -28,7 +29,7 @@ class ChunkedUploadTest extends TestCase
         config(['ingest.chunk_upload.min_chunk_bytes' => 1]);
     }
 
-    private function putChunk(string $sessionId, int $index, string $bytes): \Illuminate\Testing\TestResponse
+    private function putChunk(string $sessionId, int $index, string $bytes): TestResponse
     {
         return $this->call(
             'PUT',

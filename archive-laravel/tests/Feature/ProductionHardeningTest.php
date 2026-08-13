@@ -63,7 +63,7 @@ class ProductionHardeningTest extends TestCase
     private function runSeederAs(string $environment): void
     {
         $this->app->detectEnvironment(fn () => $environment);
-        (new DatabaseSeeder())->setContainer($this->app)->run();
+        (new DatabaseSeeder)->setContainer($this->app)->run();
     }
 
     public function test_seeder_throws_in_production_when_admin_password_unset(): void

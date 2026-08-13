@@ -36,15 +36,14 @@ class ScheduledUploadState
     /**
      * Attempt an atomic optimistic-lock state transition.
      *
-     * @param string $id           ScheduledUpload ID (UUID)
-     * @param string $from         Expected current status
-     * @param string $to           Desired new status
-     * @param int    $version      Expected current version
-     * @param array  $changes      Additional columns to update (e.g., ['lease_expires_at' => now()->addHour()])
+     * @param  string  $id  ScheduledUpload ID (UUID)
+     * @param  string  $from  Expected current status
+     * @param  string  $to  Desired new status
+     * @param  int  $version  Expected current version
+     * @param  array  $changes  Additional columns to update (e.g., ['lease_expires_at' => now()->addHour()])
+     * @return ScheduledUpload the updated model
      *
      * @throws ScheduledUploadConflict if the transition is illegal or the record changed concurrently
-     *
-     * @return ScheduledUpload the updated model
      */
     public function transition(string $id, string $from, string $to, int $version, array $changes = []): ScheduledUpload
     {
@@ -53,7 +52,10 @@ class ScheduledUploadState
         }
         $changed = ScheduledUpload::query()->whereKey($id)->where('status', $from)->where('version', $version)
             ->update([...$changes, 'status' => $to, 'version' => $version + 1, 'updated_at' => now()]);
-        if ($changed !== 1) throw ScheduledUploadConflict::staleVersion();
+        if ($changed !== 1) {
+            throw ScheduledUploadConflict::staleVersion();
+        }
+
         return ScheduledUpload::query()->findOrFail($id);
     }
 }

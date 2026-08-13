@@ -1,0 +1,20 @@
+export const intakeTemplatesPanel = {
+  title: "قوالب الإدخال",
+  description: "احفظ مجموعة حقول متكررة (مجلد، وسوم) لتسريع إدخال السجلات المتشابهة.",
+  loadError: "تعذر تحميل قوالب الإدخال.",
+  fieldRequiredError: "أضف حقلاً واحدًا على الأقل للقالب (مجلد أو وسوم).",
+  deleteError: "تعذر حذف القالب.",
+  nameLabel: "اسم القالب",
+  typeLabel: "النوع (اختياري)",
+  typePlaceholder: "video",
+  folderLabel: "مجلّد افتراضي (اختياري)",
+  tagsLabel: "وسوم افتراضية (مفصولة بفاصلة)",
+  saving: "جار الحفظ...",
+  saveButton: "حفظ القالب",
+  loading: "جار تحميل قوالب الإدخال...",
+  loadErrorHeading: "تعذر تحميل قوالب الإدخال",
+  retry: "إعادة المحاولة",
+  empty: "لا توجد قوالب محفوظة بعد.",
+  deleting: "جار الحذف...",
+  deleteButton: "حذف"
+};

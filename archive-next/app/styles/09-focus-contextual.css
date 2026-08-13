@@ -79,25 +79,20 @@
   color: var(--color-text-primary);
 }
 
+/* A full pulsing ring around the button read as an out-of-place "frame"
+   next to the plain .icon-action buttons beside it (notifications bell,
+   etc.) — a small corner dot matches the bell's own unread-badge language
+   instead of introducing a second, louder attention pattern. */
 .contextual-tips__trigger[data-dismissed="false"]::after {
   content: "";
   position: absolute;
-  inset: 0;
-  border: 2px solid var(--color-brand-primary);
+  inset-block-start: 0.2rem;
+  inset-inline-end: 0.2rem;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
   border-radius: 50%;
+  background: var(--color-brand-primary);
   pointer-events: none;
-  animation: pulse-ring 2s ease-in-out infinite;
-}
-
-@keyframes pulse-ring {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0;
-  }
 }
 
 /* Anchored to .contextual-tips (position:relative) instead of a fixed
@@ -150,6 +145,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-inline-size: var(--control-height);
+  min-block-size: var(--control-height);
   padding: 4px;
   background: none;
   border: none;

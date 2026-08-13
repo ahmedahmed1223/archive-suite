@@ -14,5 +14,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void { Schema::table('inbox_items', fn (Blueprint $table) => $table->dropColumn(['department_id', 'routing_history'])); }
+    public function down(): void
+    {
+        Schema::table('inbox_items', fn (Blueprint $table) => $table->dropColumn(['department_id', 'routing_history']));
+    }
 };

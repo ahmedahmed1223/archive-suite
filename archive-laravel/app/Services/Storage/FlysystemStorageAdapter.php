@@ -22,6 +22,7 @@ final class FlysystemStorageAdapter implements StorageAdapter
             fclose($stream);
             throw new RuntimeException('Storage source does not support resume offsets.');
         }
+
         return $stream;
     }
 
@@ -42,20 +43,44 @@ final class FlysystemStorageAdapter implements StorageAdapter
         }
     }
 
-    public function exists(string $path): bool { return $this->disk->exists(StoragePath::normalize($path)); }
-    public function size(string $path): int { return $this->disk->size(StoragePath::normalize($path)); }
+    public function exists(string $path): bool
+    {
+        return $this->disk->exists(StoragePath::normalize($path));
+    }
+
+    public function size(string $path): int
+    {
+        return $this->disk->size(StoragePath::normalize($path));
+    }
 
     public function list(string $path = ''): array
     {
         $path = StoragePath::normalize($path);
+
         return collect($this->disk->listContents($path, false))->map(function ($entry): array {
             $isDirectory = $entry->isDir();
+
             return ['path' => $entry->path(), 'name' => basename($entry->path()), 'type' => $isDirectory ? 'directory' : 'file', 'size' => $isDirectory ? null : $entry->fileSize()];
         })->values()->all();
     }
 
-    public function createDirectory(string $path): void { $this->disk->makeDirectory(StoragePath::normalize($path)); }
-    public function delete(string $path): void { $this->disk->delete(StoragePath::normalize($path)); }
-    public function move(string $from, string $to): void { $this->disk->move(StoragePath::normalize($from), StoragePath::normalize($to)); }
-    public function copy(string $from, string $to): void { $this->disk->copy(StoragePath::normalize($from), StoragePath::normalize($to)); }
+    public function createDirectory(string $path): void
+    {
+        $this->disk->makeDirectory(StoragePath::normalize($path));
+    }
+
+    public function delete(string $path): void
+    {
+        $this->disk->delete(StoragePath::normalize($path));
+    }
+
+    public function move(string $from, string $to): void
+    {
+        $this->disk->move(StoragePath::normalize($from), StoragePath::normalize($to));
+    }
+
+    public function copy(string $from, string $to): void
+    {
+        $this->disk->copy(StoragePath::normalize($from), StoragePath::normalize($to));
+    }
 }

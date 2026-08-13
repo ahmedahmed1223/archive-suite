@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export interface MetricStripItem {
   label: ReactNode;
@@ -10,13 +11,15 @@ export interface MetricStripItem {
 
 export default function MetricStrip({
   items,
-  ariaLabel = "مؤشرات"
+  ariaLabel
 }: Readonly<{
   items: MetricStripItem[];
   ariaLabel?: string;
 }>) {
+  const { t } = useLocale();
+
   return (
-    <section className="metric-strip" aria-label={ariaLabel}>
+    <section className="metric-strip" aria-label={ariaLabel ?? t.shell.metricStrip.ariaLabel}>
       {items.map((item, index) => (
         <article className="metric-card" data-tone={item.tone || "default"} key={index}>
           {item.icon ? <div className="metric-card__icon" aria-hidden="true">{item.icon}</div> : null}

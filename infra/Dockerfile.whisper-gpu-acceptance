@@ -1,10 +1,12 @@
 # V1-X03 GPU Arabic transcription acceptance image -- TEST ONLY, NOT SHIPPED.
 #
 # The product invokes the `whisper-ctranslate2` binary (config media.whisper_binary)
-# with model large-v3 on device cuda. The existing infra/Dockerfile.whisper does
-# NOT provide that: it installs the openai-whisper package, preloads only the
-# `base` model, and runs on a CPU-only python base as a Flask service. So the
-# configured GPU path had no image at all -- this one exists to exercise it.
+# with model large-v3 on device cuda. The shipped worker image (Dockerfile.worker)
+# installs that CLI but has no CUDA/cuDNN runtime, so WHISPER_DEVICE=cuda would
+# fail there -- this image exists to exercise the GPU path. (V2-202 removed a
+# second, unrelated infra/Dockerfile.whisper that installed openai-whisper+base
+# as a standalone CPU Flask service matching no actual deployment -- dead code,
+# not this gap.)
 #
 # cuDNN runtime is required: CTranslate2 4.x loads libcudnn at runtime and fails
 # with a bare CUDA runtime image.

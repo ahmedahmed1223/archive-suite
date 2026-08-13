@@ -12,10 +12,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use JsonException;
 use stdClass;
-use Illuminate\Support\Str;
 
 class RecordsController extends Controller
 {
@@ -23,7 +23,9 @@ class RecordsController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $validated = $request->validate([
             'store' => ['nullable', 'string', 'max:100'], 'title' => ['required', 'string', 'max:500'],
             'description' => ['nullable', 'string'], 'type' => ['nullable', 'string', 'max:100'],
@@ -32,11 +34,12 @@ class RecordsController extends Controller
         $store = $validated['store'] ?? 'archive-items';
         $id = (string) Str::uuid();
         $now = now();
-        $record = ['id'=>$id,'uid'=>$id,'title'=>trim($validated['title']),'description'=>$validated['description'] ?? '',
-            'type'=>$validated['type'] ?? null,'subtype'=>$validated['subtype'] ?? null,'tags'=>$validated['tags'] ?? [],
-            'attachmentCount'=>0,'createdAt'=>$now->toIso8601String(),'updatedAt'=>$now->toIso8601String()];
-        $this->storageRows->insert($store, $id, ['data'=>json_encode($record, JSON_THROW_ON_ERROR),'created_at'=>$now,'updated_at'=>$now]);
-        return response()->json(['ok'=>true,'record'=>$record], 201);
+        $record = ['id' => $id, 'uid' => $id, 'title' => trim($validated['title']), 'description' => $validated['description'] ?? '',
+            'type' => $validated['type'] ?? null, 'subtype' => $validated['subtype'] ?? null, 'tags' => $validated['tags'] ?? [],
+            'attachmentCount' => 0, 'createdAt' => $now->toIso8601String(), 'updatedAt' => $now->toIso8601String()];
+        $this->storageRows->insert($store, $id, ['data' => json_encode($record, JSON_THROW_ON_ERROR), 'created_at' => $now, 'updated_at' => $now]);
+
+        return response()->json(['ok' => true, 'record' => $record], 201);
     }
 
     public function index(Request $request): JsonResponse
@@ -164,6 +167,7 @@ class RecordsController extends Controller
             // just the UI. Documented override: admins may still write.
             if ($existed && ! $isAdmin && DB::table('record_freezes')->where('record_id', $uid)->exists()) {
                 $blocked[] = $uid;
+
                 continue;
             }
 
@@ -186,11 +190,11 @@ class RecordsController extends Controller
             }
 
             $this->storageRows->upsert($validated['store'], $uid, [
-                    'data' => json_encode($normalized, JSON_THROW_ON_ERROR),
-                    'sync_version' => $record['syncVersion'] ?? null,
-                    'last_modified_by' => json_encode($record['lastModifiedBy'] ?? null, JSON_THROW_ON_ERROR),
-                    'updated_at' => $now,
-                    'created_at' => $now,
+                'data' => json_encode($normalized, JSON_THROW_ON_ERROR),
+                'sync_version' => $record['syncVersion'] ?? null,
+                'last_modified_by' => json_encode($record['lastModifiedBy'] ?? null, JSON_THROW_ON_ERROR),
+                'updated_at' => $now,
+                'created_at' => $now,
             ]);
 
             // V1-758B: automation only reacts to the archive store, and only
@@ -268,5 +272,4 @@ class RecordsController extends Controller
 
         return response()->json(['ok' => true, 'count' => $count, 'results' => $results]);
     }
-
 }

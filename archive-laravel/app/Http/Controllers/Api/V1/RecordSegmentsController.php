@@ -57,11 +57,21 @@ class RecordSegmentsController extends Controller
         $validated = $request->validate($this->rules(requireTitle: false));
         $updates = ['updated_at' => now()];
 
-        if (array_key_exists('title', $validated)) $updates['title'] = $validated['title'];
-        if (array_key_exists('description', $validated)) $updates['description'] = $validated['description'];
-        if (array_key_exists('tags', $validated)) $updates['tags'] = json_encode($validated['tags'], JSON_THROW_ON_ERROR);
-        if (array_key_exists('startSeconds', $validated)) $updates['start_seconds'] = $validated['startSeconds'];
-        if (array_key_exists('endSeconds', $validated)) $updates['end_seconds'] = $validated['endSeconds'];
+        if (array_key_exists('title', $validated)) {
+            $updates['title'] = $validated['title'];
+        }
+        if (array_key_exists('description', $validated)) {
+            $updates['description'] = $validated['description'];
+        }
+        if (array_key_exists('tags', $validated)) {
+            $updates['tags'] = json_encode($validated['tags'], JSON_THROW_ON_ERROR);
+        }
+        if (array_key_exists('startSeconds', $validated)) {
+            $updates['start_seconds'] = $validated['startSeconds'];
+        }
+        if (array_key_exists('endSeconds', $validated)) {
+            $updates['end_seconds'] = $validated['endSeconds'];
+        }
 
         DB::table('record_segments')->where('id', $id)->update($updates);
         $updated = DB::table('record_segments')->where('id', $id)->first();

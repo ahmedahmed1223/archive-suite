@@ -96,7 +96,9 @@ class VocabularyController extends Controller
                 ->values()
                 ->all();
         $terms = DB::table('vocabulary_terms')
-            ->leftJoin('department_vocabulary_preferences as preferences', function ($join) use ($userId, $departmentId): void { $join->on('preferences.term_id','=','vocabulary_terms.id')->where('preferences.user_id','=',$userId)->where('preferences.department_id','=',$departmentId); })
+            ->leftJoin('department_vocabulary_preferences as preferences', function ($join) use ($userId, $departmentId): void {
+                $join->on('preferences.term_id', '=', 'vocabulary_terms.id')->where('preferences.user_id', '=', $userId)->where('preferences.department_id', '=', $departmentId);
+            })
             ->where('vocabulary_terms.user_id', $userId)
             ->orderByDesc('preferences.id')
             ->orderByDesc('vocabulary_terms.created_at')

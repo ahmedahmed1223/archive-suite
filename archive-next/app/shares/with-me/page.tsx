@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
@@ -53,14 +54,16 @@ function normalizeToken(value: string) {
   }
 }
 
-function formatDate(value?: string) {
+function formatDate(value: string | undefined, locale: "ar" | "en") {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("ar-SA");
+  return date.toLocaleString(locale === "ar" ? "ar-SA" : "en-US");
 }
 
 export default function SharedWithMePage() {
+  const { locale, t } = useLocale();
+  const copy = t.pages.sharesWithMe;
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
   const [input, setInput] = useState("");
@@ -76,7 +79,7 @@ export default function SharedWithMePage() {
       setInput(token);
       void openShare(token, storedHistory);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reads the share token from the URL once on mount; openShare is redefined every render and would retrigger this
   }, []);
 
   async function openShare(rawToken: string, baseHistory = history) {
@@ -86,13 +89,13 @@ export default function SharedWithMePage() {
     setState({ status: "loading" });
     const response = await api.share(token);
     if (!response.ok) {
-      setState({ status: "error", message: response.error || "تعذر فتح المشاركة." });
+      setState({ status: "error", message: response.error || copy.openError });
       return;
     }
 
     const nextEntry: InboundShareEntry = {
       token,
-      label: response.records[0]?.title || "مشاركة واردة",
+      label: response.records[0]?.title || copy.incomingShare,
       recordCount: response.records.length,
       permission: response.permission,
       openedAt: new Date().toISOString()
@@ -112,9 +115,9 @@ export default function SharedWithMePage() {
     if (
       history.length > 0 &&
       !(await dialogs.confirm({
-        title: "مسح تاريخ المشاركات",
-        message: "مسح تاريخ المشاركات من هذا المتصفح فقط؟ لن يؤدي ذلك إلى إلغاء الروابط.",
-        confirmLabel: "مسح",
+        title: copy.clearHistoryTitle,
+        message: copy.clearHistoryMessage,
+        confirmLabel: copy.clear,
         destructive: true
       }))
     )
@@ -124,47 +127,47 @@ export default function SharedWithMePage() {
   }
 
   return (
-    <AppShell subtitle="مشاركات واردة" navLabel="المشاركات الواردة" contentClassName="local-list-content" tipsPage="shares-with-me">
+    <AppShell subtitle={t.pageTitles.incomingSharesSubtitle} navLabel={t.pageTitles.incomingShares} contentClassName="local-list-content" tipsPage="shares-with-me">
       <PageToolbar
-        eyebrow={<span className="badge">مشاركات واردة</span>}
-        title="المشاركات الواردة"
-        description="افتح روابط مشاركة وصلتك من فريق العمل، واحتفظ بتاريخ محلي سريع للرجوع إليها."
+        eyebrow={<span className="badge">{copy.eyebrow}</span>}
+        title={copy.title}
+        description={copy.description}
         meta={(
           <>
-            <span className="badge">{history.length} في التاريخ</span>
-            <span className="badge">{state.status === "ready" ? `${state.records.length} سجل` : "بانتظار رابط"}</span>
+            <span className="badge">{copy.historyCount.replace("{count}", String(history.length))}</span>
+            <span className="badge">{state.status === "ready" ? copy.recordCount.replace("{count}", String(state.records.length)) : copy.waitingForLink}</span>
           </>
         )}
-        actions={<a className="button button-secondary" href="/shares">روابطي المنشأة</a>}
+        actions={<a className="button button-secondary" href="/shares">{copy.myShares}</a>}
       >
         <form className="archive-toolbar-grid" onSubmit={handleSubmit}>
           <label>
-            <span>Token أو رابط المشاركة</span>
+            <span>{copy.tokenLabel}</span>
             <input
               className="search-input"
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="https://.../share/token أو token"
+              placeholder={copy.tokenPlaceholder}
               dir="ltr"
             />
           </label>
           <div className="archive-toolbar-actions">
-            <button type="submit" className="button button-primary" disabled={!input.trim()}>فتح المشاركة</button>
-            <button type="button" className="button button-secondary" onClick={clearHistory} disabled={history.length === 0}>مسح التاريخ</button>
+            <button type="submit" className="button button-primary" disabled={!input.trim()}>{copy.open}</button>
+            <button type="button" className="button button-secondary" onClick={clearHistory} disabled={history.length === 0}>{copy.clearHistory}</button>
           </div>
         </form>
       </PageToolbar>
 
       {state.status === "loading" ? (
         <div className="panel panel-compact" role="status">
-          <p className="form-status">جار فتح المشاركة...</p>
+          <p className="form-status">{copy.loading}</p>
         </div>
       ) : null}
 
       {state.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر فتح المشاركة</strong>
-          <span className="helper-text">{redactAdminSecrets(state.message)} — قد يكون الرابط منتهياً أو غير مسموح لك.</span>
+          <strong>{copy.errorTitle}</strong>
+          <span className="helper-text">{copy.errorDescription.replace("{error}", redactAdminSecrets(state.message))}</span>
         </div>
       ) : null}
 
@@ -172,15 +175,15 @@ export default function SharedWithMePage() {
         <section className="panel">
           <div className="panel-title-row">
             <div>
-              <h2>محتوى المشاركة</h2>
+              <h2>{copy.contentTitle}</h2>
               <p className="mono-text wrap-anywhere" dir="ltr">{state.token}</p>
             </div>
             <span className="badge">{state.permission || "view"}</span>
           </div>
-          <p className="helper-text">معاينة محدودة وفق صلاحية الرابط؛ لا تعرض حالة انتهاء إلا إذا قدمها مصدر الرابط.</p>
+          <p className="helper-text">{copy.limitedPreview}</p>
 
           {state.records.length === 0 ? (
-            <EmptyState title="المشاركة لا تحتوي سجلات." description="قد تكون صلاحية الرابط محدودة أو انتهت." />
+            <EmptyState title={copy.emptyShareTitle} description={copy.emptyShareDescription} />
           ) : (
             <div className="mobile-card-list" role="list">
               {state.records.map((record) => (
@@ -199,7 +202,7 @@ export default function SharedWithMePage() {
                     </div>
                   ) : null}
                   <a className="button button-secondary button-sm" href={`/share/${encodeURIComponent(state.token)}`}>
-                    فتح العارض العام
+                    {copy.openPublicViewer}
                   </a>
                 </article>
               ))}
@@ -211,7 +214,7 @@ export default function SharedWithMePage() {
       {history.length > 0 ? (
         <section className="panel">
           <div className="panel-title-row">
-            <h2>تاريخ المشاركات الواردة</h2>
+            <h2>{copy.historyTitle}</h2>
             <span className="badge">{history.length}</span>
           </div>
           <div className="mobile-card-list" role="list">
@@ -225,13 +228,13 @@ export default function SharedWithMePage() {
                   <strong>{entry.recordCount}</strong>
                 </div>
                 <p className="mono-text wrap-anywhere" dir="ltr">{entry.token}</p>
-                <p className="helper-text">آخر فتح: {formatDate(entry.openedAt)}</p>
+                <p className="helper-text">{copy.lastOpened.replace("{date}", formatDate(entry.openedAt, locale))}</p>
                 <div className="button-row">
                   <button type="button" className="button button-secondary button-sm" onClick={() => void openShare(entry.token)}>
-                    إعادة فتح
+                    {copy.reopen}
                   </button>
                   <a className="button button-secondary button-sm" href={`/share/${encodeURIComponent(entry.token)}`}>
-                    العارض العام
+                    {copy.publicViewer}
                   </a>
                 </div>
               </article>
@@ -239,7 +242,7 @@ export default function SharedWithMePage() {
           </div>
         </section>
       ) : state.status === "idle" ? (
-        <EmptyState title="لا توجد مشاركات واردة بعد." description="الصق token أو رابط مشاركة لفتح السجلات المشتركة معك." />
+        <EmptyState title={copy.emptyHistoryTitle} description={copy.emptyHistoryDescription} />
       ) : null}
     </AppShell>
   );

@@ -3,6 +3,7 @@
 import { CheckCircle2, Info, XCircle } from "lucide-react";
 import { Toast, ToastAction, ToastClose, ToastDescription } from "@/components/ui/Toast";
 import { dismissToast, useToasts, type ToastTone } from "@/lib/toast";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const toneIcon = {
   success: CheckCircle2,
@@ -16,6 +17,7 @@ function ToneIcon({ tone }: { tone: ToastTone }) {
 }
 
 export default function ToastHub() {
+  const { t } = useLocale();
   const toasts = useToasts();
 
   return (
@@ -52,7 +54,7 @@ export default function ToastHub() {
               {item.action.label}
             </ToastAction>
           ) : null}
-          <ToastClose className="ui-toast__close" aria-label="إغلاق">
+          <ToastClose className="ui-toast__close" aria-label={t.shared.feedback.dismiss}>
             ×
           </ToastClose>
         </Toast>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createArchiveApiClient, type FileBrowserEntry } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 interface MediaSourcePickerProps {
   label: string;
@@ -11,6 +12,8 @@ interface MediaSourcePickerProps {
 /** Lets the user browse stored media via the Laravel files browser instead of
  * typing a raw path, so play/compare pick a real, existing source. */
 export default function MediaSourcePicker({ label, onSelect }: MediaSourcePickerProps) {
+  const { t } = useLocale();
+  const copy = t.shared.mediaSourcePicker;
   const [open, setOpen] = useState(false);
   const [path, setPath] = useState("");
   const [entries, setEntries] = useState<FileBrowserEntry[]>([]);
@@ -43,14 +46,14 @@ export default function MediaSourcePicker({ label, onSelect }: MediaSourcePicker
       </button>
 
       {open ? (
-        <div className="panel panel-compact media-source-picker__browser" role="dialog" aria-label="اختيار مصدر المادة">
+        <div className="panel panel-compact media-source-picker__browser" role="dialog" aria-label={copy.dialogAriaLabel}>
           <div className="panel-title-row">
-            <h3>تصفح ملفات الأرشيف — {path || "/"}</h3>
+            <h3>{copy.browseTitle.replace("{path}", path || "/")}</h3>
             <button type="button" className="button button-secondary button-sm" onClick={() => setOpen(false)}>
-              إغلاق
+              {copy.close}
             </button>
           </div>
-          {loading ? <p className="helper-text">جارٍ التحميل...</p> : null}
+          {loading ? <p className="helper-text">{copy.loading}</p> : null}
           {error ? <p className="form-status status-error" role="alert">{error}</p> : null}
           <ul className="media-source-picker__list">
             {entries.map((entry) => (

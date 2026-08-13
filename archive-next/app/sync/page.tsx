@@ -9,7 +9,6 @@ import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type SyncLogEntry, type SyncSummary } from "@/lib/archive-api";
 import "./sync.css";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { formatArabicDateTime } from "@/lib/arabic-format";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type SyncState =
@@ -17,15 +16,21 @@ type SyncState =
   | { status: "ready"; entries: SyncLogEntry[]; summary: SyncSummary }
   | { status: "error"; message: string };
 
-function statusLabel(status: SyncLogEntry["status"], locale: "ar" | "en") {
-  return locale === "en" ? (status === "conflict" ? "Needs sync" : "Synced") : (status === "conflict" ? "يحتاج مزامنة" : "متزامن");
+function statusLabel(status: SyncLogEntry["status"], labels: { synced: string; conflict: string }) {
+  return status === "conflict" ? labels.conflict : labels.synced;
+}
+
+function formatDateTime(value: string | null | undefined, locale: "ar" | "en") {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString(locale === "en" ? "en-US" : "ar-SA");
 }
 
 type SyncFilter = "all" | SyncLogEntry["status"];
 
 export default function SyncPage() {
-  const { locale } = useLocale();
-  const copy = locale === "en" ? { loadError: "Could not load the sync log.", eyebrow: "Sync", title: "Sync log and conflicts", description: "Record synchronization status and possible conflicts across archive stores.", records: "records", synced: "synced", conflicts: "conflicts", refresh: "Refresh", filter: "Filter sync log", all: "All", conflict: "Conflict", summary: "Sync summary", total: "Total records", last200: "Within the last 200 entries", ready: "Available across stores", needsDecision: "Needs a decision", loading: "Loading sync log…", error: "Could not load the sync log", results: "Sync results", columns: { id: "Identifier", store: "Store", status: "Status", version: "Sync version", updated: "Last updated" }, preview: "Sync record preview", unspecified: "Unspecified", openRecord: "Open record", activity: "Activity log", emptyTitle: "No matching records", emptyDescription: "Change the filter or wait for the first sync or bulk import." } : { loadError: "تعذر تحميل سجل المزامنة.", eyebrow: "المزامنة", title: "سجل المزامنة والتعارضات", description: "حالة مزامنة السجلات وتعارضاتها المحتملة عبر مخازن الأرشيف.", records: "سجل", synced: "متزامن", conflicts: "تعارض", refresh: "تحديث", filter: "فلترة سجل المزامنة", all: "الكل", conflict: "تعارض", summary: "ملخص المزامنة", total: "إجمالي السجلات", last200: "ضمن آخر 200 إدخال", ready: "جاهزة عبر المخازن", needsDecision: "تحتاج قراراً", loading: "جارٍ تحميل سجل المزامنة…", error: "تعذر تحميل سجل المزامنة", results: "نتائج المزامنة", columns: { id: "المعرّف", store: "المخزن", status: "الحالة", version: "إصدار المزامنة", updated: "آخر تحديث" }, preview: "معاينة سجل المزامنة", unspecified: "غير محدد", openRecord: "فتح السجل", activity: "سجل النشاط", emptyTitle: "لا توجد سجلات مطابقة", emptyDescription: "غيّر الفلتر أو انتظر أول عملية مزامنة أو استيراد جماعي." };
+  const { locale, t } = useLocale();
+  const copy = t.pages.sync;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<SyncState>({ status: "loading" });
   const [filter, setFilter] = useState<SyncFilter>("all");
@@ -50,18 +55,17 @@ export default function SyncPage() {
     void loadSync();
   }, [loadSync]);
 
-  const entries = state.status === "ready" ? state.entries : [];
-  const filteredEntries = useMemo(
-    () => entries.filter((entry) => filter === "all" || entry.status === filter),
-    [entries, filter]
-  );
+  const filteredEntries = useMemo(() => {
+    const entries = state.status === "ready" ? state.entries : [];
+    return entries.filter((entry) => filter === "all" || entry.status === filter);
+  }, [state, filter]);
   const selectedEntry = useMemo(
     () => filteredEntries.find((entry) => `${entry.store}:${entry.uid}` === selectedKey) ?? filteredEntries[0] ?? null,
     [filteredEntries, selectedKey]
   );
 
   return (
-    <AppShell subtitle="سجل المزامنة" navLabel="المزامنة" contentClassName="sync-content" tipsPage="sync">
+    <AppShell subtitle={t.pageTitles.syncLog} navLabel={t.pageTitles.sync} contentClassName="sync-content" tipsPage="sync">
       <PageToolbar
         icon={<GitCompareArrows size={24} />}
         eyebrow={<span className="badge">{copy.eyebrow}</span>}
@@ -169,12 +173,12 @@ export default function SyncPage() {
                           <td>{entry.store}</td>
                           <td>
                             <span className={`badge ${entry.status === "conflict" ? "badge-error" : "badge-success"}`}>
-                              {statusLabel(entry.status, locale)}
+                              {statusLabel(entry.status, copy.statusLabels)}
                             </span>
                           </td>
                           <td>{entry.syncVersion ?? "—"}</td>
                           <td>
-                            {locale === "en" ? (entry.updatedAt ? new Date(entry.updatedAt).toLocaleString("en-US") : "—") : formatArabicDateTime(entry.updatedAt, "—")}
+                            {formatDateTime(entry.updatedAt, locale)}
                           </td>
                         </tr>
                       );
@@ -187,7 +191,7 @@ export default function SyncPage() {
               {selectedEntry ? (
                 <>
                   <span className={`badge ${selectedEntry.status === "conflict" ? "badge-error" : "badge-success"}`}>
-                    {statusLabel(selectedEntry.status, locale)}
+                    {statusLabel(selectedEntry.status, copy.statusLabels)}
                   </span>
                   <h2>{selectedEntry.uid}</h2>
                   <div className="kv-grid">
@@ -199,7 +203,7 @@ export default function SyncPage() {
                       <strong>{copy.columns.version}</strong><span>{selectedEntry.syncVersion ?? copy.unspecified}</span>
                     </div>
                     <div className="kv-item">
-                      <strong>{copy.columns.updated}</strong><span>{locale === "en" ? (selectedEntry.updatedAt ? new Date(selectedEntry.updatedAt).toLocaleString("en-US") : "—") : formatArabicDateTime(selectedEntry.updatedAt, "—")}</span>
+                      <strong>{copy.columns.updated}</strong><span>{formatDateTime(selectedEntry.updatedAt, locale)}</span>
                     </div>
                   </div>
                   <div className="button-row">

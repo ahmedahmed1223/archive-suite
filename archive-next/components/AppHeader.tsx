@@ -1,7 +1,6 @@
 "use client";
 
 import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { BRAND } from "@/lib/brand";
 import { getLocalizedNavigation, isActivePath } from "@/lib/navigation";
 import Link from "next/link";
@@ -18,9 +17,9 @@ import { formatShortcutDisplay, getShortcut } from "@/lib/keyboard-shortcuts";
 import { useTheme } from "@/components/ThemeProvider";
 import { filterGuideChapters, getGuideChapterForPath } from "@/lib/in-app-guide";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { resolveIcon } from "@/lib/icon-registry";
 
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
-const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
+const navIcon = (name: string) => resolveIcon(name, Icons.Circle);
 
 const LIGHT_PRESET = "neutral-light";
 const DARK_PRESET = "cinematic-dark";
@@ -32,7 +31,7 @@ export default function AppHeader({
 }: Readonly<{
   subtitle: string;
   navLabel?: string;
-  /** عناصر إضافية تُلحق بمسار التنقل الأساسي (مثل اسم العنصر المفتوح حاليًا). */
+  /** Extra items appended to the main navigation trail, such as the open item's name. */
   breadcrumbExtra?: BreadcrumbItem[];
 }>) {
   const { locale, t } = useLocale();
@@ -183,22 +182,47 @@ export default function AppHeader({
             <NotificationsPanel />
           </>
         )}
-        {auth.status === "authenticated" ? (
-          <div className="session-chip" title={userLabel}>
-            <Icons.UserCircle aria-hidden="true" size={18} strokeWidth={2} />
-            <span>{userLabel}</span>
-            <button type="button" onClick={handleLogout} aria-label={t.shell.signOut}>
-              <Icons.LogOut aria-hidden="true" size={16} strokeWidth={2} />
-            </button>
+        <div className="topbar-session topbar-session--inline">
+          {auth.status === "authenticated" ? (
+            <div className="session-chip" title={userLabel}>
+              <Icons.UserCircle aria-hidden="true" size={18} strokeWidth={2} />
+              <span>{userLabel}</span>
+              <button type="button" onClick={handleLogout} aria-label={t.shell.signOut}>
+                <Icons.LogOut aria-hidden="true" size={16} strokeWidth={2} />
+              </button>
+            </div>
+          ) : (
+            <Link className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
+              <Icons.LogIn aria-hidden="true" size={18} strokeWidth={2} />
+              <span>{t.shell.signIn}</span>
+            </Link>
+          )}
+          <DensityToggle />
+          <FocusModeToggle />
+        </div>
+        <details className="topbar-more">
+          <summary className="icon-action" role="button" aria-label={t.shell.moreActions} title={t.shell.moreActions}>
+            <Icons.MoreVertical aria-hidden="true" size={18} strokeWidth={2} />
+          </summary>
+          <div className="topbar-more__panel ui-dropdown-content" role="menu">
+            {auth.status === "authenticated" ? (
+              <div className="session-chip" title={userLabel}>
+                <Icons.UserCircle aria-hidden="true" size={18} strokeWidth={2} />
+                <span>{userLabel}</span>
+                <button type="button" onClick={handleLogout} aria-label={t.shell.signOut}>
+                  <Icons.LogOut aria-hidden="true" size={16} strokeWidth={2} />
+                </button>
+              </div>
+            ) : (
+              <Link className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
+                <Icons.LogIn aria-hidden="true" size={18} strokeWidth={2} />
+                <span>{t.shell.signIn}</span>
+              </Link>
+            )}
+            <DensityToggle />
+            <FocusModeToggle />
           </div>
-        ) : (
-          <Link className="icon-action session-login-link" href={`/login?next=${encodeURIComponent(pathname)}`}>
-            <Icons.LogIn aria-hidden="true" size={18} strokeWidth={2} />
-            <span>{t.shell.signIn}</span>
-          </Link>
-        )}
-        <DensityToggle />
-        <FocusModeToggle />
+        </details>
         <button
           type="button"
           className="icon-action command-trigger"

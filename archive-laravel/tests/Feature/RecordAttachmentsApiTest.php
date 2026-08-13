@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class RecordAttachmentsApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     protected function setUp(): void
     {

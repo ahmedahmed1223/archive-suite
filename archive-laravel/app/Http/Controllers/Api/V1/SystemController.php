@@ -5,17 +5,44 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateDisplaySettingsRequest;
 use App\Http\Requests\UpdateSecuritySettingsRequest;
+use App\Services\Display\DisplaySettingsService;
 use App\Services\Odbc\OdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionProbe;
 use App\Services\Odbc\OdbcReadRepository;
 use App\Services\Security\SecuritySettingsService;
 use App\Support\ApiError;
+use Aws\S3\S3Client;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SystemController extends Controller
 {
+    public function getDisplaySettings(DisplaySettingsService $service): JsonResponse
+    {
+        return response()->json([
+            'ok' => true,
+            'settings' => $service->getSettings(),
+        ]);
+    }
+
+    public function updateDisplaySettings(
+        UpdateDisplaySettingsRequest $request,
+        DisplaySettingsService $service,
+    ): JsonResponse {
+        if ($denied = $this->requireAdmin($request)) {
+            return $denied;
+        }
+
+        $service->update($request->validated());
+
+        return response()->json([
+            'ok' => true,
+            'settings' => $service->getSettings(),
+        ]);
+    }
+
     public function odbc(Request $request, OdbcConnectionProbe $probe): JsonResponse
     {
         if ($denied = $this->requireAdmin($request)) {
@@ -52,7 +79,12 @@ class SystemController extends Controller
         }
 
         $limit = (int) $request->query('limit', config('odbc.table_limit', 25));
-        $rows = $repository->readRows($table, $limit);
+
+        try {
+            $rows = $repository->readRows($table, $limit);
+        } catch (\RuntimeException $e) {
+            return response()->json(ApiError::envelope($e->getMessage(), 502), 502);
+        }
 
         return response()->json([
             'ok' => true,
@@ -176,7 +208,9 @@ class SystemController extends Controller
             if (isset($validated['legacyPasswordUpgrade'])) {
                 $service->updateLegacyPasswordUpgrade($validated['legacyPasswordUpgrade']);
             }
-            if (isset($validated['whisperDevice'])) $service->updateWhisperDevice($validated['whisperDevice']);
+            if (isset($validated['whisperDevice'])) {
+                $service->updateWhisperDevice($validated['whisperDevice']);
+            }
 
             return response()->json([
                 'ok' => true,
@@ -254,16 +288,16 @@ class SystemController extends Controller
 
     private function probeStorageConnection(string $driver, string $name, array $config): array
     {
-        $testKey = 'archive-test-' . uniqid() . '.txt';
-        $testContent = 'Archive connection test at ' . now()->toIso8601String();
+        $testKey = 'archive-test-'.uniqid().'.txt';
+        $testContent = 'Archive connection test at '.now()->toIso8601String();
 
         if ($driver === 'local') {
             $path = $config['root'] ?? config('filesystems.disks.local.root');
-            if (!is_dir($path)) {
-                throw new \RuntimeException('Local storage path does not exist: ' . $path);
+            if (! is_dir($path)) {
+                throw new \RuntimeException('Local storage path does not exist: '.$path);
             }
 
-            $testFile = $path . '/' . $testKey;
+            $testFile = $path.'/'.$testKey;
             file_put_contents($testFile, $testContent);
             $read = file_get_contents($testFile);
             @unlink($testFile);
@@ -282,7 +316,7 @@ class SystemController extends Controller
 
         if ($driver === 's3') {
             try {
-                $s3Client = \Aws\S3\S3Client::factory([
+                $s3Client = S3Client::factory([
                     'key' => $config['key'] ?? '',
                     'secret' => $config['secret'] ?? '',
                     'region' => $config['region'] ?? 'us-east-1',
@@ -291,7 +325,7 @@ class SystemController extends Controller
                 ]);
 
                 $bucket = $config['bucket'] ?? '';
-                if (!$bucket) {
+                if (! $bucket) {
                     throw new \RuntimeException('S3 bucket name not configured');
                 }
 
@@ -326,11 +360,11 @@ class SystemController extends Controller
                     'testedAt' => now()->toIso8601String(),
                 ];
             } catch (\Throwable $e) {
-                throw new \RuntimeException('S3 connection failed: ' . $e->getMessage());
+                throw new \RuntimeException('S3 connection failed: '.$e->getMessage());
             }
         }
 
-        throw new \RuntimeException('Unsupported storage driver: ' . $driver);
+        throw new \RuntimeException('Unsupported storage driver: '.$driver);
     }
 
     private function probeDatabaseConnection(array $params): array
@@ -344,7 +378,7 @@ class SystemController extends Controller
 
         try {
             if ($driver === 'mysql') {
-                if (!$port) {
+                if (! $port) {
                     $port = 3306;
                 }
                 $pdo = new \PDO(
@@ -354,7 +388,7 @@ class SystemController extends Controller
                     [\PDO::ATTR_TIMEOUT => 5]
                 );
             } elseif ($driver === 'pgsql') {
-                if (!$port) {
+                if (! $port) {
                     $port = 5432;
                 }
                 $pdo = new \PDO(
@@ -366,11 +400,11 @@ class SystemController extends Controller
             } elseif ($driver === 'sqlite') {
                 $pdo = new \PDO("sqlite:{$database}");
             } else {
-                throw new \RuntimeException('Unsupported database driver: ' . $driver);
+                throw new \RuntimeException('Unsupported database driver: '.$driver);
             }
 
             $result = $pdo->query('SELECT 1');
-            if (!$result) {
+            if (! $result) {
                 throw new \RuntimeException('Query execution failed');
             }
 
@@ -382,7 +416,7 @@ class SystemController extends Controller
                 'testedAt' => now()->toIso8601String(),
             ];
         } catch (\PDOException $e) {
-            throw new \RuntimeException('Database connection error: ' . $e->getMessage());
+            throw new \RuntimeException('Database connection error: '.$e->getMessage());
         }
     }
 

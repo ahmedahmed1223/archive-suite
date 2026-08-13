@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Bell, Clock3, Hourglass, Inbox as InboxIcon, ListCh
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import { useAuthSession } from "@/lib/auth-session";
 import { createArchiveApiClient, type InboxItem } from "@/lib/archive-api";
@@ -21,10 +22,12 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 const PANEL_ITEM_LIMIT = 6;
 
-const todayLabel = () =>
-  new Intl.DateTimeFormat("ar", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date());
+const todayLabel = (locale: "ar" | "en") =>
+  new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).format(new Date());
 
 export default function DailyPage() {
+  const { locale, t } = useLocale();
+  const copy = t.pages.daily;
   const api = useMemo(() => createArchiveApiClient(), []);
   const auth = useAuthSession();
   const { notifications, isLoading: notificationsLoading } = useNotifications();
@@ -37,8 +40,8 @@ export default function DailyPage() {
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [recording, setRecording] = useState(true);
   const [contextStatus, setContextStatus] = useState("");
-  // ponytail: عدّاد الحقوق فقط — نقطة `records` مقسّمة بمؤشر بلا إجمالي،
-  // فعدّ قوائم الأرشيف يتطلب المرور على كل الصفحات؛ تُعرض الأعداد في /archive نفسها.
+  // The records endpoint is cursor-paginated without a total, so archive-wide
+  // work-list counts remain on /archive; this is only the expiring-rights count.
   const [expiringRightsCount, setExpiringRightsCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -108,18 +111,18 @@ export default function DailyPage() {
   function handleRecordingChange(enabled: boolean) {
     setContextRecording(enabled);
     setRecording(enabled);
-    setContextStatus(enabled ? "سيُسجَّل السياق الشخصي على هذا المتصفح." : "توقّف تسجيل السياق الشخصي على هذا المتصفح.");
+    setContextStatus(enabled ? copy.contextRecordingEnabled : copy.contextRecordingDisabled);
   }
 
   function handleClearRecent() {
     clearRecent();
     setRecent([]);
-    setContextStatus("مُسح سجل آخر ما شاهدت.");
+    setContextStatus(copy.recentCleared);
   }
 
   function handleClearSearches() {
     clearRecentSearches();
-    setContextStatus("مُسحت عمليات البحث الأخيرة.");
+    setContextStatus(copy.searchesCleared);
   }
 
   const pendingInbox = useMemo(
@@ -131,51 +134,60 @@ export default function DailyPage() {
   const displayName = auth.user?.name || auth.user?.email || "";
 
   return (
-    <AppShell subtitle="يومي">
+    <AppShell subtitle={t.pageTitles.daily}>
       <header className="dashboard-greeting">
         <div className="dashboard-greeting__intro">
-          <h1>{displayName ? `يومك، ${displayName}` : "يومك"}</h1>
-          <p>{todayLabel()}</p>
+          <h1>{displayName ? copy.greetingName.replace("{name}", displayName) : copy.greeting}</h1>
+          <p>{todayLabel(locale)}</p>
         </div>
       </header>
 
       <div className="record-grid">
-        <section className="panel" aria-label="قوائم العمل">
+        <section className="panel" aria-label={copy.workListsAriaLabel}>
           <header className="dashboard-recent__header">
             <h2>
               <ListChecks aria-hidden="true" size={18} strokeWidth={2} />
-              <span>قوائم العمل</span>
+              <span>{copy.workListsAriaLabel}</span>
             </h2>
           </header>
           <ul className="dashboard-recent__list">
-            {WORK_LISTS.map((workList) => (
+            {WORK_LISTS.map((workList) => {
+              const workListCopy = workList.id === "incomplete"
+                ? copy.workLists.incomplete
+                : workList.id === "drafts"
+                  ? copy.workLists.drafts
+                  : workList.id === "awaiting-review"
+                    ? copy.workLists.awaitingReview
+                    : copy.workLists.expiringRights;
+              return (
               <li key={workList.id}>
                 <Link className="dashboard-recent__item" href={workList.href}>
                   <span className="dashboard-recent__title">
-                    {workList.label}
+                    {workListCopy.label}
                     {workList.id === "expiring-rights" && expiringRightsCount !== null ? (
                       <span className="badge">{expiringRightsCount}</span>
                     ) : null}
                   </span>
-                  <span className="dashboard-recent__meta">{workList.description}</span>
+                  <span className="dashboard-recent__meta">{workList.id === "expiring-rights" ? workListCopy.description.replace("{days}", String(RIGHTS_WARNING_WINDOW_DAYS)) : workListCopy.description}</span>
                 </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </section>
 
-        <section className="panel" aria-label="بحاجة لانتباه">
+        <section className="panel" aria-label={copy.needsAttentionAriaLabel}>
           <header className="dashboard-recent__header">
             <h2>
               <InboxIcon aria-hidden="true" size={18} strokeWidth={2} />
-              <span>بحاجة لانتباه</span>
+              <span>{copy.needsAttention}</span>
             </h2>
-            <Link className="dashboard-recent__all" href="/inbox">فتح الوارد</Link>
+            <Link className="dashboard-recent__all" href="/inbox">{copy.openInbox}</Link>
           </header>
           {inboxLoading ? (
-            <Skeleton label="جار تحميل الوارد..." />
+            <Skeleton label={copy.loadingInbox} />
           ) : pendingInbox.length === 0 ? (
-            <EmptyState icon={<InboxIcon aria-hidden="true" />} title="لا شيء بانتظارك" description="الوارد فارغ من العناصر غير المفروزة." />
+            <EmptyState icon={<InboxIcon aria-hidden="true" />} title={copy.inboxEmptyTitle} description={copy.inboxEmptyDescription} />
           ) : (
             <ul className="dashboard-recent__list">
               {pendingInbox.slice(0, PANEL_ITEM_LIMIT).map((item) => (
@@ -190,18 +202,18 @@ export default function DailyPage() {
           )}
         </section>
 
-        <section className="panel" aria-label="إشعارات غير مقروءة">
+        <section className="panel" aria-label={copy.unreadNotificationsAriaLabel}>
           <header className="dashboard-recent__header">
             <h2>
               <Bell aria-hidden="true" size={18} strokeWidth={2} />
-              <span>إشعارات غير مقروءة</span>
+              <span>{copy.unreadNotifications}</span>
             </h2>
-            <Link className="dashboard-recent__all" href="/notifications">عرض الكل</Link>
+            <Link className="dashboard-recent__all" href="/notifications">{copy.viewAll}</Link>
           </header>
           {notificationsLoading ? (
-            <Skeleton label="جار تحميل الإشعارات..." />
+            <Skeleton label={copy.loadingNotifications} />
           ) : unreadNotifications.length === 0 ? (
-            <EmptyState icon={<Bell aria-hidden="true" />} title="لا إشعارات جديدة" description="كل شيء مقروء." />
+            <EmptyState icon={<Bell aria-hidden="true" />} title={copy.notificationsEmptyTitle} description={copy.notificationsEmptyDescription} />
           ) : (
             <ul className="dashboard-recent__list">
               {unreadNotifications.slice(0, PANEL_ITEM_LIMIT).map((notification) => (
@@ -216,16 +228,16 @@ export default function DailyPage() {
           )}
         </section>
 
-        <section className="panel" aria-label="المفضلة">
+        <section className="panel" aria-label={copy.favoritesAriaLabel}>
           <header className="dashboard-recent__header">
             <h2>
               <Star aria-hidden="true" size={18} strokeWidth={2} />
-              <span>المفضلة</span>
+              <span>{copy.favorites}</span>
             </h2>
-            <Link className="dashboard-recent__all" href="/favorites">عرض الكل</Link>
+            <Link className="dashboard-recent__all" href="/favorites">{copy.viewAll}</Link>
           </header>
           {favorites.length === 0 ? (
-            <EmptyState icon={<Star aria-hidden="true" />} title="لا مفضلات بعد" description="ثبّت السجلات المهمة للوصول السريع." />
+            <EmptyState icon={<Star aria-hidden="true" />} title={copy.favoritesEmptyTitle} description={copy.favoritesEmptyDescription} />
           ) : (
             <ul className="dashboard-recent__list">
               {favorites.slice(0, PANEL_ITEM_LIMIT).map((favorite) => (
@@ -239,15 +251,15 @@ export default function DailyPage() {
           )}
         </section>
 
-        <section className="panel" aria-label="لاحقًا">
+        <section className="panel" aria-label={copy.laterAriaLabel}>
           <header className="dashboard-recent__header">
             <h2>
               <Hourglass aria-hidden="true" size={18} strokeWidth={2} />
-              <span>لاحقًا</span>
+              <span>{copy.later}</span>
             </h2>
           </header>
           {dueLater.length === 0 ? (
-            <EmptyState icon={<Hourglass aria-hidden="true" />} title="لا مواد مؤجَّلة مستحقة" description="المواد المؤجَّلة تظهر هنا عند بلوغ موعد مراجعتها." />
+            <EmptyState icon={<Hourglass aria-hidden="true" />} title={copy.laterEmptyTitle} description={copy.laterEmptyDescription} />
           ) : (
             <ul className="dashboard-recent__list">
               {dueLater.slice(0, PANEL_ITEM_LIMIT).map((entry) => (
@@ -257,7 +269,7 @@ export default function DailyPage() {
                     <span className="dashboard-recent__meta">{entry.reason}</span>
                   </Link>
                   <button type="button" className="button button-secondary button-sm" onClick={() => handleRemoveLater(entry.id)}>
-                    إزالة
+                    {copy.remove}
                   </button>
                 </li>
               ))}
@@ -265,20 +277,20 @@ export default function DailyPage() {
           )}
         </section>
 
-        <section className="panel" aria-label="سلة العمل">
+        <section className="panel" aria-label={copy.basketAriaLabel}>
           <header className="dashboard-recent__header">
             <h2>
               <ShoppingBasket aria-hidden="true" size={18} strokeWidth={2} />
-              <span>سلة العمل</span>
+              <span>{copy.basket}</span>
             </h2>
             {basket.length > 0 ? (
               <button type="button" className="button button-secondary button-sm" onClick={handleClearBasket}>
-                تفريغ السلة
+                {copy.clearBasket}
               </button>
             ) : null}
           </header>
           {basket.length === 0 ? (
-            <EmptyState icon={<ShoppingBasket aria-hidden="true" />} title="السلة فارغة" description="أضف سجلات من صفحة المادة لجمعها هنا قبل مراجعتها لاحقًا." />
+            <EmptyState icon={<ShoppingBasket aria-hidden="true" />} title={copy.basketEmptyTitle} description={copy.basketEmptyDescription} />
           ) : (
             <ul className="dashboard-recent__list">
               {basket.slice(0, PANEL_ITEM_LIMIT).map((entry) => (
@@ -287,7 +299,7 @@ export default function DailyPage() {
                     <span className="dashboard-recent__title">{entry.title || entry.id}</span>
                   </Link>
                   <button type="button" className="button button-secondary button-sm" onClick={() => handleRemoveBasketItem(entry.id)}>
-                    إزالة
+                    {copy.remove}
                   </button>
                 </li>
               ))}
@@ -295,20 +307,20 @@ export default function DailyPage() {
           )}
         </section>
 
-        <section className="panel" aria-label="طابور التجهيز الشخصي">
+        <section className="panel" aria-label={copy.queueAriaLabel}>
           <header className="dashboard-recent__header">
             <h2>
               <ListOrdered aria-hidden="true" size={18} strokeWidth={2} />
-              <span>طابور التجهيز الشخصي</span>
+              <span>{copy.queue}</span>
             </h2>
             {queue.length > 0 ? (
               <button type="button" className="button button-secondary button-sm" onClick={handleClearQueue}>
-                تفريغ الطابور
+                {copy.clearQueue}
               </button>
             ) : null}
           </header>
           {queue.length === 0 ? (
-            <EmptyState icon={<ListOrdered aria-hidden="true" />} title="الطابور فارغ" description="رتّب السجلات التي تنوي معالجتها لاحقًا بترتيبك الشخصي." />
+            <EmptyState icon={<ListOrdered aria-hidden="true" />} title={copy.queueEmptyTitle} description={copy.queueEmptyDescription} />
           ) : (
             <ul className="dashboard-recent__list">
               {queue.map((entry, index) => (
@@ -321,7 +333,7 @@ export default function DailyPage() {
                     className="button button-secondary button-sm"
                     onClick={() => handleMoveQueueItem(entry.id, -1)}
                     disabled={index === 0}
-                    title="تحريك للأعلى"
+                    title={copy.moveUp}
                   >
                     <ArrowUp aria-hidden="true" size={14} />
                   </button>
@@ -330,12 +342,12 @@ export default function DailyPage() {
                     className="button button-secondary button-sm"
                     onClick={() => handleMoveQueueItem(entry.id, 1)}
                     disabled={index === queue.length - 1}
-                    title="تحريك للأسفل"
+                    title={copy.moveDown}
                   >
                     <ArrowDown aria-hidden="true" size={14} />
                   </button>
                   <button type="button" className="button button-secondary button-sm" onClick={() => handleRemoveQueueItem(entry.id)}>
-                    إزالة
+                    {copy.remove}
                   </button>
                 </li>
               ))}
@@ -343,20 +355,20 @@ export default function DailyPage() {
           )}
         </section>
 
-        <section className="panel" aria-label="آخر ما شاهدت">
+        <section className="panel" aria-label={copy.recentAriaLabel}>
           <header className="dashboard-recent__header">
             <h2>
               <Clock3 aria-hidden="true" size={18} strokeWidth={2} />
-              <span>آخر ما شاهدت</span>
+              <span>{copy.recent}</span>
             </h2>
             {recent.length > 0 ? (
               <button type="button" className="button button-secondary button-sm" onClick={handleClearRecent}>
-                مسح السجل
+                {copy.clearRecent}
               </button>
             ) : null}
           </header>
           {recent.length === 0 ? (
-            <EmptyState icon={<Clock3 aria-hidden="true" />} title="لم تشاهد شيئاً بعد" description="ستظهر هنا آخر السجلات التي فتحتها." />
+            <EmptyState icon={<Clock3 aria-hidden="true" />} title={copy.recentEmptyTitle} description={copy.recentEmptyDescription} />
           ) : (
             <ul className="dashboard-recent__list">
               {recent.slice(0, PANEL_ITEM_LIMIT).map((item) => (
@@ -375,14 +387,14 @@ export default function DailyPage() {
                 checked={recording}
                 onChange={(event) => handleRecordingChange(event.target.checked)}
               />
-              <span>تسجيل السياق الشخصي (آخر ما شاهدت وعمليات البحث الأخيرة)</span>
+              <span>{copy.contextRecordingLabel}</span>
             </label>
             <p className="helper-text">
-              يُحفظ هذا السياق في هذا المتصفح وحده ولا يُشارك مع بقية المستخدمين.
+              {copy.contextRecordingDescription}
             </p>
             <div className="button-row">
               <button type="button" className="button button-secondary button-sm" onClick={handleClearSearches}>
-                مسح عمليات البحث الأخيرة
+                {copy.clearRecentSearches}
               </button>
             </div>
             <p className="form-status" role="status">

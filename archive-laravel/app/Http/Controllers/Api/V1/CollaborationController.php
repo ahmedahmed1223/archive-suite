@@ -22,6 +22,7 @@ use Throwable;
 class CollaborationController extends Controller
 {
     private const ACTIVE_WINDOW_SECONDS = 45;
+
     private const DEFAULT_LOCK_TTL_SECONDS = 90;
 
     public function index(string $roomKey): JsonResponse

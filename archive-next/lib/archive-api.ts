@@ -68,6 +68,8 @@ export type CreateBulkMacroPayload = GeneratedSchemas["CreateBulkMacroRequest"];
 export type UpdateBulkMacroPayload = GeneratedSchemas["UpdateBulkMacroRequest"];
 export type BulkMacroTargetsPayload = GeneratedSchemas["BulkMacroTargetsRequest"];
 export type RunBulkMacroPayload = GeneratedSchemas["RunBulkMacroRequest"];
+export type DisplaySettings = GeneratedSchemas["DisplaySettings"];
+export type UpdateDisplaySettingsPayload = GeneratedSchemas["UpdateDisplaySettingsRequest"];
 
 export interface CreateScheduledUploadPayload {
   uploadSessionId: string;
@@ -1578,6 +1580,8 @@ export interface ArchiveApiClient {
   createShare(payload: { itemIds: string[]; permission?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string }>>;
   getSecuritySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
   updateSecuritySettings(payload: Partial<SecuritySettings>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: SecuritySettings }>>;
+  getDisplaySettings(options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: DisplaySettings }>>;
+  updateDisplaySettings(payload: UpdateDisplaySettingsPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ settings: DisplaySettings }>>;
   dropboxConnection(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
   connectDropbox(payload: { accessToken: string; refreshToken?: string; folderPath?: string; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ dropbox: DropboxConnection }>>;
   authorizeDropbox(options?: AuthRequestOptions): Promise<ApiEnvelope<{ authorizationUrl: string }>>;
@@ -2488,6 +2492,10 @@ export function createArchiveApiClient({
       get<{ settings: SecuritySettings }>("/system/security-settings", options),
     updateSecuritySettings: (payload: Partial<SecuritySettings>, options?: AuthRequestOptions) =>
       patch<{ settings: SecuritySettings }>("/system/security-settings", payload, options),
+    getDisplaySettings: (options?: AuthRequestOptions) =>
+      get<{ settings: DisplaySettings }>("/system/display-settings", options),
+    updateDisplaySettings: (payload: UpdateDisplaySettingsPayload, options?: AuthRequestOptions) =>
+      patch<{ settings: DisplaySettings }>("/system/display-settings", payload, options),
     dropboxConnection: (options?: AuthRequestOptions) =>
       get<{ dropbox: DropboxConnection }>("/system/dropbox", options),
     connectDropbox: (payload: { accessToken: string; refreshToken?: string; folderPath?: string; expiresAt?: string }, options?: AuthRequestOptions) =>

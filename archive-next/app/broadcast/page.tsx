@@ -13,9 +13,10 @@ import {
   type CollaborationParticipant,
   type ReviewComment
 } from "@/lib/archive-api";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
-function formatClock(date: Date) {
-  return new Intl.DateTimeFormat("ar-EG", {
+function formatClock(date: Date, locale: string) {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG" : "en-US", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit"
@@ -35,6 +36,8 @@ function sortComments(comments: ReviewComment[]) {
 }
 
 export default function BroadcastSimulationPage() {
+  const { locale, t } = useLocale();
+  const copy = t.pages.broadcast;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [mediaPath, setMediaPath] = useState("media-123");
   const [roomKey, setRoomKey] = useState("broadcast-main");
@@ -46,10 +49,10 @@ export default function BroadcastSimulationPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [rundown, setRundown] = useState("");
   const [rundownVersion, setRundownVersion] = useState(0);
-  const [rundownMessage, setRundownMessage] = useState("لم يتم تحميل الراندون بعد");
+  const [rundownMessage, setRundownMessage] = useState(copy.messages.rundownUnloaded);
   const [noteBody, setNoteBody] = useState("");
   const [comments, setComments] = useState<ReviewComment[]>([]);
-  const [message, setMessage] = useState("جاهز");
+  const [message, setMessage] = useState(copy.messages.ready);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
@@ -79,7 +82,7 @@ export default function BroadcastSimulationPage() {
 
       if (presence.ok) {
         setParticipants(presence.participants);
-        setMessage(`آخر نبضة: ${formatClock(new Date())}`);
+        setMessage(copy.messages.lastHeartbeat.replace("{time}", formatClock(new Date(), locale)));
       } else {
         setError(presence.error);
       }
@@ -89,9 +92,9 @@ export default function BroadcastSimulationPage() {
         setLocks(lockResponse.locks);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تحديث غرفة البث.");
+      setError(err instanceof Error ? err.message : copy.errors.refresh);
     }
-  }, [api, currentMediaPath, currentRoomKey, isPlaying, status, timecode]);
+  }, [api, copy.errors.refresh, copy.messages.lastHeartbeat, currentMediaPath, currentRoomKey, isPlaying, locale, status, timecode]);
 
   useEffect(() => {
     void refreshRoom();
@@ -115,7 +118,7 @@ export default function BroadcastSimulationPage() {
       if (documentResponse.ok) {
         setRundown(documentResponse.document.content);
         setRundownVersion(documentResponse.document.version);
-        setRundownMessage(documentResponse.document.version > 0 ? "تم تحميل آخر rundown" : "Rundown جديد");
+        setRundownMessage(documentResponse.document.version > 0 ? copy.messages.latestRundown : copy.messages.newRundown);
       } else {
         setRundownMessage(documentResponse.error);
       }
@@ -128,7 +131,7 @@ export default function BroadcastSimulationPage() {
     return () => {
       active = false;
     };
-  }, [api, currentMediaPath, currentRoomKey]);
+  }, [api, copy.messages.latestRundown, copy.messages.newRundown, currentMediaPath, currentRoomKey]);
 
   const handleMediaState = (element: HTMLMediaElement) => {
     setTimecode(Math.round(element.currentTime * 100) / 100);
@@ -147,12 +150,12 @@ export default function BroadcastSimulationPage() {
 
       if (response.ok) {
         setLocks(response.locks);
-        setMessage(activeLock ? "تم تحرير قفل التحكم." : "تم حجز قفل التحكم لهذه المادة.");
+        setMessage(activeLock ? copy.messages.lockReleased : copy.messages.lockReserved);
       } else {
         setError(response.error);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تحديث قفل التحكم.");
+      setError(err instanceof Error ? err.message : copy.errors.lock);
     } finally {
       setIsLocking(false);
     }
@@ -172,12 +175,12 @@ export default function BroadcastSimulationPage() {
       if (response.ok) {
         setRundown(response.document.content);
         setRundownVersion(response.document.version);
-        setRundownMessage(`تم الحفظ: ${formatClock(new Date())}`);
+        setRundownMessage(copy.messages.saved.replace("{time}", formatClock(new Date(), locale)));
       } else {
         setError(response.error);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر حفظ rundown.");
+      setError(err instanceof Error ? err.message : copy.errors.save);
     } finally {
       setIsSaving(false);
     }
@@ -203,96 +206,96 @@ export default function BroadcastSimulationPage() {
   };
 
   return (
-    <AppShell subtitle="محاكاة البث" navLabel="البث" contentClassName="broadcast-content" tipsPage="broadcast">
+    <AppShell subtitle={t.pageTitles.broadcastSimulation} navLabel={t.pageTitles.broadcast} contentClassName="broadcast-content" tipsPage="broadcast">
       <PageToolbar
-        eyebrow={<span className="badge">محاكاة محلية</span>}
-        title="غرفة بث ومراجعة تشغيلية"
-        description="ساعة بث، حضور، قفل تحكم، rundown مشترك، وملاحظات زمنية فوق نفس APIs التعاون والمراجعة."
+        eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={
           <>
-            <span className="badge">{formatClock(clock)}</span>
+            <span className="badge">{formatClock(clock, locale)}</span>
             <span className="badge">{formatTimecode(timecode)}</span>
-            <span className="badge">{participants.length} مشارك</span>
+            <span className="badge">{copy.toolbar.participants.replace("{count}", String(participants.length))}</span>
           </>
         }
       />
 
-      <OperationalSafetyPanel action="مراجعة محاكاة البث" dryRun confidence={85} auditHref="/activity" />
+      <OperationalSafetyPanel action={copy.toolbar.safetyAction} dryRun confidence={85} auditHref="/activity" />
 
       {error ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تنفيذ العملية</strong>
+          <strong>{copy.errors.operation}</strong>
           <p className="helper-text">{error}</p>
         </div>
       ) : null}
 
-      <section className="panel form-grid" aria-label="إعدادات غرفة البث">
+      <section className="panel form-grid" aria-label={copy.settings.aria}>
         <label>
-          الغرفة
+          {copy.settings.room}
           <input value={roomKey} onChange={(event) => setRoomKey(event.target.value)} dir="ltr" />
         </label>
         <label>
-          مسار/معرف المادة
+          {copy.settings.mediaPath}
           <input value={mediaPath} onChange={(event) => setMediaPath(event.target.value)} dir="ltr" />
         </label>
         <label>
-          الحالة
+          {copy.settings.status}
           <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
-            <option value="viewing">مشاهدة</option>
-            <option value="reviewing">مراجعة</option>
-            <option value="editing">تحرير</option>
+            <option value="viewing">{copy.settings.viewing}</option>
+            <option value="reviewing">{copy.settings.reviewing}</option>
+            <option value="editing">{copy.settings.editing}</option>
           </select>
         </label>
       </section>
 
       <div className="broadcast-grid">
-        <section className="panel stack" aria-label="المشغل ومحاكاة البث">
+        <section className="panel stack" aria-label={copy.player.aria}>
           <div className="panel-title-row">
             <div>
-              <h2>المشغل</h2>
+              <h2>{copy.player.title}</h2>
               <p>{message}</p>
             </div>
             <button className="button button-secondary" type="button" onClick={() => void refreshRoom()}>
-              تحديث
+              {copy.player.refresh}
             </button>
           </div>
           {currentMediaPath ? (
             <MediaPlayer
               path={currentMediaPath}
-              title="مصدر البث المحلي"
+              title={copy.player.mediaTitle}
               showTimeline
               onTimeUpdate={handleMediaState}
               onPlayPause={handleMediaState}
             />
           ) : (
-            <EmptyState title="أدخل مسار مادة للبدء" description="تستخدم المحاكاة مسار الملف نفسه كمورد للمراجعة والقفل." />
+            <EmptyState title={copy.player.emptyTitle} description={copy.player.emptyDescription} />
           )}
           <div className="kv-grid">
             <div className="kv-item">
-              <strong>حالة التشغيل</strong>
-              <span>{isPlaying ? "تشغيل" : "متوقف"}</span>
+              <strong>{copy.player.playback}</strong>
+              <span>{isPlaying ? copy.player.playing : copy.player.stopped}</span>
             </div>
             <div className="kv-item">
-              <strong>قفل التحكم</strong>
-              <span>{activeLock ? activeLock.displayName : "متاح"}</span>
+              <strong>{copy.player.controlLock}</strong>
+              <span>{activeLock ? activeLock.displayName : copy.player.available}</span>
             </div>
           </div>
           <button className="button button-primary" type="button" onClick={() => void toggleLock()} disabled={!currentMediaPath || isLocking}>
-            {activeLock ? "تحرير قفل التحكم" : "حجز قفل التحكم"}
+            {activeLock ? copy.player.releaseLock : copy.player.reserveLock}
           </button>
         </section>
 
-        <aside className="stack" aria-label="الحضور والراندون">
+        <aside className="stack" aria-label={copy.presence.aria}>
           <section className="panel">
             <div className="panel-title-row">
               <div>
-                <h2>الحضور</h2>
-                <p>تعمل عبر heartbeat مع Reverb عند توفره.</p>
+                <h2>{copy.presence.title}</h2>
+                <p>{copy.presence.description}</p>
               </div>
               <span className="badge">{participants.length}</span>
             </div>
             {participants.length === 0 ? (
-              <p className="helper-text">لا يوجد حضور نشط بعد.</p>
+              <p className="helper-text">{copy.presence.empty}</p>
             ) : (
               <div className="mobile-card-list" role="list">
                 {participants.map((participant) => (
@@ -308,7 +311,7 @@ export default function BroadcastSimulationPage() {
           <section className="panel stack">
             <div className="panel-title-row">
               <div>
-                <h2>الراندون</h2>
+                <h2>{copy.rundown.title}</h2>
                 <p>{rundownMessage}</p>
               </div>
               <span className="badge">v{rundownVersion}</span>
@@ -317,40 +320,40 @@ export default function BroadcastSimulationPage() {
               value={rundown}
               onChange={(event) => setRundown(event.target.value)}
               rows={8}
-              placeholder={"00:00 افتتاحية\n00:30 لقطة رئيسية\n01:15 ملاحظة للمونتاج"}
+              placeholder={copy.rundown.placeholder}
             />
             <button className="button button-primary" type="button" onClick={() => void saveRundown()} disabled={isSaving || !currentMediaPath}>
-              {isSaving ? "جار الحفظ..." : "حفظ الراندون"}
+              {isSaving ? copy.rundown.saving : copy.rundown.save}
             </button>
           </section>
         </aside>
       </div>
 
-      <section className="panel stack" aria-label="ملاحظات زمنية">
+      <section className="panel stack" aria-label={copy.notes.aria}>
         <div className="panel-title-row">
           <div>
-            <h2>ملاحظات التشغيل</h2>
-            <p>ترتبط الملاحظة بالوقت الحالي في المشغل.</p>
+            <h2>{copy.notes.title}</h2>
+            <p>{copy.notes.description}</p>
           </div>
           <span className="badge">{comments.length}</span>
         </div>
         <form className="form-grid" onSubmit={addNote}>
           <label>
-            الملاحظة
+            {copy.notes.label}
             <input value={noteBody} onChange={(event) => setNoteBody(event.target.value)} />
           </label>
           <div className="kv-item">
-            <strong>الوقت</strong>
+            <strong>{copy.notes.time}</strong>
             <span>{formatTimecode(timecode)}</span>
           </div>
           <div className="button-row form-actions">
             <button className="button button-primary" type="submit" disabled={!noteBody.trim() || !currentMediaPath}>
-              إضافة ملاحظة
+              {copy.notes.add}
             </button>
           </div>
         </form>
         {comments.length === 0 ? (
-          <p className="helper-text">لا توجد ملاحظات بعد.</p>
+          <p className="helper-text">{copy.notes.empty}</p>
         ) : (
           <div className="mobile-card-list" role="list">
             {comments.map((comment) => (

@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class RecordSrtImportApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_imports_srt_cues_and_transcript_for_a_record(): void
     {

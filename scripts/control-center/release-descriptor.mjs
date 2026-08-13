@@ -6,6 +6,9 @@ import { verifyBundle } from "../../infra/offline/verify-bundle.mjs";
 
 const SEMVER = /^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$/;
 const IMMUTABLE = /^[a-z0-9][a-z0-9./_-]*:[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?@sha256:[a-f0-9]{64}$/;
+// A digest that is a single repeated hex char (aaaa..., 0000..., etc.) is
+// never a real registry digest — it is placeholder data left in by mistake.
+const PLACEHOLDER_DIGEST = /^([a-f0-9])\1{63}$/;
 const DIGEST_REF = /^[a-z0-9][a-z0-9./_-]*@sha256:[a-f0-9]{64}$/;
 const REF = /^[a-z0-9][a-z0-9./_-]*:\$VERSION$/;
 const PROFILES = new Set(["core", "media", "edge"]);
@@ -49,8 +52,16 @@ export function loadReleaseDescriptor(path = DEFAULT_PATH) {
     if ([image.id, image.service, image.profile, image.online, image.offlineRef].some((value) => typeof value !== "string" || !value.trim()) || FORBIDDEN.test(JSON.stringify(image))) fail("RELEASE_DESCRIPTOR_SENSITIVE", "Release descriptor must not contain credentials or secrets.");
     if (ids.has(image.id) || services.has(image.service)) fail("RELEASE_DESCRIPTOR_DUPLICATE", "Release descriptor cannot repeat an image or service.");
     if (!PROFILES.has(image.profile) || !IMMUTABLE.test(image.online) || !REF.test(image.offlineRef)) fail("RELEASE_DESCRIPTOR_INVALID", "Release descriptor image references must be immutable version+SHA-256 digests.");
-    const version = image.online.match(/:([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)@/)[1];
-    if (version !== descriptor.version) fail("RELEASE_VERSION_MISMATCH", "Every release image must match the descriptor semantic version.");
+    const digest = image.online.slice(image.online.lastIndexOf("@sha256:") + 8);
+    if (PLACEHOLDER_DIGEST.test(digest)) fail("RELEASE_DESCRIPTOR_PLACEHOLDER", `Release descriptor image "${image.id}" carries a placeholder digest, not a real published digest.`);
+    // Only application images (next/laravel*) are built and republished by
+    // this org's release pipeline under the app's own version; third-party
+    // infra images (postgres/redis/caddy) keep their own upstream version —
+    // they are pinned by digest, not required to carry the app's version tag.
+    if (applicationService(image.service)) {
+      const version = image.online.match(/:([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)@/)[1];
+      if (version !== descriptor.version) fail("RELEASE_VERSION_MISMATCH", "Every application image must match the descriptor semantic version.");
+    }
     ids.add(image.id); services.add(image.service);
   }
   for (const service of CORE_SERVICES) if (!services.has(service)) fail("RELEASE_CORE_IMAGES_MISSING", `Release descriptor is missing required core service "${service}".`);

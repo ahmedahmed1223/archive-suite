@@ -27,6 +27,15 @@ class BackupService
     /** Marker on line one of a line-delimited archive; absent in older formats. */
     private const NDJSON_FORMAT = 'ndjson-v1';
 
+    // V2-204: 8-byte magic identifying the streamed-chunk AEAD encryption
+    // format, checked before any gzip/ndjson sniffing so encrypted archives
+    // are detected regardless of the current encryption_enabled setting.
+    private const ENC_MAGIC = "ARCENCV1";
+
+    // Plaintext bytes per AEAD chunk before encryption. Peak memory for
+    // encrypt/decrypt is one chunk, not the whole archive.
+    private const ENC_CHUNK_SIZE = 4 * 1024 * 1024;
+
     // Framework plumbing: rebuilt by migrations/queue workers, never
     // meaningful application data. Everything else the schema reports is
     // backed up automatically — adding a migration is enough, no edit here.
@@ -98,13 +107,11 @@ class BackupService
         $name = 'backup-'.now()->format('Y-m-d\TH-i-s-u').'.json.gz';
         $path = $this->directory().DIRECTORY_SEPARATOR.$name;
 
-        // Crypt::encrypt needs the whole payload as a single string, so the
-        // encrypted path cannot stream and still buffers the archive in memory.
-        // Streaming encryption is handled separately; until
-        // then only the default, unencrypted path is memory-flat.
-        $checksum = (bool) config('archive.backups.encryption_enabled')
-            ? $this->writeBufferedArchive($path, $manifest, $tables)
-            : $this->writeStreamedArchive($path, $manifest, $tables, $fileMeta);
+        // V2-204: both paths stream now. When encryption is enabled the ndjson
+        // gzip stream writes to a private temp file first, then that file is
+        // re-streamed through AEAD chunk encryption into $path -- peak memory
+        // is one chunk either way, never the whole archive.
+        $checksum = $this->writeStreamedArchive($path, $manifest, $tables, $fileMeta);
 
         file_put_contents($path.'.sha256', $checksum);
 
@@ -164,92 +171,110 @@ class BackupService
 
         $archive = $this->readArchive($name);
 
-        // Manifest-driven per-file checksum gate, same "verify before applying"
-        // shape as the whole-archive gate above — a corrupt or tampered file
-        // entry inside an otherwise-valid archive must not silently overwrite
-        // the file it maps to. Legacy archives carry no file entries, so this
-        // is a no-op for them.
-        // Line-delimited archives are walked twice on purpose: once to verify
-        // every entry before the database is touched, once to write. Holding all
-        // content between the two passes would recreate the memory blow-up this
-        // format exists to avoid, and verifying lazily during the write would
-        // lose the "nothing is touched unless everything checks out" guarantee.
-        $isStreamed = $this->isNdjsonArchive($path);
+        // V2-204: encrypted archives are ndjson too once decrypted -- decrypt
+        // once here to a temp plaintext file so both streamed passes below
+        // get the same memory-flat guarantee as unencrypted archives, instead
+        // of falling back to the fully-materialized $archive['files'] path.
+        $decryptedStreamPath = null;
+        $streamPath = $path;
 
-        if ($isStreamed) {
-            foreach ($this->streamNdjsonRecords($path) as $record) {
-                if (($record['kind'] ?? null) === 'file') {
-                    $this->assertFileEntryIntact($record);
-                }
-            }
-        } else {
-            foreach ($archive['files'] as $file) {
-                $this->assertFileEntryIntact($file);
-            }
+        if ($this->isChunkedEncryptedArchive($path)) {
+            $decryptedStreamPath = $this->streamDecryptToTemp($path);
+            $streamPath = $decryptedStreamPath;
         }
-
-        // Dependency-ordered per table, driven by the schema's own foreign
-        // keys (not a hardcoded table order) so parents restore before the
-        // children that reference them, and deletes run in the opposite
-        // direction. See orderByDependency().
-        $insertOrder = $this->orderByDependency(array_keys($archive['tables']));
-        $deleteOrder = array_reverse($insertOrder);
 
         try {
-            // ponytail: non-destructive via a single DB transaction rather than a
-            // separate pre-restore snapshot file — every driver this app runs on
-            // (sqlite, MySQL/InnoDB, Postgres) is transactional, so any failure
-            // partway through (bad row, constraint violation) rolls back every
-            // table's delete+insert together and live data ends up untouched.
-            DB::transaction(function () use ($archive, $insertOrder, $deleteOrder): void {
-                foreach ($deleteOrder as $table) {
-                    if (Schema::hasTable($table)) {
-                        DB::table($table)->delete();
+            // Manifest-driven per-file checksum gate, same "verify before applying"
+            // shape as the whole-archive gate above — a corrupt or tampered file
+            // entry inside an otherwise-valid archive must not silently overwrite
+            // the file it maps to. Legacy archives carry no file entries, so this
+            // is a no-op for them.
+            // Line-delimited archives are walked twice on purpose: once to verify
+            // every entry before the database is touched, once to write. Holding all
+            // content between the two passes would recreate the memory blow-up this
+            // format exists to avoid, and verifying lazily during the write would
+            // lose the "nothing is touched unless everything checks out" guarantee.
+            $isStreamed = $this->isNdjsonArchive($streamPath);
+
+            if ($isStreamed) {
+                foreach ($this->streamNdjsonRecords($streamPath) as $record) {
+                    if (($record['kind'] ?? null) === 'file') {
+                        $this->assertFileEntryIntact($record);
                     }
                 }
+            } else {
+                foreach ($archive['files'] as $file) {
+                    $this->assertFileEntryIntact($file);
+                }
+            }
 
-                foreach ($insertOrder as $table) {
-                    if (! Schema::hasTable($table)) {
-                        // Table existed when the backup was taken and has since
-                        // been dropped; skip it rather than fail the whole restore.
-                        continue;
-                    }
+            // Dependency-ordered per table, driven by the schema's own foreign
+            // keys (not a hardcoded table order) so parents restore before the
+            // children that reference them, and deletes run in the opposite
+            // direction. See orderByDependency().
+            $insertOrder = $this->orderByDependency(array_keys($archive['tables']));
+            $deleteOrder = array_reverse($insertOrder);
 
-                    $inserts = array_values(array_filter($archive['tables'][$table], 'is_array'));
-
-                    foreach (array_chunk($inserts, self::INSERT_CHUNK_SIZE) as $chunk) {
-                        if ($chunk !== []) {
-                            DB::table($table)->insert($chunk);
+            try {
+                // ponytail: non-destructive via a single DB transaction rather than a
+                // separate pre-restore snapshot file — every driver this app runs on
+                // (sqlite, MySQL/InnoDB, Postgres) is transactional, so any failure
+                // partway through (bad row, constraint violation) rolls back every
+                // table's delete+insert together and live data ends up untouched.
+                DB::transaction(function () use ($archive, $insertOrder, $deleteOrder): void {
+                    foreach ($deleteOrder as $table) {
+                        if (Schema::hasTable($table)) {
+                            DB::table($table)->delete();
                         }
                     }
-                }
-            });
-        } catch (\Throwable $e) {
-            throw new BackupException('Restore failed and was rolled back; live data was not touched: '.$e->getMessage(), 500);
-        }
 
-        // Filesystem writes aren't part of the DB transaction — the filesystem
-        // isn't transactional — so they only run after the DB commit succeeds.
-        // Checksums were already verified above, before the DB was touched.
-        if ($isStreamed) {
-            foreach ($this->streamNdjsonRecords($path) as $record) {
-                if (($record['kind'] ?? null) === 'file') {
-                    $this->writeRestoredFile($record);
+                    foreach ($insertOrder as $table) {
+                        if (! Schema::hasTable($table)) {
+                            // Table existed when the backup was taken and has since
+                            // been dropped; skip it rather than fail the whole restore.
+                            continue;
+                        }
+
+                        $inserts = array_values(array_filter($archive['tables'][$table], 'is_array'));
+
+                        foreach (array_chunk($inserts, self::INSERT_CHUNK_SIZE) as $chunk) {
+                            if ($chunk !== []) {
+                                DB::table($table)->insert($chunk);
+                            }
+                        }
+                    }
+                });
+            } catch (\Throwable $e) {
+                throw new BackupException('Restore failed and was rolled back; live data was not touched: '.$e->getMessage(), 500);
+            }
+
+            // Filesystem writes aren't part of the DB transaction — the filesystem
+            // isn't transactional — so they only run after the DB commit succeeds.
+            // Checksums were already verified above, before the DB was touched.
+            if ($isStreamed) {
+                foreach ($this->streamNdjsonRecords($streamPath) as $record) {
+                    if (($record['kind'] ?? null) === 'file') {
+                        $this->writeRestoredFile($record);
+                    }
+                }
+            } else {
+                foreach ($archive['files'] as $file) {
+                    $this->writeRestoredFile($file);
                 }
             }
-        } else {
-            foreach ($archive['files'] as $file) {
-                $this->writeRestoredFile($file);
+
+            return [
+                'name' => $name,
+                'counts' => $this->storesFromStorageRows($archive['tables']['storage_rows'] ?? []),
+                'tableCounts' => array_map('count', $archive['tables']),
+                'restoredAt' => now()->toIso8601String(),
+                'verified' => $verification['verified'],
+            ];
+        } finally {
+            if ($decryptedStreamPath !== null) {
+                @unlink($decryptedStreamPath);
             }
         }
-
-        return [
-            'name' => $name,
-            'counts' => $this->storesFromStorageRows($archive['tables']['storage_rows'] ?? []),
-            'tableCounts' => array_map('count', $archive['tables']),
-            'restoredAt' => now()->toIso8601String(),
-            'verified' => $verification['verified'],
-        ];
     }
 
     /**
@@ -387,10 +412,17 @@ class BackupService
      */
     private function writeStreamedArchive(string $path, array $manifest, array $tables, array $fileMeta): string
     {
-        $handle = gzopen($path, 'wb9');
+        $encrypted = (bool) config('archive.backups.encryption_enabled');
+        $plainPath = $encrypted ? $this->tempArchivePath() : $path;
+
+        $handle = gzopen($plainPath, 'wb9');
 
         if ($handle === false) {
             throw new BackupException('Failed to open backup file for writing.', 500);
+        }
+
+        if ($encrypted) {
+            @chmod($plainPath, 0600);
         }
 
         try {
@@ -453,18 +485,26 @@ class BackupService
             }
         } catch (JsonException $e) {
             gzclose($handle);
-            @unlink($path);
+            @unlink($plainPath);
 
             throw new BackupException('Failed to serialize backup snapshot: '.$e->getMessage(), 500);
         } catch (\Throwable $e) {
             gzclose($handle);
             // Never leave a short archive behind that later reads would trust.
-            @unlink($path);
+            @unlink($plainPath);
 
             throw $e;
         }
 
         gzclose($handle);
+
+        if ($encrypted) {
+            try {
+                $this->streamEncryptFile($plainPath, $path);
+            } finally {
+                @unlink($plainPath);
+            }
+        }
 
         $checksum = hash_file('sha256', $path);
 
@@ -475,72 +515,259 @@ class BackupService
         return $checksum;
     }
 
-    /**
-     * Buffered writer, kept for the encrypted path only: Crypt::encrypt cannot
-     * accept a stream.
-     *
-     * @param  array<string, mixed>  $manifest
-     * @param  array<string, list<array<string, mixed>>>  $tables
-     */
-    private function writeBufferedArchive(string $path, array $manifest, array $tables): string
+    private function tempArchivePath(): string
     {
-        try {
-            $encoded = gzencode(json_encode([
-                'manifest' => $manifest,
-                'tables' => $tables,
-                'files' => $this->dumpFiles(),
-            ], JSON_THROW_ON_ERROR), 9);
-        } catch (JsonException $e) {
-            throw new BackupException('Failed to serialize backup snapshot: '.$e->getMessage(), 500);
-        }
-
-        if ($encoded === false) {
-            throw new BackupException('Failed to compress backup.', 500);
-        }
-
-        $encoded = $this->encrypt($encoded);
-
-        if (file_put_contents($path, $encoded) === false) {
-            throw new BackupException('Failed to write backup file.', 500);
-        }
-
-        return hash('sha256', $encoded);
+        return sys_get_temp_dir().DIRECTORY_SEPARATOR.'archive-backup-'.bin2hex(random_bytes(8)).'.tmp';
     }
 
-    private function dumpFiles(): array
+    /**
+     * V2-204: streams $plainPath through AES-256-GCM in fixed-size chunks
+     * into $outPath, so encrypting a multi-gigabyte archive never holds more
+     * than one chunk in memory (unlike the old Crypt::encrypt(whole-string)
+     * call it replaces). Each chunk is independently authenticated; the AAD
+     * binds the chunk's index (rejects reordering) and a final-chunk flag
+     * (rejects truncation) -- both checked on decrypt.
+     */
+    private function streamEncryptFile(string $plainPath, string $outPath): void
     {
-        $root = (string) config('archive.file_root');
+        $key = $this->encryptionKey();
+        $in = fopen($plainPath, 'rb');
 
-        if (! is_dir($root)) {
-            return [];
+        if ($in === false) {
+            throw new BackupException('Failed to open plain archive for encryption.', 500);
         }
 
-        $files = [];
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)
-        );
+        $out = fopen($outPath, 'wb');
 
-        foreach ($iterator as $fileInfo) {
-            if (! $fileInfo->isFile()) {
-                continue;
+        if ($out === false) {
+            fclose($in);
+
+            throw new BackupException('Failed to open backup file for writing.', 500);
+        }
+
+        try {
+            if (fwrite($out, self::ENC_MAGIC) === false) {
+                throw new BackupException('Failed to write backup stream.', 500);
             }
 
-            $realPath = $fileInfo->getPathname();
-            $relative = ltrim(str_replace('\\', '/', substr($realPath, strlen($root))), '/');
-            $content = (string) file_get_contents($realPath);
+            $pending = fread($in, self::ENC_CHUNK_SIZE);
 
-            $files[] = [
-                'path' => $relative,
-                'sha256' => hash('sha256', $content),
-                'sizeBytes' => strlen($content),
-                'contentBase64' => base64_encode($content),
-            ];
+            if ($pending === false) {
+                throw new BackupException('Failed to read plain archive.', 500);
+            }
+
+            $index = 0;
+
+            do {
+                $current = $pending;
+                $pending = feof($in) ? '' : fread($in, self::ENC_CHUNK_SIZE);
+
+                if ($pending === false) {
+                    throw new BackupException('Failed to read plain archive.', 500);
+                }
+
+                $isFinal = $pending === '';
+                $this->writeEncryptedChunk($out, $key, $current, $index, $isFinal);
+                $index++;
+            } while (! $isFinal);
+        } finally {
+            fclose($in);
+            fclose($out);
+        }
+    }
+
+    /**
+     * @param  resource  $out
+     */
+    private function writeEncryptedChunk($out, string $key, string $plaintext, int $index, bool $isFinal): void
+    {
+        $nonce = random_bytes(12);
+        $aad = ($isFinal ? "\x01" : "\x00").pack('N', $index);
+        $tag = '';
+        $ciphertext = openssl_encrypt($plaintext, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $nonce, $tag, $aad, 16);
+
+        if ($ciphertext === false) {
+            throw new BackupException('Failed to encrypt backup chunk.', 500);
         }
 
-        // Deterministic order for a readable manifest and stable tests.
-        usort($files, static fn (array $a, array $b): int => strcmp($a['path'], $b['path']));
+        $frame = $aad.$nonce.$ciphertext.$tag;
 
-        return $files;
+        if (fwrite($out, pack('N', strlen($frame)).$frame) === false) {
+            throw new BackupException('Failed to write backup stream.', 500);
+        }
+    }
+
+    /**
+     * V2-204 read side: decrypts $encPath chunk-by-chunk into a fresh temp
+     * file the caller must unlink, verifying each chunk's AEAD tag and
+     * index as it goes. Throws before returning if the stream ends without
+     * an authenticated final-chunk marker (truncation) or a chunk's index
+     * doesn't match what's expected (reordering) or a tag fails to verify
+     * (tampering/corruption/wrong key).
+     */
+    private function streamDecryptToTemp(string $encPath): string
+    {
+        $key = $this->encryptionKey();
+        $in = fopen($encPath, 'rb');
+
+        if ($in === false) {
+            throw new BackupException('Failed to open backup file for reading.', 500);
+        }
+
+        $tempPath = $this->tempArchivePath();
+        $out = fopen($tempPath, 'wb');
+
+        if ($out === false) {
+            fclose($in);
+
+            throw new BackupException('Failed to open temporary file for decryption.', 500);
+        }
+
+        @chmod($tempPath, 0600);
+
+        try {
+            $magic = fread($in, strlen(self::ENC_MAGIC));
+
+            if ($magic !== self::ENC_MAGIC) {
+                throw new BackupException('Backup file is corrupt or unreadable.', 422);
+            }
+
+            $index = 0;
+            $sawFinal = false;
+
+            while (true) {
+                $chunk = $this->readEncryptedChunk($in, $key, $index);
+
+                if ($chunk === null) {
+                    break;
+                }
+
+                if (fwrite($out, $chunk['plaintext']) === false) {
+                    throw new BackupException('Failed to write decrypted archive.', 500);
+                }
+
+                $index++;
+
+                if ($chunk['isFinal']) {
+                    $sawFinal = true;
+
+                    break;
+                }
+            }
+
+            if (! $sawFinal) {
+                throw new BackupException('Backup file is truncated or corrupt.', 422);
+            }
+        } catch (\Throwable $e) {
+            fclose($in);
+            fclose($out);
+            @unlink($tempPath);
+
+            throw $e;
+        }
+
+        fclose($in);
+        fclose($out);
+
+        return $tempPath;
+    }
+
+    /**
+     * @param  resource  $in
+     * @return array{plaintext: string, isFinal: bool}|null null means clean EOF (no more chunks)
+     */
+    private function readEncryptedChunk($in, string $key, int $expectedIndex): ?array
+    {
+        $lengthRaw = fread($in, 4);
+
+        if ($lengthRaw === false || $lengthRaw === '') {
+            return null;
+        }
+
+        if (strlen($lengthRaw) !== 4) {
+            throw new BackupException('Backup file is corrupt or unreadable.', 422);
+        }
+
+        $length = unpack('N', $lengthRaw)[1];
+        $frame = $this->readExactly($in, $length);
+
+        if (strlen($frame) < 5 + 12 + 16) {
+            throw new BackupException('Backup file is corrupt or unreadable.', 422);
+        }
+
+        $aad = substr($frame, 0, 5);
+        $nonce = substr($frame, 5, 12);
+        $tag = substr($frame, -16);
+        $ciphertext = substr($frame, 17, -16);
+
+        $index = unpack('N', substr($aad, 1, 4))[1];
+
+        if ($index !== $expectedIndex) {
+            throw new BackupException('Backup file is corrupt or unreadable (chunk order).', 422);
+        }
+
+        $plaintext = openssl_decrypt($ciphertext, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $nonce, $tag, $aad);
+
+        if ($plaintext === false) {
+            throw new BackupException('Backup file failed integrity verification.', 422);
+        }
+
+        return ['plaintext' => $plaintext, 'isFinal' => $aad[0] === "\x01"];
+    }
+
+    /**
+     * @param  resource  $handle
+     */
+    private function readExactly($handle, int $length): string
+    {
+        $data = '';
+
+        while (strlen($data) < $length) {
+            $piece = fread($handle, $length - strlen($data));
+
+            if ($piece === false || $piece === '') {
+                throw new BackupException('Backup file is corrupt or unreadable.', 422);
+            }
+
+            $data .= $piece;
+        }
+
+        return $data;
+    }
+
+    private function isChunkedEncryptedArchive(string $path): bool
+    {
+        $handle = @fopen($path, 'rb');
+
+        if ($handle === false) {
+            return false;
+        }
+
+        $head = fread($handle, strlen(self::ENC_MAGIC));
+        fclose($handle);
+
+        return $head === self::ENC_MAGIC;
+    }
+
+    /**
+     * Same key material Illuminate\Encryption\Encrypter derives from APP_KEY,
+     * reused directly so V2-204's streamed AEAD format needs no secret of
+     * its own to manage or rotate separately from the app's existing key.
+     */
+    private function encryptionKey(): string
+    {
+        $key = (string) config('app.key');
+
+        if (str_starts_with($key, 'base64:')) {
+            $decoded = base64_decode(substr($key, 7), true);
+            $key = $decoded === false ? '' : $decoded;
+        }
+
+        if (strlen($key) !== 32) {
+            throw new BackupException('APP_KEY is not a 32-byte key; cannot encrypt backups.', 500);
+        }
+
+        return $key;
     }
 
     /**
@@ -679,6 +906,16 @@ class BackupService
     private function readArchive(string $name): array
     {
         $path = $this->resolvePath($name);
+
+        if ($this->isChunkedEncryptedArchive($path)) {
+            $tempPath = $this->streamDecryptToTemp($path);
+
+            try {
+                return $this->readNdjsonArchive($tempPath);
+            } finally {
+                @unlink($tempPath);
+            }
+        }
 
         if ($this->isNdjsonArchive($path)) {
             return $this->readNdjsonArchive($path);

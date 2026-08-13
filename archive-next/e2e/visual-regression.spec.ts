@@ -95,3 +95,44 @@ test.describe('visual regression: Focus Command shell', () => {
     });
   }
 });
+
+// V2-807: open-menu states are a distinct render path from the closed shell
+// above (fixed/absolute overlays, off-canvas panels) and can overflow or
+// clip on their own even when the closed state is clean.
+test.describe('visual regression: mobile menu open states', () => {
+  test('first-run nav-toggle drawer has no overflow when open @ mobile-375', async ({ page, context }) => {
+    await context.addInitScript(
+      ([key, release]) => window.localStorage.setItem(key, release),
+      [WHATS_NEW_STORAGE_KEY, WHATS_NEW_RELEASE] as const,
+    );
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/first-run', { waitUntil: 'networkidle' });
+
+    await page.getByRole('button', { name: 'فتح التنقل' }).click();
+
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+    await assertNoClippedInteractiveElements(page, 375, 'first-run nav drawer open @ mobile-375');
+
+    await page.screenshot({ path: 'visual-evidence/first-run-nav-open--mobile-375.png', fullPage: true });
+  });
+
+  test('first-run "more actions" menu has no overflow when open @ mobile-375', async ({ page, context }) => {
+    await context.addInitScript(
+      ([key, release]) => window.localStorage.setItem(key, release),
+      [WHATS_NEW_STORAGE_KEY, WHATS_NEW_RELEASE] as const,
+    );
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/first-run', { waitUntil: 'networkidle' });
+
+    await page.getByRole('button', { name: 'إجراءات إضافية' }).click();
+
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+    await assertNoClippedInteractiveElements(page, 375, 'first-run more-actions menu open @ mobile-375');
+
+    await page.screenshot({ path: 'visual-evidence/first-run-more-actions-open--mobile-375.png', fullPage: true });
+  });
+});

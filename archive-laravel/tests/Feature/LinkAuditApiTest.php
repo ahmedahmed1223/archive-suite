@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class LinkAuditApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_flags_a_relation_whose_target_no_longer_exists(): void
     {

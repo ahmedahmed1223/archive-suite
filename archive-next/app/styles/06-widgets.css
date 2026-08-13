@@ -23,6 +23,11 @@
   background: color-mix(in srgb, var(--color-status-error) 7%, var(--color-bg-secondary));
 }
 
+.state-banner-info {
+  border-color: color-mix(in srgb, var(--color-status-info) 34%, var(--color-border-secondary));
+  background: color-mix(in srgb, var(--color-status-info) 8%, var(--color-bg-secondary));
+}
+
 .graph-relation-list {
   display: grid;
   gap: var(--space-2);
@@ -847,6 +852,43 @@
   overflow-x: auto;
 }
 
+/* V2-802: .topbar-session--inline stays `contents` (invisible to layout) so
+   the existing tablet/desktop topbar-actions rules keep working unchanged;
+   .topbar-more is the mobile-only duplicate, toggled in 08-foundation.css. */
+.topbar-session--inline {
+  display: contents;
+}
+
+.topbar-more {
+  display: none;
+  position: relative;
+}
+
+.topbar-more > summary {
+  list-style: none;
+}
+
+.topbar-more__panel {
+  /* V2-807 live-gate fix: an explicit `display` here overrode the native
+     <details> behavior of hiding non-summary content when closed, so the
+     panel (and its Sign-in link) stayed in the layout — and overflowed the
+     mobile viewport — even while collapsed. Gate visibility on [open]. */
+  display: none;
+}
+
+.topbar-more[open] > .topbar-more__panel {
+  position: absolute;
+  inset-block-start: 100%;
+  /* V2-807 live-gate fix: the trigger sits ~16px from the screen's physical
+     edge at mobile widths; anchoring the panel's end edge here made its
+     12rem min-width (.ui-dropdown-content) grow off-screen. Anchor the
+     start edge instead so it grows toward the side with room. */
+  inset-inline-start: 0;
+  margin-block-start: var(--space-2);
+  display: grid;
+  gap: var(--space-2);
+}
+
 .session-chip {
   display: inline-flex;
   min-width: 0;
@@ -1211,7 +1253,7 @@
   }
 }
 
-/* ── Recent-records card grid ("أُضيف حديثاً") ── */
+/* ── Recent-records card grid ("Recently added") ── */
 .dashboard-recent__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -1382,6 +1424,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  min-block-size: var(--control-height);
+  padding-inline: var(--space-3);
   border: 1px solid var(--color-border-secondary);
   border-radius: var(--radius-md);
   background: var(--color-surface-subtle);

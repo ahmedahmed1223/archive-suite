@@ -12,7 +12,9 @@ final class DepartmentRoutingController extends Controller
     public function preview(Request $request, string $id): JsonResponse
     {
         $item = $this->item($request, $id);
-        if (! $item) return $this->notFound();
+        if (! $item) {
+            return $this->notFound();
+        }
 
         $validated = $request->validate(['departmentId' => ['required', 'string', 'max:100']]);
 
@@ -21,13 +23,19 @@ final class DepartmentRoutingController extends Controller
 
     public function apply(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $item = $this->item($request, $id);
-        if (! $item) return $this->notFound();
+        if (! $item) {
+            return $this->notFound();
+        }
 
         $validated = $request->validate(['departmentId' => ['required', 'string', 'max:100']]);
         $decision = $this->decision($item, $validated['departmentId']);
-        if ($decision['blocked']) return response()->json(['ok' => false, 'code' => 'department_routing_blocked', ...$decision], 422);
+        if ($decision['blocked']) {
+            return response()->json(['ok' => false, 'code' => 'department_routing_blocked', ...$decision], 422);
+        }
         $history = $this->history($item->routing_history);
         $history[] = ['from' => $item->department_id, 'to' => $validated['departmentId'], 'at' => now()->toISOString()];
         DB::table('inbox_items')->where('id', $id)->update([
@@ -39,7 +47,10 @@ final class DepartmentRoutingController extends Controller
         return response()->json(['ok' => true, 'departmentId' => $validated['departmentId'], 'routingHistory' => $history]);
     }
 
-    private function item(Request $request, string $id): ?object { return DB::table('inbox_items')->where('id', $id)->where('user_id', $request->attributes->get('archive_user')?->getKey())->first(); }
+    private function item(Request $request, string $id): ?object
+    {
+        return DB::table('inbox_items')->where('id', $id)->where('user_id', $request->attributes->get('archive_user')?->getKey())->first();
+    }
 
     /** @return array{blocked: bool, reason: string|null, fromDepartmentId: string|null, toDepartmentId: string} */
     private function decision(object $item, string $target): array
@@ -64,5 +75,8 @@ final class DepartmentRoutingController extends Controller
         return is_array($history) ? array_values($history) : [];
     }
 
-    private function notFound(): JsonResponse { return response()->json(['ok' => false, 'error' => 'Inbox item not found.', 'code' => 'not_found'], 404); }
+    private function notFound(): JsonResponse
+    {
+        return response()->json(['ok' => false, 'error' => 'Inbox item not found.', 'code' => 'not_found'], 404);
+    }
 }

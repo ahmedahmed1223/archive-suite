@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class AutomationRulesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_creates_runs_and_deletes_automation_rules(): void
     {

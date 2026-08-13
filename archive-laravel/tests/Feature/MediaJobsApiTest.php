@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaJob;
+use App\Models\User;
+use App\Services\Media\MediaJobExecutor;
+use App\Services\Security\SecuritySettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\AuthenticatesArchiveRequests;
@@ -11,7 +14,7 @@ use Tests\TestCase;
 
 class MediaJobsApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_queues_a_media_workflow_job(): void
     {
@@ -41,6 +44,33 @@ class MediaJobsApiTest extends TestCase
             ->assertJsonPath('job.contractVersion', 1);
 
         Queue::assertPushed(ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $jobId);
+    }
+
+    public function test_cpu_transcriptions_stay_on_the_default_queue(): void
+    {
+        Queue::fake();
+
+        $response = $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-cpu',
+            'operation' => 'transcription',
+            'sourcePath' => 'archive/media-record-cpu.wav',
+        ], $this->authHeaders())->assertAccepted();
+
+        Queue::assertPushedOn('default', ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $response->json('job.id'));
+    }
+
+    public function test_cuda_transcriptions_are_routed_to_the_gpu_queue(): void
+    {
+        Queue::fake();
+        app(SecuritySettingsService::class)->updateWhisperDevice('cuda');
+
+        $response = $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-gpu',
+            'operation' => 'transcription',
+            'sourcePath' => 'archive/media-record-gpu.wav',
+        ], $this->authHeaders())->assertAccepted();
+
+        Queue::assertPushedOn('gpu', ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $response->json('job.id'));
     }
 
     public function test_it_reads_media_workflow_status(): void
@@ -73,7 +103,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
+            $this->app->make(MediaJobExecutor::class)
         );
 
         $this->assertDatabaseHas('media_jobs', [
@@ -142,7 +172,7 @@ class MediaJobsApiTest extends TestCase
         $this->assertSame('queued', $jobs[0]['status']);
     }
 
-    public function test_list_filters_by_recordId(): void
+    public function test_list_filters_by_record_id(): void
     {
         MediaJob::query()->create([
             'id' => 'media-job-record-filter-1',
@@ -241,7 +271,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
+            $this->app->make(MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -262,7 +292,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
+            $this->app->make(MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -336,7 +366,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
+            $this->app->make(MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -357,7 +387,7 @@ class MediaJobsApiTest extends TestCase
         ]);
 
         $this->app->make(ProcessMediaWorkflow::class, ['mediaJobId' => $mediaJob->id])->handle(
-            $this->app->make(\App\Services\Media\MediaJobExecutor::class)
+            $this->app->make(MediaJobExecutor::class)
         );
 
         $refreshed = $mediaJob->refresh();
@@ -376,6 +406,6 @@ class MediaJobsApiTest extends TestCase
     {
         $this->authHeaders();
 
-        return (string) \App\Models\User::query()->where('email', 'admin@example.test')->firstOrFail()->getKey();
+        return (string) User::query()->where('email', 'admin@example.test')->firstOrFail()->getKey();
     }
 }

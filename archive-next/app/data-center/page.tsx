@@ -23,11 +23,11 @@ function formatBytes(bytes: number): string {
   return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
 }
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null, locale: string): string {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("ar-SA");
+  return date.toLocaleString(locale === "ar" ? "ar-SA" : "en-US");
 }
 
 function percent(used: number, total: number) {
@@ -45,39 +45,20 @@ const QUEUE_TONE: Record<QueueStatus, "success" | "warning" | "danger" | "info">
   unknown: "info",
 };
 
-const QUEUE_STATUS_LABEL: Record<QueueStatus, string> = {
-  healthy: "سليم",
-  warning: "تحذير",
-  critical: "حرج",
-  unknown: "غير معروف",
-};
-
-const QUEUE_REASON_LABEL: Record<string, string> = {
-  depth: "تراكم عميق",
-  stalled: "متوقف",
-  failures: "مهام فاشلة",
-  unreadable: "قراءة غير متاحة",
-};
-
-function formatAge(seconds: number): string {
+function formatAge(seconds: number, locale: string): string {
   if (seconds <= 0) return "-";
-  if (seconds < 60) return `${seconds} ث`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} د`;
-  return `${Math.floor(seconds / 3600)} س`;
+  const value = seconds < 60 ? seconds : seconds < 3600 ? Math.floor(seconds / 60) : Math.floor(seconds / 3600);
+  const unit = seconds < 60 ? "second" : seconds < 3600 ? "minute" : "hour";
+  return new Intl.NumberFormat(locale === "ar" ? "ar-SA" : "en-US", { style: "unit", unit, unitDisplay: "short" }).format(value);
 }
 
 const HUB_LINKS = [
-  { href: "/uploads", title: "الرفع والاستيراد اليدوي", description: "رفع ملفات جديدة، قوالب الإدخال، روابط الرفع الخارجية.", meta: "الاستقبال", icon: UploadCloud },
-  { href: "/ingest", title: "الاستيراد الآلي", description: "مسح المجلدات، السحب عبر FTP/SMB، متابعة الدفعات الواردة.", meta: "مسارات المعالجة", icon: Workflow },
-  { href: "/backup", title: "النسخ الاحتياطي والاستعادة", description: "إنشاء نسخة فورية، معاينة المحتوى، أو الاستعادة الكاملة.", meta: "التعافي من الكوارث", icon: HardDriveDownload },
-  { href: "/status", title: "حالة النظام", description: "صحة الاتصال، مقاييس الخادم الحية، وجاهزية التعافي من الكوارث.", meta: "الصحة", icon: Gauge },
-  { href: "/settings", title: "الإعدادات", description: "إعدادات الأمان، المستخدمون، وسياسات الوصول.", meta: "السياسات", icon: Settings },
-  { href: "/system/control", title: "التحكم بالنظام", description: "إجراءات مضيف حساسة (معطّلة افتراضيًا، للمشرفين فقط).", meta: "الإدارة", icon: ServerCog }
+  { href: "/uploads", icon: UploadCloud }, { href: "/ingest", icon: Workflow }, { href: "/backup", icon: HardDriveDownload }, { href: "/status", icon: Gauge }, { href: "/settings", icon: Settings }, { href: "/system/control", icon: ServerCog }
 ] as const;
 
 export default function DataCenterPage() {
-  const { locale } = useLocale();
-  const copy = locale === "en" ? { hub: "Data center", description: "A single place for uploads, ingest, backups, status, and settings, with the key links and summaries together.", connected: "Metrics connected", checking: "Checking", review: "Needs review", refresh: "Refresh summary", forbidden: "Metrics are available to administrators only", forbiddenDescription: "You can still use the links below to open each section directly.", error: "Could not load the summary", summary: "Data-center summary", memory: "Memory", disk: "Disk", queues: "Background queues", backup: "Latest backup", available: "Available", none: "None", queuesHealth: "Background queue health", paths: "Operational paths", pathsDescription: "Each card opens a workspace for a specific data operation.", pathsCount: "paths" } : { hub: "مركز البيانات", description: "نقطة تجميع لعمليات الرفع، الاستيراد، النسخ الاحتياطي، الحالة، والإعدادات — كل الروابط والملخصات المهمة في مكان واحد.", connected: "المقاييس متصلة", checking: "جارٍ الفحص", review: "يتطلب مراجعة", refresh: "تحديث الملخص", forbidden: "ملخص المقاييس متاح للمشرفين فقط", forbiddenDescription: "يمكنك مع ذلك استخدام الروابط أدناه للانتقال إلى كل قسم مباشرة.", error: "تعذر تحميل الملخص", summary: "ملخص مركز البيانات", memory: "الذاكرة", disk: "القرص", queues: "الطوابير الخلفية", backup: "آخر نسخة", available: "موجودة", none: "لا توجد", queuesHealth: "صحة الطوابير الخلفية", paths: "مسارات التشغيل", pathsDescription: "كل بطاقة تفتح مساحة عمل مرتبطة بعملية بيانات محددة.", pathsCount: "مسارات" };
+  const { locale, t } = useLocale();
+  const copy = t.pages.dataCenter;
   const [summary, setSummary] = useState<SummaryState>({ status: "loading" });
   const apiRef = useRef(createArchiveApiClient());
 
@@ -93,14 +74,14 @@ export default function DataCenterPage() {
           setSummary({ status: "forbidden" });
           return;
         }
-        setSummary({ status: "error", message: response.error || "تعذر تحميل ملخص مركز البيانات." });
+        setSummary({ status: "error", message: response.error || copy.errorLoad });
         return;
       }
       setSummary({ status: "ready", metrics: response.metrics, dr: response.dr });
     } catch (error) {
-      setSummary({ status: "error", message: error instanceof Error ? error.message : "خطأ غير معروف" });
+      setSummary({ status: "error", message: error instanceof Error ? error.message : copy.unknown });
     }
-  }, []);
+  }, [copy.errorLoad, copy.unknown]);
 
   useEffect(() => {
     void loadSummary();
@@ -116,7 +97,7 @@ export default function DataCenterPage() {
       : { status: "healthy" as QueueStatus, queues: [] };
 
   return (
-    <AppShell subtitle="مركز البيانات" navLabel="مركز البيانات" contentClassName="observability-content" tipsPage="data-center">
+    <AppShell subtitle={t.pageTitles.dataCenter} navLabel={t.pageTitles.dataCenter} contentClassName="observability-content" tipsPage="data-center">
       <PageToolbar
         icon={<Database size={24} />}
         eyebrow={<span className="badge">{copy.hub}</span>}
@@ -168,14 +149,14 @@ export default function DataCenterPage() {
             {
               label: copy.queues,
               value: summary.metrics.queueDepth,
-              description: `${QUEUE_STATUS_LABEL[queueHealth.status]} — ${summary.metrics.queues.length} طابور نشط`,
+              description: `${copy.queueStatus[queueHealth.status]} — ${copy.activeQueues.replace("{count}", String(summary.metrics.queues.length))}`,
               icon: <Workflow size={20} />,
               tone: QUEUE_TONE[queueHealth.status]
             },
             {
               label: copy.backup,
               value: summary.dr.lastBackupName ? copy.available : copy.none,
-              description: summary.dr.lastBackupName ? formatDate(summary.dr.lastBackupAt) : "ابدأ من مركز النسخ",
+              description: summary.dr.lastBackupName ? formatDate(summary.dr.lastBackupAt, locale) : copy.backupStart,
               icon: <ShieldCheck size={20} />,
               tone: summary.dr.lastBackupName ? "success" : "warning"
             }
@@ -188,18 +169,14 @@ export default function DataCenterPage() {
           <div className="panel-title-row">
             <div>
               <h2>{copy.queuesHealth}</h2>
-              <p>الاستيراد والوسائط والنسخ الاحتياطي. عمر أقدم مهمة يميّز الطابور المتوقف عن المزدحم.</p>
+              <p>{copy.queueDescription}</p>
             </div>
-            <span className="badge">{QUEUE_STATUS_LABEL[queueHealth.status]}</span>
+            <span className="badge">{copy.queueStatus[queueHealth.status]}</span>
           </div>
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col">الطابور</th>
-                <th scope="col">الحالة</th>
-                <th scope="col">قيد الانتظار</th>
-                <th scope="col">فاشلة</th>
-                <th scope="col">عمر أقدم مهمة</th>
+                <th scope="col">{copy.queueColumns.name}</th><th scope="col">{copy.queueColumns.status}</th><th scope="col">{copy.queueColumns.pending}</th><th scope="col">{copy.queueColumns.failed}</th><th scope="col">{copy.queueColumns.oldest}</th>
               </tr>
             </thead>
             <tbody>
@@ -211,14 +188,14 @@ export default function DataCenterPage() {
                     <td>{queue.name}</td>
                     <td>
                       {/* Status is never colour-only: the label carries it for anyone who cannot see the tone. */}
-                      <span className={`badge badge-${QUEUE_TONE[status]}`}>{QUEUE_STATUS_LABEL[status]}</span>
+                      <span className={`badge badge-${QUEUE_TONE[status]}`}>{copy.queueStatus[status]}</span>
                       {health?.reasons.length ? (
-                        <span className="helper-text"> {health.reasons.map((reason) => QUEUE_REASON_LABEL[reason] ?? reason).join("، ")}</span>
+                        <span className="helper-text"> {health.reasons.map((reason) => copy.queueReason[reason as keyof typeof copy.queueReason] ?? reason).join(copy.queueSeparator)}</span>
                       ) : null}
                     </td>
                     <td>{queue.depth}</td>
                     <td>{queue.failed}</td>
-                    <td>{formatAge(queue.oldestJobAgeSec)}</td>
+                    <td>{formatAge(queue.oldestJobAgeSec, locale)}</td>
                   </tr>
                 );
               })}
@@ -235,14 +212,14 @@ export default function DataCenterPage() {
           <span className="badge">{HUB_LINKS.length} {copy.pathsCount}</span>
         </div>
         <div className="data-center-link-grid">
-          {HUB_LINKS.map((link) => (
+          {HUB_LINKS.map((link, index) => (
             <a key={link.href} href={link.href} className="data-center-link-card">
               <span className="data-center-link-card__icon" aria-hidden="true">
                 <link.icon size={20} />
               </span>
-              <span className="badge">{link.meta}</span>
-              <strong>{link.title}</strong>
-              <p className="helper-text">{link.description}</p>
+              <span className="badge">{copy.links[index].meta}</span>
+              <strong>{copy.links[index].title}</strong>
+              <p className="helper-text">{copy.links[index].description}</p>
             </a>
           ))}
         </div>

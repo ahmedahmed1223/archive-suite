@@ -33,17 +33,22 @@ function validCoreBundle() {
 
 test("online release resolves core to immutable version+digest image references without optional services", () => {
   const release = resolveRelease({ configuration: configuration() });
-  assert.equal(release.descriptor.version, "1.0.0-rc.1");
+  assert.equal(release.descriptor.version, "1.1.0");
   assert.equal(release.environment.ARCHIVE_RELEASE_PULL_POLICY, "missing");
   assert.deepEqual(release.environment.ARCHIVE_COMPOSE_PROFILES, "");
-  assert.ok(release.images.every((image) => /:1\.0\.0-rc\.1@sha256:[a-f0-9]{64}$/.test(image.reference)));
+  // Only application images (next/laravel*) are republished under the app's
+  // own version; third-party infra images (postgres/redis) keep their own
+  // upstream version and are pinned by digest instead.
+  const applicationServices = new Set(["next", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb"]);
+  assert.ok(release.images.filter((image) => applicationServices.has(image.service)).every((image) => /:1\.1\.0@sha256:[a-f0-9]{64}$/.test(image.reference)));
+  assert.ok(release.images.filter((image) => !applicationServices.has(image.service)).every((image) => /@sha256:[a-f0-9]{64}$/.test(image.reference)));
   assert.ok(!release.images.some((image) => image.service === "ocr" || image.service === "caddy"));
 });
 
-test("release enables media and edge only when explicitly requested", () => {
+test("release enables edge only when explicitly requested (no OCR image is published yet)", () => {
   const release = resolveRelease({ configuration: configuration({ runtimeProfiles: ["core", "media", "edge"] }) });
   assert.equal(release.environment.ARCHIVE_COMPOSE_PROFILES, "media,edge");
-  assert.ok(release.images.some((image) => image.service === "ocr"));
+  assert.ok(!release.images.some((image) => image.service === "ocr"));
   assert.ok(release.images.some((image) => image.service === "caddy"));
 });
 

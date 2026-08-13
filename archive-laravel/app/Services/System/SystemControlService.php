@@ -26,9 +26,7 @@ class SystemControlService
         'run-backup' => 'Trigger an immediate backup',
     ];
 
-    public function __construct(private readonly BackupService $backups)
-    {
-    }
+    public function __construct(private readonly BackupService $backups) {}
 
     public function isEnabled(): bool
     {

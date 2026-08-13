@@ -218,7 +218,7 @@ for (const variant of composeVariants) {
 
   assert.deepEqual(
     worker?.healthcheck?.test,
-    ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[q]ueue:work'"],
+    ["CMD-SHELL", "tr '\\0' ' ' </proc/1/cmdline | grep -q '[h]orizon'"],
     `${label}: worker healthcheck must inspect PID 1 without matching its own probe`
   );
   assert.equal(
@@ -255,8 +255,8 @@ for (const variant of composeVariants) {
     );
     assert.deepEqual(
       worker?.command,
-      ["php", "artisan", "queue:work", "--queue=scheduled-uploads,default", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"],
-      `${label}: worker must drain scheduled-uploads ahead of default`
+      ["php", "artisan", "horizon"],
+      `${label}: worker must run under Horizon (queue order is config/horizon.php's supervisor-1.queue)`
     );
   }
 }

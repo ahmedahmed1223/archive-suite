@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class RecordFieldRequestApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_creates_lists_resolves_and_deletes_a_request(): void
     {

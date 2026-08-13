@@ -2,6 +2,8 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { ConfirmDialogProvider } from "@/components/ui/ConfirmDialog";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+import { scheduleSummary } from "@/lib/scheduled-upload";
 
 const {
   scheduledUploads,
@@ -26,11 +28,11 @@ vi.mock("@/lib/archive-api", () => ({
 
 import ScheduledUploadsClient from "./ScheduledUploadsClient";
 
-function renderClient() {
+function renderClient(locale: "ar" | "en" = "ar") {
   return render(
-    <ConfirmDialogProvider>
-      <ScheduledUploadsClient />
-    </ConfirmDialogProvider>
+    <LocaleProvider initialLocale={locale} hasLocaleCookie={false}>
+      <ConfirmDialogProvider><ScheduledUploadsClient /></ConfirmDialogProvider>
+    </LocaleProvider>
   );
 }
 
@@ -98,6 +100,14 @@ describe("ScheduledUploadsClient", () => {
 
     expect(screen.queryByText("one.mp4")).not.toBeInTheDocument();
     expect(screen.getByText("two.mp4")).toBeInTheDocument();
+  });
+
+  test("formats scheduled dates with the active English locale", async () => {
+    const item = schedule();
+    scheduledUploads.mockResolvedValue({ ok: true, schedules: [item], nextCursor: null });
+    renderClient("en");
+
+    expect(await screen.findByText(scheduleSummary(item.scheduledAt as string, item.timeZone as string, "en-US"))).toBeInTheDocument();
   });
 
   test("filters by filename/title search", async () => {

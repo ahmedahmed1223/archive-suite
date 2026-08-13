@@ -10,11 +10,6 @@ interface FtpClient
     /**
      * Connect and authenticate.
      *
-     * @param  string  $host
-     * @param  int  $port
-     * @param  string  $user
-     * @param  string  $password
-     * @param  bool  $ssl
      *
      * @throws \Exception on connection failure
      */
@@ -23,7 +18,6 @@ interface FtpClient
     /**
      * List files in a directory.
      *
-     * @param  string  $remotePath
      * @return array<int, array{name: string, size: int, type: string}>
      *
      * @throws \Exception on list failure
@@ -33,8 +27,6 @@ interface FtpClient
     /**
      * Download a file to a local path.
      *
-     * @param  string  $remotePath
-     * @param  string  $localPath
      *
      * @throws \Exception on download failure
      */

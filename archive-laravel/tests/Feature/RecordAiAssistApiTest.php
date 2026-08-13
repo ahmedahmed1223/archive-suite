@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class RecordAiAssistApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_returns_review_required_assistance_without_mutating_the_record(): void
     {

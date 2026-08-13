@@ -1,0 +1,43 @@
+# Optional GPU worker. This is deliberately not in kustomization.yaml: the
+# canonical Kubernetes overlay deploys data services only. Copy this manifest
+# into the application overlay after replacing IMAGE_REFERENCE with a signed,
+# immutable image reference produced from archive-laravel/Dockerfile.worker-gpu.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-worker-gpu
+  namespace: archive
+  labels:
+    app: whisper-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whisper-worker
+  template:
+    metadata:
+      labels:
+        app: whisper-worker
+    spec:
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      containers:
+        - name: laravel-worker-gpu
+          image: IMAGE_REFERENCE
+          imagePullPolicy: IfNotPresent
+          command: ["php", "artisan", "queue:work", "--queue=gpu", "--sleep=1", "--tries=3", "--max-jobs=1000", "--max-time=3600"]
+          envFrom:
+            - configMapRef:
+                name: archive-config
+            - secretRef:
+                name: archive-secrets
+          env:
+            - name: WHISPER_DEVICE
+              value: cuda
+            - name: WHISPER_COMPUTE_TYPE
+              value: float16
+          resources:
+            requests:
+              nvidia.com/gpu: "1"
+            limits:
+              nvidia.com/gpu: "1"

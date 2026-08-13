@@ -3,6 +3,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import SearchFilterBuilder from "./SearchFilterBuilder";
 
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+  return {
+    useLocale: () => ({ locale: "ar", direction: "rtl", t: getDictionary("ar"), setLocale: vi.fn() }),
+  };
+});
+
 describe("SearchFilterBuilder", () => {
   it("appends a quoted advanced predicate to the existing query", () => {
     const onChange = vi.fn();

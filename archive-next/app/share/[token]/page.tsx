@@ -1,32 +1,40 @@
+import { headers } from "next/headers";
 import PageToolbar from "@/components/PageToolbar";
 import PublicFooter from "@/components/PublicFooter";
 import PublicHeader from "@/components/PublicHeader";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { isAppLocale } from "@/lib/i18n/types";
 import { ShareViewer } from "./ShareViewer";
 
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+  const requestHeaders = await headers();
+  const forwardedLocale = requestHeaders.get("x-archive-locale");
+  const locale = isAppLocale(forwardedLocale) ? forwardedLocale : "ar";
+  const t = getDictionary(locale);
+  const copy = t.pages.shareToken;
 
   return (
     <main className="shell">
-      <PublicHeader subtitle="عارض المشاركة العامة" />
+      <PublicHeader subtitle={t.pageTitles.publicShareViewer} />
 
-      <section className="content public-content" aria-label="عارض المشاركة">
+      <section className="content public-content" aria-label={copy.contentAriaLabel}>
         <PageToolbar
-          eyebrow={<span className="badge">مشاركة عامة</span>}
-          title="عارض المشاركة العامة"
-          description="اعرض السجلات التي سُمح بمشاركتها عبر رابط عام دون كشف بيانات إضافية خارج صلاحية الرابط."
+          eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+          title={copy.toolbar.title}
+          description={copy.toolbar.description}
           meta={
             <>
-              <span className="badge">محمي برمز</span>
-              <span className="badge">صلاحية محددة</span>
+              <span className="badge">{copy.toolbar.protectedByToken}</span>
+              <span className="badge">{copy.toolbar.limitedPermission}</span>
             </>
           }
         />
 
         <aside className="panel auth-form">
           <div className="panel-section-header">
-            <h2>رمز المشاركة</h2>
-            <p>هذا الرابط والرمز أدناه محميان من الاستخدام غير المصرح.</p>
+            <h2>{copy.token.title}</h2>
+            <p>{copy.token.description}</p>
           </div>
           <p className="token-preview" dir="ltr">{token}</p>
           <ShareViewer token={token} />

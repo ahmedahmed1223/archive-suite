@@ -14,6 +14,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Columns3 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { cx } from "@/lib/css";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
 
 export interface DataTableProps<TData> {
@@ -25,7 +26,7 @@ export interface DataTableProps<TData> {
   tableClassName?: string;
   virtualized?: boolean;
   wrapperClassName?: string;
-  /** V1-746: enables a per-user "الأعمدة" show/hide menu, persisted under this key. Omit to keep the table exactly as before. */
+  /** V1-746: enables a persisted per-user column visibility menu. Omit to keep the table exactly as before. */
   columnVisibilityStorageKey?: string;
 }
 
@@ -45,13 +46,16 @@ export default function DataTable<TData>({
   ariaLabel,
   columns,
   data,
-  emptyMessage = "لا توجد بيانات للعرض.",
+  emptyMessage,
   getRowId,
   tableClassName,
   virtualized = false,
   wrapperClassName,
   columnVisibilityStorageKey
 }: DataTableProps<TData>) {
+  const { t } = useLocale();
+  const copy = t.shared.dataTable;
+  const resolvedEmptyMessage = emptyMessage ?? copy.empty;
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
     columnVisibilityStorageKey
@@ -122,8 +126,13 @@ export default function DataTable<TData>({
       ? Math.max(0, virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end || 0))
       : 0;
   const sortSummary = sorting.length === 0
-    ? "لا يوجد ترتيب مفعل."
-    : `تم ترتيب الجدول حسب ${sorting.map(({ id, desc }) => `${id} ${desc ? "تنازليًا" : "تصاعديًا"}`).join("، ثم ")}.`;
+    ? copy.noSort
+    : copy.sortedBy.replace(
+        "{columns}",
+        sorting
+          .map(({ id, desc }) => (desc ? copy.descending : copy.ascending).replace("{column}", id))
+          .join(copy.thenSeparator)
+      );
 
   return (
     <div
@@ -132,7 +141,7 @@ export default function DataTable<TData>({
       data-virtualized={virtualized ? "true" : "false"}
       tabIndex={0}
       role="region"
-      aria-label={ariaLabel ? `${ariaLabel} — منطقة جدول قابلة للتمرير` : "منطقة جدول قابلة للتمرير"}
+      aria-label={ariaLabel ? copy.namedScrollRegion.replace("{label}", ariaLabel) : copy.scrollRegion}
       aria-describedby={`${tableId}-hint`}
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
@@ -140,7 +149,7 @@ export default function DataTable<TData>({
         event.currentTarget.scrollBy({ left: event.key === "ArrowRight" ? 64 : -64, behavior: "smooth" });
       }}
     >
-      <p id={`${tableId}-hint`} className="ui-visually-hidden">عند الحاجة، ركّز على منطقة الجدول واستخدم السهمين الأيمن والأيسر للتمرير أفقيًا.</p>
+      <p id={`${tableId}-hint`} className="ui-visually-hidden">{copy.scrollHint}</p>
       <p className="ui-visually-hidden" aria-live="polite" aria-atomic="true">{sortSummary}</p>
       {columnVisibilityStorageKey ? (
         <div className="ui-data-table-columns-container">
@@ -153,7 +162,7 @@ export default function DataTable<TData>({
             ref={columnsTriggerRef}
           >
             <Columns3 aria-hidden="true" size={16} strokeWidth={2} />
-            الأعمدة
+            {copy.columns}
           </button>
           {isColumnsMenuOpen ? (
             <div className="ui-data-table-columns-menu ui-dropdown-content" role="menu" ref={columnsMenuRef}>
@@ -187,7 +196,7 @@ export default function DataTable<TData>({
                         type="button"
                         className="ui-data-table-sort"
                         onClick={header.column.getToggleSortingHandler()}
-                        aria-label={`تبديل ترتيب عمود ${header.column.id}`}
+                        aria-label={copy.toggleSort.replace("{column}", header.column.id)}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         <span aria-hidden="true">{header.column.getIsSorted() === "asc" ? " ↑" : header.column.getIsSorted() === "desc" ? " ↓" : " ↕"}</span>
@@ -219,7 +228,7 @@ export default function DataTable<TData>({
           ) : null}
         </tbody>
       </table>
-      {rows.length === 0 ? <p className="ui-data-table-empty">{emptyMessage}</p> : null}
+      {rows.length === 0 ? <p className="ui-data-table-empty">{resolvedEmptyMessage}</p> : null}
     </div>
   );
 }

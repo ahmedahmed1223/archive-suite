@@ -3,7 +3,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { Command } from "cmdk";
 import * as Icons from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getLocalizedNavigation, primaryNav } from "@/lib/navigation";
@@ -11,17 +10,17 @@ import { getShortcut, matchesKeyEvent } from "@/lib/keyboard-shortcuts";
 import { useFocusMode } from "@/lib/use-focus-mode";
 import { useDensity } from "@/lib/use-density";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { resolveIcon } from "@/lib/icon-registry";
 
 const commandEventName = "masar:open-command-palette";
-const iconRegistry = Icons as unknown as Record<string, LucideIcon>;
-const navIcon = (name: string) => iconRegistry[name] || Icons.Circle;
+const navIcon = (name: string) => resolveIcon(name, Icons.Circle);
 
 export function openCommandPalette() {
   window.dispatchEvent(new Event(commandEventName));
 }
 
 export default function CommandPalette() {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -77,7 +76,7 @@ export default function CommandPalette() {
     action();
   }
 
-  const copy = locale === "en" ? { aria: "Archive Suite command palette", placeholder: "Search for a page or action…", empty: "No matching results.", quick: "Quick actions", focusOn: "Turn on focus mode", focusOff: "Leave focus mode", densityComfortable: "Switch to comfortable density", densityCompact: "Switch to compact density" } : { aria: "لوحة أوامر مسار", placeholder: "ابحث عن صفحة أو إجراء...", empty: "لا توجد نتيجة مطابقة.", quick: "إجراءات سريعة", focusOn: "تفعيل وضع التركيز", focusOff: "إنهاء وضع التركيز", densityComfortable: "تبديل إلى كثافة مريحة", densityCompact: "تبديل إلى كثافة مضغوطة" };
+  const copy = t.pages.commandPalette;
   const quickActions = [
     {
       id: "toggle-focus-mode",

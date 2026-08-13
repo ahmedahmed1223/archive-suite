@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class NamingRulesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_upserts_lists_and_deletes_a_naming_rule(): void
     {

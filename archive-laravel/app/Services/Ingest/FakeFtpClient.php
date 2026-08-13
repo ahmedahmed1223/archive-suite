@@ -52,12 +52,12 @@ class FakeFtpClient implements FtpClient
 
     public function downloadFile(string $remotePath, string $localPath): void
     {
-        if (!isset($this->fileContents[$remotePath])) {
+        if (! isset($this->fileContents[$remotePath])) {
             throw new \RuntimeException("Fake FTP: file not found {$remotePath}");
         }
 
         $dir = dirname($localPath);
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 

@@ -2,13 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class InboxItemsApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_creates_lists_updates_and_deletes_inbox_items(): void
     {
@@ -60,9 +62,9 @@ class InboxItemsApiTest extends TestCase
     {
         $this->postJson('/api/v1/inbox', ['title' => 'Mine'], $this->authHeaders())->assertCreated();
 
-        \App\Models\User::query()->firstOrCreate(
+        User::query()->firstOrCreate(
             ['email' => 'other@example.test'],
-            ['name' => 'Other User', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password')]
+            ['name' => 'Other User', 'password' => Hash::make('secret-password')]
         );
         $otherToken = $this->postJson('/api/v1/auth/login', [
             'email' => 'other@example.test',

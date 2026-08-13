@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
@@ -31,6 +32,8 @@ interface TermDeletion {
 }
 
 export default function VocabularyPage() {
+  const { t } = useLocale();
+  const copy = t.pages.vocabulary;
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageVocabulary = useCapability("vocabulary.manage");
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
@@ -61,7 +64,7 @@ export default function VocabularyPage() {
     setImportMessage("");
     const missing = selectMissingVocabularyTags(terms.map((item) => item.term));
     if (missing.length === 0) {
-      setImportMessage("كل الوسوم الافتراضية موجودة بالفعل — لم يتغير شيء.");
+      setImportMessage(copy.defaultTagsPresent);
       setIsImporting(false);
       return;
     }
@@ -69,14 +72,14 @@ export default function VocabularyPage() {
     for (const tag of missing) {
       const response = await api.createVocabularyTerm({ term: tag, kind: "tag" });
       if (!response.ok) {
-        setImportMessage(`استُورد ${imported} من ${missing.length}؛ توقف عند «${tag}»: ${response.error}`);
+        setImportMessage(copy.importStopped.replace("{imported}", String(imported)).replace("{total}", String(missing.length)).replace("{tag}", tag).replace("{error}", response.error));
         setIsImporting(false);
         await refreshTerms();
         return;
       }
       imported += 1;
     }
-    setImportMessage(`استُورد ${imported} وسمًا افتراضيًا دون المساس بالمفردات الموجودة.`);
+    setImportMessage(copy.imported.replace("{count}", String(imported)));
     setIsImporting(false);
     await refreshTerms();
   }
@@ -87,7 +90,7 @@ export default function VocabularyPage() {
       setTerms(response.terms);
       setPreferredTermIds(response.preferredTermIds);
     }
-    else setError(response.error || "تعذر تحميل المفردات.");
+    else setError(response.error || copy.loadTermsFailed);
   }
 
   async function loadVocabulary() {
@@ -96,12 +99,11 @@ export default function VocabularyPage() {
     const [termsResponse, kindsResponse, recordsResponse] = await Promise.all([api.vocabularyTerms(), api.vocabularyKinds(), api.search({ limit: 1000 })]);
     if (!termsResponse.ok || !kindsResponse.ok || !recordsResponse.ok) {
       const message = !termsResponse.ok
-        ? termsResponse.error || "تعذر تحميل المفردات."
+        ? termsResponse.error || copy.loadTermsFailed
         : !kindsResponse.ok
-          ? kindsResponse.error || "تعذر تحميل فئات القاموس."
+          ? kindsResponse.error || copy.loadKindsFailed
         : !recordsResponse.ok
-          ? recordsResponse.error || "تعذر تحميل السجلات."
-          : "تعذر تحميل بيانات المفردات.";
+          ? recordsResponse.error || copy.loadRecordsFailed : copy.loadDataFailed;
       setLoadState({
         status: "error",
         message
@@ -118,19 +120,19 @@ export default function VocabularyPage() {
   async function loadDepartmentPreferences() {
     const currentDepartmentId = departmentId.trim();
     if (!currentDepartmentId) {
-      setError("أدخل معرّف القسم أولاً.");
+      setError(copy.departmentIdRequired);
       return;
     }
     setError("");
     setPreferenceMessage("");
     const response = await api.vocabularyTerms(currentDepartmentId);
     if (!response.ok) {
-      setError(response.error || "تعذر تحميل تفضيلات القسم.");
+      setError(response.error || copy.loadPreferencesFailed);
       return;
     }
     setTerms(response.terms);
     setPreferredTermIds(response.preferredTermIds);
-    setPreferenceMessage(`حُمّلت تفضيلات قسم «${currentDepartmentId}».`);
+    setPreferenceMessage(copy.preferencesLoaded.replace("{id}", currentDepartmentId));
   }
 
   function toggleDepartmentPreference(termId: string) {
@@ -146,17 +148,17 @@ export default function VocabularyPage() {
     const response = await api.replaceDepartmentVocabularyPreferences(currentDepartmentId, preferredTermIds);
     setIsSavingPreferences(false);
     if (!response.ok) {
-      setError(response.error || "تعذر حفظ تفضيلات القسم.");
+      setError(response.error || copy.savePreferencesFailed);
       return;
     }
     setTerms(response.terms);
     setPreferredTermIds(response.preferredTermIds);
-    setPreferenceMessage(`حُفظت ${response.preferredTermIds.length} تفضيلات لقسم «${currentDepartmentId}».`);
+    setPreferenceMessage(copy.preferencesSaved.replace("{count}", String(response.preferredTermIds.length)).replace("{id}", currentDepartmentId));
   }
 
   useEffect(() => {
     void loadVocabulary();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadVocabulary is redefined every render; api is the only stable dependency and is already listed
   }, [api]);
 
   const discovered = useMemo(() => {
@@ -179,7 +181,7 @@ export default function VocabularyPage() {
     if (duplicate) await api.deleteVocabularyTerm(duplicate.id);
     const response = await api.createVocabularyTerm({ term: trimmed, kind, aliases: aliases.trim(), note: note.trim(), canonicalTermId: canonicalTermId || null });
     if (!response.ok) {
-      setError(response.error || "تعذر حفظ المصطلح.");
+      setError(response.error || copy.saveTermFailed);
       return;
     }
     await refreshTerms();
@@ -200,7 +202,7 @@ export default function VocabularyPage() {
       { key, label, description: kindDescription.trim() || null, icon: null, order: 1000 + kindDefinitions.length }
     ]);
     if (!response.ok) {
-      setError(response.error || "تعذر حفظ فئة القاموس.");
+      setError(response.error || copy.saveKindFailed);
       return;
     }
     setKindDefinitions(response.kinds);
@@ -218,7 +220,7 @@ export default function VocabularyPage() {
     const target = terms.find((item) => item.id === id);
     const response = await api.deleteVocabularyTerm(id);
     if (!response.ok) {
-      setError(response.error || "تعذر حذف المصطلح.");
+      setError(response.error || copy.deleteFailed);
       await refreshTerms();
       return;
     }
@@ -241,7 +243,7 @@ export default function VocabularyPage() {
       note: result.entry.note
     });
     if (!response.ok) {
-      setError(response.error || "تعذر التراجع عن الحذف.");
+      setError(response.error || copy.undoFailed);
       return;
     }
     setDeleteStack(result.stack);
@@ -253,12 +255,12 @@ export default function VocabularyPage() {
     if (!result) return;
     const current = terms.find((item) => normalizeText(item.term) === normalizeText(result.entry.term));
     if (!current) {
-      setError(`تعذرت إعادة الحذف: المصطلح "${result.entry.term}" غير موجود حالياً.`);
+      setError(copy.redoMissing.replace("{term}", result.entry.term));
       return;
     }
     const response = await api.deleteVocabularyTerm(current.id);
     if (!response.ok) {
-      setError(response.error || "تعذرت إعادة الحذف.");
+      setError(response.error || copy.redoFailed);
       return;
     }
     setDeleteStack(result.stack);
@@ -266,63 +268,56 @@ export default function VocabularyPage() {
   }
 
   return (
-    <AppShell subtitle="المفردات" contentClassName="local-list-content" tipsPage="vocabulary">
+    <AppShell subtitle={t.pageTitles.vocabulary} contentClassName="local-list-content" tipsPage="vocabulary">
       <PageToolbar
-        eyebrow={<span className="badge">التصنيف الهرمي</span>}
-        title="المفردات"
-        description="قاموس تشغيل يربط الأنواع والوسوم والمرادفات. يستخدم بيانات الأرشيف الحالية ويحفظ المصطلحات في الخادم لكل مستخدم."
+        eyebrow={<span className="badge">{copy.eyebrow}</span>} title={copy.title} description={copy.description}
         meta={(
           <>
-            <span className="badge">{savedTerms.length} مصطلح محفوظ</span>
-            <span className="badge">{discovered.length} مصطلح مكتشف</span>
+            <span className="badge">{copy.savedCount.replace("{count}", String(savedTerms.length))}</span><span className="badge">{copy.discoveredCount.replace("{count}", String(discovered.length))}</span>
           </>
         )}
         actions={(
           <>
             {canManageVocabulary && (
-              <button type="button" className="button button-secondary" disabled={isImporting} onClick={() => void importDefaultTags()}>استيراد الوسوم الافتراضية</button>
+              <button type="button" className="button button-secondary" disabled={isImporting} onClick={() => void importDefaultTags()}>{copy.importDefaults}</button>
             )}
-            <a className="button button-secondary" href="/tags">إدارة الوسوم</a>
+            <a className="button button-secondary" href="/tags">{copy.manageTags}</a>
           </>
         )}
       >
         {canManageVocabulary ? (
           <form className="archive-toolbar-grid" onSubmit={addTerm}>
             <label>
-              <span>المصطلح</span>
+              <span>{copy.term}</span>
               <input className="search-input" value={term} onChange={(event) => setTerm(event.target.value)} />
             </label>
             <label>
-              <span>النوع</span>
+              <span>{copy.kind}</span>
               <select value={kind} onChange={(event) => setKind(event.target.value as Kind)}>
                 {kindDefinitions.map((definition) => <option key={definition.key} value={definition.key}>{definition.icon ? `${definition.icon} ` : ""}{definition.label}</option>)}
               </select>
             </label>
             <label>
-              <span>مرادفات</span>
-              <input className="search-input" value={aliases} onChange={(event) => setAliases(event.target.value)} placeholder="افصل بينها بفواصل" />
+              <span>{copy.aliases}</span><input className="search-input" value={aliases} onChange={(event) => setAliases(event.target.value)} placeholder={copy.aliasesPlaceholder} />
             </label>
             <label>
-              <span>القيمة الرئيسية</span>
-              <select value={canonicalTermId} onChange={(event) => setCanonicalTermId(event.target.value)}><option value="">هذا هو المصطلح الرئيسي</option>{terms.filter((item) => item.id !== canonicalTermId).map((item) => <option key={item.id} value={item.id}>{item.term}</option>)}</select>
+              <span>{copy.canonical}</span><select value={canonicalTermId} onChange={(event) => setCanonicalTermId(event.target.value)}><option value="">{copy.canonicalSelf}</option>{terms.filter((item) => item.id !== canonicalTermId).map((item) => <option key={item.id} value={item.id}>{item.term}</option>)}</select>
             </label>
             <label>
-              <span>بحث داخل القاموس</span>
-              <input className="search-input" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="مصطلح، وسم، مرادف..." />
+              <span>{copy.searchDictionary}</span><input className="search-input" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder={copy.searchPlaceholder} />
             </label>
             <label className="full-span">
-              <span>ملاحظة</span>
+              <span>{copy.note}</span>
               <textarea className="search-input" value={note} onChange={(event) => setNote(event.target.value)} rows={3} />
             </label>
             <div className="archive-toolbar-actions">
-              <button className="button button-primary" type="submit" disabled={!term.trim()}>حفظ المصطلح</button>
+              <button className="button button-primary" type="submit" disabled={!term.trim()}>{copy.saveTerm}</button>
             </div>
           </form>
         ) : (
           <div className="archive-toolbar-grid">
             <label>
-              <span>بحث داخل القاموس</span>
-              <input className="search-input" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="مصطلح، وسم، مرادف..." />
+              <span>{copy.searchDictionary}</span><input className="search-input" value={filter} onChange={(event) => setFilter(event.target.value)} placeholder={copy.searchPlaceholder} />
             </label>
           </div>
         )}
@@ -332,34 +327,30 @@ export default function VocabularyPage() {
         <section className="panel panel-compact" aria-labelledby="dictionary-categories">
           <div className="panel-title-row">
             <div>
-              <h2 id="dictionary-categories">فئات القاموس</h2>
-              <p>الفئات الأساسية محمية للتوافق؛ أضف فئات تشغيلية مثل المؤسسات أو الجنسيات من دون إنشاء قاموس منفصل.</p>
+              <h2 id="dictionary-categories">{copy.categories}</h2><p>{copy.categoriesDescription}</p>
             </div>
-            <span className="badge">{kindDefinitions.length} فئة</span>
+            <span className="badge">{copy.categoryCount.replace("{count}", String(kindDefinitions.length))}</span>
           </div>
           <form className="archive-toolbar-grid" onSubmit={addDictionaryCategory}>
-            <label><span>المعرّف</span><input className="search-input" value={kindKey} onChange={(event) => setKindKey(event.target.value)} placeholder="organization" pattern="[a-z][a-z0-9_-]*" /></label>
-            <label><span>الاسم الظاهر</span><input className="search-input" value={kindLabel} onChange={(event) => setKindLabel(event.target.value)} placeholder="مؤسسة" /></label>
-            <label><span>الوصف</span><input className="search-input" value={kindDescription} onChange={(event) => setKindDescription(event.target.value)} placeholder="الهيئات ووسائل الإعلام" /></label>
-            <div className="archive-toolbar-actions"><button className="button button-secondary" type="submit" disabled={!kindKey.trim() || !kindLabel.trim()}>إضافة فئة</button></div>
+            <label><span>{copy.identifier}</span><input className="search-input" value={kindKey} onChange={(event) => setKindKey(event.target.value)} placeholder="organization" pattern="[a-z][a-z0-9_-]*" /></label><label><span>{copy.displayName}</span><input className="search-input" value={kindLabel} onChange={(event) => setKindLabel(event.target.value)} placeholder={copy.displayName} /></label><label><span>{copy.categoryDescription}</span><input className="search-input" value={kindDescription} onChange={(event) => setKindDescription(event.target.value)} placeholder={copy.categoryDescription} /></label><div className="archive-toolbar-actions"><button className="button button-secondary" type="submit" disabled={!kindKey.trim() || !kindLabel.trim()}>{copy.addCategory}</button></div>
           </form>
         </section>
       ) : null}
 
       {loadState.status === "loading" ? (
-        <div className="panel panel-compact"><Skeleton label="جار تحميل المفردات والسجلات..." /></div>
+        <div className="panel panel-compact"><Skeleton label={copy.loading} /></div>
       ) : null}
 
       {loadState.status === "error" ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر قراءة الأرشيف</strong>
+          <strong>{copy.archiveReadFailed}</strong>
           <span className="helper-text">{loadState.message}</span>
-          <div><button className="button button-secondary button-sm" type="button" onClick={() => void loadVocabulary()}>إعادة المحاولة</button></div>
+          <div><button className="button button-secondary button-sm" type="button" onClick={() => void loadVocabulary()}>{copy.retry}</button></div>
         </div>
       ) : null}
 
       {error && loadState.status === "ready" ? (
-        <div className="state-banner state-banner-error" role="alert"><strong>تعذر حفظ تغيير المفردات</strong><span className="helper-text">{error}</span></div>
+        <div className="state-banner state-banner-error" role="alert"><strong>{copy.saveError}</strong><span className="helper-text">{error}</span></div>
       ) : null}
 
       {importMessage ? <p className="helper-text" role="status">{importMessage}</p> : null}
@@ -368,20 +359,19 @@ export default function VocabularyPage() {
         <section className="panel panel-compact" aria-labelledby="department-vocabulary-preferences">
           <div className="panel-title-row">
             <div>
-              <h2 id="department-vocabulary-preferences">تفضيلات مفردات القسم</h2>
-              <p>ترفع القيم المعتمدة للقسم في قوائم الاختيار والبحث، من دون إنشاء قاموس منفصل أو إخفاء القاموس العام.</p>
+              <h2 id="department-vocabulary-preferences">{copy.departmentPreferences}</h2><p>{copy.departmentPreferencesDescription}</p>
             </div>
-            <span className="badge">{preferredTermIds.length} معتمد</span>
+            <span className="badge">{copy.approvedCount.replace("{count}", String(preferredTermIds.length))}</span>
           </div>
           <div className="archive-toolbar-grid">
             <label>
-              <span>معرّف القسم</span>
+              <span>{copy.departmentId}</span>
               <input className="search-input" value={departmentId} onChange={(event) => setDepartmentId(event.target.value)} placeholder="news" />
             </label>
             <div className="archive-toolbar-actions">
-              <button type="button" className="button button-secondary" onClick={() => void loadDepartmentPreferences()} disabled={!departmentId.trim()}>تحميل التفضيلات</button>
+              <button type="button" className="button button-secondary" onClick={() => void loadDepartmentPreferences()} disabled={!departmentId.trim()}>{copy.loadPreferences}</button>
               <button type="button" className="button button-primary" onClick={() => void saveDepartmentPreferences()} disabled={!departmentId.trim() || isSavingPreferences}>
-                {isSavingPreferences ? "جار الحفظ…" : "حفظ التفضيلات"}
+                {isSavingPreferences ? copy.saving : copy.savePreferences}
               </button>
             </div>
           </div>
@@ -392,7 +382,7 @@ export default function VocabularyPage() {
                 <span><strong>{item.term}</strong>{item.aliases ? <small className="helper-text"> · {item.aliases}</small> : null}</span>
                 <span className="button-row">
                   <span className="badge">{item.kind}</span>
-                  <input type="checkbox" checked={preferredTermIds.includes(item.id)} onChange={() => toggleDepartmentPreference(item.id)} aria-label={`اعتماد ${item.term} للقسم`} />
+                  <input type="checkbox" checked={preferredTermIds.includes(item.id)} onChange={() => toggleDepartmentPreference(item.id)} aria-label={copy.approveForDepartment.replace("{term}", item.term)} />
                 </span>
               </label>
             ))}
@@ -408,7 +398,7 @@ export default function VocabularyPage() {
             disabled={!canUndo(deleteStack)}
             onClick={() => void handleUndoRemove()}
           >
-            تراجع عن الحذف{deleteStack.past.length > 0 ? ` (${deleteStack.past.length})` : ""}
+            {copy.undoDelete}{deleteStack.past.length > 0 ? ` (${deleteStack.past.length})` : ""}
           </button>
           <button
             type="button"
@@ -416,7 +406,7 @@ export default function VocabularyPage() {
             disabled={!canRedo(deleteStack)}
             onClick={() => void handleRedoRemove()}
           >
-            إعادة الحذف{deleteStack.future.length > 0 ? ` (${deleteStack.future.length})` : ""}
+            {copy.redoDelete}{deleteStack.future.length > 0 ? ` (${deleteStack.future.length})` : ""}
           </button>
         </div>
       ) : null}
@@ -425,13 +415,12 @@ export default function VocabularyPage() {
         <article className="panel">
           <div className="panel-title-row">
             <div>
-              <h2>المصطلحات المحفوظة</h2>
-              <p>المرادفات والملاحظات التي يعتمدها الفريق في التوصيف والبحث. لتغيير وسم مستخدم، راجع معاينة إعادة الربط المدققة قبل التطبيق.</p>
+              <h2>{copy.savedTerms}</h2><p>{copy.savedTermsDescription}</p>
             </div>
             <span className="badge">{savedTerms.length}</span>
           </div>
           {savedTerms.length === 0 ? (
-            <EmptyState title="لا توجد مصطلحات محفوظة." description="اختر مصطلحاً مكتشفاً أو أضف مصطلحاً يدوياً." />
+            <EmptyState title={copy.noSavedTerms} description={copy.noSavedTermsDescription} />
           ) : (
             <div className="analytics-tag-list">
               {savedTerms.map((item) => (
@@ -439,16 +428,16 @@ export default function VocabularyPage() {
                   <span>
                     <strong>{item.term}</strong>
                     {item.aliases ? <small className="helper-text"> · {item.aliases}</small> : null}
-                    {item.canonicalTermId ? <small className="helper-text"> · بديل معتمد لـ {terms.find((candidate) => candidate.id === item.canonicalTermId)?.term || "مصطلح رئيسي"}</small> : null}
+                    {item.canonicalTermId ? <small className="helper-text"> · {copy.canonicalAlias.replace("{term}", terms.find((candidate) => candidate.id === item.canonicalTermId)?.term || copy.canonicalFallback)}</small> : null}
                     {item.note ? <small className="helper-text"> · {item.note}</small> : null}
                   </span>
                   <div className="button-row">
                     <span className="badge">{item.kind}</span>
                     {canManageVocabulary && (
-                      <button type="button" className="button button-danger button-sm" onClick={() => void removeTerm(item.id)}>حذف</button>
+                      <button type="button" className="button button-danger button-sm" onClick={() => void removeTerm(item.id)}>{copy.delete}</button>
                     )}
                   </div>
-                  <span className="helper-text">معاينة: {countAffectedRecords(records, (record) => record.type === item.term || (record.tags || []).includes(item.term))} سجل يستخدم هذا المصطلح؛ حذفه من القاموس لا يعدّل السجلات.</span>
+                  <span className="helper-text">{copy.impactPreview.replace("{count}", String(countAffectedRecords(records, (record) => record.type === item.term || (record.tags || []).includes(item.term))))}</span>
                 </div>
               ))}
             </div>
@@ -458,8 +447,7 @@ export default function VocabularyPage() {
         <article className="panel">
           <div className="panel-title-row">
             <div>
-              <h2>مصطلحات مكتشفة</h2>
-              <p>أنواع ووسوم تظهر في السجلات ويمكن اعتمادها في القاموس.</p>
+              <h2>{copy.discoveredTerms}</h2><p>{copy.discoveredTermsDescription}</p>
             </div>
             <span className="badge">{discovered.length}</span>
           </div>
@@ -469,13 +457,12 @@ export default function VocabularyPage() {
                 <span>{item.term}</span>
                 <div className="button-row">
                   <strong>{item.count}</strong>
-                  <span className="badge">{item.kind === "type" ? "نوع" : "وسم"}</span>
-                  <button type="button" className="button button-secondary button-sm" onClick={() => adoptDiscovered(item)}>اعتماد</button>
+                  <span className="badge">{item.kind === "type" ? copy.type : copy.tag}</span><button type="button" className="button button-secondary button-sm" onClick={() => adoptDiscovered(item)}>{copy.adopt}</button>
                 </div>
               </div>
             ))}
           </div>
-          <ChangeImpactPreview impact={buildChangeImpact({ action: "update", entity: "القاموس", affectedCount: 0 })} />
+          <ChangeImpactPreview impact={buildChangeImpact({ action: "update", entity: copy.dictionary, affectedCount: 0 })} />
         </article>
       </section> : null}
     </AppShell>

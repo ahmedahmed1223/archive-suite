@@ -28,7 +28,7 @@ class AutomationRuleRunner
     public const ARCHIVE_STORE = 'archive-items';
 
     /**
-     * @param array<string, mixed> $conditions
+     * @param  array<string, mixed>  $conditions
      * @return array<int, array<string, mixed>>
      */
     public function matchingRecords(array $conditions): array
@@ -44,8 +44,8 @@ class AutomationRuleRunner
     }
 
     /**
-     * @param array<string, mixed> $record
-     * @param array<string, mixed> $conditions
+     * @param  array<string, mixed>  $record
+     * @param  array<string, mixed>  $conditions
      */
     public function recordMatches(array $record, array $conditions): bool
     {
@@ -101,7 +101,7 @@ class AutomationRuleRunner
      * come from matchingRecords()) and the event listener (a single-record
      * array from a RecordChanged event).
      *
-     * @param array<int, array<string, mixed>> $records
+     * @param  array<int, array<string, mixed>>  $records
      * @return array{executedCount: int, message: string}
      *
      * @throws JsonException
@@ -117,7 +117,7 @@ class AutomationRuleRunner
     }
 
     /**
-     * @param array<int, array<string, mixed>> $records
+     * @param  array<int, array<string, mixed>>  $records
      *
      * @throws JsonException
      */
@@ -135,6 +135,7 @@ class AutomationRuleRunner
                 $record['workflowStatus'] = 'review';
                 $this->upsertRecord($uid, $record);
                 $count++;
+
                 continue;
             }
 
@@ -142,6 +143,7 @@ class AutomationRuleRunner
                 $record['tags'] = array_values(array_unique([...(array) ($record['tags'] ?? []), 'automation']));
                 $this->upsertRecord($uid, $record);
                 $count++;
+
                 continue;
             }
 
@@ -163,6 +165,7 @@ class AutomationRuleRunner
                     ],
                 );
                 $count++;
+
                 continue;
             }
 
@@ -195,7 +198,7 @@ class AutomationRuleRunner
     }
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      *
      * @throws JsonException
      */

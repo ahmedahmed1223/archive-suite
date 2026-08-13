@@ -5,6 +5,13 @@ import IconPicker from "@/components/IconPicker";
 
 afterEach(cleanup);
 
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+  return {
+    useLocale: () => ({ locale: "ar", direction: "rtl", t: getDictionary("ar"), setLocale: vi.fn() }),
+  };
+});
+
 describe("IconPicker (V1-794)", () => {
   test("renders a grid of icon buttons", () => {
     render(<IconPicker onChange={vi.fn()} />);

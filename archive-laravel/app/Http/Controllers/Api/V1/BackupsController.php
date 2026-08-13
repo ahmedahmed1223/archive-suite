@@ -17,8 +17,7 @@ class BackupsController extends Controller
 {
     public function __construct(
         private readonly NotificationService $notificationService
-    ) {
-    }
+    ) {}
 
     public function index(Request $request, BackupService $service): JsonResponse
     {
@@ -45,6 +44,7 @@ class BackupsController extends Controller
                     $backup['name'] ?? null
                 );
             }
+
             return response()->json(['ok' => true, 'backup' => $backup], 201);
         } catch (BackupException $e) {
             // Create failure notification
@@ -56,6 +56,7 @@ class BackupsController extends Controller
                     $e->getMessage()
                 );
             }
+
             return $this->backupError($e);
         }
     }
@@ -111,6 +112,7 @@ class BackupsController extends Controller
                     $e->getMessage()
                 );
             }
+
             return $this->backupError($e);
         }
     }

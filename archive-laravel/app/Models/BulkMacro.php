@@ -12,7 +12,9 @@ class BulkMacro extends Model
     use HasUuids;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     protected $fillable = ['user_id', 'name', 'steps', 'version'];
 
     protected function casts(): array

@@ -14,94 +14,137 @@ use Illuminate\Validation\Rule;
 
 class BulkMacrosController extends Controller
 {
-    public function __construct(private readonly BulkMacroService $service)
-    {
-    }
+    public function __construct(private readonly BulkMacroService $service) {}
 
     public function index(Request $request): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
         return response()->json(['ok' => true, 'macros' => BulkMacro::query()->where('user_id', $this->user($request)->id)->latest()->get()->map(fn (BulkMacro $macro) => $this->macro($macro))->values()]);
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $macro = $this->owned($request, $id);
+
         return $macro ? response()->json(['ok' => true, 'macro' => $this->macro($macro)]) : $this->notFound();
     }
 
     public function store(Request $request): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $data = $this->validateMacro($request, true);
         $macro = BulkMacro::query()->create(['user_id' => $this->user($request)->id, 'name' => trim($data['name']), 'steps' => $data['steps'], 'version' => 1]);
+
         return response()->json(['ok' => true, 'macro' => $this->macro($macro)], 201);
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $macro = $this->owned($request, $id);
-        if (! $macro) return $this->notFound();
+        if (! $macro) {
+            return $this->notFound();
+        }
         $data = $this->validateMacro($request, false);
-        if (array_key_exists('name', $data)) $macro->name = trim($data['name']);
-        if (array_key_exists('steps', $data)) $macro->steps = $data['steps'];
+        if (array_key_exists('name', $data)) {
+            $macro->name = trim($data['name']);
+        }
+        if (array_key_exists('steps', $data)) {
+            $macro->steps = $data['steps'];
+        }
         $macro->version++;
         $macro->save();
+
         return response()->json(['ok' => true, 'macro' => $this->macro($macro)]);
     }
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $macro = $this->owned($request, $id);
-        if (! $macro) return $this->notFound();
+        if (! $macro) {
+            return $this->notFound();
+        }
         $macro->delete();
+
         return response()->json(['ok' => true, 'deleted' => true]);
     }
 
     public function preview(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $macro = $this->owned($request, $id);
-        if (! $macro) return $this->notFound();
+        if (! $macro) {
+            return $this->notFound();
+        }
         $targets = $this->targets($request);
+
         return response()->json(['ok' => true, ...$this->service->preview($macro, $this->user($request), $targets)]);
     }
 
     public function run(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $macro = $this->owned($request, $id);
-        if (! $macro) return $this->notFound();
+        if (! $macro) {
+            return $this->notFound();
+        }
         $targets = $this->targets($request);
         $token = $request->validate(['previewToken' => ['required', 'string']])['previewToken'];
         if ($code = $this->service->validateConfirmation($token, $macro, $this->user($request), $targets)) {
             return response()->json(['ok' => false, 'error' => 'Preview confirmation is invalid.', 'code' => $code], 422);
         }
         $run = $this->service->execute($macro, $this->user($request), $targets);
+
         return response()->json(['ok' => true, 'run' => $this->runResource($run)], 201);
     }
 
     public function runs(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $macro = $this->owned($request, $id);
-        if (! $macro) return $this->notFound();
+        if (! $macro) {
+            return $this->notFound();
+        }
+
         return response()->json(['ok' => true, 'runs' => $macro->runs()->latest()->get()->map(fn (BulkMacroRun $run) => $this->runResource($run))->values()]);
     }
 
     // V1-835: retry only the failed/partial targets of a prior run.
     public function retryFailed(Request $request, string $id, string $runId): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $macro = $this->owned($request, $id);
-        if (! $macro) return $this->notFound();
+        if (! $macro) {
+            return $this->notFound();
+        }
         $run = $macro->runs()->where('id', $runId)->first();
-        if (! $run) return $this->notFound();
+        if (! $run) {
+            return $this->notFound();
+        }
 
         $retryRun = $this->service->retryFailed($macro, $run, $this->user($request));
+
         return response()->json(['ok' => true, 'run' => $this->runResource($retryRun)], 201);
     }
 
@@ -122,11 +165,19 @@ class BulkMacrosController extends Controller
                 $validator->errors()->add('macro', 'At least one macro field is required.');
             }
             foreach ((array) $request->input('steps', []) as $index => $step) {
-                if (! is_array($step)) continue;
+                if (! is_array($step)) {
+                    continue;
+                }
                 $type = $step['type'] ?? null;
-                if ($type === 'add-tag' && trim((string) ($step['tag'] ?? '')) === '') $validator->errors()->add("steps.$index.tag", 'A tag is required.');
-                if ($type === 'set-workflow-status' && ! in_array($step['status'] ?? null, BulkMacroService::STATUSES, true)) $validator->errors()->add("steps.$index.status", 'A valid workflow status is required.');
-                if ($type === 'set-rights-holder' && trim((string) ($step['rightsHolder'] ?? '')) === '') $validator->errors()->add("steps.$index.rightsHolder", 'A rights holder is required.');
+                if ($type === 'add-tag' && trim((string) ($step['tag'] ?? '')) === '') {
+                    $validator->errors()->add("steps.$index.tag", 'A tag is required.');
+                }
+                if ($type === 'set-workflow-status' && ! in_array($step['status'] ?? null, BulkMacroService::STATUSES, true)) {
+                    $validator->errors()->add("steps.$index.status", 'A valid workflow status is required.');
+                }
+                if ($type === 'set-rights-holder' && trim((string) ($step['rightsHolder'] ?? '')) === '') {
+                    $validator->errors()->add("steps.$index.rightsHolder", 'A rights holder is required.');
+                }
 
                 $allowed = match ($type) {
                     'add-tag' => ['type', 'tag'],
@@ -140,6 +191,7 @@ class BulkMacrosController extends Controller
                 }
             }
         });
+
         return $validator->validate();
     }
 
@@ -147,6 +199,7 @@ class BulkMacrosController extends Controller
     private function targets(Request $request): array
     {
         $validated = $request->validate(['targets' => ['required', 'array', 'min:1', 'max:1000'], 'targets.*' => ['required', 'array'], 'targets.*.store' => ['required', 'string', 'max:100'], 'targets.*.id' => ['required', 'string', 'max:255']]);
+
         return $this->service->normalizeTargets($validated['targets']);
     }
 
@@ -159,6 +212,7 @@ class BulkMacrosController extends Controller
     {
         /** @var User $user */
         $user = $request->attributes->get('archive_user');
+
         return $user;
     }
 

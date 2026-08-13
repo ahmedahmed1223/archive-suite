@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ContextMenu, type ContextMenuPosition } from "@/components/ui/ContextMenu";
 import type { ArchiveRecord } from "@/lib/archive-api";
 import { deriveRecordStatus } from "@/lib/record-status";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { formatDate, type ArchiveItemSize, type SelectClickModifiers } from "./page";
 
 const PLAIN_CLICK_MODIFIERS: SelectClickModifiers = { shiftKey: false, ctrlKey: false, metaKey: false };
@@ -19,6 +20,7 @@ interface ArchiveRecordCardProps {
 }
 
 export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSelectClick, onPreview, onRename }: ArchiveRecordCardProps) {
+  const { t } = useLocale();
   const titleLinkRef = useRef<HTMLAnchorElement>(null);
   const [menuPosition, setMenuPosition] = useState<ContextMenuPosition | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -62,7 +64,7 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
       <div className="record-card__select">
         <input
           type="checkbox"
-          aria-label={`تحديد ${record.title || "السجل"}`}
+          aria-label={t.pages.archiveRecordCard.selectRecord.replace("{title}", record.title || t.pages.archiveRecordCard.fallbackRecordLabel)}
           checked={isSelected}
           onClick={(e) => {
             onSelectClick(record.id, {
@@ -80,7 +82,7 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
             {isEditingTitle ? (
               <input
                 className="record-card__title-input"
-                aria-label="عنوان السجل"
+                aria-label={t.pages.archiveRecordCard.titleInputLabel}
                 value={titleDraft}
                 autoFocus
                 onChange={(e) => setTitleDraft(e.target.value)}
@@ -105,12 +107,12 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
                   startEditingTitle();
                 } : undefined}
               >
-                {record.title || "بدون عنوان"}
+                {record.title || t.pages.archiveRecordCard.untitled}
               </a>
             )}
           </h2>
           <button type="button" className="badge" onClick={() => onPreview(record.id)}>
-            معاينة
+            {t.pages.archiveRecordCard.preview}
           </button>
         </div>
         {record.description ? (
@@ -126,7 +128,7 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
           <span className="badge" data-record-status={status.kind} aria-label={`${status.label}: ${status.reason}`} title={status.reason}>
             {status.label}
           </span>
-          <time className="created-at">{formatDate(record.updatedAt || record.createdAt)}</time>
+          <time className="created-at">{formatDate(record.updatedAt || record.createdAt, t.pages.archiveRecordCard.notSpecified)}</time>
         </div>
         {record.tags && record.tags.length > 0 ? (
           <div className="tags">
@@ -149,20 +151,20 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
           items={[
             {
               // reuses the exact title-link navigation — no new handler
-              label: "فتح",
+              label: t.pages.archiveRecordCard.contextMenuOpen,
               onSelect: () => titleLinkRef.current?.click()
             },
             {
               // reuses the exact same href, just opened in a new tab
-              label: "فتح في تبويب جديد",
+              label: t.pages.archiveRecordCard.contextMenuOpenNewTab,
               onSelect: () => window.open(href, "_blank", "noopener,noreferrer")
             },
             {
               // reuses the existing selection handler (V1-748), as a plain click
-              label: "تحديد",
+              label: t.pages.archiveRecordCard.contextMenuSelect,
               onSelect: () => onSelectClick(record.id, PLAIN_CLICK_MODIFIERS)
             }
-            // مشاركة / حذف intentionally omitted: no per-card handler exists yet
+            // Share and delete are intentionally omitted: no per-card handler exists yet.
             // (only bulk-selection share/delete flows), inventing one is out of scope.
           ]}
         />

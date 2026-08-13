@@ -24,10 +24,18 @@ WHISPER_DIARIZE=false
 
 ## التشغيل على GPU
 
-يتطلب تشغيل CUDA برنامج تشغيل NVIDIA متوافقًا ووقت تشغيل CUDA واعتمادات Python
-الداعمة لـGPU وذاكرة جهاز تكفي للنموذج المختار. لا تستخدم
-`WHISPER_DEVICE=cuda` و`WHISPER_COMPUTE_TYPE=float16` قبل نجاح اختبار قبول GPU.
-ولا يحتاج التثبيت المعتمد على CPU إلى مكونات GPU.
+يوفّر عامل مستقل باسم `laravel-worker-gpu` تشغيل CUDA. وهو يحتاج إلى برنامج
+تشغيل NVIDIA متوافق وNVIDIA Container Toolkit وذاكرة كافية للنموذج المختار.
+شغّل ملف Compose الاختياري على جهاز GPU فقط:
+
+```bash
+docker compose -f infra/docker-compose.laravel-next.yml --profile gpu up -d laravel-worker-gpu
+```
+
+يستهلك هذا العامل طابور `gpu` فقط. عند اختيار `cuda` من إعدادات النظام، تُرسل
+مهام التفريغ الجديدة إلى هذا الطابور وتستخدم `float16` دائمًا. يبقى عامل CPU
+الافتراضي على طابور `default` مع `int8`. إذا اختير CUDA من دون عامل GPU سليم،
+تفشل المهمة برسالة تشغيلية واضحة ولا تتحول بصمت إلى CPU.
 
 ## فصل المتحدثين والسلامة
 

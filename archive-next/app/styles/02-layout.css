@@ -178,7 +178,7 @@
 }
 
 .view-switcher__button {
-  min-block-size: 2.3rem;
+  min-block-size: var(--control-height);
   border: 0;
   border-radius: var(--radius-md);
   padding: 0.45rem 0.72rem;

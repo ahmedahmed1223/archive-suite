@@ -1,13 +1,18 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+
+const source = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
 describe("advanced search workbench", () => {
   it("keeps recent searches and optional filters as separate labelled controls", () => {
-    const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+    const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+    const dictionary = source("lib/i18n/dictionaries/ar/pages/searchResults.ts");
 
-    expect(source).toContain('aria-label="عمليات البحث الأخيرة"');
-    expect(source).toContain("clearRecentSearches");
-    expect(source).toContain('<details className="search-advanced-filters">');
+    expect(pageSource).toContain("aria-label={searchCopy.recentSearches}");
+    expect(pageSource).toContain("clearRecentSearches");
+    expect(pageSource).toContain('<details className="search-advanced-filters">');
+    expect(dictionary).toContain('recentSearches: "عمليات البحث الأخيرة"');
   });
 
   it("dismisses autocomplete suggestions before running a search", () => {

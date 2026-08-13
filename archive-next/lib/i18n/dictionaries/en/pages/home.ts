@@ -1,0 +1,22 @@
+export const home = {
+  add: "Add material",
+  loading: "Loading dashboard data…",
+  error: "Unable to load dashboard data.",
+  errorTitle: "Dashboard unavailable",
+  openArchive: "Open archive",
+  metrics: "Archive metrics",
+  quick: "Quick actions",
+  recent: "Recently added",
+  all: "View all",
+  empty: "No records yet",
+  emptyDescription: "Start by adding your first item to the archive.",
+  untitled: "Untitled",
+  total: "Total records",
+  types: "Types",
+  tags: "Tags",
+  stores: "Storage locations",
+  most: "Most common",
+  quickLinks: { uploads: "Add material", search: "Search", collections: "Collections", tags: "Tags", types: "Types" },
+  roles: { admin: "Archive manager", editor: "Media editor", viewer: "Viewer / researcher" },
+  greetings: { admin: "Welcome back — manage your archive with confidence", editor: "Welcome back — let’s continue describing materials", viewer: "Welcome back — discover what is new" }
+} as const;

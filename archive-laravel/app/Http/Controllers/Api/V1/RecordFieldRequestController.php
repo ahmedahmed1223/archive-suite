@@ -59,7 +59,7 @@ class RecordFieldRequestController extends Controller
         $id = (string) Str::uuid();
         $now = now();
         $departmentId = $validated['departmentId'] ?? null;
-        $fieldOwner = $departmentId ? DB::table('department_field_owners')->where('department_id', $departmentId)->whereIn('field', [$validated['field'], '*'])->orderByRaw("case when field = ? then 0 else 1 end", [$validated['field']])->value('owner') : null;
+        $fieldOwner = $departmentId ? DB::table('department_field_owners')->where('department_id', $departmentId)->whereIn('field', [$validated['field'], '*'])->orderByRaw('case when field = ? then 0 else 1 end', [$validated['field']])->value('owner') : null;
 
         DB::table('record_field_requests')->insert([
             'id' => $id,
@@ -83,7 +83,9 @@ class RecordFieldRequestController extends Controller
     public function resolve(Request $request, string $id): JsonResponse
     {
         $existing = DB::table('record_field_requests')->where('id', $id)->first();
-        if (! $existing) return $this->notFound();
+        if (! $existing) {
+            return $this->notFound();
+        }
 
         $user = $request->attributes->get('archive_user');
         DB::table('record_field_requests')->where('id', $id)->update([
@@ -101,7 +103,9 @@ class RecordFieldRequestController extends Controller
     {
         $deleted = DB::table('record_field_requests')->where('id', $id)->delete();
 
-        if ($deleted < 1) return $this->notFound();
+        if ($deleted < 1) {
+            return $this->notFound();
+        }
 
         return response()->json(['ok' => true, 'deleted' => true]);
     }

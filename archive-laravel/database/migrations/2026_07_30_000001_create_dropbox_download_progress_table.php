@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Schema;
  * once seen, so it cannot answer "did we finish downloading this file's
  * bytes" -- a crash mid-download needs its own progress record to resume
  * from the last byte written instead of restarting or silently skipping. */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('dropbox_download_progress', function (Blueprint $table): void {

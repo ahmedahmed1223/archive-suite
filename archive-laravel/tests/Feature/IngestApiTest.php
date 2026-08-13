@@ -2,15 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Services\Ingest\IngestScanner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
-use Tests\TestCase;
 use Tests\Support\AuthenticatesArchiveRequests;
+use Tests\TestCase;
 
 class IngestApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     protected function setUp(): void
     {
@@ -70,7 +72,7 @@ class IngestApiTest extends TestCase
         $dir = config('ingest.directory');
         Storage::disk($disk)->put("$dir/still-copying.mp4", 'partial');
 
-        $result = app(\App\Services\Ingest\IngestScanner::class)->scanWatched();
+        $result = app(IngestScanner::class)->scanWatched();
 
         $this->assertSame([], $result['ingested']);
         $this->assertSame(1, $result['skipped']);
@@ -123,7 +125,7 @@ class IngestApiTest extends TestCase
             'outcome' => 'success',
             'status_code' => 201,
         ]);
-        $this->assertSame($response->json('batch.id'), \Illuminate\Support\Facades\DB::table('audit_logs')->latest('id')->value('resource_id'));
+        $this->assertSame($response->json('batch.id'), DB::table('audit_logs')->latest('id')->value('resource_id'));
     }
 
     public function test_watched_batch_quarantines_a_rejected_file_instead_of_leaving_it_for_another_scan(): void
@@ -151,7 +153,7 @@ class IngestApiTest extends TestCase
         $disk = config('ingest.disk');
         $directory = config('ingest.directory');
         Storage::disk($disk)->put("$directory/already-archived.txt", 'same content');
-        app(\App\Services\Ingest\IngestScanner::class)->scan();
+        app(IngestScanner::class)->scan();
         $source = "$directory/watched/conflict.txt";
         Storage::disk($disk)->put($source, 'same content');
 
@@ -168,7 +170,7 @@ class IngestApiTest extends TestCase
     {
         config()->set('ingest.watched.min_stable_seconds', 0);
         $templateId = 'news-template';
-        \Illuminate\Support\Facades\DB::table('metadata_templates')->insert([
+        DB::table('metadata_templates')->insert([
             'id' => $templateId, 'name' => 'News', 'fields' => json_encode(['department' => 'news']), 'tags' => json_encode(['editorial']), 'created_at' => now(), 'updated_at' => now(),
         ]);
         $this->postJson('/api/v1/ingest/watched/rules', [
@@ -182,7 +184,7 @@ class IngestApiTest extends TestCase
         $preview->assertJsonPath('batch.entries.0.routing.stagingDirectory', 'ingest/watched/news');
 
         $this->postJson('/api/v1/ingest/watched/batches/'.$preview->json('batch.id').'/apply', [], $this->authHeaders())->assertOk();
-        $record = \Illuminate\Support\Facades\DB::table('storage_rows')->where('store', 'archive-items')->value('data');
+        $record = DB::table('storage_rows')->where('store', 'archive-items')->value('data');
         $this->assertIsString($record);
         $data = json_decode($record, true, flags: JSON_THROW_ON_ERROR);
         $this->assertSame('ingest/watched/news', dirname($data['filePath']));
@@ -224,7 +226,7 @@ class IngestApiTest extends TestCase
             ->assertOk();
 
         // Check that media jobs were created for video and image, not text
-        $mediaJobs = \Illuminate\Support\Facades\DB::table('media_jobs')->get();
+        $mediaJobs = DB::table('media_jobs')->get();
         $this->assertEquals(2, $mediaJobs->count());
 
         $operations = $mediaJobs->pluck('operation')->toArray();
@@ -244,7 +246,7 @@ class IngestApiTest extends TestCase
             ->assertOk();
 
         // No media jobs should be created
-        $mediaJobs = \Illuminate\Support\Facades\DB::table('media_jobs')->get();
+        $mediaJobs = DB::table('media_jobs')->get();
         $this->assertEquals(0, $mediaJobs->count());
     }
 

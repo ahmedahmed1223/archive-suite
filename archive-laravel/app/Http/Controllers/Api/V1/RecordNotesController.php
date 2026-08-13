@@ -100,7 +100,9 @@ class RecordNotesController extends Controller
             return $this->notFound();
         }
 
-        if (! $this->canMutate($request, $note)) return $this->notFound();
+        if (! $this->canMutate($request, $note)) {
+            return $this->notFound();
+        }
 
         $validated = $request->validate($this->rules(requireBody: false));
         $updates = ['updated_at' => now()];
@@ -133,7 +135,9 @@ class RecordNotesController extends Controller
     public function destroy(Request $request, string $id): JsonResponse
     {
         $note = DB::table('record_notes')->where('id', $id)->first();
-        if (! $note instanceof stdClass || ! $this->canMutate($request, $note)) return $this->notFound();
+        if (! $note instanceof stdClass || ! $this->canMutate($request, $note)) {
+            return $this->notFound();
+        }
 
         $deleted = DB::table('record_notes')->where('id', $id)->delete();
 
@@ -154,6 +158,7 @@ class RecordNotesController extends Controller
     private function canMutate(Request $request, stdClass $note): bool
     {
         $user = $request->attributes->get('archive_user');
+
         return $user?->role === 'admin' || ($note->author_id !== null && (string) $note->author_id === (string) $user?->getKey());
     }
 

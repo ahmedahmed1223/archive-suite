@@ -2,6 +2,14 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { ArchiveRecord } from "@/lib/archive-api";
+import { recordDescribeForm } from "@/lib/i18n/dictionaries/ar/pages/recordDescribeForm";
+
+vi.mock("@/lib/i18n/LocaleProvider", () => ({
+  useLocale: () => ({ locale: "ar", t: { pages: { recordDescribeForm } } })
+}));
+
+vi.mock("@/components/RecordEditClaimBanner", () => ({ default: () => null }));
+
 import { RecordDescribeForm } from "./page";
 
 afterEach(cleanup);

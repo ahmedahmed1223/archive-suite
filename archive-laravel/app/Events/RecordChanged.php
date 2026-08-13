@@ -20,13 +20,12 @@ class RecordChanged
     use SerializesModels;
 
     /**
-     * @param array<string, mixed> $record
+     * @param  array<string, mixed>  $record
      */
     public function __construct(
         public readonly string $store,
         public readonly string $uid,
         public readonly array $record,
         public readonly bool $wasCreated,
-    ) {
-    }
+    ) {}
 }

@@ -6,9 +6,7 @@ use Symfony\Component\Process\Process;
 
 class SymfonyProcessRunner implements ProcessRunner
 {
-    public function __construct(private readonly int $timeoutSeconds = 300)
-    {
-    }
+    public function __construct(private readonly int $timeoutSeconds = 300) {}
 
     /**
      * Run a command using Symfony Process.

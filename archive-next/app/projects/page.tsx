@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
@@ -54,6 +55,8 @@ function downloadText(content: string, filename: string, type: string): void {
 }
 
 export default function ProjectsPage() {
+  const { t } = useLocale();
+  const copy = t.pages.projects;
   const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [projects, setProjects] = useState<MontageProject[]>([]);
@@ -98,15 +101,15 @@ export default function ProjectsPage() {
       setProjects(Array.isArray(updated) ? updated : [updated]);
       setSelectedId(project.id);
       setNewName("");
-      setFeedback(`تم إنشاء المشروع "${project.name}"`);
+      setFeedback(copy.feedback.projectCreated.replace("{name}", project.name));
     })();
   }
 
   async function handleDelete(project: MontageProject) {
     const confirmed = await dialogs.confirm({
-      title: "حذف المشروع",
-      message: `حذف المشروع محلياً غير قابل للتراجع: "${project.name}". لن تتغير أي مادة أصلية.`,
-      confirmLabel: "حذف",
+      title: copy.dialogs.deleteProjectTitle,
+      message: copy.dialogs.deleteProjectMessage.replace("{name}", project.name),
+      confirmLabel: copy.dialogs.deleteConfirm,
       destructive: true
     });
     if (!confirmed) return;
@@ -114,7 +117,7 @@ export default function ProjectsPage() {
     const next = await listProjects();
     setProjects(next);
     if (selectedId === project.id) setSelectedId(next[0]?.id || null);
-    setFeedback(`تم حذف المشروع "${project.name}"`);
+    setFeedback(copy.feedback.projectDeleted.replace("{name}", project.name));
   }
 
   async function handleSearch() {
@@ -123,7 +126,7 @@ export default function ProjectsPage() {
     const response = await api.search({ q: query.trim() || undefined, limit: 50 });
     if (response.ok) {
       setResults(response.records);
-      if (response.records.length === 0) setSearchError("لا توجد سجلات مطابقة.");
+      if (response.records.length === 0) setSearchError(copy.clipSearch.noResults);
     } else {
       setResults([]);
       setSearchError(response.error);
@@ -136,7 +139,7 @@ export default function ProjectsPage() {
     const start = Number(inSec);
     const end = Number(outSec);
     if (!(end > start)) {
-      setFeedback("نقطة النهاية يجب أن تكون بعد نقطة البداية.");
+      setFeedback(copy.feedback.invalidRange);
       return;
     }
     const videoTrack = selected.tracks.find((t) => t.type === "video");
@@ -148,15 +151,15 @@ export default function ProjectsPage() {
       inSec: start,
       outSec: end
     }));
-    setFeedback(`تمت إضافة "${record.title || record.id}" إلى الخط الزمني`);
+    setFeedback(copy.feedback.clipAdded.replace("{title}", record.title || record.id));
   }
 
   async function handleRemoveClip(clip: MontageClip) {
     if (!selected) return;
     const confirmed = await dialogs.confirm({
-      title: "حذف القصاصة",
-      message: `حذف القصاصة غير قابل للتراجع من هذا الخط الزمني: "${clip.title || clip.itemId}". لن تتغير المادة الأصلية.`,
-      confirmLabel: "حذف",
+      title: copy.dialogs.deleteClipTitle,
+      message: copy.dialogs.deleteClipMessage.replace("{title}", clip.title || clip.itemId),
+      confirmLabel: copy.dialogs.deleteConfirm,
       destructive: true
     });
     if (!confirmed) return;
@@ -200,7 +203,7 @@ export default function ProjectsPage() {
 
     if (failures.length > 0) {
       const titles = failures.map((failure) => failure.clip.title || failure.clip.itemId).join("، ");
-      setExportError(`تعذّر تحديد مسار الملف لبعض القصاصات: ${titles}. لا يمكن المتابعة حتى تحتوي كل قصاصة على مسار ملف صالح.`);
+      setExportError(copy.export.pathResolutionError.replace("{titles}", titles));
       return;
     }
 
@@ -212,7 +215,7 @@ export default function ProjectsPage() {
 
     if (response.ok) {
       setExportJob(response.job);
-      setFeedback("تم إرسال مهمة تصدير MP4، جارٍ المعالجة في الخلفية.");
+      setFeedback(copy.feedback.exportMp4Queued);
     } else {
       setExportError(response.error);
     }
@@ -226,25 +229,25 @@ export default function ProjectsPage() {
         content: () => JSON.stringify(buildTimelineJson(selected), null, 2),
         filename: `${base}.timeline.json`,
         type: "application/json",
-        message: "تم تنزيل ملف JSON للخط الزمني"
+        message: copy.feedback.exportJson
       },
       edl: {
         content: () => buildEdl(selected),
         filename: `${base}.edl`,
         type: "text/plain",
-        message: "تم تنزيل ملف EDL (CMX3600)"
+        message: copy.feedback.exportEdl
       },
       premiere: {
         content: () => buildPremiereXml(selected),
         filename: `${base}.xml`,
         type: "application/xml",
-        message: "تم تنزيل ملف Premiere XML"
+        message: copy.feedback.exportPremiere
       },
       fcpxml: {
         content: () => buildFcpXml(selected),
         filename: `${base}.fcpxml`,
         type: "application/xml",
-        message: "تم تنزيل ملف FCPXML"
+        message: copy.feedback.exportFcpXml
       }
     } as const;
     const format = formats[kind];
@@ -253,32 +256,32 @@ export default function ProjectsPage() {
   }
 
   return (
-    <AppShell subtitle="المشاريع" contentClassName="local-list-content" tipsPage="projects">
+    <AppShell subtitle={t.pageTitles.projects} contentClassName="local-list-content" tipsPage="projects">
       <PageToolbar
-        eyebrow={<span className="badge">المونتاج</span>}
-        title="المشاريع / المونتاج"
-        description="تجميع قصاصات من مواد الأرشيف على خط زمني، مع ترتيب ونقاط دخول/خروج وتصدير JSON أو EDL."
+        eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
+        title={copy.toolbar.title}
+        description={copy.toolbar.description}
         meta={(
           <>
-            <span className="badge">{projects.length} مشروع</span>
-            {selected ? <span className="badge">{clips.length} قصاصة</span> : null}
-            {selected ? <span className="badge">المدة {formatClock(projectDuration(selected))}</span> : null}
+            <span className="badge">{copy.toolbar.projectCount.replace("{count}", String(projects.length))}</span>
+            {selected ? <span className="badge">{copy.toolbar.clipCount.replace("{count}", String(clips.length))}</span> : null}
+            {selected ? <span className="badge">{copy.toolbar.duration.replace("{duration}", formatClock(projectDuration(selected)))}</span> : null}
           </>
         )}
-        actions={<><a className="button button-secondary" href="/project-groups">مشاريع العمل</a><a className="button button-secondary" href="/archive">فتح الأرشيف</a></>}
+        actions={<><a className="button button-secondary" href="/project-groups">{copy.toolbar.workProjects}</a><a className="button button-secondary" href="/archive">{copy.toolbar.openArchive}</a></>}
       />
 
       {feedback ? (
         <div className="state-banner" role="status">
-          <strong>المشاريع</strong>
+          <strong>{copy.feedback.title}</strong>
           <span className="helper-text">{feedback}</span>
         </div>
       ) : null}
-      <ChangeImpactPreview impact={buildChangeImpact({ action: "update", entity: "المشروع", affectedCount: 0 })} />
+      <ChangeImpactPreview impact={buildChangeImpact({ action: "update", entity: copy.changeImpactEntity, affectedCount: 0 })} />
 
-      <section className="panel panel-compact" aria-label="قائمة المشاريع">
+      <section className="panel panel-compact" aria-label={copy.projectsList.ariaLabel}>
         <div className="panel-title-row">
-          <h2>المشاريع</h2>
+          <h2>{copy.projectsList.title}</h2>
           <span className="badge">{projects.length}</span>
         </div>
         <div className="button-row">
@@ -286,17 +289,17 @@ export default function ProjectsPage() {
             value={newName}
             onChange={(event) => setNewName(event.target.value)}
             onKeyDown={(event) => { if (event.key === "Enter") handleCreate(); }}
-            placeholder="اسم مشروع جديد..."
-            aria-label="اسم مشروع جديد"
+            placeholder={copy.projectsList.newNamePlaceholder}
+            aria-label={copy.projectsList.newNameAriaLabel}
           />
           <button type="button" className="button" onClick={handleCreate} disabled={!newName.trim()}>
-            إنشاء مشروع
+            {copy.projectsList.create}
           </button>
         </div>
         {projects.length === 0 ? (
-          <p className="helper-text">لا توجد مشاريع بعد. أنشئ مشروعًا لبدء تجميع القصاصات. تُحفظ المشاريع محليًا في هذا المتصفح.</p>
+          <p className="helper-text">{copy.projectsList.empty}</p>
         ) : (
-          <div className="button-row" role="list" aria-label="المشاريع المحفوظة">
+          <div className="button-row" role="list" aria-label={copy.projectsList.savedAriaLabel}>
             {projects.map((project) => (
               <div key={project.id} role="listitem" className="button-row">
                 <button
@@ -308,7 +311,7 @@ export default function ProjectsPage() {
                   {project.name} ({project.clips.length})
                 </button>
                 <button type="button" className="button button-secondary button-sm" onClick={() => handleDelete(project)}>
-                  حذف
+                  {copy.projectsList.delete}
                 </button>
               </div>
             ))}
@@ -317,86 +320,86 @@ export default function ProjectsPage() {
       </section>
 
       {!selected ? (
-        <EmptyState title="لا يوجد مشروع محدد." description="أنشئ مشروعًا أو اختر واحدًا من القائمة لفتح محرر الخط الزمني." />
+        <EmptyState title={copy.projectsList.noSelectionTitle} description={copy.projectsList.noSelectionDescription} />
       ) : (
         <>
-          <section className="panel panel-compact" aria-label="إضافة قصاصات من الأرشيف">
+          <section className="panel panel-compact" aria-label={copy.clipSearch.ariaLabel}>
             <div className="panel-title-row">
-              <h2>إضافة قصاصة من الأرشيف</h2>
-              <span className="badge">{results.length} نتيجة</span>
+              <h2>{copy.clipSearch.title}</h2>
+              <span className="badge">{copy.clipSearch.resultsCount.replace("{count}", String(results.length))}</span>
             </div>
             <div className="button-row">
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={(event) => { if (event.key === "Enter") void handleSearch(); }}
-                placeholder="بحث في سجلات الأرشيف..."
-                aria-label="بحث في سجلات الأرشيف"
+                placeholder={copy.clipSearch.searchPlaceholder}
+                aria-label={copy.clipSearch.searchAriaLabel}
               />
               <label className="helper-text">
-                بداية (ث)
-                <input type="number" min="0" step="0.1" value={inSec} onChange={(event) => setInSec(event.target.value)} aria-label="نقطة البداية بالثواني" />
+                {copy.clipSearch.inLabel}
+                <input type="number" min="0" step="0.1" value={inSec} onChange={(event) => setInSec(event.target.value)} aria-label={copy.clipSearch.inAriaLabel} />
               </label>
               <label className="helper-text">
-                نهاية (ث)
-                <input type="number" min="0" step="0.1" value={outSec} onChange={(event) => setOutSec(event.target.value)} aria-label="نقطة النهاية بالثواني" />
+                {copy.clipSearch.outLabel}
+                <input type="number" min="0" step="0.1" value={outSec} onChange={(event) => setOutSec(event.target.value)} aria-label={copy.clipSearch.outAriaLabel} />
               </label>
               <button type="button" className="button" onClick={() => void handleSearch()} disabled={searching}>
-                {searching ? "جار البحث..." : "بحث"}
+                {searching ? copy.clipSearch.searching : copy.clipSearch.search}
               </button>
             </div>
             {searchError ? <p className="helper-text">{searchError}</p> : null}
             {results.slice(0, 20).map((record) => (
               <div className="kanban-card" key={record.id}>
                 <strong>{record.title || record.id}</strong>
-                <span className="helper-text">{record.type || "غير محدد"}</span>
+                <span className="helper-text">{record.type || copy.clipSearch.unspecified}</span>
                 <div className="button-row">
                   <button type="button" className="button button-secondary button-sm" onClick={() => handleAddClip(record)}>
-                    إضافة للخط الزمني
+                    {copy.clipSearch.add}
                   </button>
-                  <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(record.id)}`}>فتح</a>
+                  <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(record.id)}`}>{copy.clipSearch.open}</a>
                 </div>
               </div>
             ))}
           </section>
 
-          <section className="panel panel-compact" aria-label="الخط الزمني للمشروع">
+          <section className="panel panel-compact" aria-label={copy.timeline.ariaLabel}>
             <div className="panel-title-row">
-              <h2>الخط الزمني — {selected.name}</h2>
+              <h2>{copy.timeline.title.replace("{name}", selected.name)}</h2>
               <span className="badge">{formatClock(projectDuration(selected))}</span>
             </div>
             {clips.length === 0 ? (
-              <p className="helper-text">لا توجد قصاصات بعد. ابحث في الأرشيف أعلاه وأضف قصاصات إلى الخط الزمني.</p>
+              <p className="helper-text">{copy.timeline.empty}</p>
             ) : (
               clips.map((clip: MontageClip, index: number) => (
                 <div className="kanban-card" key={clip.id}>
                   <strong>{index + 1}. {clip.title || clip.itemId}</strong>
                   <span className="helper-text" dir="ltr">
                     {secondsToTimecode(clip.inSec, selected.fps)} → {secondsToTimecode(clip.outSec, selected.fps)} ({formatClock(clipDuration(clip))})
-                    {isValidClip(clip) ? "" : " — نقاط غير صالحة"}
+                    {isValidClip(clip) ? "" : copy.timeline.invalidPoints}
                   </span>
                   <div className="button-row">
                     <label className="helper-text">
-                      بداية
+                      {copy.timeline.inLabel}
                       <input
                         type="number" min="0" step="0.1" value={clip.inSec}
                         onChange={(event) => persist(updateClip(selected, clip.id, { inSec: Number(event.target.value) }))}
-                        aria-label={`نقطة بداية ${clip.title}`}
+                        aria-label={copy.timeline.inAriaLabel.replace("{title}", clip.title || clip.itemId)}
                       />
                     </label>
                     <label className="helper-text">
-                      نهاية
+                      {copy.timeline.outLabel}
                       <input
                         type="number" min="0" step="0.1" value={clip.outSec}
                         onChange={(event) => persist(updateClip(selected, clip.id, { outSec: Number(event.target.value) }))}
-                        aria-label={`نقطة نهاية ${clip.title}`}
+                        aria-label={copy.timeline.outAriaLabel.replace("{title}", clip.title || clip.itemId)}
                       />
                     </label>
                     <button
                       type="button" className="button button-secondary button-sm"
                       onClick={() => persist(reorderClip(selected, clip.id, index - 1))}
                       disabled={index === 0}
-                      aria-label={`تحريك ${clip.title} لأعلى`}
+                      aria-label={copy.timeline.moveUpAriaLabel.replace("{title}", clip.title || clip.itemId)}
                     >
                       ▲
                     </button>
@@ -404,7 +407,7 @@ export default function ProjectsPage() {
                       type="button" className="button button-secondary button-sm"
                       onClick={() => persist(reorderClip(selected, clip.id, index + 1))}
                       disabled={index === clips.length - 1}
-                      aria-label={`تحريك ${clip.title} لأسفل`}
+                      aria-label={copy.timeline.moveDownAriaLabel.replace("{title}", clip.title || clip.itemId)}
                     >
                       ▼
                     </button>
@@ -412,32 +415,32 @@ export default function ProjectsPage() {
                       type="button" className="button button-secondary button-sm"
                       onClick={() => handleRemoveClip(clip)}
                     >
-                      حذف
+                      {copy.timeline.delete}
                     </button>
-                    <span className="helper-text">حذف القصاصة يغيّر الخط الزمني فقط؛ المادة الأصلية لا تتأثر.</span>
+                    <span className="helper-text">{copy.timeline.deleteNote}</span>
                   </div>
                 </div>
               ))
             )}
           </section>
 
-          <section className="panel panel-compact" aria-label="تصدير المشروع">
+          <section className="panel panel-compact" aria-label={copy.export.ariaLabel}>
             <div className="panel-title-row">
-              <h2>التصدير</h2>
-              <span className="badge">{validCount} قصاصة صالحة</span>
+              <h2>{copy.export.title}</h2>
+              <span className="badge">{copy.export.validCount.replace("{count}", String(validCount))}</span>
             </div>
             <div className="button-row">
               <button type="button" className="button" onClick={() => handleExport("json")} disabled={validCount === 0}>
-                تصدير JSON
+                {copy.export.json}
               </button>
               <button type="button" className="button" onClick={() => handleExport("edl")} disabled={validCount === 0}>
-                تصدير EDL
+                {copy.export.edl}
               </button>
               <button type="button" className="button" onClick={() => handleExport("premiere")} disabled={validCount === 0}>
-                تصدير Premiere XML
+                {copy.export.premiere}
               </button>
               <button type="button" className="button" onClick={() => handleExport("fcpxml")} disabled={validCount === 0}>
-                تصدير FCPXML
+                {copy.export.fcpXml}
               </button>
               <button
                 type="button"
@@ -445,16 +448,16 @@ export default function ProjectsPage() {
                 onClick={() => void handleExportMp4()}
                 disabled={validCount === 0 || (exportJob !== null && exportJob.status !== "completed" && exportJob.status !== "failed")}
               >
-                تصدير MP4
+                {copy.export.mp4}
               </button>
             </div>
             <p className="helper-text">
-              تصدير MP4 يعمل كمهمة خادم غير متزامنة (montage_export) تجمع القصاصات عبر ffmpeg في الخلفية دون حجب الطلب.
+              {copy.export.mp4Hint}
             </p>
             {exportError ? <p className="form-status status-error" role="alert">{exportError}</p> : null}
             {exportJob ? (
               <div className="state-banner" role="status">
-                <strong>حالة تصدير MP4: {exportJob.status}</strong>
+                <strong>{copy.export.status.replace("{status}", exportJob.status)}</strong>
                 {exportJob.status === "completed" && exportJob.result?.artifacts ? (
                   <a
                     className="button button-secondary button-sm"
@@ -462,12 +465,12 @@ export default function ProjectsPage() {
                       (exportJob.result.artifacts as Array<{ key: string }>)[0]?.key || ""
                     )}`}
                   >
-                    تنزيل ملف MP4
+                    {copy.export.download}
                   </a>
                 ) : exportJob.status === "failed" ? (
-                  <span className="helper-text">فشل التصدير: {exportJob.error}</span>
+                  <span className="helper-text">{copy.export.failed.replace("{error}", exportJob.error || "")}</span>
                 ) : (
-                  <span className="helper-text">جارٍ التنفيذ في الخلفية...</span>
+                  <span className="helper-text">{copy.export.running}</span>
                 )}
               </div>
             ) : null}

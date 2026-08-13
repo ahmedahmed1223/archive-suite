@@ -93,10 +93,14 @@ class CollectionsController extends Controller
     // ever being able to create a new one.
     public function update(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
 
         $collection = $this->owned($request, $id);
-        if (! $collection) return $this->notFound();
+        if (! $collection) {
+            return $this->notFound();
+        }
 
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:200'],
@@ -112,7 +116,9 @@ class CollectionsController extends Controller
 
         $updates = ['updated_at' => now()];
         foreach (['name', 'query', 'type', 'tag', 'icon'] as $field) {
-            if (array_key_exists($field, $validated)) $updates[$field] = $validated[$field];
+            if (array_key_exists($field, $validated)) {
+                $updates[$field] = $validated[$field];
+            }
         }
 
         DB::table('collections')->where('id', $id)->update($updates);
@@ -123,7 +129,9 @@ class CollectionsController extends Controller
 
     public function records(Request $request, string $id): JsonResponse
     {
-        if (! $this->owned($request, $id)) return $this->notFound();
+        if (! $this->owned($request, $id)) {
+            return $this->notFound();
+        }
 
         $recordIds = DB::table('collection_records')
             ->where('collection_id', $id)
@@ -135,8 +143,12 @@ class CollectionsController extends Controller
 
     public function addRecord(Request $request, string $id, string $recordId): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
-        if (! $this->owned($request, $id)) return $this->notFound();
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+        if (! $this->owned($request, $id)) {
+            return $this->notFound();
+        }
 
         DB::table('collection_records')->updateOrInsert(
             ['collection_id' => $id, 'record_id' => $recordId],
@@ -148,8 +160,12 @@ class CollectionsController extends Controller
 
     public function removeRecord(Request $request, string $id, string $recordId): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
-        if (! $this->owned($request, $id)) return $this->notFound();
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+        if (! $this->owned($request, $id)) {
+            return $this->notFound();
+        }
 
         DB::table('collection_records')->where('collection_id', $id)->where('record_id', $recordId)->delete();
 

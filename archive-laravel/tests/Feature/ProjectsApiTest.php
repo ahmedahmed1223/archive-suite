@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class ProjectsApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_creates_lists_and_deletes_a_project(): void
     {

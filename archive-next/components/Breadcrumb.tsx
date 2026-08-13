@@ -1,16 +1,18 @@
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export type BreadcrumbItem = {
   label: string;
   href?: string;
 };
 
-/** مسار تنقّل هرمي: يعرض كل عنصر كرابط عدا الأخير (الصفحة الحالية). */
+/** Hierarchical trail: every item except the current page is rendered as a link. */
 export default function Breadcrumb({ items }: Readonly<{ items: BreadcrumbItem[] }>) {
+  const { t } = useLocale();
   if (items.length === 0) return null;
 
   return (
-    <nav className="breadcrumb" aria-label="مسار التنقل">
+    <nav className="breadcrumb" aria-label={t.shell.breadcrumbAriaLabel}>
       <ol className="breadcrumb__list">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;

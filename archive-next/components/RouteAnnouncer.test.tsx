@@ -7,7 +7,18 @@ let pathname = "/archive";
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname
 }));
-vi.mock("@/lib/i18n/LocaleProvider", () => ({ useLocale: () => ({ locale: "ar" }) }));
+vi.mock("@/lib/i18n/LocaleProvider", async () => {
+  const { getDictionary } = await import("@/lib/i18n/dictionaries");
+
+  return {
+    useLocale: () => ({
+      locale: "ar",
+      direction: "rtl",
+      t: getDictionary("ar"),
+      setLocale: vi.fn(),
+    }),
+  };
+});
 
 import RouteAnnouncer from "@/components/RouteAnnouncer";
 

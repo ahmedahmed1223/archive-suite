@@ -17,7 +17,9 @@ class FileHealthController extends Controller
     public function index(string $attachmentId): JsonResponse
     {
         $attachment = DB::table('record_attachments')->where('id', $attachmentId)->first();
-        if (! $attachment) return $this->notFound();
+        if (! $attachment) {
+            return $this->notFound();
+        }
 
         $checks = DB::table('file_health_checks')
             ->where('attachment_id', $attachmentId)
@@ -32,7 +34,9 @@ class FileHealthController extends Controller
     public function check(string $attachmentId): JsonResponse
     {
         $attachment = DB::table('record_attachments')->where('id', $attachmentId)->first();
-        if (! $attachment) return $this->notFound();
+        if (! $attachment) {
+            return $this->notFound();
+        }
 
         $status = 'missing';
         $checksum = null;

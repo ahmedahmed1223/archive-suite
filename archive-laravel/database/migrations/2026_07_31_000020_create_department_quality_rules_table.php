@@ -19,5 +19,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void { Schema::dropIfExists('department_quality_rules'); }
+    public function down(): void
+    {
+        Schema::dropIfExists('department_quality_rules');
+    }
 };

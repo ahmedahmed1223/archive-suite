@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class RecordBroadcastMetadataApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_reports_configuration_required_when_no_integration_is_configured(): void
     {

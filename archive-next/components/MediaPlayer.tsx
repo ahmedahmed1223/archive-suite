@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, SyntheticEvent } from "react";
 import { formatCueTime, getActiveCue, parseSubtitles } from "@/lib/media/subtitles";
 import { downsamplePeaks, peaksToBars, placeholderPeaks } from "@/lib/media/waveform";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 // Browsers cannot play file:// media in local mode, so playback always streams
 // through the authenticated Laravel endpoint with Range support.
@@ -109,6 +110,8 @@ export default function MediaPlayer({
   showTimeline = false,
   transcriptText,
 }: MediaPlayerProps) {
+  const { t } = useLocale();
+  const copy = t.shared.mediaPlayer;
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -135,8 +138,8 @@ export default function MediaPlayer({
   );
 
   const handleError = useCallback(() => {
-    setError("تعذّر تشغيل هذه المادة — تحقّق من المسار أو أن الصيغة مدعومة في المتصفح.");
-  }, []);
+    setError(copy.playbackError);
+  }, [copy.playbackError]);
 
   const handleLoadedMetadata = useCallback((event: SyntheticEvent<HTMLMediaElement>) => {
     const element = event.currentTarget;
@@ -180,7 +183,7 @@ export default function MediaPlayer({
   }, [seekTo, timelineDuration]);
 
   if (!path) {
-    return <p className="media-player__empty">لا توجد مادة محدّدة للتشغيل.</p>;
+    return <p className="media-player__empty">{copy.empty}</p>;
   }
 
   return (
@@ -228,7 +231,7 @@ export default function MediaPlayer({
             type="button"
             className="media-player__waveform"
             onClick={handleWaveformClick}
-            aria-label="خط زمن الوسائط"
+            aria-label={copy.timelineAriaLabel}
           >
             {bars.map((height, index) => {
               const active = bars.length > 1 ? index / (bars.length - 1) <= progressRatio : false;

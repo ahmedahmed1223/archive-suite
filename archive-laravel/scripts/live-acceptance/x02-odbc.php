@@ -12,10 +12,11 @@
 
 require __DIR__.'/../../vendor/autoload.php';
 $app = require __DIR__.'/../../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Services\Odbc\NativeOdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionProbe;
+use Illuminate\Contracts\Console\Kernel;
 
 const ALLOWED_TABLE = 'allowed_media';
 const DENIED_TABLE = 'denied_secrets';
@@ -39,7 +40,7 @@ function emit(array $payload): void
 
 function connect()
 {
-    return (new NativeOdbcConnectionFactory())->connect(
+    return (new NativeOdbcConnectionFactory)->connect(
         (string) config('odbc.dsn'),
         config('odbc.username'),
         config('odbc.password'),
@@ -50,7 +51,7 @@ $phase = $argv[1] ?? 'probe';
 
 try {
     if ($phase === 'probe') {
-        $probe = new OdbcConnectionProbe(new NativeOdbcConnectionFactory(), config('odbc'));
+        $probe = new OdbcConnectionProbe(new NativeOdbcConnectionFactory, config('odbc'));
         $result = $probe->probe();
         $tables = $result['tables'] ?? [];
         emit([

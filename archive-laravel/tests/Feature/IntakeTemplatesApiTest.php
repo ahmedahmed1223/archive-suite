@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class IntakeTemplatesApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_creates_lists_and_deletes_intake_templates(): void
     {

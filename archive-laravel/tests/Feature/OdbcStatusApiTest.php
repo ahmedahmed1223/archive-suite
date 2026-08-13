@@ -12,7 +12,7 @@ use Tests\TestCase;
 
 class OdbcStatusApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_odbc_status_requires_authentication(): void
     {
@@ -29,7 +29,7 @@ class OdbcStatusApiTest extends TestCase
             'odbc.password' => 'secret',
         ]);
 
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new FeatureFakeOdbcConnectionFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new FeatureFakeOdbcConnectionFactory);
 
         // V1-102G: ODBC is admin-only — authHeaders() is editor-role (see
         // AuthenticatesArchiveRequests) and would now 403 despite this
@@ -45,7 +45,7 @@ class OdbcStatusApiTest extends TestCase
     public function test_odbc_status_is_forbidden_for_non_admin_roles(): void
     {
         config(['odbc.enabled' => true]);
-        $this->app->bind(OdbcConnectionFactory::class, fn () => new FeatureFakeOdbcConnectionFactory());
+        $this->app->bind(OdbcConnectionFactory::class, fn () => new FeatureFakeOdbcConnectionFactory);
 
         $this->getJson('/api/v1/system/odbc', $this->authHeaders())
             ->assertForbidden()
@@ -87,7 +87,7 @@ class FeatureFakeOdbcConnectionFactory implements OdbcConnectionFactory
 
     public function connect(string $dsn, ?string $username, ?string $password): OdbcConnection
     {
-        return new FeatureFakeOdbcConnection();
+        return new FeatureFakeOdbcConnection;
     }
 }
 

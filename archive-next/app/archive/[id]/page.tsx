@@ -12,6 +12,8 @@ import MentionTextarea from "@/components/MentionTextarea";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { getDictionary, type AppDictionary } from "@/lib/i18n/dictionaries";
 import GeotagPanel from "./GeotagPanel";
 import MediaDerivativesTree from "./MediaDerivativesTree";
 import { RecordDescribeForm, type RecordDescribePatch } from "./RecordDescribeForm";
@@ -75,13 +77,13 @@ type OcrState =
   | { status: "success"; jobId: string }
   | { status: "error"; message: string };
 
-function relationEdgeSummary(edge: RelationGraphEdge) {
+function relationEdgeSummary(edge: RelationGraphEdge, t: AppDictionary) {
   if (edge.kind === "manual") {
     return edge.note || edge.label;
   }
 
   if (edge.kind === "shared-tag" && edge.sharedTags?.length) {
-    return edge.sharedTags.join("، ");
+    return edge.sharedTags.join(t.pages.archiveDetail.relations.sharedTagsSeparator);
   }
 
   if (edge.kind === "same-type" && edge.sharedType) {
@@ -115,10 +117,12 @@ function RelationPreviewPanel({
   onDelete: (id: string) => Promise<void>;
   canEdit: boolean;
 }>) {
+  const { t } = useLocale();
+  const copy = t.pages.archiveDetail.relations;
   const dialogs = useConfirmDialog();
   const relationTypes = graph?.relationTypes?.length
     ? graph.relationTypes
-    : [{ key: "related_to" as RelationTypeKey, label: "مرتبط بـ", inverse: "related_to", bidirectional: true }];
+    : [{ key: "related_to" as RelationTypeKey, label: copy.defaultRelationLabel, inverse: "related_to", bidirectional: true }];
   const nodesById = new Map((graph?.nodes ?? []).map((node) => [node.id, node]));
   const edges = (graph?.edges ?? []).filter((edge) => edge.source === recordId || edge.target === recordId);
   const manualEdges = edges.filter((edge) => edge.kind === "manual" && edge.relationId);
@@ -149,9 +153,9 @@ function RelationPreviewPanel({
       });
       setTargetId("");
       setNote("");
-      setStatus("تم إنشاء العلاقة.");
+      setStatus(copy.createSuccess);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "تعذر إنشاء العلاقة.");
+      setStatus(error instanceof Error ? error.message : copy.createError);
     } finally {
       setBusy(false);
     }
@@ -168,9 +172,9 @@ function RelationPreviewPanel({
         type: draft.type,
         note: draft.note.trim() || null
       });
-      setStatus("تم تحديث العلاقة.");
+      setStatus(copy.updateSuccess);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "تعذر تحديث العلاقة.");
+      setStatus(error instanceof Error ? error.message : copy.updateError);
     } finally {
       setBusy(false);
     }
@@ -179,9 +183,9 @@ function RelationPreviewPanel({
   async function handleDelete(edge: RelationGraphEdge) {
     if (!edge.relationId || busy) return;
     const confirmed = await dialogs.confirm({
-      title: "حذف العلاقة",
-      message: "سيتم حذف هذه العلاقة اليدوية بين السجلين. هل تريد المتابعة؟",
-      confirmLabel: "حذف",
+      title: copy.deleteConfirmTitle,
+      message: copy.deleteConfirmMessage,
+      confirmLabel: copy.deleteConfirmLabel,
       destructive: true
     });
     if (!confirmed) return;
@@ -190,9 +194,9 @@ function RelationPreviewPanel({
     setStatus("");
     try {
       await onDelete(edge.relationId);
-      setStatus("تم حذف العلاقة.");
+      setStatus(copy.deleteSuccess);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "تعذر حذف العلاقة.");
+      setStatus(error instanceof Error ? error.message : copy.deleteError);
     } finally {
       setBusy(false);
     }
@@ -202,21 +206,21 @@ function RelationPreviewPanel({
     <article className="panel">
       <div className="panel-section-header panel-title-row">
         <div>
-          <h2>العلاقات</h2>
-          <p className="helper-text">روابط يدوية ومستنتجة حول هذا السجل.</p>
+          <h2>{copy.title}</h2>
+          <p className="helper-text">{copy.description}</p>
         </div>
-        <span className="badge">{edges.length} صلات</span>
+        <span className="badge">{edges.length} {copy.countLabel}</span>
       </div>
 
       {edges.length ? (
         <>
           <div className="kv-grid">
             <div className="kv-item">
-              <strong>يدوية</strong>
+              <strong>{copy.manualLabel}</strong>
               <span>{manualCount}</span>
             </div>
             <div className="kv-item">
-              <strong>مستنتجة</strong>
+              <strong>{copy.inferredLabel}</strong>
               <span>{edges.length - manualCount}</span>
             </div>
           </div>
@@ -229,9 +233,9 @@ function RelationPreviewPanel({
                 <li key={edge.id}>
                   <span>
                     <b>{edge.label}</b>
-                    <small>{otherNode?.label || otherId} · {relationEdgeSummary(edge)}</small>
+                    <small>{otherNode?.label || otherId} · {relationEdgeSummary(edge, t)}</small>
                   </span>
-                  <a className="badge" href={`/archive/${encodeURIComponent(otherId)}`}>فتح</a>
+                  <a className="badge" href={`/archive/${encodeURIComponent(otherId)}`}>{copy.openLabel}</a>
                 </li>
               );
             })}
@@ -239,27 +243,27 @@ function RelationPreviewPanel({
         </>
       ) : (
         <EmptyState
-          title="لا توجد علاقات ظاهرة لهذا السجل"
-          description="افتح خريطة العلاقات لإنشاء علاقة يدوية أو تحسين الوسوم حتى تظهر الروابط المستنتجة."
+          title={copy.emptyTitle}
+          description={copy.emptyDescription}
         />
       )}
 
       <a className="button button-primary" href={`/graph?recordId=${encodeURIComponent(recordId)}`}>
-        فتح خريطة العلاقات
+        {copy.openGraphButton}
       </a>
 
       {canEdit && (
         <form className="auth-form relation-inline-form" onSubmit={handleCreate}>
           <div className="panel-section-header">
-            <h3>إضافة علاقة من هنا</h3>
+            <h3>{copy.addSectionTitle}</h3>
           </div>
           <div className="field-row">
             <label>
-              السجل الهدف
-              <input value={targetId} onChange={(event) => setTargetId(event.target.value)} placeholder="UID أو ID" dir="ltr" />
+              {copy.targetLabel}
+              <input value={targetId} onChange={(event) => setTargetId(event.target.value)} placeholder={copy.targetPlaceholder} dir="ltr" />
             </label>
             <label>
-              نوع العلاقة
+              {copy.typeLabel}
               <select value={type} onChange={(event) => setType(event.target.value as RelationTypeKey)}>
                 {relationTypes.map((option) => (
                   <option key={option.key} value={option.key}>{option.label}</option>
@@ -268,11 +272,11 @@ function RelationPreviewPanel({
             </label>
           </div>
           <label>
-            ملاحظة
-            <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="سبب الربط أو سياقه" />
+            {copy.noteLabel}
+            <input value={note} onChange={(event) => setNote(event.target.value)} placeholder={copy.notePlaceholder} />
           </label>
           <button type="submit" className="button button-secondary" disabled={busy || !targetId.trim()}>
-            إضافة علاقة
+            {copy.addButton}
           </button>
         </form>
       )}
@@ -280,7 +284,7 @@ function RelationPreviewPanel({
       {canEdit && manualEdges.length ? (
         <div className="relation-editor-list">
           <div className="panel-section-header">
-            <h3>تعديل العلاقات اليدوية</h3>
+            <h3>{copy.editSectionTitle}</h3>
           </div>
           {manualEdges.map((edge) => {
             const relationId = edge.relationId || edge.id;
@@ -310,13 +314,13 @@ function RelationPreviewPanel({
                     ...current,
                     [edge.relationId!]: { ...draft, note: event.target.value }
                   }))}
-                  placeholder="ملاحظة العلاقة"
+                  placeholder={copy.editNotePlaceholder}
                 />
                 <button type="button" className="button button-secondary button-sm" onClick={() => void handleUpdate(edge)} disabled={busy || !edge.relationId}>
-                  حفظ
+                  {copy.saveButton}
                 </button>
                 <button type="button" className="button button-danger button-sm" onClick={() => void handleDelete(edge)} disabled={busy || !edge.relationId}>
-                  حذف
+                  {copy.deleteButton}
                 </button>
                 <span className="helper-text mono-text">{relationId}</span>
               </div>
@@ -341,16 +345,17 @@ function formatNoteTime(seconds: unknown) {
   return hours > 0 ? `${hours}:${pad(minutes)}:${pad(secs)}` : `${minutes}:${pad(secs)}`;
 }
 
-function noteAnchor(note: RecordNote) {
+function noteAnchor(note: RecordNote, t: AppDictionary) {
+  const copy = t.pages.archiveDetail.notes;
   if (note.timestampSeconds !== null && note.timestampSeconds !== undefined) {
-    return `عند ${formatNoteTime(note.timestampSeconds)}`;
+    return copy.anchorAt.replace("{time}", formatNoteTime(note.timestampSeconds));
   }
 
   if (note.region) {
-    return "منطقة محددة";
+    return copy.anchorRegion;
   }
 
-  return "ملاحظة عامة";
+  return copy.anchorGeneral;
 }
 
 function sortRecordNotes(notes: RecordNote[]) {
@@ -379,6 +384,8 @@ function RecordNotesPanel({
   onCreate: (payload: { body: string; timestampSeconds?: number | null }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }>) {
+  const { t, locale } = useLocale();
+  const copy = t.pages.archiveDetail.notes;
   const [body, setBody] = useState("");
   const [timestampText, setTimestampText] = useState("");
   const [status, setStatus] = useState("");
@@ -391,7 +398,7 @@ function RecordNotesPanel({
 
     const parsedTimestamp = timestampText.trim() === "" ? null : Number(timestampText);
     if (parsedTimestamp !== null && (!Number.isFinite(parsedTimestamp) || parsedTimestamp < 0)) {
-      setStatus("أدخل وقتاً صحيحاً بالثواني أو اتركه فارغاً.");
+      setStatus(copy.invalidTimestamp);
       return;
     }
 
@@ -401,9 +408,9 @@ function RecordNotesPanel({
       await onCreate({ body: trimmed, timestampSeconds: parsedTimestamp });
       setBody("");
       setTimestampText("");
-      setStatus("تم حفظ الملاحظة.");
+      setStatus(copy.saveSuccess);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "تعذر حفظ الملاحظة.");
+      setStatus(error instanceof Error ? error.message : copy.saveError);
     } finally {
       setBusy(false);
     }
@@ -413,45 +420,45 @@ function RecordNotesPanel({
     <article className="panel record-notes-panel">
       <div className="panel-section-header panel-title-row">
         <div>
-          <h2>ملاحظاتي</h2>
-          <p className="helper-text">ملاحظات خاصة بالسجل، عامة أو مرتبطة بزمن داخل المادة.</p>
+          <h2>{copy.title}</h2>
+          <p className="helper-text">{copy.description}</p>
         </div>
-        <span className="badge">{notes.length} ملاحظات</span>
+        <span className="badge">{notes.length} {copy.countLabel}</span>
       </div>
 
       {loading ? (
-        <Skeleton label="جار تحميل الملاحظات..." />
+        <Skeleton label={copy.loadingLabel} />
       ) : null}
 
       {error ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل الملاحظات</strong>
+          <strong>{copy.loadErrorTitle}</strong>
           <span className="helper-text">{error}</span>
         </div>
       ) : null}
 
       <form className="auth-form record-note-form" onSubmit={handleSubmit}>
         <label>
-          ملاحظة جديدة
+          {copy.newNoteLabel}
           <MentionTextarea
             value={body}
             onChange={setBody}
-            placeholder="اكتب ملاحظة شخصية عن هذا السجل... استخدم @ للإشارة لزميل"
+            placeholder={copy.bodyPlaceholder}
             rows={4}
           />
         </label>
         <div className="field-row">
           <label>
-            توقيت اختياري بالثواني
+            {copy.timestampLabel}
             <input
               inputMode="decimal"
               value={timestampText}
               onChange={(event) => setTimestampText(event.target.value)}
-              placeholder="مثال: 83"
+              placeholder={copy.timestampPlaceholder}
             />
           </label>
           <button type="submit" className="button button-primary" disabled={busy || !body.trim()}>
-            {busy ? "جار الحفظ..." : "إضافة ملاحظة"}
+            {busy ? copy.savingButton : copy.addButton}
           </button>
         </div>
         {status ? <p className="form-status">{status}</p> : null}
@@ -463,29 +470,29 @@ function RecordNotesPanel({
             <li key={note.id}>
               <div>
                 <div className="helper-row">
-                  <span className="badge">{noteAnchor(note)}</span>
-                  <span className="helper-text">{note.authorName || "مجهول"}</span>
+                  <span className="badge">{noteAnchor(note, t)}</span>
+                  <span className="helper-text">{note.authorName || copy.anonymousAuthor}</span>
                 </div>
                 <p>{note.body}</p>
                 {note.createdAt ? (
-                  <small className="helper-text">{new Date(note.createdAt).toLocaleString("ar-SA")}</small>
+                  <small className="helper-text">{new Date(note.createdAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA")}</small>
                 ) : null}
               </div>
               <button
                 type="button"
                 className="button button-danger button-sm"
                 onClick={() => void onDelete(note.id)}
-                aria-label="حذف الملاحظة"
+                aria-label={copy.deleteAriaLabel}
               >
-                حذف
+                {copy.deleteButton}
               </button>
             </li>
           ))}
         </ul>
       ) : !loading ? (
         <EmptyState
-          title="لا توجد ملاحظات بعد"
-          description="أضف ملاحظة عامة أو اربطها بزمن داخل المادة لاستخدامها لاحقاً في المراجعة."
+          title={copy.emptyTitle}
+          description={copy.emptyDescription}
         />
       ) : null}
     </article>
@@ -505,6 +512,8 @@ function RecordCommentsPanel({
   onCreate: (payload: { body: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }>) {
+  const { t, locale } = useLocale();
+  const copy = t.pages.archiveDetail.comments;
   const [body, setBody] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
@@ -519,9 +528,9 @@ function RecordCommentsPanel({
     try {
       await onCreate({ body: trimmed });
       setBody("");
-      setStatus("تم نشر التعليق.");
+      setStatus(copy.postSuccess);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "تعذر نشر التعليق.");
+      setStatus(error instanceof Error ? error.message : copy.postError);
     } finally {
       setBusy(false);
     }
@@ -531,35 +540,35 @@ function RecordCommentsPanel({
     <article className="panel record-comments-panel">
       <div className="panel-section-header panel-title-row">
         <div>
-          <h2>تعليقات الفريق</h2>
-          <p className="helper-text">تعليقات مرئية للفريق حول هذا السجل، موثقة في سجل التدقيق.</p>
+          <h2>{copy.title}</h2>
+          <p className="helper-text">{copy.description}</p>
         </div>
-        <span className="badge">{comments.length} تعليقات</span>
+        <span className="badge">{comments.length} {copy.countLabel}</span>
       </div>
 
       {loading ? (
-        <Skeleton label="جار تحميل التعليقات..." />
+        <Skeleton label={copy.loadingLabel} />
       ) : null}
 
       {error ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل التعليقات</strong>
+          <strong>{copy.loadErrorTitle}</strong>
           <span className="helper-text">{error}</span>
         </div>
       ) : null}
 
       <form id="record-comment-form" className="auth-form record-note-form" onSubmit={handleSubmit}>
         <label>
-          تعليق جديد
+          {copy.newCommentLabel}
           <MentionTextarea
             value={body}
             onChange={setBody}
-            placeholder="اكتب تعليقاً يراه بقية أعضاء الفريق... استخدم @ للإشارة لزميل"
+            placeholder={copy.bodyPlaceholder}
             rows={3}
           />
         </label>
         <button type="submit" className="button button-primary" disabled={busy || !body.trim()}>
-          {busy ? "جار النشر..." : "نشر التعليق"}
+          {busy ? copy.postingButton : copy.postButton}
         </button>
         {status ? <p className="form-status">{status}</p> : null}
       </form>
@@ -570,28 +579,28 @@ function RecordCommentsPanel({
             <li key={comment.id}>
               <div>
                 <div className="helper-row">
-                  <span className="helper-text">{comment.authorName || "مجهول"}</span>
+                  <span className="helper-text">{comment.authorName || copy.anonymousAuthor}</span>
                 </div>
                 <p>{comment.body}</p>
                 {comment.createdAt ? (
-                  <small className="helper-text">{new Date(comment.createdAt).toLocaleString("ar-SA")}</small>
+                  <small className="helper-text">{new Date(comment.createdAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA")}</small>
                 ) : null}
               </div>
               <button
                 type="button"
                 className="button button-danger button-sm"
                 onClick={() => void onDelete(comment.id)}
-                aria-label="حذف التعليق"
+                aria-label={copy.deleteAriaLabel}
               >
-                حذف
+                {copy.deleteButton}
               </button>
             </li>
           ))}
         </ul>
       ) : !loading ? (
         <EmptyState
-          title="لا توجد تعليقات بعد"
-          description="أضف أول تعليق فريق حول هذا السجل."
+          title={copy.emptyTitle}
+          description={copy.emptyDescription}
         />
       ) : null}
     </article>
@@ -613,6 +622,8 @@ export function RecordFieldRequestsPanel({
   onResolve: (id: string) => Promise<void>;
   canEdit: boolean;
 }>) {
+  const { t } = useLocale();
+  const copy = t.pages.archiveDetail.fieldRequests;
   const [field, setField] = useState("");
   const [message, setMessage] = useState("");
   const [assignee, setAssignee] = useState("");
@@ -638,9 +649,9 @@ export function RecordFieldRequestsPanel({
       setMessage("");
       setAssignee("");
       setDueDate("");
-      setStatus("تم إسناد طلب الاستكمال.");
+      setStatus(copy.assignSuccess);
     } catch (submitError) {
-      setStatus(submitError instanceof Error ? submitError.message : "تعذر إسناد الطلب.");
+      setStatus(submitError instanceof Error ? submitError.message : copy.assignError);
     } finally {
       setBusy(false);
     }
@@ -652,9 +663,9 @@ export function RecordFieldRequestsPanel({
     setStatus("");
     try {
       await onResolve(id);
-      setStatus("تم اعتماد إغلاق الطلب.");
+      setStatus(copy.resolveSuccess);
     } catch (resolveError) {
-      setStatus(resolveError instanceof Error ? resolveError.message : "تعذر حل الطلب.");
+      setStatus(resolveError instanceof Error ? resolveError.message : copy.resolveError);
     } finally {
       setBusy(false);
     }
@@ -664,33 +675,33 @@ export function RecordFieldRequestsPanel({
     <article className="panel">
       <div className="panel-section-header panel-title-row">
         <div>
-          <h2>طلبات استكمال البيانات</h2>
-          <p className="helper-text">إسناد عنصر ناقص إلى زميل أو مالك الحقل مع موعد متابعة اختياري.</p>
+          <h2>{copy.title}</h2>
+          <p className="helper-text">{copy.description}</p>
         </div>
-        <span className="badge">{openRequests.length} مفتوحة</span>
+        <span className="badge">{openRequests.length} {copy.openCountLabel}</span>
       </div>
 
-      {loading ? <Skeleton label="جار تحميل طلبات الاستكمال..." /> : null}
+      {loading ? <Skeleton label={copy.loadingLabel} /> : null}
       {error ? <p className="form-status" role="alert">{error}</p> : null}
 
       {canEdit ? (
         <form className="auth-form record-note-form" onSubmit={handleSubmit}>
-          <label>الحقل الناقص
-            <input value={field} onChange={(event) => setField(event.target.value)} placeholder="مثال: تاريخ الإنتاج" required />
+          <label>{copy.fieldLabel}
+            <input value={field} onChange={(event) => setField(event.target.value)} placeholder={copy.fieldPlaceholder} required />
           </label>
-          <label>المطلوب
-            <textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={2} placeholder="ما الذي نحتاج إليه ولماذا؟" required />
+          <label>{copy.messageLabel}
+            <textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={2} placeholder={copy.messagePlaceholder} required />
           </label>
           <div className="form-grid">
-            <label>المكلّف (اختياري)
-              <input value={assignee} onChange={(event) => setAssignee(event.target.value)} placeholder="الاسم أو البريد" />
+            <label>{copy.assigneeLabel}
+              <input value={assignee} onChange={(event) => setAssignee(event.target.value)} placeholder={copy.assigneePlaceholder} />
             </label>
-            <label>موعد المتابعة (اختياري)
+            <label>{copy.dueDateLabel}
               <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
             </label>
           </div>
           <button type="submit" className="button button-secondary" disabled={busy || !field.trim() || !message.trim()}>
-            {busy ? "جار الإسناد..." : "إسناد طلب"}
+            {busy ? copy.submittingButton : copy.submitButton}
           </button>
           {status ? <p className="form-status">{status}</p> : null}
         </form>
@@ -703,24 +714,24 @@ export function RecordFieldRequestsPanel({
               <div>
                 <div className="helper-row">
                   <strong>{request.field}</strong>
-                  <span className="badge">{request.resolvedAt ? "مغلق" : "مفتوح"}</span>
+                  <span className="badge">{request.resolvedAt ? copy.statusClosed : copy.statusOpen}</span>
                 </div>
                 <p>{request.message}</p>
                 <small className="helper-text">
-                  {request.assignee ? `المكلّف: ${request.assignee}` : "من دون مكلّف"}
-                  {request.dueDate ? ` · المتابعة: ${request.dueDate}` : ""}
+                  {request.assignee ? copy.assigneePrefix.replace("{assignee}", request.assignee) : copy.noAssignee}
+                  {request.dueDate ? copy.dueDatePrefix.replace("{date}", request.dueDate) : ""}
                 </small>
               </div>
               {canEdit && !request.resolvedAt ? (
                 <button type="button" className="button button-secondary button-sm" onClick={() => void handleResolve(request.id)} disabled={busy}>
-                  تم الاستكمال
+                  {copy.resolveButton}
                 </button>
               ) : null}
             </li>
           ))}
         </ul>
       ) : !loading ? (
-        <EmptyState title="لا توجد طلبات استكمال" description="أنشئ طلباً عندما تحتاج بيانات من عضو آخر قبل اعتماد المادة." />
+        <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />
       ) : null}
     </article>
   );
@@ -733,6 +744,8 @@ function RecordAiAssistPanel({
   onAnalyze: () => Promise<RecordAiAssist>;
   canEdit: boolean;
 }>) {
+  const { t } = useLocale();
+  const copy = t.pages.archiveDetail.aiAssist;
   const [result, setResult] = useState<RecordAiAssist | null>(null);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
@@ -743,9 +756,9 @@ function RecordAiAssistPanel({
     setStatus("");
     try {
       setResult(await onAnalyze());
-      setStatus("أُنشئت مسودة المساعدة؛ راجعها قبل نسخ أي نتيجة إلى السجل.");
+      setStatus(copy.analyzeSuccess);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "تعذر إنشاء مسودة المساعدة.");
+      setStatus(error instanceof Error ? error.message : copy.analyzeError);
     } finally {
       setBusy(false);
     }
@@ -755,37 +768,38 @@ function RecordAiAssistPanel({
     <article className="panel">
       <div className="panel-section-header panel-title-row">
         <div>
-          <h2>مساعد الذكاء الاصطناعي</h2>
-          <p className="helper-text">تلخيص ووسوم وكيانات وتدقيق أولي من النص. لا تُطبَّق أي نتيجة تلقائياً.</p>
+          <h2>{copy.title}</h2>
+          <p className="helper-text">{copy.description}</p>
         </div>
-        <span className="badge">مراجعة بشرية إلزامية</span>
+        <span className="badge">{copy.reviewRequiredBadge}</span>
       </div>
-      {canEdit ? <button type="button" className="button button-secondary" onClick={() => void analyze()} disabled={busy}>{busy ? "جار التحليل..." : "إنشاء مسودة تحليل"}</button> : null}
-      {!canEdit ? <p className="helper-text">يتطلب إنشاء المسودة صلاحية تحرير السجلات.</p> : null}
+      {canEdit ? <button type="button" className="button button-secondary" onClick={() => void analyze()} disabled={busy}>{busy ? copy.analyzingButton : copy.analyzeButton}</button> : null}
+      {!canEdit ? <p className="helper-text">{copy.permissionHint}</p> : null}
       {status ? <p className="form-status" role="status">{status}</p> : null}
       {result ? (
         <div className="stack section-divider">
-          <p><strong>ملخص مقترح:</strong> {result.summary}</p>
-          <div><strong>وسوم مقترحة:</strong><div className="tags">{result.suggestedTags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div></div>
-          <div><strong>كيانات مكتشفة:</strong><div className="tags">{result.entities.length ? result.entities.map((entity) => <span className="tag" key={`${entity.kind}:${entity.term}`}>{entity.term} · {entity.kind}</span>) : <span className="helper-text">لا توجد كيانات من القاموس المطابق.</span>}</div></div>
+          <p><strong>{copy.summaryLabel}</strong> {result.summary}</p>
+          <div><strong>{copy.suggestedTagsLabel}</strong><div className="tags">{result.suggestedTags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div></div>
+          <div><strong>{copy.entitiesLabel}</strong><div className="tags">{result.entities.length ? result.entities.map((entity) => <span className="tag" key={`${entity.kind}:${entity.term}`}>{entity.term} · {entity.kind}</span>) : <span className="helper-text">{copy.noEntities}</span>}</div></div>
           <ul className="plain-list">{result.proofreading.map((issue) => <li key={issue.code}>{issue.message}</li>)}</ul>
-          <p className="helper-text">المزوّد: {result.provider} · لم يُطبَّق أي تعديل على المادة.</p>
+          <p className="helper-text">{copy.providerNote.replace("{provider}", result.provider)}</p>
         </div>
       ) : null}
     </article>
   );
 }
 
-function historyEventLabel(entry: RecordHistoryEntry) {
+function historyEventLabel(entry: RecordHistoryEntry, t: AppDictionary) {
+  const eventLabels = t.pages.archiveDetail.history.eventLabels;
   const labels: Record<string, string> = {
-    "record_notes.create": "إضافة ملاحظة خاصة",
-    "record_notes.update": "تحديث ملاحظة خاصة",
-    "record_notes.delete": "حذف ملاحظة خاصة",
-    "record_comments.create": "إضافة تعليق فريق",
-    "record_comments.delete": "حذف تعليق فريق",
-    "relations.create": "إضافة علاقة",
-    "relations.delete": "حذف علاقة",
-    "rights.upsert": "تحديث الحقوق"
+    "record_notes.create": eventLabels.recordNoteCreate,
+    "record_notes.update": eventLabels.recordNoteUpdate,
+    "record_notes.delete": eventLabels.recordNoteDelete,
+    "record_comments.create": eventLabels.recordCommentCreate,
+    "record_comments.delete": eventLabels.recordCommentDelete,
+    "relations.create": eventLabels.relationCreate,
+    "relations.delete": eventLabels.relationDelete,
+    "rights.upsert": eventLabels.rightsUpsert
   };
 
   return labels[entry.event] || entry.event;
@@ -843,7 +857,7 @@ function auditRequestPayload(entry: RecordHistoryEntry) {
   return request && typeof request === "object" ? request : null;
 }
 
-function auditRestoreDecision(entry: RecordHistoryEntry) {
+function auditRestoreDecision(entry: RecordHistoryEntry, t: AppDictionary) {
   const metadata = metadataObject(entry);
   const decision = metadata?.["restoreDecision"];
   if (!decision || typeof decision !== "object" || Array.isArray(decision)) return null;
@@ -851,7 +865,7 @@ function auditRestoreDecision(entry: RecordHistoryEntry) {
   const value = decision as Record<string, unknown>;
   return {
     available: value["available"] === true,
-    label: typeof value["label"] === "string" ? value["label"] : "قرار استعادة",
+    label: typeof value["label"] === "string" ? value["label"] : t.pages.archiveDetail.history.restoreDecisionDefaultLabel,
     reason: typeof value["reason"] === "string" ? value["reason"] : ""
   };
 }
@@ -865,23 +879,25 @@ function RecordHistoryPanel({
   loading: boolean;
   error: string | null;
 }>) {
+  const { t, locale } = useLocale();
+  const copy = t.pages.archiveDetail.history;
   return (
     <article className="panel record-history-panel">
       <div className="panel-section-header panel-title-row">
         <div>
-          <h2>سجل التغييرات</h2>
-          <p className="helper-text">تاريخ التغييرات المدعوم بسجل التدقيق لهذا السجل.</p>
+          <h2>{copy.title}</h2>
+          <p className="helper-text">{copy.description}</p>
         </div>
-        <span className="badge">{entries.length} أحداث</span>
+        <span className="badge">{entries.length} {copy.countLabel}</span>
       </div>
 
       {loading ? (
-        <Skeleton label="جار تحميل السجل..." />
+        <Skeleton label={copy.loadingLabel} />
       ) : null}
 
       {error ? (
         <div className="state-banner state-banner-error" role="alert">
-          <strong>تعذر تحميل سجل التغييرات</strong>
+          <strong>{copy.loadErrorTitle}</strong>
           <span className="helper-text">{error}</span>
         </div>
       ) : null}
@@ -892,7 +908,7 @@ function RecordHistoryPanel({
             const fields = auditDiffFields(entry);
             const comparison = auditComparison(entry);
             const payload = auditRequestPayload(entry);
-            const decision = auditRestoreDecision(entry);
+            const decision = auditRestoreDecision(entry, t);
             const comparisonFields = comparison
               ? [...new Set([...Object.keys(comparison.before), ...Object.keys(comparison.after)])]
               : [];
@@ -901,13 +917,13 @@ function RecordHistoryPanel({
               <li key={entry.id}>
                 <div>
                   <div className="helper-row">
-                    <span className="badge">{historyEventLabel(entry)}</span>
+                    <span className="badge">{historyEventLabel(entry, t)}</span>
                     <span className={`badge ${entry.outcome === "success" ? "badge-success" : "badge-error"}`}>
                       {entry.outcome}
                     </span>
                   </div>
                   {entry.createdAt ? (
-                    <small className="helper-text">{new Date(entry.createdAt).toLocaleString("ar-SA")}</small>
+                    <small className="helper-text">{new Date(entry.createdAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA")}</small>
                   ) : null}
                 </div>
 
@@ -920,7 +936,7 @@ function RecordHistoryPanel({
 
                 {fields.length ? (
                   <div className="audit-diff">
-                    <strong>حقول التغيير</strong>
+                    <strong>{copy.diffFieldsLabel}</strong>
                     <div className="tags">
                       {fields.slice(0, 12).map((field) => (
                         <span key={field} className="tag">{field}</span>
@@ -932,13 +948,13 @@ function RecordHistoryPanel({
 
                 {comparison ? (
                   <div className="audit-diff">
-                    <strong>مقارنة التغيير</strong>
-                    <table aria-label="مقارنة القيم السابقة والجديدة">
+                    <strong>{copy.comparisonLabel}</strong>
+                    <table aria-label={copy.comparisonTableAriaLabel}>
                       <thead>
                         <tr>
-                          <th scope="col">الحقل</th>
-                          <th scope="col">القيمة السابقة</th>
-                          <th scope="col">القيمة الجديدة</th>
+                          <th scope="col">{copy.fieldColumn}</th>
+                          <th scope="col">{copy.beforeColumn}</th>
+                          <th scope="col">{copy.afterColumn}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -956,7 +972,7 @@ function RecordHistoryPanel({
 
                 {payload ? (
                   <details className="audit-payload">
-                    <summary>عرض payload منقح للمراجعة</summary>
+                    <summary>{copy.payloadSummary}</summary>
                     <pre dir="ltr">{JSON.stringify(payload, null, 2)}</pre>
                   </details>
                 ) : null}
@@ -966,8 +982,8 @@ function RecordHistoryPanel({
         </ul>
       ) : !loading ? (
         <EmptyState
-          title="لا يوجد سجل تغييرات بعد"
-          description="ستظهر هنا الأحداث الموثقة عند تعديل هذا السجل أو ملاحظاته أو تعليقاته."
+          title={copy.emptyTitle}
+          description={copy.emptyDescription}
         />
       ) : null}
     </article>
@@ -988,44 +1004,46 @@ interface ReadinessItem {
 export function buildReadinessItems(
   record: ArchiveRecord,
   rights: RightsRecord | null,
-  hasTeamComments: boolean
+  hasTeamComments: boolean,
+  t: AppDictionary = getDictionary("ar")
 ): ReadinessItem[] {
+  const items = t.pages.archiveDetail.readiness.items;
   return [
     {
       key: "file",
-      label: "ملف المصدر",
+      label: items.file.label,
       done: Boolean(deriveRecordSourcePath(record)),
-      hint: "أضف مسار ملف صالح في البيانات الوصفية ليمكن تشغيله واستخراج نصه."
+      hint: items.file.hint
     },
     {
       key: "title",
-      label: "العنوان",
+      label: items.title.label,
       done: Boolean(record.title?.trim()),
-      hint: "أضف عنوانًا واضحًا للسجل."
+      hint: items.title.hint
     },
     {
       key: "description",
-      label: "الوصف",
+      label: items.description.label,
       done: Boolean(record.description?.trim()),
-      hint: "أضف وصفًا موجزًا يسهّل البحث والفهم."
+      hint: items.description.hint
     },
     {
       key: "tags",
-      label: "الوسوم",
+      label: items.tags.label,
       done: (record.tags?.length ?? 0) > 0,
-      hint: "أضف وسمًا واحدًا على الأقل لتصنيف السجل."
+      hint: items.tags.hint
     },
     {
       key: "rights",
-      label: "الحقوق",
+      label: items.rights.label,
       done: rights !== null,
-      hint: "سجّل بيانات الحقوق لهذا السجل."
+      hint: items.rights.hint
     },
     {
       key: "review",
-      label: "المراجعة",
+      label: items.review.label,
       done: hasTeamComments,
-      hint: "اطلب مراجعة الفريق عبر إضافة تعليق."
+      hint: items.review.hint
     }
   ];
 }
@@ -1035,21 +1053,23 @@ function RecordReadinessPanel({
   rights,
   hasTeamComments
 }: Readonly<{ record: ArchiveRecord; rights: RightsRecord | null; hasTeamComments: boolean }>) {
-  const items = buildReadinessItems(record, rights, hasTeamComments);
+  const { t } = useLocale();
+  const copy = t.pages.archiveDetail.readiness;
+  const items = buildReadinessItems(record, rights, hasTeamComments, t);
   const status = deriveRecordStatus(record);
   const doneCount = items.filter((item) => item.done).length;
   const nextAction = items.find((item) => !item.done);
 
   return (
-    <article className="panel record-readiness-panel" aria-label="جاهزية المادة">
+    <article className="panel record-readiness-panel" aria-label={copy.panelTitle}>
       <div className="panel-section-header panel-title-row">
         <div>
-          <h2>جاهزية المادة</h2>
-          <p className="helper-text">حالة مشتقة من بيانات السجل الحالية، ولا تمنع الحفظ أو تفرض دورة اعتماد.</p>
+          <h2>{copy.panelTitle}</h2>
+          <p className="helper-text">{copy.panelDescription}</p>
           <p className="helper-text">{status.reason}</p>
         </div>
         <span className="badge" data-record-status={status.kind}>{status.label}</span>
-        <span className="badge">{doneCount} من {items.length}</span>
+        <span className="badge">{copy.doneOfTotal.replace("{done}", String(doneCount)).replace("{total}", String(items.length))}</span>
       </div>
       <ul className="readiness-list">
         {items.map((item) => (
@@ -1060,15 +1080,17 @@ function RecordReadinessPanel({
         ))}
       </ul>
       {nextAction ? (
-        <p className="helper-text">الإجراء التالي: {nextAction.hint}</p>
+        <p className="helper-text">{copy.nextActionPrefix.replace("{hint}", nextAction.hint)}</p>
       ) : (
-        <p className="helper-text">المادة مكتملة الجاهزية حسب البيانات المتاحة.</p>
+        <p className="helper-text">{copy.completeMessage}</p>
       )}
     </article>
   );
 }
 
 export default function ArchiveDetailPage() {
+  const { t, locale } = useLocale();
+  const copy = t.pages.archiveDetail.page;
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
 
@@ -1151,7 +1173,7 @@ export default function ArchiveDetailPage() {
   async function refreshRelationGraph() {
     const response = await api.relationGraph({ recordId: id, limit: 32 });
     if (!response.ok) {
-      throw new Error(response.error || "تعذر تحديث العلاقات.");
+      throw new Error(response.error || t.pages.archiveDetail.relations.refreshError);
     }
 
     setState((current) => current.status === "ready" ? { ...current, relationGraph: response } : current);
@@ -1160,7 +1182,7 @@ export default function ArchiveDetailPage() {
   async function handleCreateRelation(payload: CreateRelationPayload) {
     const response = await api.createRelation(payload);
     if (!response.ok) {
-      throw new Error(response.error || "تعذر إنشاء العلاقة.");
+      throw new Error(response.error || t.pages.archiveDetail.relations.createError);
     }
 
     await refreshRelationGraph();
@@ -1169,7 +1191,7 @@ export default function ArchiveDetailPage() {
   async function handleUpdateRelation(relationId: string, payload: UpdateRelationPayload) {
     const response = await api.updateRelation(relationId, payload);
     if (!response.ok) {
-      throw new Error(response.error || "تعذر تحديث العلاقة.");
+      throw new Error(response.error || t.pages.archiveDetail.relations.updateError);
     }
 
     await refreshRelationGraph();
@@ -1178,7 +1200,7 @@ export default function ArchiveDetailPage() {
   async function handleDeleteRelation(relationId: string) {
     const response = await api.deleteRelation(relationId);
     if (!response.ok) {
-      throw new Error(response.error || "تعذر حذف العلاقة.");
+      throw new Error(response.error || t.pages.archiveDetail.relations.deleteError);
     }
 
     await refreshRelationGraph();
@@ -1199,7 +1221,7 @@ export default function ArchiveDetailPage() {
 
     const response = await api.bulkRecords({ store, records: [updated] });
     if (!response.ok) {
-      throw new Error(response.error || "تعذر حفظ التوصيف.");
+      throw new Error(response.error || t.pages.archiveDetail.page.saveDescriptionError);
     }
 
     setState((current) => (current.status === "ready" ? { ...current, record: updated } : current));
@@ -1209,13 +1231,13 @@ export default function ArchiveDetailPage() {
 
   async function handleSuggestionFeedback(suggestion: ArchiveSuggestion, value: SuggestionFeedbackValue) {
     const response = await api.submitSuggestionFeedback(suggestion.key, { value, context: "detail" });
-    if (!response.ok) throw new Error(response.error || "تعذر حفظ تقييم الاقتراح.");
+    if (!response.ok) throw new Error(response.error || t.pages.archiveDetail.suggestions.feedbackError);
     if (value === "dismissed") setSuggestions((current) => current.filter((item) => item.key !== suggestion.key));
   }
 
   async function handleAiAssist(): Promise<RecordAiAssist> {
     const response = await api.recordAiAssist(id);
-    if (!response.ok) throw new Error(response.error || "تعذر إنشاء مسودة المساعدة.");
+    if (!response.ok) throw new Error(response.error || t.pages.archiveDetail.aiAssist.analyzeError);
     return response;
   }
 
@@ -1223,7 +1245,7 @@ export default function ArchiveDetailPage() {
     if (state.status !== "ready") return;
     const response = await api.createRecordNote(id, payload, state.record.store || "archive-items");
     if (!response.ok) {
-      throw new Error(response.error || "تعذر حفظ الملاحظة.");
+      throw new Error(response.error || t.pages.archiveDetail.notes.saveError);
     }
     setState((current) => current.status === "ready"
       ? { ...current, notes: sortRecordNotes([...current.notes, response.note]) }
@@ -1246,7 +1268,7 @@ export default function ArchiveDetailPage() {
     if (state.status !== "ready") return;
     const response = await api.createRecordComment(id, payload, state.record.store || "archive-items");
     if (!response.ok) {
-      throw new Error(response.error || "تعذر نشر التعليق.");
+      throw new Error(response.error || t.pages.archiveDetail.comments.postError);
     }
     setState((current) => current.status === "ready"
       ? { ...current, comments: [...current.comments, response.comment] }
@@ -1268,7 +1290,7 @@ export default function ArchiveDetailPage() {
   async function handleCreateFieldRequest(payload: { field: string; message: string; assignee?: string; dueDate?: string }) {
     if (state.status !== "ready") return;
     const response = await api.createRecordFieldRequest(id, payload);
-    if (!response.ok) throw new Error(response.error || "تعذر إنشاء طلب الاستكمال.");
+    if (!response.ok) throw new Error(response.error || t.pages.archiveDetail.fieldRequests.createError);
     setState((current) => current.status === "ready"
       ? { ...current, fieldRequests: [...current.fieldRequests, response.request] }
       : current);
@@ -1276,7 +1298,7 @@ export default function ArchiveDetailPage() {
 
   async function handleResolveFieldRequest(requestId: string) {
     const response = await api.resolveFieldRequest(requestId);
-    if (!response.ok) throw new Error(response.error || "تعذر حل طلب الاستكمال.");
+    if (!response.ok) throw new Error(response.error || t.pages.archiveDetail.fieldRequests.resolveThrowError);
     setState((current) => current.status === "ready"
       ? { ...current, fieldRequests: current.fieldRequests.map((request) => request.id === requestId ? response.request : request) }
       : current);
@@ -1284,10 +1306,10 @@ export default function ArchiveDetailPage() {
 
   const detailDescription =
     state.status === "ready"
-      ? state.record.description || "تفاصيل السجل وحقوقه في عرض تشغيلي مركز."
+      ? state.record.description || t.pages.archiveDetail.page.defaultDescription
       : state.status === "error"
-        ? "تعذر تحميل بيانات السجل من الخادم."
-        : "جار تحميل بيانات السجل من الخادم.";
+        ? t.pages.archiveDetail.page.loadErrorDescription
+        : t.pages.archiveDetail.page.loadingDescription;
   const playerHref = state.status === "ready" ? mediaPlayerHref(state.record, id) : null;
 
   useEffect(() => {
@@ -1295,7 +1317,7 @@ export default function ArchiveDetailPage() {
 
     const loadDetail = async () => {
       if (!id) {
-        setState({ status: "error", message: "معرف السجل غير صحيح" });
+        setState({ status: "error", message: t.pages.archiveDetail.page.invalidRecordId });
         return;
       }
 
@@ -1368,7 +1390,7 @@ export default function ArchiveDetailPage() {
                 ...current,
                 notes: response.ok ? response.notes : [],
                 notesLoading: false,
-                notesError: response.ok ? null : response.error || "تعذر تحميل الملاحظات."
+                notesError: response.ok ? null : response.error || t.pages.archiveDetail.notes.loadError
               }
             : current);
         })
@@ -1378,7 +1400,7 @@ export default function ArchiveDetailPage() {
             ? {
                 ...current,
                 notesLoading: false,
-                notesError: error instanceof Error ? error.message : "تعذر تحميل الملاحظات."
+                notesError: error instanceof Error ? error.message : t.pages.archiveDetail.notes.loadError
               }
             : current);
         });
@@ -1391,7 +1413,7 @@ export default function ArchiveDetailPage() {
                 ...current,
                 comments: response.ok ? response.comments : [],
                 commentsLoading: false,
-                commentsError: response.ok ? null : response.error || "تعذر تحميل التعليقات."
+                commentsError: response.ok ? null : response.error || t.pages.archiveDetail.comments.loadError
               }
             : current);
         })
@@ -1401,7 +1423,7 @@ export default function ArchiveDetailPage() {
             ? {
                 ...current,
                 commentsLoading: false,
-                commentsError: error instanceof Error ? error.message : "تعذر تحميل التعليقات."
+                commentsError: error instanceof Error ? error.message : t.pages.archiveDetail.comments.loadError
               }
             : current);
         });
@@ -1414,7 +1436,7 @@ export default function ArchiveDetailPage() {
                 ...current,
                 fieldRequests: response.ok ? response.requests : [],
                 fieldRequestsLoading: false,
-                fieldRequestsError: response.ok ? null : response.error || "تعذر تحميل طلبات الاستكمال."
+                fieldRequestsError: response.ok ? null : response.error || t.pages.archiveDetail.fieldRequests.loadError
               }
             : current);
         })
@@ -1424,7 +1446,7 @@ export default function ArchiveDetailPage() {
             ? {
                 ...current,
                 fieldRequestsLoading: false,
-                fieldRequestsError: error instanceof Error ? error.message : "تعذر تحميل طلبات الاستكمال."
+                fieldRequestsError: error instanceof Error ? error.message : t.pages.archiveDetail.fieldRequests.loadError
               }
             : current);
         });
@@ -1437,7 +1459,7 @@ export default function ArchiveDetailPage() {
                 ...current,
                 history: response.ok ? response.entries : [],
                 historyLoading: false,
-                historyError: response.ok ? null : response.error || "تعذر تحميل سجل التغييرات."
+                historyError: response.ok ? null : response.error || t.pages.archiveDetail.history.loadError
               }
             : current);
         })
@@ -1447,7 +1469,7 @@ export default function ArchiveDetailPage() {
             ? {
                 ...current,
                 historyLoading: false,
-                historyError: error instanceof Error ? error.message : "تعذر تحميل سجل التغييرات."
+                historyError: error instanceof Error ? error.message : t.pages.archiveDetail.history.loadError
               }
             : current);
         });
@@ -1457,6 +1479,7 @@ export default function ArchiveDetailPage() {
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t only affects fallback error copy, not fetch identity
   }, [id, api]);
 
   async function toggleSavedFavorite() {
@@ -1469,14 +1492,14 @@ export default function ArchiveDetailPage() {
 
   return (
     <AppShell
-      subtitle="تفاصيل السجل"
-      navLabel="تفاصيل السجل"
+      subtitle={t.pageTitles.recordDetails}
+      navLabel={t.pageTitles.recordDetails}
       contentClassName="archive-content"
-      breadcrumbExtra={[{ label: state.status === "ready" ? state.record.title || "بدون عنوان" : "تفاصيل السجل" }]}
+      breadcrumbExtra={[{ label: state.status === "ready" ? state.record.title || copy.untitledRecord : copy.defaultTitle }]}
     >
       <PageToolbar
-        eyebrow={<span className="badge">تفاصيل السجل</span>}
-        title={state.status === "ready" ? state.record.title || "بدون عنوان" : "تفاصيل السجل"}
+        eyebrow={<span className="badge">{copy.defaultTitle}</span>}
+        title={state.status === "ready" ? state.record.title || copy.untitledRecord : copy.defaultTitle}
         description={detailDescription}
         meta={
           state.status === "ready" ? (
@@ -1486,7 +1509,7 @@ export default function ArchiveDetailPage() {
               {state.record.subtype ? <span className="badge">{state.record.subtype}</span> : null}
               {state.record.updatedAt ? (
                 <span className="badge">
-                  {new Date(state.record.updatedAt).toLocaleDateString("ar-SA")}
+                  {new Date(state.record.updatedAt).toLocaleDateString(locale === "en" ? "en-US" : "ar-SA")}
                 </span>
               ) : null}
             </>
@@ -1495,23 +1518,23 @@ export default function ArchiveDetailPage() {
         actions={
           <>
             <Link href="/archive" className="button button-secondary">
-              العودة إلى الأرشيف
+              {copy.backToArchive}
             </Link>
             {state.status === "ready" ? (
               <Link href={`/copilot?recordId=${encodeURIComponent(id)}`} className="button button-secondary">
-                اسأل المساعد عن هذا السجل
+                {copy.askCopilot}
               </Link>
             ) : null}
-            {playerHref ? <Link href={playerHref} className="button button-secondary">تشغيل الوسائط</Link> : null}
+            {playerHref ? <Link href={playerHref} className="button button-secondary">{copy.playMedia}</Link> : null}
             {state.status === "ready" ? (
               <button
                 type="button"
                 onClick={() => void toggleSavedFavorite()}
                 className={`button ${isFav ? "button-primary" : "button-secondary"}`}
                 aria-pressed={isFav}
-                title={isFav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                title={isFav ? copy.removeFavorite : copy.addFavorite}
               >
-                {isFav ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+                {isFav ? copy.removeFavorite : copy.addFavorite}
               </button>
             ) : null}
             {state.status === "ready" ? (
@@ -1522,9 +1545,9 @@ export default function ArchiveDetailPage() {
                 }}
                 className={`button ${inBasket ? "button-primary" : "button-secondary"}`}
                 aria-pressed={inBasket}
-                title={inBasket ? "إزالة من سلة العمل" : "إضافة إلى سلة العمل"}
+                title={inBasket ? copy.removeFromBasketTitle : copy.addToBasketTitle}
               >
-                {inBasket ? "إزالة من السلة" : "أضف إلى السلة"}
+                {inBasket ? copy.removeFromBasketLabel : copy.addToBasketLabel}
               </button>
             ) : null}
             {state.status === "ready" ? (
@@ -1535,9 +1558,9 @@ export default function ArchiveDetailPage() {
                 }}
                 className={`button ${inQueue ? "button-primary" : "button-secondary"}`}
                 aria-pressed={inQueue}
-                title={inQueue ? "إزالة من طابور التجهيز" : "إضافة إلى طابور التجهيز"}
+                title={inQueue ? copy.removeFromQueueTitle : copy.addToQueueTitle}
               >
-                {inQueue ? "إزالة من الطابور" : "أضف إلى الطابور"}
+                {inQueue ? copy.removeFromQueueLabel : copy.addToQueueLabel}
               </button>
             ) : null}
             {state.status === "ready" ? (
@@ -1556,9 +1579,9 @@ export default function ArchiveDetailPage() {
                 }}
                 className={`button ${laterEntry ? "button-primary" : "button-secondary"}`}
                 aria-pressed={Boolean(laterEntry)}
-                title={laterEntry ? "إلغاء التأجيل" : "تأجيل هذا السجل لوقت لاحق"}
+                title={laterEntry ? copy.cancelDeferLabel : copy.deferTitleHint}
               >
-                {laterEntry ? "إلغاء التأجيل" : "لاحقًا"}
+                {laterEntry ? copy.cancelDeferLabel : copy.deferButtonLabel}
               </button>
             ) : null}
             {state.status === "ready" ? (
@@ -1567,9 +1590,9 @@ export default function ArchiveDetailPage() {
                 onClick={handleOcr}
                 disabled={!deriveRecordSourcePath(state.record) || ocrState.status === "creating"}
                 className="button button-secondary"
-                title={!deriveRecordSourcePath(state.record) ? "لا يوجد مسار ملف صالح لهذا السجل" : undefined}
+                title={!deriveRecordSourcePath(state.record) ? copy.noSourcePathTitle : undefined}
               >
-                {ocrState.status === "creating" ? "جار الإنشاء..." : "استخراج النص (OCR)"}
+                {ocrState.status === "creating" ? copy.creatingOcrLabel : copy.extractOcrLabel}
               </button>
             ) : null}
           </>
@@ -1578,44 +1601,44 @@ export default function ArchiveDetailPage() {
       {state.status === "ready" ? <RecordPresence recordId={id} /> : null}
 
       {state.status === "ready" && !deriveRecordSourcePath(state.record) && (
-        <p className="helper-text">تعذّر تفعيل استخراج النص: لا يحتوي هذا السجل على مسار ملف قابل للاستخدام في metadata.</p>
+        <p className="helper-text">{copy.noSourcePathHelper}</p>
       )}
 
       {ocrState.status === "success" && (
         <div className="state-banner state-banner-success">
-          <strong>تم إنشاء مهمة OCR بنجاح.</strong>
-          <Link href="/media/jobs" className="button button-secondary">عرض في مهام الوسائط</Link>
+          <strong>{copy.ocrSuccessMessage}</strong>
+          <Link href="/media/jobs" className="button button-secondary">{copy.viewMediaJobs}</Link>
         </div>
       )}
 
       {ocrState.status === "error" && (
         <div className="state-banner state-banner-error">
-          <strong>تعذّر إنشاء مهمة OCR: {ocrState.message}</strong>
+          <strong>{copy.ocrErrorPrefix.replace("{message}", ocrState.message)}</strong>
         </div>
       )}
 
       {state.status === "loading" && (
         <div className="panel panel-compact">
-          <Skeleton label="جار تحميل السجل..." />
+          <Skeleton label={copy.loadingRecordLabel} />
         </div>
       )}
 
       {state.status === "error" && (
         <EmptyState
-          title="خطأ في تحميل السجل"
+          title={copy.errorTitle}
           description={state.message}
-          actions={<Link href="/archive" className="button button-secondary">العودة إلى الأرشيف</Link>}
+          actions={<Link href="/archive" className="button button-secondary">{copy.backToArchive}</Link>}
         />
       )}
 
       {state.status === "ready" && (
-        <div className="split-layout archive-detail-layout" aria-label="تفاصيل السجل">
+        <div className="split-layout archive-detail-layout" aria-label={copy.defaultTitle}>
           <div className="page-section">
             {laterEntry ? (
               <div className="panel panel-compact" role="status">
                 <p>
-                  <strong>مؤجَّلة:</strong> {laterEntry.reason}
-                  {laterEntry.reviewDate ? ` — موعد المراجعة: ${laterEntry.reviewDate}` : ""}
+                  <strong>{copy.deferredLabel}</strong> {laterEntry.reason}
+                  {laterEntry.reviewDate ? copy.deferredReviewDateSuffix.replace("{date}", laterEntry.reviewDate) : ""}
                 </p>
               </div>
             ) : laterFormOpen ? (
@@ -1635,7 +1658,7 @@ export default function ArchiveDetailPage() {
                 }}
               >
                 <label className="form-field">
-                  <span>سبب التأجيل</span>
+                  <span>{copy.deferReasonLabel}</span>
                   <input
                     type="text"
                     value={laterReason}
@@ -1645,7 +1668,7 @@ export default function ArchiveDetailPage() {
                   />
                 </label>
                 <label className="form-field">
-                  <span>موعد المراجعة (اختياري)</span>
+                  <span>{copy.deferReviewDateLabel}</span>
                   <input
                     type="date"
                     value={laterReviewDate}
@@ -1653,9 +1676,9 @@ export default function ArchiveDetailPage() {
                   />
                 </label>
                 <div className="button-row">
-                  <button type="submit" className="button button-primary">تأجيل</button>
+                  <button type="submit" className="button button-primary">{copy.deferSubmitButton}</button>
                   <button type="button" className="button button-secondary" onClick={() => setLaterFormOpen(false)}>
-                    إلغاء
+                    {copy.deferCancelButton}
                   </button>
                 </div>
               </form>
@@ -1667,12 +1690,12 @@ export default function ArchiveDetailPage() {
             />
             <article className="panel">
               <div className="panel-section-header">
-                <h2>معلومات السجل</h2>
+                <h2>{t.pages.archiveDetail.recordInfo.title}</h2>
               </div>
 
               <div className="kv-grid">
                 <div className="kv-item">
-                  <strong>المعرّف</strong>
+                  <strong>{t.pages.archiveDetail.recordInfo.idLabel}</strong>
                   <span className="wrap-anywhere">{state.record.id}</span>
                 </div>
 
@@ -1685,39 +1708,39 @@ export default function ArchiveDetailPage() {
 
                 {state.record.store ? (
                   <div className="kv-item">
-                    <strong>المخزن</strong>
+                    <strong>{t.pages.archiveDetail.recordInfo.storeLabel}</strong>
                     <span>{state.record.store}</span>
                   </div>
                 ) : null}
 
                 {state.record.type ? (
                   <div className="kv-item">
-                    <strong>النوع</strong>
+                    <strong>{t.pages.archiveDetail.recordInfo.typeLabel}</strong>
                     <span>{state.record.type}</span>
                   </div>
                 ) : null}
 
                 {state.record.subtype ? (
                   <div className="kv-item">
-                    <strong>الفرع</strong>
+                    <strong>{t.pages.archiveDetail.recordInfo.subtypeLabel}</strong>
                     <span>{state.record.subtype}</span>
                   </div>
                 ) : null}
 
                 {state.record.createdAt ? (
                   <div className="kv-item">
-                    <strong>الإنشاء</strong>
+                    <strong>{t.pages.archiveDetail.recordInfo.createdLabel}</strong>
                     <time className="mono-text">
-                      {new Date(state.record.createdAt).toLocaleDateString("ar-SA")}
+                      {new Date(state.record.createdAt).toLocaleDateString(locale === "en" ? "en-US" : "ar-SA")}
                     </time>
                   </div>
                 ) : null}
 
                 {state.record.updatedAt ? (
                   <div className="kv-item">
-                    <strong>آخر تحديث</strong>
+                    <strong>{t.pages.archiveDetail.recordInfo.updatedLabel}</strong>
                     <time className="mono-text">
-                      {new Date(state.record.updatedAt).toLocaleDateString("ar-SA")}
+                      {new Date(state.record.updatedAt).toLocaleDateString(locale === "en" ? "en-US" : "ar-SA")}
                     </time>
                   </div>
                 ) : null}
@@ -1725,7 +1748,7 @@ export default function ArchiveDetailPage() {
 
               {state.record.tags && state.record.tags.length > 0 ? (
                 <div className="section-divider">
-                  <strong>الوسوم</strong>
+                  <strong>{t.pages.archiveDetail.recordInfo.tagsLabel}</strong>
                   <div className="tags">
                     {state.record.tags.map((tag) => (
                       <span key={tag} className="tag">
@@ -1737,7 +1760,7 @@ export default function ArchiveDetailPage() {
               ) : null}
             </article>
             <RecordAiAssistPanel onAnalyze={handleAiAssist} canEdit={canEditRecords} />
-            <SuggestionsPanel suggestions={suggestions} title="تحسينات مقترحة لهذا السجل" onFeedback={handleSuggestionFeedback} />
+            <SuggestionsPanel suggestions={suggestions} title={copy.suggestionsTitle} onFeedback={handleSuggestionFeedback} />
             {canEditRecords && <RecordDescribeForm key={id} record={state.record} onSave={handleSaveRecord} />}
             <RecordNotesPanel
               notes={state.notes}
@@ -1766,45 +1789,45 @@ export default function ArchiveDetailPage() {
           <div className="page-section">
             <article className="panel">
               <div className="panel-section-header">
-                <h2>حقوق الاستخدام</h2>
+                <h2>{t.pages.archiveDetail.rights.title}</h2>
               </div>
 
               {state.rights ? (
                 <>
                   <div className="kv-grid">
                     <div className="kv-item">
-                      <strong>صاحب الحقوق</strong>
+                      <strong>{t.pages.archiveDetail.rights.holderLabel}</strong>
                       <span>{state.rights.rightsHolder}</span>
                     </div>
 
                     <div className="kv-item">
-                      <strong>الترخيص</strong>
+                      <strong>{t.pages.archiveDetail.rights.licenseLabel}</strong>
                       <span className="badge">{state.rights.licenseType}</span>
                     </div>
 
                     {state.rights.embargoStart ? (
                       <div className="kv-item">
-                        <strong>حظر من</strong>
+                        <strong>{t.pages.archiveDetail.rights.embargoStartLabel}</strong>
                         <time className="mono-text">
-                          {new Date(state.rights.embargoStart).toLocaleDateString("ar-SA")}
+                          {new Date(state.rights.embargoStart).toLocaleDateString(locale === "en" ? "en-US" : "ar-SA")}
                         </time>
                       </div>
                     ) : null}
 
                     {state.rights.embargoEnd ? (
                       <div className="kv-item">
-                        <strong>حظر إلى</strong>
+                        <strong>{t.pages.archiveDetail.rights.embargoEndLabel}</strong>
                         <time className="mono-text">
-                          {new Date(state.rights.embargoEnd).toLocaleDateString("ar-SA")}
+                          {new Date(state.rights.embargoEnd).toLocaleDateString(locale === "en" ? "en-US" : "ar-SA")}
                         </time>
                       </div>
                     ) : null}
 
                     {state.rights.expiresAt ? (
                       <div className="kv-item">
-                        <strong>ينتهي في</strong>
+                        <strong>{t.pages.archiveDetail.rights.expiresLabel}</strong>
                         <time className="mono-text">
-                          {new Date(state.rights.expiresAt).toLocaleDateString("ar-SA")}
+                          {new Date(state.rights.expiresAt).toLocaleDateString(locale === "en" ? "en-US" : "ar-SA")}
                         </time>
                       </div>
                     ) : null}
@@ -1812,7 +1835,7 @@ export default function ArchiveDetailPage() {
 
                   {state.rights.geoRestrictions && state.rights.geoRestrictions.length > 0 ? (
                     <div className="section-divider">
-                      <strong>القيود الجغرافية</strong>
+                      <strong>{t.pages.archiveDetail.rights.geoRestrictionsLabel}</strong>
                       <div className="tags">
                         {state.rights.geoRestrictions.map((restriction) => (
                           <span key={restriction} className="tag">
@@ -1825,15 +1848,15 @@ export default function ArchiveDetailPage() {
 
                   {state.rights.notes ? (
                     <div className="section-divider">
-                      <strong>ملاحظات</strong>
+                      <strong>{t.pages.archiveDetail.rights.notesLabel}</strong>
                       <p>{state.rights.notes}</p>
                     </div>
                   ) : null}
                 </>
               ) : (
                 <EmptyState
-                  title="لا توجد بيانات حقوق مسجلة لهذا السجل."
-                  description="يمكن متابعة السجل نفسه بينما تظل الحقوق غير متاحة في API."
+                  title={t.pages.archiveDetail.rights.emptyTitle}
+                  description={t.pages.archiveDetail.rights.emptyDescription}
                 />
               )}
             </article>

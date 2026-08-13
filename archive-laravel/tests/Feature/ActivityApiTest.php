@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class ActivityApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_lists_filterable_audit_activity(): void
     {

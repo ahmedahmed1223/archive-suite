@@ -2,13 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class CollectionEditApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_it_updates_the_name_and_criteria_of_an_existing_collection(): void
     {
@@ -47,7 +49,7 @@ class CollectionEditApiTest extends TestCase
         $id = $this->postJson('/api/v1/collections', ['name' => 'مجموعة'], $this->authHeaders())
             ->assertCreated()->json('collection.id');
 
-        $viewer = \App\Models\User::query()->create(['name' => 'v', 'email' => 'viewer2@example.com', 'password' => \Illuminate\Support\Facades\Hash::make('secret-password'), 'role' => 'viewer']);
+        $viewer = User::query()->create(['name' => 'v', 'email' => 'viewer2@example.com', 'password' => Hash::make('secret-password'), 'role' => 'viewer']);
         $token = $this->postJson('/api/v1/auth/login', ['email' => 'viewer2@example.com', 'password' => 'secret-password'])->assertOk()->json('accessToken');
 
         $this->patchJson("/api/v1/collections/{$id}", ['name' => 'محاولة'], ['Authorization' => 'Bearer '.$token])

@@ -2559,6 +2559,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system/display-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read central display settings */
+        get: operations["getDisplaySettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update central display settings (admin only) */
+        patch: operations["updateDisplaySettings"];
+        trace?: never;
+    };
     "/system/dr-probe": {
         parameters: {
             query?: never;
@@ -4110,6 +4128,28 @@ export interface components {
             key: "explore" | "trending" | "random" | "active" | "forgotten" | "needsMetadata";
             label: string;
             records: components["schemas"]["ArchiveRecord"][];
+        };
+        DisplaySettings: {
+            /**
+             * @default DD/MM/YYYY
+             * @enum {string}
+             */
+            dateFormat: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
+            /** @default false */
+            showSeconds: boolean;
+            /**
+             * @default 24h
+             * @enum {string}
+             */
+            timeFormat: "24h" | "12h";
+            /**
+             * Format: timezone
+             * @default Europe/Istanbul
+             */
+            timeZone: string;
+        };
+        DisplaySettingsResponse: components["schemas"]["OkEnvelope"] & {
+            settings: components["schemas"]["DisplaySettings"];
         };
         DropboxAuthorizationResponse: components["schemas"]["OkEnvelope"] & {
             /** Format: uri */
@@ -5663,6 +5703,15 @@ export interface components {
         UpdateBulkMacroRequest: {
             name?: string;
             steps?: components["schemas"]["BulkMacroStep"][];
+        };
+        UpdateDisplaySettingsRequest: {
+            /** @enum {string} */
+            dateFormat?: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
+            showSeconds?: boolean;
+            /** @enum {string} */
+            timeFormat?: "24h" | "12h";
+            /** Format: timezone */
+            timeZone?: string;
         };
         /** @description Fields sent as null are ignored (not cleared); unknown extra fields are ignored by the server. */
         UpdateMontageProjectRequest: {
@@ -10927,6 +10976,54 @@ export interface operations {
             403: components["responses"]["Error"];
             422: components["responses"]["Error"];
             503: components["responses"]["Error"];
+        };
+    };
+    getDisplaySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current display settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisplaySettingsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    updateDisplaySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDisplaySettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated display settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisplaySettingsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     systemDrProbe: {

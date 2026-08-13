@@ -19,7 +19,7 @@ class RealMediaProcessorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->runner = new FakeProcessRunner();
+        $this->runner = new FakeProcessRunner;
         $transcriber = new WhisperTranscriber(
             $this->runner,
             'whisper-ctranslate2',
@@ -63,7 +63,7 @@ class RealMediaProcessorTest extends TestCase
 
     private function removeMockDirectory(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
 
@@ -75,6 +75,7 @@ class RealMediaProcessorTest extends TestCase
             $path = "{$dir}/{$entry}";
             if (is_dir($path)) {
                 $this->removeMockDirectory($path);
+
                 continue;
             }
 
@@ -85,7 +86,7 @@ class RealMediaProcessorTest extends TestCase
 
     public function test_thumbnail_builds_correct_command(): void
     {
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-1';
         $job->record_id = 'record-1';
         $job->operation = 'thumbnail';
@@ -101,7 +102,7 @@ class RealMediaProcessorTest extends TestCase
 
     public function test_transcode_builds_correct_command(): void
     {
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-2';
         $job->record_id = 'record-2';
         $job->operation = 'transcode';
@@ -117,7 +118,7 @@ class RealMediaProcessorTest extends TestCase
 
     public function test_transcode_can_apply_watermark_overlay_from_job_options(): void
     {
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-watermark';
         $job->record_id = 'record-watermark';
         $job->operation = 'transcode';
@@ -173,7 +174,7 @@ class RealMediaProcessorTest extends TestCase
             ],
         );
 
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-watermark-default';
         $job->record_id = 'record-watermark-default';
         $job->operation = 'transcode';
@@ -194,7 +195,7 @@ class RealMediaProcessorTest extends TestCase
 
     public function test_transcription_builds_correct_command(): void
     {
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-3';
         $job->record_id = 'record-3';
         $job->operation = 'transcription';
@@ -212,7 +213,8 @@ class RealMediaProcessorTest extends TestCase
 
     public function test_segmented_transcription_merges_local_timestamps_using_each_segment_start(): void
     {
-        $preprocessor = new class($this->runner) extends AudioPreprocessor {
+        $preprocessor = new class($this->runner) extends AudioPreprocessor
+        {
             public function __construct(FakeProcessRunner $runner)
             {
                 parent::__construct($runner);
@@ -244,7 +246,8 @@ class RealMediaProcessorTest extends TestCase
             }
         };
 
-        $transcriber = new class($this->runner) extends WhisperTranscriber {
+        $transcriber = new class($this->runner) extends WhisperTranscriber
+        {
             public function __construct(FakeProcessRunner $runner)
             {
                 parent::__construct($runner);
@@ -252,7 +255,7 @@ class RealMediaProcessorTest extends TestCase
 
             public function transcribe(string $inputPath, string $recordId, array $jobOptions = []): array
             {
-                if (!is_dir($recordId)) {
+                if (! is_dir($recordId)) {
                     mkdir($recordId, 0777, true);
                 }
                 $label = str_ends_with($recordId, '/segments/0') ? 'First segment' : 'Second segment';
@@ -273,7 +276,7 @@ class RealMediaProcessorTest extends TestCase
         };
 
         $processor = new RealMediaProcessor($this->runner, $transcriber, audioPreprocessor: $preprocessor);
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-segmented';
         $job->record_id = 'record-segmented';
         $job->operation = 'transcription';
@@ -301,7 +304,7 @@ class RealMediaProcessorTest extends TestCase
             'stderr' => 'Error: invalid input',
         ]);
 
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-fail';
         $job->record_id = 'record-fail';
         $job->operation = 'thumbnail';
@@ -316,7 +319,7 @@ class RealMediaProcessorTest extends TestCase
 
     public function test_returns_artifact_with_null_url(): void
     {
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-4';
         $job->record_id = 'record-4';
         $job->operation = 'thumbnail';
@@ -330,7 +333,7 @@ class RealMediaProcessorTest extends TestCase
 
     public function test_ignores_unknown_operation(): void
     {
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-unknown';
         $job->record_id = 'record-unknown';
         $job->operation = 'unknown_op';
@@ -391,7 +394,7 @@ class FfmpegProgressParserTest extends TestCase
 
     public function test_montage_export_concatenates_clips(): void
     {
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-montage-1';
         $job->record_id = 'record-montage-1';
         $job->operation = 'montage_export';
@@ -411,7 +414,7 @@ class FfmpegProgressParserTest extends TestCase
 
     public function test_montage_export_requires_clips(): void
     {
-        $job = new MediaJob();
+        $job = new MediaJob;
         $job->id = 'job-montage-2';
         $job->record_id = 'record-montage-2';
         $job->operation = 'montage_export';

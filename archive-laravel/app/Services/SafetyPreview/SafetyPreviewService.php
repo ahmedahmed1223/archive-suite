@@ -26,7 +26,7 @@ class SafetyPreviewService
     /**
      * Runs entirely against fresh local arrays. It must never touch archive data.
      *
-     * @param array<int, string> $ids
+     * @param  array<int, string>  $ids
      * @return array<string, mixed>
      */
     public function run(string $scenario, string $operation, array $ids): array
@@ -39,21 +39,25 @@ class SafetyPreviewService
             if ($operation === 'delete') {
                 if (! isset($live[$id])) {
                     $results[] = ['id' => $id, 'deleted' => false, 'reason' => 'not_found'];
+
                     continue;
                 }
 
                 $trash[$id] = $live[$id];
                 unset($live[$id]);
                 $results[] = ['id' => $id, 'deleted' => true];
+
                 continue;
             }
 
             if (! isset($trash[$id])) {
                 $results[] = ['id' => $id, 'restored' => false, 'reason' => 'not_found'];
+
                 continue;
             }
             if (isset($live[$id])) {
                 $results[] = ['id' => $id, 'restored' => false, 'reason' => 'conflict'];
+
                 continue;
             }
 

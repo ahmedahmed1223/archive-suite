@@ -2,14 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Events\RecordEditClaimBroadcasted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class RecordEditClaimApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_a_record_with_no_claim_returns_null(): void
     {
@@ -45,5 +47,22 @@ class RecordEditClaimApiTest extends TestCase
         $this->getJson('/api/v1/records/item-1/edit-claim', $this->authHeaders())
             ->assertOk()
             ->assertJsonPath('claim', null);
+    }
+
+    public function test_claiming_and_releasing_broadcasts_the_change(): void
+    {
+        Event::fake([RecordEditClaimBroadcasted::class]);
+
+        $this->postJson('/api/v1/records/item-1/edit-claim', [], $this->authHeaders())->assertOk();
+        Event::assertDispatched(
+            RecordEditClaimBroadcasted::class,
+            fn (RecordEditClaimBroadcasted $event) => $event->recordId === 'item-1' && $event->claim !== null
+        );
+
+        $this->deleteJson('/api/v1/records/item-1/edit-claim', [], $this->authHeaders())->assertOk();
+        Event::assertDispatched(
+            RecordEditClaimBroadcasted::class,
+            fn (RecordEditClaimBroadcasted $event) => $event->recordId === 'item-1' && $event->claim === null
+        );
     }
 }

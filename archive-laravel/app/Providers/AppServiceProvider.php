@@ -2,17 +2,21 @@
 
 namespace App\Providers;
 
+use App\Services\Dropbox\DropboxConnectionService;
+use App\Services\Dropbox\DropboxGateway;
+use App\Services\Dropbox\DropboxIngestTransport;
 use App\Services\Ingest\FakeIngestTransport;
 use App\Services\Ingest\FtpIngestTransport;
 use App\Services\Ingest\IngestScanner;
 use App\Services\Ingest\IngestTransport;
 use App\Services\Ingest\PhpFtpClient;
 use App\Services\Ingest\SmbIngestTransport;
+use App\Services\Media\CudaCapabilityChecker;
 use App\Services\Media\FakeMediaProcessor;
-use App\Services\Media\FakeProcessRunner;
-use App\Services\Media\MediaProcessor;
-use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\LocalMediaJobExecutor;
+use App\Services\Media\MediaJobExecutor;
+use App\Services\Media\MediaJobProgressBroadcaster;
+use App\Services\Media\MediaProcessor;
 use App\Services\Media\OcrClient;
 use App\Services\Media\ProcessRunner;
 use App\Services\Media\RealMediaProcessor;
@@ -22,12 +26,16 @@ use App\Services\Odbc\NativeOdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionFactory;
 use App\Services\Odbc\OdbcConnectionProbe;
 use App\Services\Security\SecuritySettingsService;
-use Google\Cloud\Storage\StorageClient;
-use Illuminate\Filesystem\FilesystemAdapter;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\ServiceProvider;
 use AzureOss\Storage\Blob\BlobServiceClient;
 use AzureOss\Storage\BlobFlysystem\AzureBlobStorageAdapter;
+use Google\Cloud\Storage\StorageClient;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 use League\Flysystem\Filesystem;
 use League\Flysystem\GoogleCloudStorage\GoogleCloudStorageAdapter;
 use Spatie\Dropbox\Client as DropboxClient;
@@ -46,7 +54,10 @@ class AppServiceProvider extends ServiceProvider
             fn () => new SymfonyProcessRunner(config('media.process_timeout_seconds')),
         );
 
-        $this->app->bind(OdbcConnectionFactory::class, NativeOdbcConnectionFactory::class);
+        $this->app->bind(
+            OdbcConnectionFactory::class,
+            fn () => new NativeOdbcConnectionFactory(config('odbc.dialect', 'sqlserver')),
+        );
         $this->app->bind(
             OdbcConnectionProbe::class,
             fn ($app) => new OdbcConnectionProbe(
@@ -70,6 +81,7 @@ class AppServiceProvider extends ServiceProvider
                 config('media.whisper_hf_token'),
                 null,
                 $app->make(SecuritySettingsService::class),
+                new CudaCapabilityChecker($app->make(ProcessRunner::class)),
             )
         );
 
@@ -91,6 +103,9 @@ class AppServiceProvider extends ServiceProvider
                     config('media.ffprobe_path'),
                     config('media.watermark', []),
                     $app->make(OcrClient::class),
+                    null,
+                    null,
+                    $app->make(MediaJobProgressBroadcaster::class),
                 )
             );
         } else {
@@ -115,7 +130,7 @@ class AppServiceProvider extends ServiceProvider
         match ($transportType) {
             'ftp' => $this->app->bind(
                 IngestTransport::class,
-                fn () => new FtpIngestTransport(new PhpFtpClient())
+                fn () => new FtpIngestTransport(new PhpFtpClient)
             ),
             'smb' => $this->app->bind(
                 IngestTransport::class,
@@ -123,9 +138,9 @@ class AppServiceProvider extends ServiceProvider
             ),
             'dropbox' => $this->app->bind(
                 IngestTransport::class,
-                fn ($app) => new \App\Services\Dropbox\DropboxIngestTransport(
-                    $app->make(\App\Services\Dropbox\DropboxConnectionService::class),
-                    $app->make(\App\Services\Dropbox\DropboxGateway::class),
+                fn ($app) => new DropboxIngestTransport(
+                    $app->make(DropboxConnectionService::class),
+                    $app->make(DropboxGateway::class),
                 )
             ),
             default => $this->app->bind(IngestTransport::class, FakeIngestTransport::class),
@@ -176,6 +191,30 @@ class AppServiceProvider extends ServiceProvider
 
             return new FilesystemAdapter(new Filesystem($adapter, $config), $adapter, $config);
         });
+
+        // V2-403: SecuritySettingsService::getSettings()['perUserRateLimit'] was
+        // exposed and updatable but no RateLimiter definition ever read it, so
+        // only the 8 routes with an explicit throttle:N,1 middleware literal had
+        // any cap. This ties a real 'api' limiter to the configured/overridable
+        // value and applies it globally via $middleware->throttleApi() in
+        // bootstrap/app.php. Disabled under testing: the suite fires far more
+        // than any sane per-minute cap through the same test client IP within a
+        // single fast run, which isn't the traffic pattern the limit exists for.
+        RateLimiter::for('api', function (Request $request) {
+            if ($this->app->environment('testing')) {
+                return Limit::none();
+            }
+
+            $perMinute = max(1, (int) $this->app->make(SecuritySettingsService::class)
+                ->getSettings()['perUserRateLimit']);
+
+            return Limit::perMinute($perMinute)->by($request->user()?->id ?? $request->ip());
+        });
+
+        // MCP-802: the consent screen an MCP client's user sees when
+        // authorizing it (php artisan vendor:publish --tag=mcp-views
+        // published the starter view laravel/mcp ships for this).
+        Passport::authorizationView(fn (array $parameters) => view('mcp.authorize', $parameters));
     }
 
     /**
@@ -206,7 +245,7 @@ class AppServiceProvider extends ServiceProvider
         if (! config('archive.auth.secure_cookies') && ! $loopbackHttp) {
             throw new \RuntimeException(
                 'ARCHIVE_SECURE_COOKIES must be true in production. Set ARCHIVE_SECURE_COOKIES=true '
-                . 'so the va_refresh auth cookie is only sent over HTTPS.'
+                .'so the va_refresh auth cookie is only sent over HTTPS.'
             );
         }
     }

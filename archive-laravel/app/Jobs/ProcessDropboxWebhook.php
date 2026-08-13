@@ -23,7 +23,7 @@ class ProcessDropboxWebhook implements ShouldQueue
     use Queueable;
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     public function __construct(
         public readonly string $eventId,

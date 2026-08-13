@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class VocabularyRelinkApiTest extends TestCase
 {
-    use RefreshDatabase, AuthenticatesArchiveRequests;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     public function test_preview_lists_records_tagged_with_the_term(): void
     {

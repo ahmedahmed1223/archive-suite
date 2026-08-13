@@ -1,3 +1,27 @@
 <?php
-use Illuminate\Database\Migrations\Migration; use Illuminate\Database\Schema\Blueprint; use Illuminate\Support\Facades\Schema;
-return new class extends Migration { public function up(): void { Schema::create('department_handoffs', function (Blueprint $table): void { $table->string('id')->primary(); $table->string('record_id')->index(); $table->string('from_department_id'); $table->string('to_department_id'); $table->string('sent_by'); $table->string('received_by')->nullable(); $table->json('summary'); $table->timestamps(); }); } public function down(): void { Schema::dropIfExists('department_handoffs'); } };
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('department_handoffs', function (Blueprint $table): void {
+            $table->string('id')->primary();
+            $table->string('record_id')->index();
+            $table->string('from_department_id');
+            $table->string('to_department_id');
+            $table->string('sent_by');
+            $table->string('received_by')->nullable();
+            $table->json('summary');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('department_handoffs');
+    }
+};

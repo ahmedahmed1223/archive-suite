@@ -6,6 +6,13 @@
 التطبيق عبر Docker أو التشغيل المباشر دون حاويات (Native) على Windows وLinux؛
 ولا تنشر هذه الموارد خدمات Laravel أو Next.js.
 
+في طبقة تطبيق Kubernetes التي تملك عُقد NVIDIA، استخدم
+`whisper-gpu-worker-deployment.example.yaml` قالبًا لعامل Whisper المستقل.
+استبدل `IMAGE_REFERENCE` بصورة موقعة وثابتة مبنية من
+`archive-laravel/Dockerfile.worker-gpu`، ثم أضف النسخة إلى طبقة التطبيق.
+يطلب القالب `nvidia.com/gpu: 1`، ويستهدف العُقد الموسومة
+`nvidia.com/gpu.present=true`، ولا يستهلك إلا طابور `gpu`.
+
 يستخدم ملف kustomization صورًا مثبتة لـPostgreSQL 17 وRedis 7. قبل التطبيق،
 استبدل كل قيمة `CHANGE_ME` في `secret.yaml` بقيمة من مخزن الأسرار لديك.
 
