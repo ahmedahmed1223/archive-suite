@@ -3,6 +3,7 @@
 use App\Console\Commands\DispatchScheduledUploads;
 use App\Http\Controllers\Api\V1\AccountExportController;
 use App\Http\Controllers\Api\V1\ActivityController;
+use App\Http\Controllers\Api\V1\AiAssistantController;
 use App\Http\Controllers\Api\V1\ApiKeysController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AutomationRulesController;
@@ -260,6 +261,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/{id}/attachments', [RecordAttachmentsController::class, 'store']);
         Route::delete('/records/{id}/attachments/{attachmentId}', [RecordAttachmentsController::class, 'destroy']);
         Route::post('/records/{id}/ai-assist', [RecordAiAssistController::class, 'analyze']);
+        Route::post('/ai/assistant/ask', [AiAssistantController::class, 'ask']);
         Route::post('/records/{id}/transcript/srt', [RecordTranscriptController::class, 'importSrt']);
         Route::post('/records/{id}/transcript/subtitles', [RecordTranscriptController::class, 'importSrt']);
         Route::put('/records/{id}/transcript/subtitles', [RecordTranscriptController::class, 'updateSubtitles']);
