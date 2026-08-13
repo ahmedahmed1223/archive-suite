@@ -20,6 +20,10 @@ class SearchRecordsTool extends Tool
 
     public function handle(Request $request): Response|ResponseFactory
     {
+        if ($rejected = $this->authorizeTool($request, 'search_records')) {
+            return $rejected;
+        }
+
         $args = $request->validate([
             'q' => ['nullable', 'string', 'max:500'],
             'store' => ['nullable', 'string', 'max:100'],

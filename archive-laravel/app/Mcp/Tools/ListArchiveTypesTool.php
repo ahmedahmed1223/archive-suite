@@ -20,6 +20,10 @@ class ListArchiveTypesTool extends Tool
 
     public function handle(Request $request): Response|ResponseFactory
     {
+        if ($rejected = $this->authorizeTool($request, 'list_archive_types')) {
+            return $rejected;
+        }
+
         $args = $request->validate([
             'cursor' => ['nullable', 'string', 'max:500'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:50'],

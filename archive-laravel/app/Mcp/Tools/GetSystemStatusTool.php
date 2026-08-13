@@ -20,6 +20,10 @@ class GetSystemStatusTool extends Tool
 
     public function handle(Request $request): Response|ResponseFactory
     {
+        if ($rejected = $this->authorizeTool($request, 'get_system_status')) {
+            return $rejected;
+        }
+
         $result = $this->delegate($request, SystemStatusController::class, 'status');
 
         if (($result['ok'] ?? false) !== true) {

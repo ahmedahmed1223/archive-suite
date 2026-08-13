@@ -28,6 +28,10 @@ class CreateReviewRequestTool extends Tool
 
     public function handle(Request $request): Response|ResponseFactory
     {
+        if ($rejected = $this->authorizeTool($request, 'create_review_request', true)) {
+            return $rejected;
+        }
+
         $args = $request->validate([
             'recordId' => ['required', 'string', 'max:200'],
             'field' => ['required', 'string', 'max:100'],
