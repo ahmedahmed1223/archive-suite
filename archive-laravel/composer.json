@@ -9,6 +9,7 @@
         "php": "^8.3",
         "azure-oss/storage-blob-flysystem": "^2.2",
         "guzzlehttp/guzzle": "^7.15.2",
+        "laravel/ai": "^0.10.3",
         "laravel/framework": "^13.8",
         "laravel/horizon": "^5.48",
         "laravel/mcp": "^0.9.3",
