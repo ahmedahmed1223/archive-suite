@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Ai\Agents\ArchiveAssistantAgent;
+use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
@@ -40,6 +42,29 @@ class ArchiveAssistantAgentTest extends TestCase
             ]);
 
         ArchiveAssistantAgent::assertPrompted('find the sunset harbor interview');
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'ai.assistant.completed',
+            'resource_type' => 'ai_assistant',
+        ]);
+    }
+
+    public function test_it_rejects_a_request_when_the_user_daily_budget_is_exhausted(): void
+    {
+        $headers = $this->authHeaders();
+        $userId = User::query()->where('email', 'admin@example.test')->value('id');
+        AuditLog::query()->create([
+            'action' => 'AI assistant request',
+            'event' => 'ai.assistant.completed',
+            'resource_type' => 'ai_assistant',
+            'actor_id' => $userId,
+            'outcome' => 'success',
+            'status_code' => 200,
+            'metadata' => ['estimatedCents' => 9999],
+        ]);
+
+        $this->postJson('/api/v1/ai/assistant/ask', ['message' => 'second request'], $headers)
+            ->assertStatus(429)
+            ->assertJsonPath('code', 'RATE_LIMITED');
     }
 
     public function test_sources_default_to_an_empty_array(): void
