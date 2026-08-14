@@ -1,6 +1,7 @@
 // ponytail: readable export bundle for a single record (V1-844), built from data already
 // loaded on the record page — no new API call, no files/tokens/share links included by default.
 import type { ArchiveRecord, RecordHistoryEntry, RightsRecord } from "@/lib/archive-api";
+import type { AppLocale } from "@/lib/i18n/types";
 
 export interface RecordExportBundle {
   id: string;
@@ -38,24 +39,25 @@ export function buildRecordExportBundle(
   };
 }
 
-export function formatRecordExportText(bundle: RecordExportBundle): string {
+export function formatRecordExportText(bundle: RecordExportBundle, locale: AppLocale = "ar"): string {
+  const isArabic = locale === "ar";
   const lines = [
-    `العنوان: ${bundle.title}`,
-    `النوع: ${bundle.type || "—"}`,
-    `الوصف: ${bundle.description || "—"}`,
-    `الوسوم: ${bundle.tags.length ? bundle.tags.join("، ") : "—"}`,
-    `أُنشئت: ${bundle.createdAt ?? "—"}`,
-    `آخر تحديث: ${bundle.updatedAt ?? "—"}`,
+    `${isArabic ? "العنوان" : "Title"}: ${bundle.title}`,
+    `${isArabic ? "النوع" : "Type"}: ${bundle.type || "—"}`,
+    `${isArabic ? "الوصف" : "Description"}: ${bundle.description || "—"}`,
+    `${isArabic ? "الوسوم" : "Tags"}: ${bundle.tags.length ? bundle.tags.join(isArabic ? "، " : ", ") : "—"}`,
+    `${isArabic ? "أُنشئت" : "Created"}: ${bundle.createdAt ?? "—"}`,
+    `${isArabic ? "آخر تحديث" : "Last updated"}: ${bundle.updatedAt ?? "—"}`,
     "",
-    "الحقوق:",
+    isArabic ? "الحقوق:" : "Rights:",
     bundle.rights
-      ? `  المالك: ${bundle.rights.rightsHolder} — الترخيص: ${bundle.rights.licenseType} — الانتهاء: ${bundle.rights.expiresAt ?? "—"}`
-      : "  لا يوجد سجل حقوق",
+      ? isArabic ? `  المالك: ${bundle.rights.rightsHolder} — الترخيص: ${bundle.rights.licenseType} — الانتهاء: ${bundle.rights.expiresAt ?? "—"}` : `  Holder: ${bundle.rights.rightsHolder} — License: ${bundle.rights.licenseType} — Expires: ${bundle.rights.expiresAt ?? "—"}`
+      : isArabic ? "  لا يوجد سجل حقوق" : "  No rights record",
     "",
-    "سجل النشاط:",
+    isArabic ? "سجل النشاط:" : "Activity log:",
     ...(bundle.activity.length
       ? bundle.activity.map((entry) => `  ${entry.createdAt ?? "—"} — ${entry.event}`)
-      : ["  لا يوجد نشاط مسجّل"])
+      : [isArabic ? "  لا يوجد نشاط مسجّل" : "  No recorded activity"])
   ];
   return lines.join("\n");
 }

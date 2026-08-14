@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { clampStepIndex, firstRunTourSteps, hasTourBeenCompleted, markTourCompleted } from "@/lib/first-run-tour";
+import { clampStepIndex, firstRunTourSteps, getFirstRunTourSteps, hasTourBeenCompleted, markTourCompleted } from "@/lib/first-run-tour";
 
 afterEach(() => {
   window.localStorage.clear();
@@ -21,6 +21,19 @@ describe("clampStepIndex", () => {
 
   it("returns 0 for an empty step list", () => {
     expect(clampStepIndex(5, 0)).toBe(0);
+  });
+});
+
+describe("getFirstRunTourSteps", () => {
+  it("returns natural English tour copy when English is selected", () => {
+    expect(getFirstRunTourSteps("en")[0]).toEqual(expect.objectContaining({
+      title: "Archive",
+      actionLabel: "Open archive",
+    }));
+  });
+
+  it("keeps Arabic as the default tour copy", () => {
+    expect(getFirstRunTourSteps()[0]).toEqual(firstRunTourSteps[0]);
   });
 });
 

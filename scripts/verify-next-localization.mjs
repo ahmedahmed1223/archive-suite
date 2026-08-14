@@ -16,8 +16,18 @@ const approvedSources = new Set([
   "archive-next/lib/contextual-tips.ts",
   "archive-next/lib/copilot-chat.ts",
   "archive-next/lib/default-taxonomy.ts",
+  "archive-next/lib/first-run-tour.ts",
+  "archive-next/lib/guide-content.ts",
+  "archive-next/lib/intake-journey.ts",
+  "archive-next/lib/local-enrichment.ts",
+  "archive-next/lib/onboarding-progress.ts",
+  "archive-next/lib/scheduled-upload.ts",
+  "archive-next/lib/setup-journey.ts",
+  "archive-next/lib/use-notifications.ts",
+  "archive-next/lib/work-lists.ts",
   "archive-next/lib/onboarding.ts",
   "archive-next/lib/operational-safety.ts",
+  "archive-next/lib/record-export.ts",
   "archive-next/lib/record-status.ts",
 ]);
 

@@ -75,7 +75,7 @@ function NotificationCard({ notification, onRead, onDelete, locale, copy }: {
 export default function NotificationsPage() {
   const { locale, t } = useLocale();
   const copy = t.pages.notifications;
-  const { notifications, unreadCount, isLoading, error, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, isLoading, error, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications(locale);
   const [filter, setFilter] = useState<"all" | "unread">("all");
 
   const filteredNotifications = filter === "unread"

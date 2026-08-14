@@ -1,11 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { getNewCompletionNotifications, notificationRequestHeaders, type Notification } from "./use-notifications";
+import { getNewCompletionNotifications, notificationErrorMessage, notificationRequestHeaders, type Notification } from "./use-notifications";
 
 describe("notificationRequestHeaders", () => {
   it("sends the current access token to protected notification endpoints", () => {
     expect(notificationRequestHeaders("live-access-token")).toEqual({
       Authorization: "Bearer live-access-token",
     });
+  });
+});
+
+describe("notificationErrorMessage", () => {
+  it("returns English operational errors when English is selected", () => {
+    expect(notificationErrorMessage("load", "en")).toBe("Notifications could not be loaded.");
+    expect(notificationErrorMessage("mark-all-read", "en")).toBe("Notifications could not be marked as read.");
+  });
+
+  it("keeps Arabic as the default language", () => {
+    expect(notificationErrorMessage("delete")).toBe("تعذر حذف الإشعار.");
   });
 });
 

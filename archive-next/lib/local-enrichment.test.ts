@@ -41,4 +41,20 @@ describe("deriveLocalSearchEnrichment", () => {
     );
     expect(enrichment.coverage.recordsWithoutTags).toBe(1);
   });
+
+  it("returns English suggestion explanations when English is selected", () => {
+    const records: ArchiveRecord[] = [{
+      id: "clip-english",
+      title: "A city archive interview",
+      type: "video",
+      tags: []
+    }];
+
+    const enrichment = deriveLocalSearchEnrichment(records, "", "en");
+
+    expect(enrichment.suggestedTags).toEqual(expect.arrayContaining([
+      expect.objectContaining({ tag: "city", reason: "A city or urban context appears in this record." }),
+      expect.objectContaining({ tag: "interview", reason: "This material appears to be an interview or conversation." })
+    ]));
+  });
 });

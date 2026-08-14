@@ -1,3 +1,5 @@
+import type { OnboardingLocale } from "@/lib/onboarding";
+
 export type IntakeStep = "files" | "metadata" | "review";
 export type IntakeMode = "guided" | "quick";
 
@@ -29,6 +31,17 @@ export const intakeStatusLabels = {
   success: "اكتمل",
   error: "تعذر الرفع",
 } as const;
+
+const intakeStatusLabelsEn: Record<keyof typeof intakeStatusLabels, string> = {
+  pending: "Waiting to upload",
+  uploading: "Uploading",
+  success: "Complete",
+  error: "Upload failed",
+};
+
+export function getIntakeStatusLabels(locale: OnboardingLocale = "ar") {
+  return locale === "en" ? intakeStatusLabelsEn : intakeStatusLabels;
+}
 
 export function recoverIntakeDraft(value: string | null): IntakeDraft | null {
   if (!value) return null;
@@ -87,11 +100,13 @@ export function deriveIntakeNextAction(input: {
   type: string;
   failedFiles: number;
   completed?: boolean;
+  locale?: OnboardingLocale;
 }) {
-  if (input.failedFiles > 0) return { key: "retry-failed", label: "إعادة محاولة الملفات المتعثرة" } as const;
-  if (input.completed) return { key: "open-jobs", label: "متابعة مهام المعالجة", href: "/media/jobs" } as const;
+  const english = input.locale === "en";
+  if (input.failedFiles > 0) return { key: "retry-failed", label: english ? "Retry failed files" : "إعادة محاولة الملفات المتعثرة" } as const;
+  if (input.completed) return { key: "open-jobs", label: english ? "Follow processing jobs" : "متابعة مهام المعالجة", href: "/media/jobs" } as const;
   const readiness = deriveReviewReadiness(input);
-  if (readiness.missing.includes("files")) return { key: "select-files", label: "اختيار الملفات" } as const;
-  if (readiness.missing.includes("type")) return { key: "complete-metadata", label: "استكمال بيانات الأرشفة" } as const;
-  return { key: "review", label: "مراجعة الإضافة" } as const;
+  if (readiness.missing.includes("files")) return { key: "select-files", label: english ? "Select files" : "اختيار الملفات" } as const;
+  if (readiness.missing.includes("type")) return { key: "complete-metadata", label: english ? "Complete archive metadata" : "استكمال بيانات الأرشفة" } as const;
+  return { key: "review", label: english ? "Review the addition" : "مراجعة الإضافة" } as const;
 }

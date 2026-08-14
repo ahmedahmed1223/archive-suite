@@ -1,4 +1,5 @@
 import type { ArchiveRecord } from "./archive-api";
+import type { AppLocale } from "./i18n/types";
 
 export type LocalEntityKind = "place" | "date" | "type" | "status";
 
@@ -36,12 +37,12 @@ const PLACE_PATTERNS: Array<{ label: string; patterns: readonly string[] }> = [
   { label: "Dammam", patterns: ["dammam", "الدمام"] }
 ];
 
-const TAG_RULES: Array<{ tag: string; patterns: readonly string[]; reason: string }> = [
-  { tag: "city", patterns: ["city", "urban", "riyadh", "jeddah", "الرياض", "جدة", "مدينة"], reason: "ذُكرت مدينة أو سياق حضري في السجل." },
-  { tag: "interview", patterns: ["interview", "conversation", "مقابلة", "حوار"], reason: "يبدو أن المادة مقابلة أو حوار." },
-  { tag: "sports", patterns: ["sports", "match", "رياضة", "مباراة"], reason: "يظهر سياق رياضي في العنوان أو الوصف." },
-  { tag: "news", patterns: ["news", "report", "package", "تقرير", "أخبار"], reason: "يظهر نمط تقرير/حزمة أخبار." },
-  { tag: "archive", patterns: ["archive", "أرشيف", "ارشيف"], reason: "المادة مصنفة لغوياً كسياق أرشيفي." }
+const TAG_RULES: Array<{ tag: string; patterns: readonly string[]; reason: Record<AppLocale, string> }> = [
+  { tag: "city", patterns: ["city", "urban", "riyadh", "jeddah", "الرياض", "جدة", "مدينة"], reason: { ar: "ذُكرت مدينة أو سياق حضري في السجل.", en: "A city or urban context appears in this record." } },
+  { tag: "interview", patterns: ["interview", "conversation", "مقابلة", "حوار"], reason: { ar: "يبدو أن المادة مقابلة أو حوار.", en: "This material appears to be an interview or conversation." } },
+  { tag: "sports", patterns: ["sports", "match", "رياضة", "مباراة"], reason: { ar: "يظهر سياق رياضي في العنوان أو الوصف.", en: "A sports context appears in the title or description." } },
+  { tag: "news", patterns: ["news", "report", "package", "تقرير", "أخبار"], reason: { ar: "يظهر نمط تقرير/حزمة أخبار.", en: "This record follows a news report or package pattern." } },
+  { tag: "archive", patterns: ["archive", "أرشيف", "ارشيف"], reason: { ar: "المادة مصنفة لغوياً كسياق أرشيفي.", en: "This material is linguistically classified as archival content." } }
 ];
 
 function normalize(value: string) {
@@ -96,11 +97,11 @@ function addTagSuggestion(bucket: Map<string, LocalTagSuggestion>, tag: string, 
   bucket.set(tag, current);
 }
 
-function formatByCount<T extends { count: number; label?: string; tag?: string }>(items: Iterable<T>) {
-  return Array.from(items).sort((left, right) => (right.count - left.count) || String(left.label ?? left.tag).localeCompare(String(right.label ?? right.tag), "ar"));
+function formatByCount<T extends { count: number; label?: string; tag?: string }>(items: Iterable<T>, locale: AppLocale) {
+  return Array.from(items).sort((left, right) => (right.count - left.count) || String(left.label ?? left.tag).localeCompare(String(right.label ?? right.tag), locale));
 }
 
-export function deriveLocalSearchEnrichment(records: ArchiveRecord[], query = ""): LocalSearchEnrichment {
+export function deriveLocalSearchEnrichment(records: ArchiveRecord[], query = "", locale: AppLocale = "ar"): LocalSearchEnrichment {
   const entities = new Map<string, LocalEntity>();
   const suggestedTags = new Map<string, LocalTagSuggestion>();
   const queryTokens = normalize(query).split(" ").filter(Boolean);
@@ -141,7 +142,7 @@ export function deriveLocalSearchEnrichment(records: ArchiveRecord[], query = ""
       }
 
       if (rule.patterns.some((pattern) => text.includes(normalize(pattern)))) {
-        addTagSuggestion(suggestedTags, rule.tag, rule.reason, id);
+        addTagSuggestion(suggestedTags, rule.tag, rule.reason[locale], id);
         recordsWithSuggestions.add(id);
       }
     }
@@ -150,8 +151,8 @@ export function deriveLocalSearchEnrichment(records: ArchiveRecord[], query = ""
   return {
     mode: "local-rules",
     queryTokens,
-    entities: formatByCount(entities.values()),
-    suggestedTags: formatByCount(suggestedTags.values()),
+    entities: formatByCount(entities.values(), locale),
+    suggestedTags: formatByCount(suggestedTags.values(), locale),
     coverage: {
       totalRecords: records.length,
       recordsWithoutTags,

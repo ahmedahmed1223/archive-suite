@@ -28,6 +28,14 @@ describe("validateScheduleTime", () => {
     expect(result.valid).toBe(false);
     expect(result.valid === false && result.code).toBe("invalid");
   });
+
+  it("returns English validation feedback when English is selected", () => {
+    expect(validateScheduleTime("not-a-date", "Europe/Istanbul", fixedNow, "en")).toEqual({
+      valid: false,
+      code: "invalid",
+      message: "The date and time format is invalid."
+    });
+  });
 });
 
 describe("scheduleSummary", () => {
@@ -40,6 +48,12 @@ describe("scheduleSummary", () => {
   it("reports an unresolvable summary for a DST-gap local time", () => {
     expect(scheduleSummary("2026-03-29T02:30", "Europe/Berlin", "ar-SA")).toBe(
       "وقت غير صالح لهذه المنطقة الزمنية."
+    );
+  });
+
+  it("reports an invalid English-locale summary in English", () => {
+    expect(scheduleSummary("2026-03-29T02:30", "Europe/Berlin", "en-US")).toBe(
+      "This time is invalid in the selected time zone."
     );
   });
 });
@@ -55,5 +69,9 @@ describe("scheduledUploadProgress", () => {
 
   it("labels the scheduled stage", () => {
     expect(scheduledUploadProgress("scheduled")).toBe("تمت الجدولة");
+  });
+
+  it("labels stages in English when English is selected", () => {
+    expect(scheduledUploadProgress("staging", "en")).toBe("Validating and staging for schedule");
   });
 });

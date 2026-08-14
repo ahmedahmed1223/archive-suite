@@ -3,6 +3,7 @@ import {
   deriveIntakeNextAction,
   deriveReviewReadiness,
   findDuplicateFiles,
+  getIntakeStatusLabels,
   summarizeFileProgress,
   recoverIntakeDraft,
   type IntakeDraft,
@@ -57,5 +58,16 @@ describe("intake journey", () => {
     expect(deriveIntakeNextAction({ fileCount: 1, mode: "guided", type: "", failedFiles: 0 })).toMatchObject({ key: "complete-metadata" });
     expect(deriveIntakeNextAction({ fileCount: 2, mode: "guided", type: "video", failedFiles: 1 })).toMatchObject({ key: "retry-failed" });
     expect(deriveIntakeNextAction({ fileCount: 2, mode: "quick", type: "", failedFiles: 0, completed: true })).toMatchObject({ key: "open-jobs", href: "/media/jobs" });
+  });
+
+  it("returns English operational labels when English is selected", () => {
+    expect(getIntakeStatusLabels("en").uploading).toBe("Uploading");
+    expect(deriveIntakeNextAction({
+      fileCount: 0,
+      mode: "guided",
+      type: "",
+      failedFiles: 0,
+      locale: "en",
+    })).toMatchObject({ key: "select-files", label: "Select files" });
   });
 });

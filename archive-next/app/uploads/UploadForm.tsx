@@ -11,7 +11,7 @@ import { scheduleSummary, scheduledUploadProgress, validateScheduleTime, type Sc
 import {
   deriveIntakeNextAction,
   findDuplicateFiles,
-  intakeStatusLabels,
+  getIntakeStatusLabels,
   recoverIntakeDraft,
   summarizeFileProgress,
   type IntakeDraft,
@@ -159,19 +159,21 @@ export function UploadForm() {
   const tagList = parseTags(tags);
   const duplicateFiles = findDuplicateFiles(files);
   const progressSummary = summarizeFileProgress(fileProgress);
+  const statusLabels = getIntakeStatusLabels(locale);
   const nextAction = deriveIntakeNextAction({
     fileCount: files.length,
     mode,
     type: effectiveType,
     failedFiles: progressSummary.failed,
     completed: state.status === "complete" && progressSummary.failed === 0,
+    locale,
   });
   const hasScheduledResults = state.status === "complete" && state.results.some((result) => result.status === "scheduled");
   const hasVideo = files.some((file) => suggestedType(file) === "video") || effectiveType === "video";
   const detectedZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
   const scheduleValidation = useMemo(
-    () => (processingMode === "scheduled" ? validateScheduleTime(scheduleLocalValue, detectedZone, new Date()) : null),
-    [processingMode, scheduleLocalValue, detectedZone]
+    () => (processingMode === "scheduled" ? validateScheduleTime(scheduleLocalValue, detectedZone, new Date(), locale) : null),
+    [processingMode, scheduleLocalValue, detectedZone, locale]
   );
 
   function applyTemplate(id: string) {
@@ -427,7 +429,7 @@ export function UploadForm() {
     if (files.length === 0 || state.status === "uploading") return;
 
     if (processingMode === "scheduled") {
-      const validation = validateScheduleTime(scheduleLocalValue, detectedZone, new Date());
+      const validation = validateScheduleTime(scheduleLocalValue, detectedZone, new Date(), locale);
       if (!validation.valid) return;
       await runScheduledUploads(files, validation.utc, detectedZone);
       return;
@@ -486,7 +488,7 @@ export function UploadForm() {
     const targets = files.filter((file) => failed.has(file.name));
 
     if (processingMode === "scheduled") {
-      const validation = validateScheduleTime(scheduleLocalValue, detectedZone, new Date());
+      const validation = validateScheduleTime(scheduleLocalValue, detectedZone, new Date(), locale);
       if (!validation.valid) return;
       void runScheduledUploads(targets, validation.utc, detectedZone);
       return;
@@ -573,7 +575,7 @@ export function UploadForm() {
                       <strong>{file.name}</strong>
                       <span className="helper-text">{suggestedType(file)} · {formatBytes(file.size)}</span>
                       <span className="helper-text" role="status" aria-live="polite" aria-atomic="true">
-                        {intakeStatusLabels[fileProgress.find((item) => item.fileName === file.name)?.status ?? "pending"]}
+                        {statusLabels[fileProgress.find((item) => item.fileName === file.name)?.status ?? "pending"]}
                         {fileProgress.find((item) => item.fileName === file.name)?.progressPercent !== undefined
                           ? ` (${fileProgress.find((item) => item.fileName === file.name)?.progressPercent}%)`
                           : null}
@@ -782,7 +784,7 @@ export function UploadForm() {
             >
               {state.status === "uploading"
                 ? state.stage
-                  ? `${scheduledUploadProgress(state.stage)}: ${state.current}`
+                  ? `${scheduledUploadProgress(state.stage, locale)}: ${state.current}`
                   : t.pages.uploadForm.uploadingFile.replace("{file}", state.current)
                 : processingMode === "scheduled"
                   ? t.pages.uploadForm.uploadAndScheduleButton

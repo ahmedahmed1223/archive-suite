@@ -4,6 +4,8 @@
  * these into state and network calls.
  */
 
+import type { AppLocale } from "./i18n/types";
+
 const LOCAL_VALUE_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 export type ScheduleValidationErrorCode = "invalid" | "past" | "dst-gap";
@@ -14,10 +16,30 @@ export type ScheduleValidation =
 
 export type ScheduledUploadStage = "uploading" | "staging" | "scheduled";
 
-const STAGE_LABELS: Record<ScheduledUploadStage, string> = {
-  uploading: "رفع الملف",
-  staging: "التحقق والحفظ للموعد",
-  scheduled: "تمت الجدولة"
+const STAGE_LABELS: Record<AppLocale, Record<ScheduledUploadStage, string>> = {
+  ar: {
+    uploading: "رفع الملف",
+    staging: "التحقق والحفظ للموعد",
+    scheduled: "تمت الجدولة"
+  },
+  en: {
+    uploading: "Uploading file",
+    staging: "Validating and staging for schedule",
+    scheduled: "Scheduled"
+  }
+};
+
+const VALIDATION_MESSAGES: Record<AppLocale, Record<ScheduleValidationErrorCode, string>> = {
+  ar: {
+    invalid: "صيغة التاريخ والوقت غير صحيحة.",
+    past: "يجب أن يكون وقت الجدولة في المستقبل.",
+    "dst-gap": "هذا الوقت غير موجود بسبب انتقال التوقيت الصيفي في هذه المنطقة الزمنية."
+  },
+  en: {
+    invalid: "The date and time format is invalid.",
+    past: "The scheduled time must be in the future.",
+    "dst-gap": "This time does not exist because of daylight saving time in the selected time zone."
+  }
 };
 
 /** Wall-clock offset (minutes) a zone is ahead of UTC at the given instant. */
@@ -88,36 +110,36 @@ function resolveZonedInstant(localValue: string, zone: string): { utcMs: number;
 }
 
 /** Validates a scheduled-upload local date/time against a zone and "now". */
-export function validateScheduleTime(localValue: string, zone: string, now: Date): ScheduleValidation {
+export function validateScheduleTime(localValue: string, zone: string, now: Date, locale: AppLocale = "ar"): ScheduleValidation {
   if (!LOCAL_VALUE_PATTERN.test(localValue)) {
-    return { valid: false, code: "invalid", message: "صيغة التاريخ والوقت غير صحيحة." };
+    return { valid: false, code: "invalid", message: VALIDATION_MESSAGES[locale].invalid };
   }
 
   const resolved = resolveZonedInstant(localValue, zone);
   if (!resolved) {
-    return { valid: false, code: "invalid", message: "تعذر تفسير التاريخ والوقت." };
+    return { valid: false, code: "invalid", message: VALIDATION_MESSAGES[locale].invalid };
   }
 
   if (!resolved.matches) {
     return {
       valid: false,
       code: "dst-gap",
-      message: "هذا الوقت غير موجود بسبب انتقال التوقيت الصيفي في هذه المنطقة الزمنية."
+      message: VALIDATION_MESSAGES[locale]["dst-gap"]
     };
   }
 
   if (resolved.utcMs <= now.getTime()) {
-    return { valid: false, code: "past", message: "يجب أن يكون وقت الجدولة في المستقبل." };
+    return { valid: false, code: "past", message: VALIDATION_MESSAGES[locale].past };
   }
 
   return { valid: true, utc: new Date(resolved.utcMs).toISOString() };
 }
 
-/** Arabic-locale summary of a scheduled local time, annotated with its IANA zone. */
+/** Localized summary of a scheduled local time, annotated with its IANA zone. */
 export function scheduleSummary(localValue: string, zone: string, locale: string): string {
   const resolved = resolveZonedInstant(localValue, zone);
   if (!resolved || !resolved.matches) {
-    return "وقت غير صالح لهذه المنطقة الزمنية.";
+    return locale.startsWith("en") ? "This time is invalid in the selected time zone." : "وقت غير صالح لهذه المنطقة الزمنية.";
   }
 
   const formatted = new Intl.DateTimeFormat(locale, {
@@ -129,7 +151,7 @@ export function scheduleSummary(localValue: string, zone: string, locale: string
   return `${formatted} (${zone})`;
 }
 
-/** Arabic progress label for a stage of the schedule-upload flow. */
-export function scheduledUploadProgress(stage: ScheduledUploadStage): string {
-  return STAGE_LABELS[stage];
+/** Localized progress label for a stage of the schedule-upload flow. */
+export function scheduledUploadProgress(stage: ScheduledUploadStage, locale: AppLocale = "ar"): string {
+  return STAGE_LABELS[locale][stage];
 }

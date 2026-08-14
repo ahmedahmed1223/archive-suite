@@ -1,3 +1,5 @@
+import type { OnboardingLocale } from "@/lib/onboarding";
+
 export type SetupStepId = "server" | "account" | "settings" | "ready";
 
 export type SetupHealth = {
@@ -32,8 +34,10 @@ export type SetupJourney = {
 export function deriveSetupJourney(
   health: SetupHealth,
   session: SetupSession,
-  preferences: SetupPreferences
+  preferences: SetupPreferences,
+  locale: OnboardingLocale = "ar",
 ): SetupJourney {
+  const english = locale === "en";
   const serverReady = health.status === "healthy";
   const accountReady = serverReady && session.status === "authenticated";
   const settingsReady = accountReady && (
@@ -48,7 +52,9 @@ export function deriveSetupJourney(
       completedSteps: [],
       readinessPercentage: 0,
       nextAction: {
-        label: needsRecovery ? "افتح حالة النظام للإصلاح" : "افحص اتصال الخادم",
+        label: needsRecovery
+          ? english ? "Open system status to resolve the issue" : "افتح حالة النظام للإصلاح"
+          : english ? "Check the server connection" : "افحص اتصال الخادم",
         href: "/status",
         kind: needsRecovery ? "recovery" : "check",
         ...(health.message ? { reason: health.message } : {})
@@ -61,7 +67,7 @@ export function deriveSetupJourney(
       currentStep: "account",
       completedSteps: ["server"],
       readinessPercentage: 25,
-      nextAction: { label: "سجّل الدخول للمتابعة", href: "/login", kind: "continue" }
+      nextAction: { label: english ? "Sign in to continue" : "سجّل الدخول للمتابعة", href: "/login", kind: "continue" }
     };
   }
 
@@ -70,7 +76,7 @@ export function deriveSetupJourney(
       currentStep: "settings",
       completedSteps: ["server", "account"],
       readinessPercentage: 50,
-      nextAction: { label: "راجع إعدادات التشغيل", href: "/settings", kind: "continue" }
+      nextAction: { label: english ? "Review operating settings" : "راجع إعدادات التشغيل", href: "/settings", kind: "continue" }
     };
   }
 
@@ -78,6 +84,6 @@ export function deriveSetupJourney(
     currentStep: "ready",
     completedSteps: ["server", "account", "settings", "ready"],
     readinessPercentage: 100,
-    nextAction: { label: "ابدأ العمل", href: "/", kind: "continue" }
+    nextAction: { label: english ? "Start working" : "ابدأ العمل", href: "/", kind: "continue" }
   };
 }

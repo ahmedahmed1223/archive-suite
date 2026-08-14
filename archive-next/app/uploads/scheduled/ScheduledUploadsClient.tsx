@@ -123,7 +123,7 @@ export default function ScheduledUploadsClient() {
 
   const handleRescheduleSubmit = useCallback(async () => {
     if (!rescheduleTarget) return;
-    const validation = validateScheduleTime(rescheduleValue, rescheduleTarget.timeZone, new Date());
+    const validation = validateScheduleTime(rescheduleValue, rescheduleTarget.timeZone, new Date(), locale);
     if (!validation.valid) {
       setRescheduleError(validation.message);
       return;
@@ -142,7 +142,7 @@ export default function ScheduledUploadsClient() {
       setRescheduleError(response.error);
       await load();
     }
-  }, [api, rescheduleTarget, rescheduleValue, load]);
+  }, [api, locale, rescheduleTarget, rescheduleValue, load]);
 
   if (schedules === null && !error) {
     return <p className="helper-text">{tc.loadingText}</p>;

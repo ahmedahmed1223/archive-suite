@@ -311,8 +311,8 @@ function SearchPageContent() {
     return filteredRecords[0] || null;
   }, [filteredRecords, previewId]);
   const localEnrichment = useMemo(
-    () => deriveLocalSearchEnrichment(filteredRecords, query),
-    [filteredRecords, query]
+    () => deriveLocalSearchEnrichment(filteredRecords, query, locale),
+    [filteredRecords, locale, query]
   );
 
   const handleSearch = async (event: FormEvent<HTMLFormElement>) => {

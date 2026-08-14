@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ArchiveRecord } from "@/lib/archive-api";
-import { isIncompleteRecord, WORK_LISTS } from "@/lib/work-lists";
+import { getWorkLists, isIncompleteRecord, WORK_LISTS } from "@/lib/work-lists";
 
 function record(descriptorCompletion?: ArchiveRecord["descriptorCompletion"]): ArchiveRecord {
   return { id: "rec-1", title: "مادة", descriptorCompletion } as ArchiveRecord;
@@ -32,5 +32,12 @@ describe("WORK_LISTS", () => {
       expect(list.href.startsWith("/archive") || list.href.startsWith("/rights")).toBe(true);
       expect(list.label.trim()).not.toBe("");
     });
+  });
+
+  it("returns English labels and descriptions when English is selected", () => {
+    expect(getWorkLists("en")).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "incomplete", label: "Records needing description", description: "Records missing a title, description, type, or tags." }),
+      expect.objectContaining({ id: "expiring-rights", description: "Rights expiring in 30 days or less." })
+    ]));
   });
 });

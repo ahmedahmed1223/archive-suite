@@ -12,8 +12,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export function NotificationsBadge() {
-  const { unreadCount, isLoading } = useNotifications();
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
+  const { unreadCount, isLoading } = useNotifications(locale);
 
   if (isLoading || unreadCount === 0) return null;
 
@@ -76,7 +76,7 @@ function NotificationItem({ notification, onRead, onDelete, locale }: {
 export function NotificationsPanel() {
   const { locale, t } = useLocale();
   const copy = t.shell.notifications;
-  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, isLoading, markAsRead, markAllAsRead, deleteNotification } = useNotifications(locale);
   const [isOpen, setIsOpen] = useState(false);
   const [alertsGranted, setAlertsGranted] = useState(false);
   const panelId = useId();

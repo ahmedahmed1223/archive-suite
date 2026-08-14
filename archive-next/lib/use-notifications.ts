@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuthSession } from "@/lib/auth-session";
 import { getEchoClient } from "@/lib/echo";
+import type { AppLocale } from "@/lib/i18n/types";
 
 export interface Notification {
   id: number;
@@ -117,7 +118,28 @@ export function notificationRequestHeaders(accessToken?: string): HeadersInit {
   return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 }
 
-export function useNotifications() {
+type NotificationErrorAction = "load" | "mark-read" | "mark-all-read" | "delete";
+
+const NOTIFICATION_ERROR_MESSAGES: Record<AppLocale, Record<NotificationErrorAction, string>> = {
+  ar: {
+    load: "تعذر تحميل الإشعارات.",
+    "mark-read": "تعذر تعليم الإشعار كمقروء.",
+    "mark-all-read": "تعذر تعليم الإشعارات كمقروءة.",
+    delete: "تعذر حذف الإشعار."
+  },
+  en: {
+    load: "Notifications could not be loaded.",
+    "mark-read": "The notification could not be marked as read.",
+    "mark-all-read": "Notifications could not be marked as read.",
+    delete: "The notification could not be deleted."
+  }
+};
+
+export function notificationErrorMessage(action: NotificationErrorAction, locale: AppLocale = "ar"): string {
+  return NOTIFICATION_ERROR_MESSAGES[locale][action];
+}
+
+export function useNotifications(locale: AppLocale = "ar") {
   const { accessToken, user } = useAuthSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -136,12 +158,12 @@ export function useNotifications() {
         headers: notificationRequestHeaders(accessToken),
       });
       if (!response.ok) {
-        throw new Error("تعذر تحميل الإشعارات.");
+        throw new Error(notificationErrorMessage("load", locale));
       }
       const data: NotificationsResponse = await response.json();
 
       if (!data.ok) {
-        throw new Error("تعذر تحميل الإشعارات.");
+        throw new Error(notificationErrorMessage("load", locale));
       }
 
       if (previousNotificationsRef.current) {
@@ -152,12 +174,12 @@ export function useNotifications() {
 
       setNotifications(data.notifications);
       setUnreadCount(data.notifications.filter((n) => !n.is_read).length);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تحميل الإشعارات.");
+    } catch {
+      setError(notificationErrorMessage("load", locale));
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken]);
+  }, [accessToken, locale]);
 
   const markAsRead = useCallback(async (id: number) => {
     try {
@@ -168,17 +190,17 @@ export function useNotifications() {
       const data = await response.json();
 
       if (!data.ok) {
-        throw new Error("تعذر تعليم الإشعار كمقروء.");
+        throw new Error(notificationErrorMessage("mark-read", locale));
       }
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تعليم الإشعار كمقروء.");
+    } catch {
+      setError(notificationErrorMessage("mark-read", locale));
     }
-  }, [accessToken]);
+  }, [accessToken, locale]);
 
   const markAllAsRead = useCallback(async () => {
     try {
@@ -189,15 +211,15 @@ export function useNotifications() {
       const data = await response.json();
 
       if (!data.ok) {
-        throw new Error("تعذر تعليم الإشعارات كمقروءة.");
+        throw new Error(notificationErrorMessage("mark-all-read", locale));
       }
 
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       setUnreadCount(0);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تعليم الإشعارات كمقروءة.");
+    } catch {
+      setError(notificationErrorMessage("mark-all-read", locale));
     }
-  }, [accessToken]);
+  }, [accessToken, locale]);
 
   const deleteNotification = useCallback(async (id: number) => {
     try {
@@ -208,7 +230,7 @@ export function useNotifications() {
       const data = await response.json();
 
       if (!data.ok) {
-        throw new Error("تعذر حذف الإشعار.");
+        throw new Error(notificationErrorMessage("delete", locale));
       }
 
       setNotifications((prev) => {
@@ -218,10 +240,10 @@ export function useNotifications() {
         }
         return prev.filter((n) => n.id !== id);
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر حذف الإشعار.");
+    } catch {
+      setError(notificationErrorMessage("delete", locale));
     }
-  }, [accessToken]);
+  }, [accessToken, locale]);
 
   useEffect(() => {
     fetchNotifications();

@@ -73,7 +73,8 @@ export default function FirstRunPage() {
       settingsReviewed: isComplete,
       expertMode: expertSkip,
       skipGuidedSetup: expertSkip
-    }
+    },
+    locale,
   );
   const copy = t.pages.firstRun;
   const title = copy.title.replace("{brand}", locale === "en" ? BRAND.latinName : BRAND.arabicName);

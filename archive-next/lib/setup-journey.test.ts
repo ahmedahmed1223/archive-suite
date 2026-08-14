@@ -29,6 +29,17 @@ describe("deriveSetupJourney", () => {
     expect(journey.nextAction).toMatchObject({ href: "/", kind: "continue" });
   });
 
+  it("returns an English next action when English is selected", () => {
+    const journey = deriveSetupJourney(
+      { status: "healthy" },
+      { status: "guest" },
+      {},
+      "en",
+    );
+
+    expect(journey.nextAction).toMatchObject({ label: "Sign in to continue", href: "/login" });
+  });
+
   it("lets experts skip the guided settings review", () => {
     const journey = deriveSetupJourney(
       { status: "healthy" },

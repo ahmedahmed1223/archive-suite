@@ -17,7 +17,7 @@ import { clearQueue, listQueue, moveInQueue, removeFromQueue, type QueueEntry } 
 import { clearRecentSearches } from "@/lib/recent-searches";
 import { isContextRecordingEnabled, setContextRecording } from "@/lib/personal-context";
 import { formatDate } from "@/lib/record-utils";
-import { RIGHTS_WARNING_WINDOW_DAYS, WORK_LISTS } from "@/lib/work-lists";
+import { getWorkLists, RIGHTS_WARNING_WINDOW_DAYS } from "@/lib/work-lists";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 const PANEL_ITEM_LIMIT = 6;
@@ -30,7 +30,8 @@ export default function DailyPage() {
   const copy = t.pages.daily;
   const api = useMemo(() => createArchiveApiClient(), []);
   const auth = useAuthSession();
-  const { notifications, isLoading: notificationsLoading } = useNotifications();
+  const { notifications, isLoading: notificationsLoading } = useNotifications(locale);
+  const workLists = useMemo(() => getWorkLists(locale), [locale]);
   const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
   const [inboxLoading, setInboxLoading] = useState(true);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
@@ -151,7 +152,7 @@ export default function DailyPage() {
             </h2>
           </header>
           <ul className="dashboard-recent__list">
-            {WORK_LISTS.map((workList) => {
+            {workLists.map((workList) => {
               const workListCopy = workList.id === "incomplete"
                 ? copy.workLists.incomplete
                 : workList.id === "drafts"

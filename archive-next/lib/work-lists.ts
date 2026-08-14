@@ -1,4 +1,5 @@
 import type { ArchiveRecord } from "@/lib/archive-api";
+import type { AppLocale } from "@/lib/i18n/types";
 
 /**
  * قوائم العمل الشخصية (V1-825): اختصارات جاهزة فوق فلاتر الأرشيف والحقوق
@@ -50,3 +51,34 @@ export const WORK_LISTS: WorkList[] = [
     href: "/rights"
   }
 ];
+
+const ENGLISH_WORK_LISTS: WorkList[] = [
+  {
+    id: "incomplete",
+    label: "Records needing description",
+    description: "Records missing a title, description, type, or tags.",
+    href: "/archive?completion=incomplete"
+  },
+  {
+    id: "drafts",
+    label: "My drafts",
+    description: "Records still in draft and not yet sent for review.",
+    href: "/archive?status=draft"
+  },
+  {
+    id: "awaiting-review",
+    label: "Awaiting review",
+    description: "Records sent for review and awaiting action.",
+    href: "/archive?status=review"
+  },
+  {
+    id: "expiring-rights",
+    label: "Rights nearing expiry",
+    description: `Rights expiring in ${RIGHTS_WARNING_WINDOW_DAYS} days or less.`,
+    href: "/rights"
+  }
+];
+
+export function getWorkLists(locale: AppLocale = "ar"): WorkList[] {
+  return locale === "en" ? ENGLISH_WORK_LISTS : WORK_LISTS;
+}
