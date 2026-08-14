@@ -191,7 +191,7 @@ const DEFAULT_VOCABULARY_TAGS_EN: readonly string[] = [
   "Economy",
   "Sports",
   "Culture",
-  "Health",
+  "Service condition",
   "Education",
   "Technology",
   "Environment",

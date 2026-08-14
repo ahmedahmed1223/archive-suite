@@ -58,7 +58,7 @@ describe("selectMissingDefaults", () => {
 
   it("returns English vocabulary tags for the English locale", () => {
     expect(getDefaultVocabularyTags("en")).toEqual([
-      "Politics", "Economy", "Sports", "Culture", "Health", "Education", "Technology",
+      "Politics", "Economy", "Sports", "Culture", "Service condition", "Education", "Technology",
       "Environment", "Local", "International", "Breaking news", "Exclusive", "Archive", "Live",
     ]);
     expect(getDefaultVocabularyTags("ar")).toBe(DEFAULT_VOCABULARY_TAGS);

@@ -30,7 +30,7 @@ import ScheduledUploadsClient from "./ScheduledUploadsClient";
 
 function renderClient(locale: "ar" | "en" = "ar") {
   return render(
-    <LocaleProvider initialLocale={locale} hasLocaleCookie={false}>
+    <LocaleProvider initialLocale={locale} hasLocaleCookie>
       <ConfirmDialogProvider><ScheduledUploadsClient /></ConfirmDialogProvider>
     </LocaleProvider>
   );

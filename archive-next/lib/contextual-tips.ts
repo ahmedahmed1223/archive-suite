@@ -409,7 +409,7 @@ const englishTipCopy: Record<PageKey, readonly TipCopy[]> = {
     { title: "Backup and restore", description: "Create backups of archive data and restore them when needed." }
   ],
   collections: [
-    { title: "Collections", description: "Organize records into collections by topic or project." },
+    { title: "Record groups", description: "Organize records into groups by topic or project." },
     { title: "Create a collection", description: "Select New collection to create a separate organizational space." },
     { title: "Team sharing", description: "Share collections with team members using different access levels." },
     { title: "Archive", description: "Archive older collections to keep your working list tidy." },
