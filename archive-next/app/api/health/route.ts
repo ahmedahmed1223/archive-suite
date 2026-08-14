@@ -33,7 +33,11 @@ export async function GET() {
     }
 
     return NextResponse.json({ ok: true, upstream: "healthy" }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+  } catch (error) {
+    // Keep the public probe response intentionally terse, while preserving the
+    // upstream failure in the server log. This is essential when a container
+    // health check is the only signal available during an offline rehearsal.
+    console.error("Archive API health probe failed", error);
     return NextResponse.json(
       { ok: false, upstream: "unreachable" },
       { status: 503, headers: { "Cache-Control": "no-store" } },

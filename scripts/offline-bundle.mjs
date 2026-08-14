@@ -33,6 +33,15 @@ const normalizedVersion = (value) => {
   return value;
 };
 
+const rehearsalDiagnostics = (compose, childEnv) => [
+  ["Compose service status", [...compose, "ps", "--all"]],
+  ["Compose service logs", [...compose, "logs", "--no-color", "--tail", "80"]],
+].map(([title, args]) => {
+  const result = spawnSync("docker", args, { cwd: root, encoding: "utf8", env: childEnv });
+  const output = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
+  return `--- ${title} ---\n${output || "(no output)"}`;
+}).join("\n");
+
 export function resolveReleaseInventory(version, environment = process.env, baseInventory = inventory) {
   normalizedVersion(version);
   const required = { postgres: "POSTGRES_IMAGE", redis: "REDIS_IMAGE", next: "NEXT_IMAGE", laravel: "LARAVEL_IMAGE", "laravel-fpm": "LARAVEL_IMAGE", "laravel-worker": "LARAVEL_IMAGE", "laravel-reverb": "LARAVEL_IMAGE" };
@@ -153,7 +162,12 @@ function rehearsal(dir, evidencePath) {
     }
     const childEnv = { ...process.env, HTTP_PORT: httpPort };
     run("docker", [...compose, "config", "--quiet"], { env: childEnv });
-    run("docker", [...compose, "up", "-d", "--wait", "--wait-timeout", "240"], { env: childEnv });
+    try {
+      run("docker", [...compose, "up", "-d", "--wait", "--wait-timeout", "240"], { env: childEnv });
+    } catch (error) {
+      const details = rehearsalDiagnostics(compose, childEnv);
+      throw new Error(`${error.message}\n${details}`, { cause: error });
+    }
     evidence.healthy = true;
     run("curl", ["--fail", "--silent", "--show-error", `http://localhost:${httpPort}/`], { stdio: "ignore" });
     evidence.http = true;

@@ -108,6 +108,8 @@ test("core rehearsal automates isolated up, HTTP, finally cleanup, and absence c
   assert.match(script, /finally/);
   assert.match(script, /down[^\n]+--volumes/);
   assert.match(script, /com\.docker\.compose\.project/);
+  assert.match(script, /Compose service status/);
+  assert.match(script, /Compose service logs/);
 });
 
 test("cleanup deletes rehearsal secrets and checks networks when compose down fails", () => {
