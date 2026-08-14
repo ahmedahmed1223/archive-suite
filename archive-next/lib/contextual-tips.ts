@@ -1,4 +1,5 @@
 import type { NavigationRole } from "@/lib/navigation";
+import type { AppLocale } from "@/lib/i18n/types";
 
 // ponytail: contextual tips per page, persisted in localStorage
 export interface Tip {
@@ -376,8 +377,241 @@ export const pageTips: Record<PageKey, Tip[]> = {
   ]
 };
 
-export function getPageTips(page: PageKey, role?: NavigationRole): Tip[] {
-  return pageTips[page].filter((tip) => !tip.roles || (role ? tip.roles.includes(role) : false));
+type TipCopy = Pick<Tip, "title" | "description">;
+
+const englishTipCopy: Record<PageKey, readonly TipCopy[]> = {
+  search: [
+    { title: "Advanced search", description: "Use filters to narrow results by date, type, or status." },
+    { title: "Save searches", description: "Save frequently used searches so you can return to them quickly." },
+    { title: "Keyboard shortcuts", description: "Press Ctrl+K to open the command palette and search records directly." },
+    { title: "Result view", description: "Switch between table and card views from the toolbar." },
+    { title: "Metrics", description: "The metrics bar above summarizes record and category counts." }
+  ],
+  archive: [
+    { title: "Records", description: "Each record represents one item in your collection, with metadata and linked files." },
+    { title: "Edit records", description: "Select a record to view its full details and edit its metadata." },
+    { title: "Read-only mode", description: "Open records and their linked files without edit or delete actions." },
+    { title: "Linked files", description: "Browse media and files attached to a record from the Files tab." },
+    { title: "Sharing and rights", description: "Control who can access a record by creating share links." },
+    { title: "Statuses", description: "Track a record's status—draft, in review, or published—from the sidebar." }
+  ],
+  montage: [
+    { title: "Montage view", description: "Arrange cards and images visually to compare and group records." },
+    { title: "Reorder", description: "Drag and drop cards to organize items the way you need." },
+    { title: "Quick filtering", description: "Use the sidebar filters to show only selected groups." },
+    { title: "Export", description: "Export the current group list as CSV or JSON for further work." },
+    { title: "Quick add", description: "Use the + button to create records without leaving the view." }
+  ],
+  settings: [
+    { title: "Personal settings", description: "Manage your preferences, language, and appearance from Settings." },
+    { title: "Advanced", description: "Advanced options are available to tailor behavior and performance." },
+    { title: "Integrations", description: "Add and manage external applications and services connected to your archive." },
+    { title: "Backup and restore", description: "Create backups of archive data and restore them when needed." }
+  ],
+  collections: [
+    { title: "Collections", description: "Organize records into collections by topic or project." },
+    { title: "Create a collection", description: "Select New collection to create a separate organizational space." },
+    { title: "Team sharing", description: "Share collections with team members using different access levels." },
+    { title: "Archive", description: "Archive older collections to keep your working list tidy." },
+    { title: "Read-only mode", description: "View saved collections without creating or deleting them." }
+  ],
+  vocabulary: [
+    { title: "Controlled vocabulary", description: "Manage terms and synonyms used to classify records." },
+    { title: "Import and export", description: "Export or import vocabulary as CSV or JSON, merging synonyms automatically." },
+    { title: "Read-only mode", description: "Browse saved vocabulary without adding or deleting terms." }
+  ],
+  graph: [
+    { title: "Relationship map", description: "Explore links between records visually through nodes and lines." },
+    { title: "Filter", description: "Focus on one relationship type to simplify the graph." },
+    { title: "Add relationships", description: "Create or remove manual links between records from the selected node panel." },
+    { title: "Read-only mode", description: "Explore existing relationships without creating or removing links." }
+  ],
+  sync: [
+    { title: "Sync history", description: "Follow the status of each synchronization with external storage providers." },
+    { title: "Retry", description: "Restart failed operations directly from this history." }
+  ],
+  analytics: [
+    { title: "Archive analytics", description: "Monitor growth trends and storage use over time." },
+    { title: "Export reports", description: "Export charts and data to share with your team." }
+  ],
+  uploads: [
+    { title: "Add to archive", description: "Drag and drop files, or choose them to start importing." },
+    { title: "Background processing", description: "Large files continue processing in the background without interrupting your work." }
+  ],
+  activity: [
+    { title: "Activity log", description: "Review every action taken in the archive in chronological order." },
+    { title: "Filter by user", description: "Filter the log by user or event type." }
+  ],
+  "first-run": [
+    { title: "Setup journey", description: "Complete the initial setup steps to prepare your workspace." },
+    { title: "Skip for now", description: "Skip any step and return to it later from Settings." }
+  ],
+  "media-review": [
+    { title: "Visual review", description: "Preview media and add review notes before approval." },
+    { title: "Quick decisions", description: "Use Accept and Reject to speed up the review cycle." }
+  ],
+  files: [
+    { title: "File browser", description: "Browse the file and folder structure associated with the archive." },
+    { title: "Preview", description: "Select a file to preview it without downloading it." },
+    { title: "Check storage and share", description: "Recheck storage or create share links for selected files." },
+    { title: "Read-only mode", description: "Browse and preview files without checking storage or creating shares." }
+  ],
+  timeline: [
+    { title: "Timeline", description: "View records in chronological order to understand the sequence of events." },
+    { title: "Zoom", description: "Zoom the time range in or out to change the level of detail." }
+  ],
+  types: [
+    { title: "Types", description: "Manage record types and categories used for classification." },
+    { title: "Custom fields", description: "Add custom fields to each type to capture additional information." }
+  ],
+  transcriber: [
+    { title: "Transcription", description: "Turn audio and video into searchable text." },
+    { title: "Manual review", description: "Review and edit the transcript before final approval." }
+  ],
+  favorites: [
+    { title: "Favorites", description: "Keep records you return to often in one place." },
+    { title: "Quick removal", description: "Select the star icon to remove an item from Favorites." }
+  ],
+  reports: [
+    { title: "Reports", description: "Create compliance and storage-growth reports ready to share." },
+    { title: "Scheduling", description: "Schedule reports to be generated automatically at regular intervals." }
+  ],
+  "media-play": [
+    { title: "Media player", description: "Play audio and video files directly within the archive." },
+    { title: "Time markers", description: "Add time markers while playing media so you can return to them later." }
+  ],
+  status: [
+    { title: "System status", description: "Monitor service health and operational tasks in one place." },
+    { title: "Alerts", description: "Follow warnings that need prompt attention." }
+  ],
+  trash: [
+    { title: "Trash", description: "Restore deleted items during the configured retention period." },
+    { title: "Delete permanently", description: "Permanently delete an item only when you are sure it is no longer needed; this is restricted to administrators." },
+    { title: "Read-only mode", description: "Review deleted items without restoring or permanently deleting them." }
+  ],
+  errors: [
+    { title: "Error log", description: "Review system errors to diagnose and resolve them." },
+    { title: "Filter", description: "Filter by severity or source to narrow the results." }
+  ],
+  kanban: [
+    { title: "Kanban", description: "Organize work in columns based on each record's status." },
+    { title: "Drag and drop", description: "Drag cards between columns to update their status immediately." },
+    { title: "Read-only mode", description: "View each record's workflow status without moving it between columns." }
+  ],
+  tags: [
+    { title: "Tags", description: "Manage tags used to classify records throughout the archive." },
+    { title: "Merge", description: "Merge similar tags to reduce duplication." },
+    { title: "Read-only mode", description: "Browse tags and duplicates without editing the icon, color, or parent." }
+  ],
+  "shares-with-me": [
+    { title: "Shared with me", description: "View items that other people have shared with you." },
+    { title: "Access", description: "Open an item directly from here according to your permissions." }
+  ],
+  "reading-lists": [
+    { title: "Reading lists", description: "Group related records into custom lists for later review." },
+    { title: "Ordering", description: "Reorder items within a list by priority." }
+  ],
+  duplicates: [
+    { title: "Duplicates", description: "Find similar or duplicate records in the archive." },
+    { title: "Merge", description: "Merge duplicate records or ignore a match when appropriate." }
+  ],
+  dashboard: [
+    { title: "Dashboard", description: "Get a quick view of recent activity and archive indicators." },
+    { title: "Shortcuts", description: "Use quick cards to move to the sections you use most." }
+  ],
+  shares: [
+    { title: "Share links", description: "Create share links with access and expiry controls." },
+    { title: "Revoke", description: "Revoke a share link at any time to stop access immediately." }
+  ],
+  "media-jobs": [
+    { title: "Media queue", description: "Follow media-processing jobs that are running or complete." },
+    { title: "Retry", description: "Restart failed jobs without uploading the files again." }
+  ],
+  ingest: [
+    { title: "Content ingest", description: "Import batches of records and files from external sources." },
+    { title: "Validate before importing", description: "Review validation results before confirming an import." },
+    { title: "Read-only mode", description: "Review import results without starting new validation or retrieval operations." }
+  ],
+  projects: [
+    { title: "Projects", description: "Organize records into projects with independent teams and goals." },
+    { title: "Members", description: "Manage project members and their permissions from this page." }
+  ],
+  "settings-users": [
+    { title: "Users and roles", description: "Manage user accounts and roles in the system." },
+    { title: "Permissions", description: "Set each role's permissions precisely as needed." },
+    { title: "Read-only mode", description: "This page is restricted to administrators; you cannot invite members or edit roles." }
+  ],
+  "media-compare": [
+    { title: "Compare media", description: "Compare two versions of a media file side by side." },
+    { title: "Differences", description: "Highlight differences between versions to make review easier." }
+  ],
+  "system-control": [
+    { title: "System control", description: "Manage operational settings and connected services." },
+    { title: "Use caution", description: "Some actions here affect the entire system as soon as they run." }
+  ],
+  discover: [
+    { title: "Discover", description: "Explore recommended paths and content based on your interests." },
+    { title: "Save", description: "Save what interests you so you can return to it from Favorites." }
+  ],
+  plugins: [
+    { title: "Plugins", description: "Enable or disable plugins that extend the archive's capabilities." },
+    { title: "Custom settings", description: "Each plugin has its own settings that you can customize." }
+  ],
+  broadcast: [
+    { title: "Broadcast simulation", description: "Test broadcast scenarios before applying them for real." },
+    { title: "History", description: "Review previous simulation history to compare outcomes." }
+  ],
+  inbox: [
+    { title: "Inbox", description: "Receive new items and requests addressed to you." },
+    { title: "Quick archive", description: "Archive processed items to keep your inbox tidy." }
+  ],
+  notifications: [
+    { title: "Notifications", description: "Follow alerts related to your activity and team." },
+    { title: "Preferences", description: "Choose the notification types you want to receive in Settings." }
+  ],
+  help: [
+    { title: "Help center", description: "Find answers and user guides for every archive area." },
+    { title: "Support", description: "Contact technical support if you cannot find what you need." }
+  ],
+  "search-saved": [
+    { title: "Saved searches", description: "Run a search you saved earlier with one click." },
+    { title: "Organize", description: "Delete or rename older saved searches." }
+  ],
+  "data-center": [
+    { title: "Data center", description: "Monitor storage capacity and distribution across service providers." },
+    { title: "Growth forecast", description: "View projections for future storage growth." }
+  ],
+  copilot: [
+    { title: "Archive assistant", description: "Ask questions about your records and get immediate answers with AI." },
+    { title: "Suggestions", description: "Accept or reject automatically generated suggestions as needed." }
+  ],
+  backup: [
+    { title: "Backup", description: "Create regular backups of archive data." },
+    { title: "Restore", description: "Restore a previous backup when something goes wrong or data is lost." },
+    { title: "Read-only mode", description: "This page is for administrators only; you cannot create or restore backups." }
+  ],
+  automation: [
+    { title: "Automation", description: "Create rules that run actions automatically when specified conditions are met." },
+    { title: "Test", description: "Test a rule before enabling it to avoid unexpected results." },
+    { title: "Read-only mode", description: "Review rules and run history without creating, editing, or deleting rules." }
+  ],
+  collaboration: [
+    { title: "Live collaboration", description: "See who is working on the same record with you in real time." },
+    { title: "Comments", description: "Add comments directly to coordinate work with your team." }
+  ],
+  rights: [
+    { title: "Usage rights", description: "Set usage and licensing restrictions for each record." },
+    { title: "Compliance", description: "Track rights expiry to prevent unauthorized use." },
+    { title: "Read-only mode", description: "Review rights records and enforcement status without registering new rights." }
+  ]
+};
+
+export function getPageTips(page: PageKey, role?: NavigationRole, locale: AppLocale = "ar"): Tip[] {
+  const localizedTips = locale === "en"
+    ? pageTips[page].map((tip, index) => ({ ...tip, ...englishTipCopy[page][index] }))
+    : pageTips[page];
+
+  return localizedTips.filter((tip) => !tip.roles || (role ? tip.roles.includes(role) : false));
 }
 
 const TIPS_DISMISSED_KEY = "masar.tipsDismissed";

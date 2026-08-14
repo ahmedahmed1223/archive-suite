@@ -2,6 +2,7 @@
 // no new analytics engine, no new API call. Reuses deriveRecordStatus (V1-851).
 import type { ArchiveFile, ArchiveRecord } from "@/lib/archive-api";
 import { deriveRecordStatus } from "@/lib/record-status";
+import type { AppLocale } from "@/lib/i18n/types";
 
 export type CleanupReason = "incomplete-record" | "orphan-file" | "failed-upload" | "possible-duplicate";
 
@@ -40,11 +41,13 @@ export function buildCleanupItems(input: {
   files: readonly ArchiveFile[];
   recordSourcePaths: ReadonlySet<string>;
   scheduledUploads: readonly ScheduledUploadLike[];
+  locale?: AppLocale;
 }): CleanupItem[] {
   const items: CleanupItem[] = [];
+  const locale = input.locale ?? (typeof document !== "undefined" && document.documentElement.lang === "en" ? "en" : "ar");
 
   for (const record of input.records) {
-    const status = deriveRecordStatus(record);
+    const status = deriveRecordStatus(record, locale);
     if (status.kind === "incomplete") {
       items.push({
         reason: "incomplete-record",
@@ -59,7 +62,7 @@ export function buildCleanupItems(input: {
     items.push({
       reason: "orphan-file",
       label: file.name ?? file.key,
-      detail: "لا سجل مرتبط بهذا الملف.",
+      detail: locale === "ar" ? "لا سجل مرتبط بهذا الملف." : "No record is linked to this file.",
       actionHref: `/files?q=${encodeURIComponent(file.key)}`
     });
   }
@@ -69,7 +72,7 @@ export function buildCleanupItems(input: {
       items.push({
         reason: "failed-upload",
         label: upload.fileName ?? upload.id,
-        detail: "فشل هذا الرفع المجدول.",
+        detail: locale === "ar" ? "فشل هذا الرفع المجدول." : "This scheduled upload failed.",
         actionHref: `/uploads/scheduled`
       });
     }
@@ -80,7 +83,9 @@ export function buildCleanupItems(input: {
       items.push({
         reason: "possible-duplicate",
         label: file.name ?? file.key,
-        detail: `يطابق الاسم والحجم ${group.length - 1} ملفًا آخر.`,
+        detail: locale === "ar"
+          ? `يطابق الاسم والحجم ${group.length - 1} ملفًا آخر.`
+          : `Its name and size match ${group.length - 1} other file${group.length === 2 ? "" : "s"}.`,
         actionHref: `/files?q=${encodeURIComponent(file.name ?? file.key)}`
       });
     }

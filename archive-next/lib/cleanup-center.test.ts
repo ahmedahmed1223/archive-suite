@@ -62,4 +62,10 @@ describe("cleanup center (V1-833)", () => {
     const items = buildCleanupItems({ records: [], files, recordSourcePaths: new Set(["a/dup.mov", "b/dup.mov", "c/unique.mov"]), scheduledUploads: [] });
     expect(items.filter((i) => i.reason === "possible-duplicate")).toHaveLength(2);
   });
+
+  it("uses English cleanup explanations when requested", () => {
+    const files = [{ key: "orphan.mov", name: "orphan.mov" }] as ArchiveFile[];
+    const items = buildCleanupItems({ records: [], files, recordSourcePaths: new Set(), scheduledUploads: [], locale: "en" });
+    expect(items[0]?.detail).toBe("No record is linked to this file.");
+  });
 });

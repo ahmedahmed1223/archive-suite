@@ -37,4 +37,11 @@ describe("change impact", () => {
     expect(impact.detail).toContain("لن يتأثر أي سجل");
     expect(impact.undoLabel).toBeUndefined();
   });
+
+  it("returns English operational copy when requested", () => {
+    const impact = buildChangeImpact({ action: "delete", entity: "record", affectedCount: 2, locale: "en" });
+
+    expect(impact.summary).toBe("Delete record");
+    expect(impact.detail).toBe("This will affect 2 records. This cannot be undone after execution.");
+  });
 });

@@ -11,7 +11,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 const getTipIcon = (name?: string) => resolveIcon(name || "Lightbulb", Icons.Lightbulb);
 
 export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const copy = t.shell.contextualTips;
   const { isDismissed, isEnabled, handleDismiss, handleDismissSession, isHydrated } = useContextualTips(page);
   const { user } = useAuthSession();
@@ -54,7 +54,7 @@ export default function ContextualTips({ page }: Readonly<{ page: PageKey }>) {
   // Server-side render guard; a dismissed or globally-disabled tip renders nothing.
   if (!isHydrated || !isEnabled || isDismissed) return null;
 
-  const tips = getPageTips(page, user?.role);
+  const tips = getPageTips(page, user?.role, locale);
   if (tips.length === 0) return null;
 
   return (

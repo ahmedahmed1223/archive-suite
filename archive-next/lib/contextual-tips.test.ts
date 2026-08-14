@@ -22,6 +22,18 @@ function createStorage() {
 }
 
 describe("role-aware contextual tips (V1-306C)", () => {
+  test("returns English contextual guidance when English is selected", () => {
+    const tips = getPageTips("archive", "viewer", "en");
+
+    expect(tips.map((tip) => tip.title)).toContain("Read-only mode");
+    expect(tips.map((tip) => tip.title)).toContain("Records");
+    expect(tips).not.toContainEqual(expect.objectContaining({ title: "وضع القراءة" }));
+  });
+
+  test("keeps Arabic guidance as the default locale", () => {
+    expect(getPageTips("archive", "viewer").map((tip) => tip.title)).toContain("وضع القراءة");
+  });
+
   test("viewer guidance excludes archive editing instructions", () => {
     const titles = getPageTips("archive", "viewer").map((tip) => tip.title);
     expect(titles).toContain("وضع القراءة");
