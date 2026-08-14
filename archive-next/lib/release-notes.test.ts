@@ -8,6 +8,8 @@ describe("release notes", () => {
       ar: expect.stringContaining("الإصدار 1.2.0"),
       en: expect.stringContaining("Archive Suite v1.2.0"),
     });
+    expect(getReleaseNotes("1.2.0")?.ar).toMatch(/دعم الإنجليزية جزئي/);
+    expect(getReleaseNotes("1.2.0")?.en).toMatch(/full\s+English support is not complete/);
   });
 
   test("does not resolve an unavailable release", () => {

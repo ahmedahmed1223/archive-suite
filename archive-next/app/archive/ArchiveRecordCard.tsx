@@ -20,13 +20,13 @@ interface ArchiveRecordCardProps {
 }
 
 export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSelectClick, onPreview, onRename }: ArchiveRecordCardProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const titleLinkRef = useRef<HTMLAnchorElement>(null);
   const [menuPosition, setMenuPosition] = useState<ContextMenuPosition | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(record.title || "");
   const href = `/archive/${encodeURIComponent(record.id)}`;
-  const status = deriveRecordStatus(record);
+  const status = deriveRecordStatus(record, locale);
 
   const closeMenu = () => setMenuPosition(null);
 

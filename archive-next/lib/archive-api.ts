@@ -1,5 +1,6 @@
 import contract from "../../docs/api/archive-contract.openapi.json";
 import type { components as GeneratedApiComponents } from "./generated/archive-api";
+import type { AppLocale } from "./i18n/types";
 
 export const ARCHIVE_UNAUTHORIZED_EVENT = "archive-next:unauthorized";
 
@@ -1699,66 +1700,69 @@ export function getContractSummary() {
   };
 }
 
-const AUTH_ERROR_MESSAGES_AR: Record<string, string> = {
-  "Invalid credentials.": "بيانات الدخول غير صحيحة.",
-  "Unauthorized.": "انتهت الجلسة. سجّل الدخول مرة أخرى."
+type LocalizedMessage = Record<AppLocale, string>;
+
+const AUTH_ERROR_MESSAGES: Record<string, LocalizedMessage> = {
+  "Invalid credentials.": { ar: "بيانات الدخول غير صحيحة.", en: "Invalid credentials." },
+  "Unauthorized.": { ar: "انتهت الجلسة. سجّل الدخول مرة أخرى.", en: "Your session has ended. Please sign in again." }
 };
 
-const GENERIC_LOGIN_ERROR_AR = "تعذر تسجيل الدخول. تحقق من البيانات وحاول مجدداً.";
+const GENERIC_LOGIN_ERROR: LocalizedMessage = {
+  ar: "تعذر تسجيل الدخول. تحقق من البيانات وحاول مجدداً.",
+  en: "Unable to sign in. Check your details and try again."
+};
 
-function localizeLoginError(error: string): string {
-  const known = AUTH_ERROR_MESSAGES_AR[error];
+function localizeLoginError(error: string, locale: AppLocale): string {
+  const known = AUTH_ERROR_MESSAGES[error];
 
   if (known) {
-    return known;
+    return known[locale];
   }
 
-  // Client-produced transport errors are already Arabic; keep them.
-  // Anything else (raw English API strings) falls back to a generic Arabic message.
-  return /[؀-ۿ]/.test(error) ? error : GENERIC_LOGIN_ERROR_AR;
+  return /[؀-ۿ]/.test(error) && locale === "ar" ? error : GENERIC_LOGIN_ERROR[locale];
 }
 
 // ponytail: only exact-matches known backend strings ("Unauthorized.", "Invalid
 // credentials.") so sentinel checks elsewhere (e.g. response.error === "Forbidden.")
 // keep working; a full raw-message translation layer needs backend error codes first.
-const API_ERROR_MESSAGES_AR: Record<string, string> = {
+const API_ERROR_MESSAGES: Record<string, LocalizedMessage> = {
   // Envelope-level codes (app/Support/ApiError.php).
-  UNAUTHENTICATED: "انتهت الجلسة. سجّل الدخول مرة أخرى.",
-  FORBIDDEN: "لا تملك صلاحية لتنفيذ هذا الإجراء.",
-  NOT_FOUND: "العنصر غير موجود.",
-  CONFLICT: "تعارض مع الحالة الحالية. حدّث الصفحة وأعد المحاولة.",
-  VALIDATION_FAILED: "تحقق من الحقول المدخلة ثم أعد المحاولة.",
-  RATE_LIMITED: "تجاوزت عدد المحاولات المسموح. انتظر قليلاً ثم أعد المحاولة.",
-  FEATURE_DISABLED: "هذه الميزة غير مفعّلة.",
-  SERVER_ERROR: "خطأ في الخادم. حاول لاحقاً أو تواصل مع مسؤول النظام.",
+  UNAUTHENTICATED: { ar: "انتهت الجلسة. سجّل الدخول مرة أخرى.", en: "Your session has ended. Please sign in again." },
+  FORBIDDEN: { ar: "لا تملك صلاحية لتنفيذ هذا الإجراء.", en: "You do not have permission to perform this action." },
+  NOT_FOUND: { ar: "العنصر غير موجود.", en: "Item not found." },
+  CONFLICT: { ar: "تعارض مع الحالة الحالية. حدّث الصفحة وأعد المحاولة.", en: "The current state has changed. Refresh the page and try again." },
+  VALIDATION_FAILED: { ar: "تحقق من الحقول المدخلة ثم أعد المحاولة.", en: "Check the entered fields and try again." },
+  RATE_LIMITED: { ar: "تجاوزت عدد المحاولات المسموح. انتظر قليلاً ثم أعد المحاولة.", en: "You have exceeded the allowed number of attempts. Wait a moment and try again." },
+  FEATURE_DISABLED: { ar: "هذه الميزة غير مفعّلة.", en: "This feature is disabled." },
+  SERVER_ERROR: { ar: "خطأ في الخادم. حاول لاحقاً أو تواصل مع مسؤول النظام.", en: "A server error occurred. Try again later or contact your administrator." },
   // Controller-level codes.
-  not_found: "العنصر غير موجود.",
-  record_not_found: "المادة غير موجودة.",
-  forbidden: "لا تملك صلاحية لتنفيذ هذا الإجراء.",
-  expired: "انتهت الصلاحية.",
-  revoked: "تم إلغاء هذا الرابط.",
-  unreachable: "تعذر الوصول إلى الرابط المحدد.",
-  lock_conflict: "العنصر مقفل من متعاون آخر.",
-  document_version_conflict: "تغيّر المستند منذ فتحه. أعد التحميل ثم احفظ.",
-  relation_conflict: "توجد علاقة مطابقة بالفعل.",
-  circular_hierarchy: "لا يمكن نقل العنصر إلى أحد فروعه.",
-  illegal_transition: "انتقال غير مسموح من الحالة الحالية.",
-  invalid_operation: "عملية غير صالحة.",
-  rule_disabled: "القواعد المعطّلة تقبل التشغيل التجريبي فقط.",
-  config_required: "التكامل غير مهيأ بعد.",
-  record_id_required: "معرّف المادة مطلوب.",
-  suggestion_key_required: "مفتاح الاقتراح مطلوب.",
-  not_retryable: "لا يمكن إعادة محاولة هذه العملية.",
-  session_not_found: "جلسة الرفع غير موجودة.",
-  session_inactive: "جلسة الرفع لم تعد نشطة.",
-  incomplete_upload: "لم تصل جميع الأجزاء بعد.",
-  invalid_chunk_index: "رقم الجزء غير صالح.",
-  chunk_size_mismatch: "حجم الجزء غير مطابق.",
-  checksum_mismatch: "بصمة الملف غير مطابقة. أعد الرفع.",
-  artifact_missing: "الملف المؤقت لهذه العملية لم يعد متاحاً.",
-  unsafe_file_content: "محتوى الملف غير آمن ولا يمكن قبوله.",
-  storage_quota_exceeded: "تجاوزت حصة التخزين المتاحة.",
-  insufficient_disk_space: "لا توجد مساحة كافية على القرص.",
+  not_found: { ar: "العنصر غير موجود.", en: "Item not found." },
+  record_not_found: { ar: "المادة غير موجودة.", en: "Record not found." },
+  forbidden: { ar: "لا تملك صلاحية لتنفيذ هذا الإجراء.", en: "You do not have permission to perform this action." },
+  expired: { ar: "انتهت الصلاحية.", en: "This link has expired." },
+  revoked: { ar: "تم إلغاء هذا الرابط.", en: "This link has been revoked." },
+  unreachable: { ar: "تعذر الوصول إلى الرابط المحدد.", en: "The specified link could not be reached." },
+  lock_conflict: { ar: "العنصر مقفل من متعاون آخر.", en: "This item is locked by another collaborator." },
+  document_version_conflict: { ar: "تغيّر المستند منذ فتحه. أعد التحميل ثم احفظ.", en: "This document changed after you opened it. Reload it, then save again." },
+  relation_conflict: { ar: "توجد علاقة مطابقة بالفعل.", en: "An identical relation already exists." },
+  circular_hierarchy: { ar: "لا يمكن نقل العنصر إلى أحد فروعه.", en: "An item cannot be moved into one of its own descendants." },
+  illegal_transition: { ar: "انتقال غير مسموح من الحالة الحالية.", en: "This transition is not allowed from the current state." },
+  invalid_operation: { ar: "عملية غير صالحة.", en: "Invalid operation." },
+  rule_disabled: { ar: "القواعد المعطّلة تقبل التشغيل التجريبي فقط.", en: "Disabled rules can only run in preview mode." },
+  config_required: { ar: "التكامل غير مهيأ بعد.", en: "This integration has not been configured yet." },
+  record_id_required: { ar: "معرّف المادة مطلوب.", en: "A record ID is required." },
+  suggestion_key_required: { ar: "مفتاح الاقتراح مطلوب.", en: "A suggestion key is required." },
+  not_retryable: { ar: "لا يمكن إعادة محاولة هذه العملية.", en: "This operation cannot be retried." },
+  session_not_found: { ar: "جلسة الرفع غير موجودة.", en: "Upload session not found." },
+  session_inactive: { ar: "جلسة الرفع لم تعد نشطة.", en: "This upload session is no longer active." },
+  incomplete_upload: { ar: "لم تصل جميع الأجزاء بعد.", en: "Not all parts have been received yet." },
+  invalid_chunk_index: { ar: "رقم الجزء غير صالح.", en: "Invalid part number." },
+  chunk_size_mismatch: { ar: "حجم الجزء غير مطابق.", en: "Part size does not match." },
+  checksum_mismatch: { ar: "بصمة الملف غير مطابقة. أعد الرفع.", en: "File checksum does not match. Upload again." },
+  artifact_missing: { ar: "الملف المؤقت لهذه العملية لم يعد متاحاً.", en: "The temporary file for this operation is no longer available." },
+  unsafe_file_content: { ar: "محتوى الملف غير آمن ولا يمكن قبوله.", en: "The file content is unsafe and cannot be accepted." },
+  storage_quota_exceeded: { ar: "تجاوزت حصة التخزين المتاحة.", en: "You have exceeded the available storage quota." },
+  insufficient_disk_space: { ar: "لا توجد مساحة كافية على القرص.", en: "There is not enough disk space." },
 };
 
 // V1-818: prefer the machine `code` over the English sentence. V1-815 made the
@@ -1767,10 +1771,40 @@ const API_ERROR_MESSAGES_AR: Record<string, string> = {
 // matching prose — which is what the previous note here said was still missing.
 // Sentinel checks stay safe: all four (data-center, status, system/control x2)
 // test `response.code` first and use the English string only as an `||` fallback.
-function translateKnownApiError(error: string, code?: string): string {
-  if (code && API_ERROR_MESSAGES_AR[code]) return API_ERROR_MESSAGES_AR[code];
+function translateKnownApiError(error: string, locale: AppLocale, code?: string): string {
+  if (code && API_ERROR_MESSAGES[code]) return API_ERROR_MESSAGES[code][locale];
 
-  return AUTH_ERROR_MESSAGES_AR[error] ?? error;
+  return AUTH_ERROR_MESSAGES[error]?.[locale] ?? error;
+}
+
+function clientRequestError(locale: AppLocale, kind: "network" | "invalid-response" | "http", status?: number): string {
+  if (kind === "network") {
+    return locale === "ar"
+      ? "تعذر الاتصال بالخادم. تحقق من الاتصال ثم أعد المحاولة."
+      : "Unable to connect to the server. Check your connection and try again.";
+  }
+
+  if (kind === "invalid-response") {
+    return locale === "ar"
+      ? "استجابة غير صالحة من الخادم. حاول لاحقاً أو تواصل مع مسؤول النظام."
+      : "The server returned an invalid response. Try again later or contact your administrator.";
+  }
+
+  return locale === "ar"
+    ? `فشل الطلب (رمز ${status}). أعد المحاولة أو تواصل مع مسؤول النظام.`
+    : `The request failed (status ${status}). Try again or contact your administrator.`;
+}
+
+function clientUploadError(locale: AppLocale, kind: "network" | "invalid-response" | "http" | "export", status?: number): string {
+  const subject = kind === "export" ? "report export" : "upload";
+  if (locale === "en") {
+    if (kind === "network") return `Unable to connect to the server during ${subject}.`;
+    if (kind === "invalid-response") return `The server returned an invalid response during ${subject}.`;
+    return `Unable to ${subject}${status ? ` (status ${status})` : ""}.`;
+  }
+  if (kind === "network") return subject === "report export" ? "تعذر الاتصال بالخادم لتصدير التقرير." : "تعذر الاتصال بالخادم أثناء الرفع. تحقق من الاتصال ثم أعد المحاولة.";
+  if (kind === "invalid-response") return "استجابة غير صالحة من الخادم أثناء الرفع.";
+  return subject === "report export" ? `تعذر تصدير التقرير (رمز ${status}).` : `فشل الرفع (رمز ${status}). أعد المحاولة.`;
 }
 
 function clampApiLimit(value: number | undefined, fallback: number, max: number) {
@@ -1787,12 +1821,19 @@ let cachedAccessToken: string | undefined;
 export function createArchiveApiClient({
   baseUrl = "/api/v1",
   fetchImpl = fetch,
-  onUnauthorized
+  onUnauthorized,
+  locale
 }: {
   baseUrl?: string;
   fetchImpl?: typeof fetch;
   onUnauthorized?: () => void;
+  locale?: AppLocale;
 } = {}): ArchiveApiClient {
+  const currentLocale = (): AppLocale => {
+    if (locale) return locale;
+    return typeof document !== "undefined" && document.documentElement.lang === "en" ? "en" : "ar";
+  };
+
   function handleUnauthorized() {
     onUnauthorized?.();
 
@@ -1880,12 +1921,12 @@ export function createArchiveApiClient({
         body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body)
       });
     } catch {
-      return { ok: false, error: "تعذر الاتصال بالخادم. تحقق من الاتصال ثم أعد المحاولة." };
+      return { ok: false, error: clientRequestError(currentLocale(), "network") };
     }
 
     const payload = (await response.json().catch(() => ({
       ok: false,
-      error: "استجابة غير صالحة من الخادم. حاول لاحقاً أو تواصل مع مسؤول النظام."
+      error: clientRequestError(currentLocale(), "invalid-response")
     }))) as ApiEnvelope<T>;
 
     if (
@@ -1912,16 +1953,16 @@ export function createArchiveApiClient({
     }
 
     if (!response.ok && payload.ok !== false) {
-      return { ok: false, code: `http_${response.status}`, error: `فشل الطلب (رمز ${response.status}). أعد المحاولة أو تواصل مع مسؤول النظام.` };
+      return { ok: false, code: `http_${response.status}`, error: clientRequestError(currentLocale(), "http", response.status) };
     }
 
     if (payload.ok === false && payload.code === undefined && !response.ok) {
       // No code to key on — this branch is entered only when payload.code is undefined.
-      return { ...payload, code: `http_${response.status}`, error: translateKnownApiError(payload.error) };
+      return { ...payload, code: `http_${response.status}`, error: translateKnownApiError(payload.error, currentLocale()) };
     }
 
     if (payload.ok === false) {
-      return { ...payload, error: translateKnownApiError(payload.error, payload.code) };
+      return { ...payload, error: translateKnownApiError(payload.error, currentLocale(), payload.code) };
     }
 
     return payload;
@@ -1960,7 +2001,7 @@ export function createArchiveApiClient({
       const response = await post<AuthSession>("/auth/login", payload);
 
       if (!response.ok) {
-        return { ...response, error: localizeLoginError(response.error) };
+        return { ...response, error: localizeLoginError(response.error, currentLocale()) };
       }
 
       cachedAccessToken = response.accessToken;
@@ -2206,13 +2247,18 @@ export function createArchiveApiClient({
           credentials: "include"
         });
         if (!response.ok) {
-          return { ok: false, error: `تعذر تصدير التقرير (رمز ${response.status}).` };
+          return { ok: false, error: clientUploadError(currentLocale(), "export", response.status) };
         }
         const contentDisposition = response.headers.get("content-disposition") || "";
         const filename = contentDisposition.match(/filename=([^;]+)/i)?.[1]?.replace(/^"|"$/g, "") || "archive-compliance-report.csv";
         return { ok: true, blob: await response.blob(), filename };
       } catch {
-        return { ok: false, error: "تعذر الاتصال بالخادم لتصدير التقرير." };
+        return {
+          ok: false,
+          error: currentLocale() === "en"
+            ? "Unable to connect to the server to export the report."
+            : "تعذر الاتصال بالخادم لتصدير التقرير."
+        };
       }
     },
     recordHistory: (recordId: string, params?: { limit?: number; page?: number; store?: string }, options?: AuthRequestOptions) => {
@@ -2408,16 +2454,16 @@ export function createArchiveApiClient({
           body: formData
         });
       } catch {
-        return { ok: false, error: "تعذر الاتصال بالخادم أثناء الرفع. تحقق من الاتصال ثم أعد المحاولة." } as ApiEnvelope<{ record: UploadedRecord }>;
+        return { ok: false, error: clientUploadError(currentLocale(), "network") } as ApiEnvelope<{ record: UploadedRecord }>;
       }
 
       const payload = (await response.json().catch(() => ({
         ok: false,
-        error: "استجابة غير صالحة من الخادم أثناء الرفع."
+        error: clientUploadError(currentLocale(), "invalid-response")
       }))) as ApiEnvelope<{ record: UploadedRecord }>;
 
       if (!response.ok && payload.ok !== false) {
-        return { ok: false, error: `فشل الرفع (رمز ${response.status}). أعد المحاولة.` } as ApiEnvelope<{ record: UploadedRecord }>;
+        return { ok: false, error: clientUploadError(currentLocale(), "http", response.status) } as ApiEnvelope<{ record: UploadedRecord }>;
       }
 
       return payload;
@@ -2441,16 +2487,16 @@ export function createArchiveApiClient({
           body: chunk
         });
       } catch {
-        return { ok: false, error: "تعذر الاتصال بالخادم أثناء رفع الجزء. تحقق من الاتصال ثم أعد المحاولة." } as ApiEnvelope<{ receivedChunks: number[]; totalChunks: number }>;
+        return { ok: false, error: clientUploadError(currentLocale(), "network") } as ApiEnvelope<{ receivedChunks: number[]; totalChunks: number }>;
       }
 
       const responsePayload = (await response.json().catch(() => ({
         ok: false,
-        error: "استجابة غير صالحة من الخادم أثناء رفع الجزء."
+        error: clientUploadError(currentLocale(), "invalid-response")
       }))) as ApiEnvelope<{ receivedChunks: number[]; totalChunks: number }>;
 
       if (!response.ok && responsePayload.ok !== false) {
-        return { ok: false, error: `فشل رفع الجزء (رمز ${response.status}). أعد المحاولة.` } as ApiEnvelope<{ receivedChunks: number[]; totalChunks: number }>;
+        return { ok: false, error: clientUploadError(currentLocale(), "http", response.status) } as ApiEnvelope<{ receivedChunks: number[]; totalChunks: number }>;
       }
 
       return responsePayload;

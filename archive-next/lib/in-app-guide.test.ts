@@ -115,6 +115,7 @@ describe("in-app guide", () => {
 
     expect(whatsNew?.body).toContain("حزم Native مدعومة بالكامل");
     expect(whatsNew?.body).toContain("اختر لغة الواجهة");
+    expect(whatsNew?.body).toMatch(/الدعم الكامل\s+للإنجليزية/);
     expect(whatsNew?.body).not.toContain("31 يوليو");
   });
 

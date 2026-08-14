@@ -116,7 +116,7 @@ export default function ErrorsPage() {
     }, null),
     [filteredErrors]
   );
-  const groupedErrors = useMemo(() => groupActionErrors(filteredErrors), [filteredErrors]);
+  const groupedErrors = useMemo(() => groupActionErrors(filteredErrors, locale), [filteredErrors, locale]);
   const errorWave = useMemo(() => getErrorWave(errors), [errors]);
 
   const createManualError = () => {

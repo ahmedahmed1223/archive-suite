@@ -44,6 +44,17 @@ describe("deriveRecordStatus (V1-851)", () => {
     ]);
   });
 
+  test("returns English status copy when requested", () => {
+    const status = deriveRecordStatus(record({ workflowStatus: "archived" }), "en");
+
+    expect(status).toMatchObject({ label: "Archived", reason: "Workflow status: archived." });
+    expect(missingDescribeFields({ title: "Title", description: "", type: "", tags: [] }, "en")).toEqual([
+      "Description",
+      "Type",
+      "Tags"
+    ]);
+  });
+
   test("every status carries a non-empty reason", () => {
     const statuses = [
       deriveRecordStatus(record({ workflowStatus: "archived" })),

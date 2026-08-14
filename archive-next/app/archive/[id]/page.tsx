@@ -117,7 +117,7 @@ function RelationPreviewPanel({
   onDelete: (id: string) => Promise<void>;
   canEdit: boolean;
 }>) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const copy = t.pages.archiveDetail.relations;
   const dialogs = useConfirmDialog();
   const relationTypes = graph?.relationTypes?.length
@@ -1053,10 +1053,10 @@ function RecordReadinessPanel({
   rights,
   hasTeamComments
 }: Readonly<{ record: ArchiveRecord; rights: RightsRecord | null; hasTeamComments: boolean }>) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const copy = t.pages.archiveDetail.readiness;
   const items = buildReadinessItems(record, rights, hasTeamComments, t);
-  const status = deriveRecordStatus(record);
+  const status = deriveRecordStatus(record, locale);
   const doneCount = items.filter((item) => item.done).length;
   const nextAction = items.find((item) => !item.done);
 

@@ -47,7 +47,7 @@ export function RecordDescribeForm({
   record: ArchiveRecord;
   onSave: (patch: RecordDescribePatch) => Promise<void>;
 }>) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const initialSnapshot: FormSnapshot = {
     title: record.title || "",
     description: record.description || "",
@@ -169,7 +169,7 @@ export function RecordDescribeForm({
         description: description.trim(),
         type: type.trim(),
         tags: parsedTags
-      });
+      }, locale);
       setStatus(
         missing.length
           ? t.pages.recordDescribeForm.savedWithMissingFields.replace("{fields}", missing.join("، "))

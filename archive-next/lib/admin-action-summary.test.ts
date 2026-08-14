@@ -74,4 +74,10 @@ describe("admin action summaries", () => {
       { key: "access", count: 1, label: "صلاحية غير كافية", recovery: "تحقق من صلاحياتك أو تواصل مع المسؤول." }
     ]);
   });
+
+  it("returns English recovery text when the interface locale is English", () => {
+    expect(groupActionErrors([{ message: "Network request failed" }], "en")).toEqual([
+      { key: "network", count: 1, label: "Connection failed", recovery: "Check your connection and try again." }
+    ]);
+  });
 });

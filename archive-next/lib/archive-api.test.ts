@@ -195,9 +195,9 @@ describe("bulk macro API client", () => {
 // V1-818: Arabic error text is keyed on the machine `code`, not the English
 // sentence. V1-815 guarantees every {ok:false} envelope carries one.
 describe("Arabic API error localization", () => {
-  const errorFor = async (body: Record<string, unknown>, status: number) => {
+  const errorFor = async (body: Record<string, unknown>, status: number, locale?: "ar" | "en") => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status }));
-    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl, locale });
     const response = await api.runSafetyPreview({ scenario: "restore-conflict", operation: "restore", ids: ["x"] });
     if (response.ok) throw new Error("Expected an error envelope");
     return response;
@@ -222,5 +222,11 @@ describe("Arabic API error localization", () => {
     const response = await errorFor({ ok: false, error: "Some new backend error.", code: "brand_new_code" }, 400);
 
     expect(response.error).toBe("Some new backend error.");
+  });
+
+  it("uses English messages when the active interface locale is English", async () => {
+    const response = await errorFor({ ok: false, error: "Record not found.", code: "not_found" }, 404, "en");
+
+    expect(response.error).toBe("Item not found.");
   });
 });

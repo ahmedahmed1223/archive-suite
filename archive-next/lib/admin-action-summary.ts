@@ -50,18 +50,29 @@ export function buildBackupFreshness(lastBackupAt?: string | string[], now = new
 
 export type ErrorGroup = { key: "network" | "access" | "other"; count: number; label: string; recovery: string };
 
-function categorize(message: string): Omit<ErrorGroup, "count"> {
-  if (/network|fetch|connection|اتصال/i.test(message)) return { key: "network", label: "تعذر الاتصال", recovery: "تحقق من الاتصال ثم أعد المحاولة." };
-  if (/forbidden|unauthori[sz]ed|permission|صلاح/i.test(message)) return { key: "access", label: "صلاحية غير كافية", recovery: "تحقق من صلاحياتك أو تواصل مع المسؤول." };
-  return { key: "other", label: "خطأ يحتاج مراجعة", recovery: "انسخ الملخص المنقّح وأرفقه في طلب الدعم." };
+function categorize(message: string, locale: AppLocale): Omit<ErrorGroup, "count"> {
+  if (/network|fetch|connection|اتصال/i.test(message)) {
+    return locale === "ar"
+      ? { key: "network", label: "تعذر الاتصال", recovery: "تحقق من الاتصال ثم أعد المحاولة." }
+      : { key: "network", label: "Connection failed", recovery: "Check your connection and try again." };
+  }
+  if (/forbidden|unauthori[sz]ed|permission|صلاح/i.test(message)) {
+    return locale === "ar"
+      ? { key: "access", label: "صلاحية غير كافية", recovery: "تحقق من صلاحياتك أو تواصل مع المسؤول." }
+      : { key: "access", label: "Insufficient permission", recovery: "Check your permissions or contact an administrator." };
+  }
+  return locale === "ar"
+    ? { key: "other", label: "خطأ يحتاج مراجعة", recovery: "انسخ الملخص المنقّح وأرفقه في طلب الدعم." }
+    : { key: "other", label: "Error needs review", recovery: "Copy the redacted summary and attach it to a support request." };
 }
 
-export function groupActionErrors(entries: Array<{ message: string; page?: string }>): ErrorGroup[] {
+export function groupActionErrors(entries: Array<{ message: string; page?: string }>, locale: AppLocale = "ar"): ErrorGroup[] {
   const groups = new Map<ErrorGroup["key"], ErrorGroup>();
   for (const entry of entries) {
-    const group = categorize(entry.message);
+    const group = categorize(entry.message, locale);
     const current = groups.get(group.key);
     groups.set(group.key, current ? { ...current, count: current.count + 1 } : { ...group, count: 1 });
   }
   return [...groups.values()].sort((a, b) => b.count - a.count);
 }
+import type { AppLocale } from "@/lib/i18n/types";
