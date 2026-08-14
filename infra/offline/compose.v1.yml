@@ -56,7 +56,10 @@ services:
   laravel-fpm:
     image: archive-suite/laravel:${ARCHIVE_VERSION}
     pull_policy: never
-    command: ["sh", "-c", "php artisan archive:migrate-safe && php artisan db:seed --force && exec php-fpm"]
+    # A fresh named volume is root-owned. PHP-FPM workers run as www-data and
+    # the deep health endpoint writes to local storage, so repair ownership
+    # before migrations and before accepting traffic.
+    command: ["sh", "-c", "chown -R www-data:www-data /app/storage /app/bootstrap/cache && php artisan archive:migrate-safe && php artisan db:seed --force && exec php-fpm"]
     environment: *laravel-env
     volumes: [storage:/app/storage/app]
     depends_on:

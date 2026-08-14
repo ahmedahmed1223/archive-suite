@@ -41,7 +41,9 @@ services:
   laravel-fpm:
     image: ${ARCHIVE_RELEASE_IMAGE_LARAVEL_FPM:?Release descriptor is required}
     pull_policy: ${ARCHIVE_RELEASE_PULL_POLICY:-missing}
-    command: ["sh", "-c", "php artisan archive:migrate-safe && php artisan db:seed --force && exec php-fpm"]
+    # Match the source-built Docker path: fresh named volumes are root-owned,
+    # while PHP-FPM writes deep-health storage checks as www-data.
+    command: ["sh", "-c", "chown -R www-data:www-data /app/storage /app/bootstrap/cache && php artisan archive:migrate-safe && php artisan db:seed --force && exec php-fpm"]
     environment: *laravel-env
     volumes: [storage:/app/storage/app]
     depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_healthy } }

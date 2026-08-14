@@ -123,7 +123,8 @@ assertIncludes("infra/docker-compose.laravel-next.yml", "  laravel-scheduler:");
 // Matched unquoted: the scheduler command is wrapped in `sh -c "... && exec php
 // artisan schedule:work"`, so the token is no longer its own quoted array element.
 assertIncludes("infra/docker-compose.laravel-next.yml", "schedule:work");
-assertIncludes("infra/docker-compose.laravel-next.yml", "--queue=scheduled-uploads,default");
+// Horizon owns the worker queue list; Compose only starts `php artisan horizon`.
+assertIncludes("archive-laravel/config/horizon.php", "'queue' => ['scheduled-uploads', 'default']");
 for (const key of [
   "SCHEDULED_UPLOADS_QUEUE",
   "SCHEDULED_UPLOADS_BATCH",

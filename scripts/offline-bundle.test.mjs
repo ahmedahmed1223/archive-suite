@@ -41,6 +41,17 @@ test("offline compose covers core images without builds, pulls, or floating tags
   assert.doesNotMatch(compose, /^  caddy:/m);
 });
 
+test("release Laravel startup makes the mounted storage writable before deep health checks", () => {
+  for (const path of ["infra/offline/compose.v1.yml", "infra/docker-compose.release.yml"]) {
+    const compose = read(path);
+    assert.match(
+      compose,
+      /laravel-fpm:[\s\S]*command: \["sh", "-c", "chown -R www-data:www-data \/app\/storage \/app\/bootstrap\/cache && php artisan archive:migrate-safe/,
+      path,
+    );
+  }
+});
+
 test("image inventory matches the immutable release descriptor's complete core service set", () => {
   const inventory = JSON.parse(read("infra/offline/images.v1.json"));
   assert.deepEqual(inventory.images.map(({ id }) => id), ["postgres", "redis", "laravel", "laravel-fpm", "laravel-worker", "laravel-reverb", "next"]);
