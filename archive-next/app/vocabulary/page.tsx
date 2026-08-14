@@ -11,7 +11,7 @@ import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ArchiveRecord, type VocabularyKindDefinition, type VocabularyTerm } from "@/lib/archive-api";
 import { buildChangeImpact, countAffectedRecords } from "@/lib/change-impact";
 import { countBy, normalizeText } from "@/lib/record-utils";
-import { selectMissingVocabularyTags } from "@/lib/default-taxonomy";
+import { getDefaultVocabularyTags, selectMissingVocabularyTags } from "@/lib/default-taxonomy";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -32,7 +32,7 @@ interface TermDeletion {
 }
 
 export default function VocabularyPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.pages.vocabulary;
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageVocabulary = useCapability("vocabulary.manage");
@@ -62,7 +62,7 @@ export default function VocabularyPage() {
     if (isImporting) return;
     setIsImporting(true);
     setImportMessage("");
-    const missing = selectMissingVocabularyTags(terms.map((item) => item.term));
+    const missing = selectMissingVocabularyTags(terms.map((item) => item.term), getDefaultVocabularyTags(locale));
     if (missing.length === 0) {
       setImportMessage(copy.defaultTagsPresent);
       setIsImporting(false);

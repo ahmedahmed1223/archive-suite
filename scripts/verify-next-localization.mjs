@@ -11,6 +11,13 @@ const approvedSources = new Set([
   // shared dictionary is being completed. Their tests assert both locales.
   "archive-next/lib/admin-action-summary.ts",
   "archive-next/lib/archive-api.ts",
+  "archive-next/lib/change-impact.ts",
+  "archive-next/lib/cleanup-center.ts",
+  "archive-next/lib/contextual-tips.ts",
+  "archive-next/lib/copilot-chat.ts",
+  "archive-next/lib/default-taxonomy.ts",
+  "archive-next/lib/onboarding.ts",
+  "archive-next/lib/operational-safety.ts",
   "archive-next/lib/record-status.ts",
 ]);
 

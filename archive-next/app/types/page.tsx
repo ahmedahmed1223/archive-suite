@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { createArchiveApiClient, type ArchiveType } from "@/lib/archive-api";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { selectMissingDefaults } from "@/lib/default-taxonomy";
+import { getDefaultArchiveTypes, selectMissingDefaults } from "@/lib/default-taxonomy";
 import TypesList from "./_components/TypesList";
 import TypesEditor from "./_components/TypesEditor";
 import "./types.css";
@@ -20,7 +20,7 @@ type TypesState =
   | { status: "error"; types: ArchiveType[]; message: string };
 
 export default function TypesPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.pages.types;
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
@@ -62,7 +62,7 @@ export default function TypesPage() {
     if (isSaving) return;
     setIsSaving(true);
     setActionMessage("");
-    const missing = selectMissingDefaults(state.types.map((type) => type.id));
+    const missing = selectMissingDefaults(state.types.map((type) => type.id), getDefaultArchiveTypes(locale));
     if (missing.length === 0) {
       setActionMessage(copy.defaultsComplete);
       setIsSaving(false);

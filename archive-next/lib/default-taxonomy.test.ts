@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ARCHIVE_TYPES,
   DEFAULT_VOCABULARY_TAGS,
+  getDefaultArchiveTypes,
+  getDefaultVocabularyTags,
   selectMissingDefaults,
   selectMissingVocabularyTags,
 } from "./default-taxonomy";
@@ -37,5 +39,28 @@ describe("selectMissingDefaults", () => {
       expect(type.name.trim().length).toBeGreaterThan(0);
       expect(type.fields.length).toBeGreaterThan(0);
     }
+  });
+
+  it("returns natural English archive types and fields for the English locale", () => {
+    const types = getDefaultArchiveTypes("en");
+
+    expect(types.find((type) => type.id === "news")).toMatchObject({
+      name: "News",
+      fields: [
+        { name: "Correspondent", type: "text" },
+        { name: "Location", type: "text" },
+        { name: "Event date", type: "date" },
+        { name: "Breaking news", type: "boolean" },
+      ],
+    });
+    expect(getDefaultArchiveTypes("ar")).toBe(DEFAULT_ARCHIVE_TYPES);
+  });
+
+  it("returns English vocabulary tags for the English locale", () => {
+    expect(getDefaultVocabularyTags("en")).toEqual([
+      "Politics", "Economy", "Sports", "Culture", "Health", "Education", "Technology",
+      "Environment", "Local", "International", "Breaking news", "Exclusive", "Archive", "Live",
+    ]);
+    expect(getDefaultVocabularyTags("ar")).toBe(DEFAULT_VOCABULARY_TAGS);
   });
 });
