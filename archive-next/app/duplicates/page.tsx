@@ -122,7 +122,7 @@ export default function DuplicatesPage() {
                   <div className="analytics-tag-row" key={record.id}>
                     <span>
                       <strong>{record.title || record.id}</strong>
-                      <small className="helper-text"> · {record.type || copy.unspecified} · {locale === "en" ? new Date(record.updatedAt || record.createdAt || "").toLocaleDateString("en-US") : formatDate(record.updatedAt || record.createdAt)}</small>
+                      <small className="helper-text"> · {record.type || copy.unspecified} · {formatDate(record.updatedAt || record.createdAt, "-", locale)}</small>
                     </span>
                     <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(record.id)}`}>{copy.open}</a>
                   </div>

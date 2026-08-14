@@ -24,4 +24,13 @@ describe("graph type lenses", () => {
     expect(resolveGraphLens("صوت", lenses)).toBe("all");
     expect(resolveGraphLens(null, lenses)).toBe("all");
   });
+
+  it("uses English labels and sorting when English is selected", () => {
+    expect(buildGraphLenses(nodes, "en")).toEqual([
+      { id: "all", label: "All types", count: 4 },
+      { id: "فيديو", label: "فيديو", count: 2 },
+      { id: "record", label: "Record", count: 1 },
+      { id: "صورة", label: "صورة", count: 1 },
+    ]);
+  });
 });

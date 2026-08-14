@@ -1,4 +1,5 @@
 import type { ArchiveRecord } from "./archive-api";
+import type { AppLocale } from "./i18n/types";
 
 export interface GeoPoint {
   lat: number;
@@ -59,9 +60,11 @@ export function formatCoordinates(location: GeoPoint, digits = 4): string {
   return `${location.lat.toFixed(digits)}°, ${location.lng.toFixed(digits)}°`;
 }
 
-export function formatDistanceKm(km: number): string {
+export function formatDistanceKm(km: number, locale: AppLocale = "ar"): string {
   const rounded = km < 10 ? Math.round(km * 10) / 10 : Math.round(km);
-  return `${rounded.toLocaleString("ar-SA", { maximumFractionDigits: 1 })} كم`;
+  return locale === "en"
+    ? `${rounded.toLocaleString("en-US", { maximumFractionDigits: 1 })} km`
+    : `${rounded.toLocaleString("ar-SA", { maximumFractionDigits: 1 })} كم`;
 }
 
 export function buildOsmLinks(location: GeoPoint, spanDegrees = 0.01): OsmLinks {

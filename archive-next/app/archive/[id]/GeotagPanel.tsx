@@ -30,7 +30,7 @@ export default function GeotagPanel({
   record: ArchiveRecord;
   onRecordUpdate: (record: ArchiveRecord) => void;
 }>) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const location = getRecordLocation(record);
   const [mode, setMode] = useState<"view" | "edit">("view");
@@ -240,7 +240,7 @@ export default function GeotagPanel({
                   <Link href={`/archive/${encodeURIComponent(nearbyRecordItem.id)}`}>
                     {nearbyRecordItem.title || nearbyRecordItem.id}
                   </Link>
-                  <span className="badge">{formatDistanceKm(distanceKm)}</span>
+                  <span className="badge">{formatDistanceKm(distanceKm, locale)}</span>
                 </li>
               ))}
             </ul>

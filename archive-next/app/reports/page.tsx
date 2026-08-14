@@ -36,7 +36,7 @@ function formatForecastDate(iso: string | null): string {
 }
 
 export default function ReportsPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.pages.reports;
   const eventOptions = [
     ["", copy.eventOptions.all], ["records.bulk_upsert", copy.eventOptions.recordsBulkUpsert], ["rights.upsert", copy.eventOptions.rightsUpsert], ["media.workflow.queue", copy.eventOptions.mediaWorkflowQueue], ["relations.create", copy.eventOptions.relationsCreate], ["system_control.allowed", copy.eventOptions.systemControlAllowed], ["system_control.rejected", copy.eventOptions.systemControlRejected],
@@ -246,7 +246,7 @@ export default function ReportsPage() {
           <div className="panel-title-row"><div><h2>{copy.table.title}</h2><p>{copy.table.description}</p></div><span className="badge">{copy.table.displayed.replace("{count}", String(entries.length))}</span></div>
           <div className="ui-data-table-wrap" tabIndex={0}>
             <table className="data-table"><thead><tr><th>{copy.table.event}</th><th>{copy.table.resource}</th><th>{copy.table.identifier}</th><th>{copy.table.outcome}</th><th>{copy.table.code}</th><th>{copy.table.date}</th></tr></thead>
-              <tbody>{entries.map((entry) => <tr key={entry.id}><td>{entry.event}</td><td>{entry.resourceType || copy.table.general}</td><td dir="ltr">{entry.resourceId || "—"}</td><td><span className={entry.outcome === "success" ? "badge" : "badge badge-danger"}>{copy.outcomeLabels[entry.outcome]}</span></td><td>{entry.statusCode}</td><td>{formatDate(entry.createdAt || undefined)}</td></tr>)}</tbody>
+              <tbody>{entries.map((entry) => <tr key={entry.id}><td>{entry.event}</td><td>{entry.resourceType || copy.table.general}</td><td dir="ltr">{entry.resourceId || "—"}</td><td><span className={entry.outcome === "success" ? "badge" : "badge badge-danger"}>{copy.outcomeLabels[entry.outcome]}</span></td><td>{entry.statusCode}</td><td>{formatDate(entry.createdAt || undefined, "-", locale)}</td></tr>)}</tbody>
             </table>
           </div>
         </section>

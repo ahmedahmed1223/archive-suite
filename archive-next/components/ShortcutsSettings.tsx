@@ -17,7 +17,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 type RecordingKey = ShortcutKey | null;
 
 export default function ShortcutsSettings() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.settings.shortcuts;
   const dialogs = useConfirmDialog();
   const [shortcuts, setShortcuts] = useState<ReturnType<typeof getAllShortcuts> | null>(null);
@@ -25,15 +25,15 @@ export default function ShortcutsSettings() {
   const [recordedBinding, setRecordedBinding] = useState<any>(null);
 
   useEffect(() => {
-    setShortcuts(getAllShortcuts());
+    setShortcuts(getAllShortcuts(locale));
 
     const handleUpdate = () => {
-      setShortcuts(getAllShortcuts());
+      setShortcuts(getAllShortcuts(locale));
     };
 
     window.addEventListener("archive:shortcuts-changed", handleUpdate);
     return () => window.removeEventListener("archive:shortcuts-changed", handleUpdate);
-  }, []);
+  }, [locale]);
 
   const handleStartRecording = (key: ShortcutKey) => {
     setRecordingKey(key);
@@ -67,7 +67,7 @@ export default function ShortcutsSettings() {
       updateShortcut(recordingKey, recordedBinding);
       setRecordingKey(null);
       setRecordedBinding(null);
-      setShortcuts(getAllShortcuts());
+      setShortcuts(getAllShortcuts(locale));
     }
   };
 
@@ -85,7 +85,7 @@ export default function ShortcutsSettings() {
     });
     if (!confirmed) return;
     resetShortcuts();
-    setShortcuts(getAllShortcuts());
+    setShortcuts(getAllShortcuts(locale));
     setRecordingKey(null);
     setRecordedBinding(null);
   };

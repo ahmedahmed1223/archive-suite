@@ -73,6 +73,10 @@ describe("formatDistanceKm", () => {
   it("formats long distances rounded to whole km", () => {
     expect(formatDistanceKm(123.6)).toBe("١٢٤ كم");
   });
+
+  it("formats distances in English when English is selected", () => {
+    expect(formatDistanceKm(3.24, "en")).toBe("3.2 km");
+  });
 });
 
 describe("buildOsmLinks", () => {

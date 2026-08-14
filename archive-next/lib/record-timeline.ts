@@ -1,6 +1,7 @@
 // ponytail: merges data already loaded on the record page into one sorted timeline (V1-829).
 // No new activity/notification system — history/comments/rights are existing endpoints.
 import type { RecordComment, RecordHistoryEntry, RightsRecord } from "@/lib/archive-api";
+import type { AppLocale } from "@/lib/i18n/types";
 
 export type TimelineEntryKind = "history" | "comment" | "rights";
 
@@ -19,7 +20,7 @@ export function buildRecordTimeline(input: {
   history: readonly RecordHistoryEntry[];
   comments: readonly RecordComment[];
   rights: RightsRecord | null;
-}): TimelineEntry[] {
+}, locale: AppLocale = "ar"): TimelineEntry[] {
   const entries: TimelineEntry[] = [];
 
   for (const item of input.history) {
@@ -27,7 +28,7 @@ export function buildRecordTimeline(input: {
     entries.push({
       kind: "history",
       label: historyLabel(item),
-      detail: item.outcome === "success" ? "" : `النتيجة: ${item.outcome}`,
+      detail: item.outcome === "success" ? "" : (locale === "en" ? `Outcome: ${item.outcome}` : `النتيجة: ${item.outcome}`),
       timestamp: item.createdAt
     });
   }
@@ -36,7 +37,7 @@ export function buildRecordTimeline(input: {
     if (!comment.createdAt) continue;
     entries.push({
       kind: "comment",
-      label: `تعليق من ${comment.authorName}`,
+      label: locale === "en" ? `Comment from ${comment.authorName}` : `تعليق من ${comment.authorName}`,
       detail: comment.body,
       timestamp: comment.createdAt
     });
@@ -45,7 +46,7 @@ export function buildRecordTimeline(input: {
   if (input.rights) {
     entries.push({
       kind: "rights",
-      label: "سجل الحقوق",
+      label: locale === "en" ? "Rights record" : "سجل الحقوق",
       detail: `${input.rights.rightsHolder} — ${input.rights.licenseType}`,
       timestamp: input.rights.updatedAt
     });

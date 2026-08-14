@@ -87,7 +87,7 @@ function SortableKanbanCard({
   status: WorkflowStatus;
   canEdit: boolean;
 }>) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.pages.kanban;
   const { attributes, listeners, setActivatorNodeRef, setNodeRef, transform, transition, isDragging } = useSortable({
     id: record.id,
@@ -117,7 +117,7 @@ function SortableKanbanCard({
         </div>
       )}
       <strong>{record.title || record.id}</strong>
-      <span className="helper-text">{record.type || copy.unspecified} · {formatDate(record.updatedAt || record.createdAt)}</span>
+      <span className="helper-text">{record.type || copy.unspecified} · {formatDate(record.updatedAt || record.createdAt, "-", locale)}</span>
       <div className="button-row">
         <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(record.id)}`}>{copy.open}</a>
         {canEdit ? (

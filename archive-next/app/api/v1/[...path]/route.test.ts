@@ -41,4 +41,14 @@ describe("/api/v1 proxy errors", () => {
 
     expect((await response.json()).error).toBe("The API service is not configured.");
   });
+
+  it("uses the locale cookie when the proxy header is unavailable", async () => {
+    vi.stubEnv("ARCHIVE_API_BASE_URL", "");
+
+    const response = await GET(new Request("http://next.test/api/v1/records", {
+      headers: { Cookie: "session=abc; archive_locale=en" }
+    }), context);
+
+    expect((await response.json()).error).toBe("The API service is not configured.");
+  });
 });

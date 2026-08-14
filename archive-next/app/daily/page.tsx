@@ -195,7 +195,7 @@ export default function DailyPage() {
                 <li key={item.id}>
                   <Link className="dashboard-recent__item" href="/inbox">
                     <span className="dashboard-recent__title">{item.title}</span>
-                    {item.createdAt ? <span className="dashboard-recent__meta">{formatDate(item.createdAt)}</span> : null}
+                    {item.createdAt ? <span className="dashboard-recent__meta">{formatDate(item.createdAt, "-", locale)}</span> : null}
                   </Link>
                 </li>
               ))}
@@ -221,7 +221,7 @@ export default function DailyPage() {
                 <li key={notification.id}>
                   <Link className="dashboard-recent__item" href="/notifications">
                     <span className="dashboard-recent__title">{notification.title}</span>
-                    <span className="dashboard-recent__meta">{formatDate(notification.created_at)}</span>
+                    <span className="dashboard-recent__meta">{formatDate(notification.created_at, "-", locale)}</span>
                   </Link>
                 </li>
               ))}

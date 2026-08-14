@@ -29,6 +29,11 @@ describe("keyboard shortcuts (V1-832)", () => {
     });
   });
 
+  test("uses the selected locale for shortcut labels", () => {
+    expect(getAllShortcuts("en").commandPalette.label).toBe("Open command palette");
+    expect(getAllShortcuts("ar").commandPalette.label).toBe("فتح لوحة الأوامر");
+  });
+
   test("no shortcut claims a browser combination", () => {
     // Ctrl+S/N/T/W/P belong to the browser; V1-832 requires we leave them alone.
     const reserved = new Set(["s", "n", "t", "w", "p"]);

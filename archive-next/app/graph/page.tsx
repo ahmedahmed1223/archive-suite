@@ -373,7 +373,7 @@ function RelationForm({
 }
 
 export default function GraphPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.pages.graph;
   const api = useMemo(() => createArchiveApiClient(), []);
   const canEditRelations = useCapability("records.edit");
@@ -419,7 +419,7 @@ export default function GraphPage() {
   const allNodes = useMemo(() => graph?.nodes ?? [], [graph]);
   const allEdges = useMemo(() => graph?.edges ?? [], [graph]);
 
-  const graphLenses = useMemo(() => buildGraphLenses(allNodes), [allNodes]);
+  const graphLenses = useMemo(() => buildGraphLenses(allNodes, locale), [allNodes, locale]);
 
   useEffect(() => {
     setGraphLens(resolveGraphLens(window.localStorage.getItem(GRAPH_LENS_STORAGE_KEY), graphLenses));

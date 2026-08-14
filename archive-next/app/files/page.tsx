@@ -321,7 +321,7 @@ export default function FilesPage() {
 
   const handleConfirmShare = async () => {
     if (selectedKeys.length === 0) return;
-    const validation = validateShareExpiry(shareChecklist.expiryLocalValue, new Date());
+    const validation = validateShareExpiry(shareChecklist.expiryLocalValue, new Date(), locale);
     if (!validation.valid) {
       setShareChecklist((current) => ({ ...current, expiryError: validation.message }));
       return;

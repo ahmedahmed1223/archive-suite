@@ -1,7 +1,7 @@
 import { readdirSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { getGuideChapters } from "./guide-content";
-import { filterGuideChapters, getGuideChapterForPath } from "./in-app-guide";
+import { filterGuideChapters, getGuideChapterForPath, getGuideRoles } from "./in-app-guide";
 
 const chapters = [
   { id: "viewer-search", title: "البحث", audience: ["viewer", "editor", "admin"], body: "ابحث عن السجلات ثم احفظ النتيجة.", href: "/search" },
@@ -10,6 +10,14 @@ const chapters = [
 ] as const;
 
 describe("in-app guide", () => {
+  it("localizes guide role labels", () => {
+    expect(getGuideRoles("en")).toEqual([
+      { value: "viewer", label: "Viewer" },
+      { value: "editor", label: "Editor" },
+      { value: "admin", label: "Administrator" },
+    ]);
+  });
+
   it("publishes stable role-aware chapter entries with routable links", () => {
     const manifestChapters = getGuideChapters("admin", "ar");
 

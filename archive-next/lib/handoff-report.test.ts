@@ -42,4 +42,12 @@ describe("handoff report (V1-864)", () => {
     expect(text).toContain("القناة");
     expect(text).toContain("تعليقات مفتوحة: 1");
   });
+
+  it("formats an English handoff report when English is selected", () => {
+    const entry = buildHandoffEntry(RECORD, null, COMMENTS, "en");
+
+    expect(entry.statusLabel).toBe("Draft");
+    expect(formatHandoffReport([entry], "en")).toContain("Open comments: 1");
+    expect(formatHandoffReport([], "en")).toBe("There are no items in this handoff.");
+  });
 });

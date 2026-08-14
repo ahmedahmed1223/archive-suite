@@ -19,7 +19,7 @@ type InboxLoadState =
   | { status: "error"; message: string };
 
 export default function InboxPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.pages.inbox;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [items, setItems] = useState<InboxItem[]>([]);
@@ -234,7 +234,7 @@ export default function InboxPage() {
                   <span className="badge">{copy.statuses[item.status]}</span>
                   <h3>{item.title}</h3>
                 </div>
-                <span className="badge">{item.createdAt ? formatDate(item.createdAt) : "-"}</span>
+                <span className="badge">{item.createdAt ? formatDate(item.createdAt, "-", locale) : "-"}</span>
               </div>
               <dl className="mobile-field-list">
                 <div><dt>{copy.item.source}</dt><dd dir="auto">{item.source || "-"}</dd></div>

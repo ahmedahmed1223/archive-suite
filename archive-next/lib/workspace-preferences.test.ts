@@ -70,4 +70,8 @@ describe("workspace preferences", () => {
       label: "عرض 3 من 13 نتيجة"
     });
   });
+
+  it("reports result counts in English when English is selected", () => {
+    expect(deriveWorkspaceResultCount({ total: 27, page: 2, pageSize: 10, filtered: 13 }, "en").label).toBe("Showing 3 of 13 results");
+  });
 });

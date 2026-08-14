@@ -16,11 +16,18 @@ import {
   type ConnectivityStatus
 } from "./connectivity-probe";
 import { toast, toastError, toastSuccess } from "./toast";
+import { isAppLocale, LOCALE_STORAGE_KEY, type AppLocale } from "./i18n/types";
 
 const MAX_RETRIES = 3;
 
 let isReplaying = false;
 let replayAbortController: AbortController | null = null;
+
+function activeLocale(): AppLocale {
+  if (typeof window === "undefined") return "ar";
+  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+  return isAppLocale(stored) ? stored : "ar";
+}
 
 /**
  * Initialize the offline system:
@@ -69,8 +76,9 @@ export async function replayOfflineQueue() {
   try {
     const queue = getOfflineQueue();
     if (queue.length === 0) return;
+    const locale = activeLocale();
 
-    toast(`الرجوع إلى الإنترنت. إعادة محاولة ${queue.length} عملية...`, "info");
+    toast(locale === "en" ? `Back online. Retrying ${queue.length} operations...` : `الرجوع إلى الإنترنت. إعادة محاولة ${queue.length} عملية...`, "info");
 
     const results = {
       succeeded: 0,
@@ -106,12 +114,16 @@ export async function replayOfflineQueue() {
     if (results.failed === 0) {
       if (results.succeeded > 0) {
         toastSuccess(
-          `تم إعادة محاولة ${results.succeeded} عملية بنجاح. تم تطبيق البيانات.`
+          locale === "en"
+            ? `${results.succeeded} operations retried successfully. Changes have been applied.`
+            : `تم إعادة محاولة ${results.succeeded} عملية بنجاح. تم تطبيق البيانات.`
         );
       }
     } else {
       toastError(
-        `أعيدت محاولة ${results.succeeded} عملية. فشل ${results.failed}. يرجى المحاولة يدويا.`
+        locale === "en"
+          ? `${results.succeeded} operations retried. ${results.failed} failed. Please try again manually.`
+          : `أعيدت محاولة ${results.succeeded} عملية. فشل ${results.failed}. يرجى المحاولة يدويا.`
       );
     }
 
@@ -122,7 +134,7 @@ export async function replayOfflineQueue() {
       }
     }
   } catch (error) {
-    toastError("خطأ أثناء محاولة إعادة تطبيق البيانات. سيتم المحاولة لاحقا.");
+    toastError(activeLocale() === "en" ? "Could not replay the queued changes. They will be retried later." : "خطأ أثناء محاولة إعادة تطبيق البيانات. سيتم المحاولة لاحقا.");
   } finally {
     isReplaying = false;
     replayAbortController = null;

@@ -17,6 +17,10 @@ describe("record duplicate as draft (V1-831)", () => {
     expect(payload.title).toBe("نسخة من مقابلة أصلية");
   });
 
+  it("prefixes drafts in English when English is selected", () => {
+    expect(buildDuplicateDraftPayload(RECORD, "en").title).toBe("Copy of مقابلة أصلية");
+  });
+
   it("copies description, type, and tags", () => {
     const payload = buildDuplicateDraftPayload(RECORD);
     expect(payload.description).toBe("وصف");

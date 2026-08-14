@@ -1,4 +1,5 @@
 import type { createArchiveApiClient, UploadedRecord, UploadSession } from "./archive-api";
+import type { AppLocale } from "./i18n/types";
 
 type ArchiveApi = ReturnType<typeof createArchiveApiClient>;
 
@@ -32,6 +33,7 @@ export interface ChunkedUploadOptions {
   folder?: string;
   onProgress?: (progress: ChunkedUploadProgress) => void;
   signal?: AbortSignal;
+  locale?: AppLocale;
 }
 
 function fileFingerprint(file: File, folder?: string): string {
@@ -138,7 +140,7 @@ async function stageUploadSession(
 
   for (let index = 0; index < session.totalChunks; index += 1) {
     if (options.signal?.aborted) {
-      return { ok: false, error: "أُلغي الرفع." };
+      return { ok: false, error: options.locale === "en" ? "Upload cancelled." : "أُلغي الرفع." };
     }
     if (received.has(index)) continue;
 

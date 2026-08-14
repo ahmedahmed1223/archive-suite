@@ -6,7 +6,7 @@ import { formatShortcutDisplay, getAllShortcuts, getShortcut, isTypingTarget, ma
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export default function ShortcutsOverlay() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.shared.shortcutsOverlay;
   const [open, setOpen] = useState(false);
 
@@ -23,7 +23,7 @@ export default function ShortcutsOverlay() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const shortcuts = getAllShortcuts();
+  const shortcuts = getAllShortcuts(locale);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

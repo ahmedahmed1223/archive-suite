@@ -1,4 +1,5 @@
 export const WORKSPACE_PREFERENCES_VERSION = 2;
+import type { AppLocale } from "@/lib/i18n/types";
 export const WORKSPACE_PREFERENCES_STORAGE_KEY = "masar.workspace-preferences";
 
 export const workspaceRoutes = [
@@ -113,10 +114,10 @@ export function deriveWorkspaceResultCount({ total, filtered, page, pageSize }: 
   filtered: number;
   page: number;
   pageSize: number;
-}): WorkspaceResultCount {
+}, locale: AppLocale = "ar"): WorkspaceResultCount {
   const safeTotal = Math.max(0, total);
   const safeFiltered = Math.max(0, Math.min(filtered, safeTotal));
   const start = Math.max(0, (Math.max(1, page) - 1) * Math.max(1, pageSize));
   const visible = Math.max(0, Math.min(Math.max(1, pageSize), safeFiltered - start));
-  return { visible, filtered: safeFiltered, total: safeTotal, label: `عرض ${visible} من ${safeFiltered} نتيجة` };
+  return { visible, filtered: safeFiltered, total: safeTotal, label: locale === "en" ? `Showing ${visible} of ${safeFiltered} results` : `عرض ${visible} من ${safeFiltered} نتيجة` };
 }

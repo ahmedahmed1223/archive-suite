@@ -12,6 +12,10 @@ describe("storage capacity alert (V1-859)", () => {
     expect(result.message).toContain("80%");
   });
 
+  it("uses English capacity warnings when English is selected", () => {
+    expect(checkStorageCapacity(80, 100, "en").message).toBe("Staging storage is nearing capacity (80%).");
+  });
+
   it("is critical at or above 95% usage", () => {
     const result = checkStorageCapacity(96, 100);
     expect(result.level).toBe("critical");

@@ -12,6 +12,13 @@ describe("share-checklist (V1-836)", () => {
     expect(result.valid).toBe(false);
   });
 
+  test("returns English validation text when English is selected", () => {
+    expect(validateShareExpiry("", new Date("2026-01-01T10:00:00"), "en")).toEqual({
+      valid: false,
+      message: "Set an expiry date for the share link."
+    });
+  });
+
   test("rejects a value in the past", () => {
     const now = new Date("2026-01-05T10:00:00");
     const result = validateShareExpiry("2026-01-01T10:00", now);

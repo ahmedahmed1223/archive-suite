@@ -162,10 +162,10 @@ export default function VocabularyPage() {
   }, [api]);
 
   const discovered = useMemo(() => {
-    const typeRows = countBy(records.map((record) => record.type || "").filter(Boolean)).map(([value, count]) => ({ term: value, kind: "type" as const, count }));
-    const tagRows = countBy(records.flatMap((record) => record.tags || [])).map(([value, count]) => ({ term: value, kind: "tag" as const, count }));
+    const typeRows = countBy(records.map((record) => record.type || "").filter(Boolean), locale).map(([value, count]) => ({ term: value, kind: "type" as const, count }));
+    const tagRows = countBy(records.flatMap((record) => record.tags || []), locale).map(([value, count]) => ({ term: value, kind: "tag" as const, count }));
     return [...typeRows, ...tagRows].filter((item) => normalizeText(item.term).includes(normalizeText(filter))).slice(0, 80);
-  }, [filter, records]);
+  }, [filter, locale, records]);
 
   const savedTerms = useMemo(() => {
     const normalized = normalizeText(filter);

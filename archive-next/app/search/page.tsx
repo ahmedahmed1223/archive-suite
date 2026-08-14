@@ -305,7 +305,7 @@ function SearchPageContent() {
     filtered: filteredRecords.length,
     page: currentPage,
     pageSize
-  }), [currentPage, filteredRecords.length, pageSize, state]);
+  }, locale), [currentPage, filteredRecords.length, pageSize, state, locale]);
   const previewRecord = useMemo(() => {
     if (previewId) return filteredRecords.find((record) => record.id === previewId) || filteredRecords[0] || null;
     return filteredRecords[0] || null;

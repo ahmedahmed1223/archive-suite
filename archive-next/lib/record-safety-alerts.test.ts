@@ -26,6 +26,14 @@ describe("record safety alerts (V1-830)", () => {
     expect(alerts.filter((a) => a.kind === "checksum-duplicate")).toHaveLength(1);
   });
 
+  it("uses English alert text when English is selected", () => {
+    const alerts = buildSafetyAlerts({
+      attachments: [attachment({ id: "a1", checksumSha256: "sum1" }), attachment({ id: "a2", checksumSha256: "sum1" })],
+      rights: null
+    }, "en");
+    expect(alerts[0]?.message).toBe("2 attachments share the same checksum: clip.mp4, clip.mp4.");
+  });
+
   it("does not flag attachments with distinct checksums", () => {
     const alerts = buildSafetyAlerts({
       attachments: [attachment({ id: "a1", checksumSha256: "sum1" }), attachment({ id: "a2", checksumSha256: "sum2" })],

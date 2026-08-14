@@ -22,6 +22,12 @@ describe("record timeline (V1-829)", () => {
     expect(timeline).toHaveLength(4);
   });
 
+  it("uses English labels when English is selected", () => {
+    const timeline = buildRecordTimeline({ history: HISTORY, comments: COMMENTS, rights: RIGHTS }, "en");
+    expect(timeline.find((entry) => entry.kind === "comment")?.label).toBe("Comment from أحمد");
+    expect(timeline.find((entry) => entry.kind === "rights")?.label).toBe("Rights record");
+  });
+
   it("sorts entries newest first", () => {
     const timeline = buildRecordTimeline({ history: HISTORY, comments: COMMENTS, rights: RIGHTS });
     const timestamps = timeline.map((e) => e.timestamp);

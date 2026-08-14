@@ -33,6 +33,22 @@ const fakeRecord: UploadedRecord = {
 };
 
 describe("uploadFileInChunks", () => {
+  it("reports an English cancellation error when English is selected", async () => {
+    const api = {
+      createUploadSession: vi.fn().mockResolvedValue({ ok: true, session: baseSession() }),
+      uploadSessionChunk: vi.fn(),
+      completeUploadSession: vi.fn(),
+      uploadSessionStatus: vi.fn(),
+      abortUploadSession: vi.fn()
+    } as unknown as ArchiveApi;
+    const controller = new AbortController();
+    controller.abort();
+
+    const result = await uploadFileInChunks(api, makeFile("cancelled.mp4"), { signal: controller.signal, locale: "en" });
+
+    expect(result).toEqual({ ok: false, error: "Upload cancelled." });
+  });
+
   beforeEach(() => {
     window.localStorage.clear();
   });

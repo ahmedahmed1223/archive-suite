@@ -3,6 +3,8 @@
  * calls - files/page.tsx owns wiring these into state and the network call.
  */
 
+import type { AppLocale } from "@/lib/i18n/types";
+
 const DEFAULT_EXPIRY_DAYS = 7;
 
 /** Renders an instant as the "YYYY-MM-DDTHH:mm" value a datetime-local input expects. */
@@ -20,18 +22,18 @@ export type ShareExpiryValidation =
   | { valid: false; message: string };
 
 /** A datetime-local input reads as browser-local wall-clock time; `new Date(value)` already interprets it that way. */
-export function validateShareExpiry(localValue: string, now: Date): ShareExpiryValidation {
+export function validateShareExpiry(localValue: string, now: Date, locale: AppLocale = "ar"): ShareExpiryValidation {
   if (!localValue.trim()) {
-    return { valid: false, message: "حدد تاريخ انتهاء لرابط المشاركة." };
+    return { valid: false, message: locale === "en" ? "Set an expiry date for the share link." : "حدد تاريخ انتهاء لرابط المشاركة." };
   }
 
   const parsed = new Date(localValue);
   if (Number.isNaN(parsed.getTime())) {
-    return { valid: false, message: "تاريخ الانتهاء غير صالح." };
+    return { valid: false, message: locale === "en" ? "The expiry date is invalid." : "تاريخ الانتهاء غير صالح." };
   }
 
   if (parsed.getTime() <= now.getTime()) {
-    return { valid: false, message: "تاريخ الانتهاء يجب أن يكون في المستقبل." };
+    return { valid: false, message: locale === "en" ? "The expiry date must be in the future." : "تاريخ الانتهاء يجب أن يكون في المستقبل." };
   }
 
   return { valid: true, iso: parsed.toISOString() };

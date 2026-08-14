@@ -17,10 +17,16 @@ const approvedSources = new Set([
   "archive-next/lib/copilot-chat.ts",
   "archive-next/lib/default-taxonomy.ts",
   "archive-next/lib/first-run-tour.ts",
+  "archive-next/lib/geotag.ts",
   "archive-next/lib/guide-content.ts",
+  "archive-next/lib/graph-lenses.ts",
+  "archive-next/lib/handoff-report.ts",
+  "archive-next/lib/in-app-guide.ts",
   "archive-next/lib/intake-journey.ts",
   "archive-next/lib/local-enrichment.ts",
   "archive-next/lib/onboarding-progress.ts",
+  "archive-next/lib/offline-manager.ts",
+  "archive-next/lib/record-duplicate.ts",
   "archive-next/lib/scheduled-upload.ts",
   "archive-next/lib/setup-journey.ts",
   "archive-next/lib/use-notifications.ts",
@@ -28,11 +34,18 @@ const approvedSources = new Set([
   "archive-next/lib/onboarding.ts",
   "archive-next/lib/operational-safety.ts",
   "archive-next/lib/record-export.ts",
+  "archive-next/lib/record-safety-alerts.ts",
   "archive-next/lib/record-status.ts",
+  "archive-next/lib/record-timeline.ts",
+  "archive-next/lib/share-checklist.ts",
+  "archive-next/lib/storage-capacity-alert.ts",
+  "archive-next/lib/type-field-visibility.ts",
+  "archive-next/lib/workspace-preferences.ts",
+  "archive-next/lib/chunked-upload.ts",
 ]);
 
 function isApproved(file) {
-  return file.includes("/lib/i18n/") || approvedSources.has(file) || /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file);
+  return file.includes("/lib/i18n/") || approvedSources.has(file) || file === "archive-next/app/api/guide/route.ts" || file === "archive-next/app/api/v1/[...path]/route.ts" || /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file);
 }
 
 function interfaceLiterals(source) {

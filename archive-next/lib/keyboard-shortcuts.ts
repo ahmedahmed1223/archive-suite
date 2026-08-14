@@ -1,5 +1,7 @@
 // ponytail: simple localStorage shortcut store; no complex event systems
 // Upgrade path: subscribe to changes via window.dispatchEvent if multiple components need reactivity
+import { getDictionary } from "./i18n/dictionaries";
+import type { AppLocale } from "./i18n/types";
 
 export type ShortcutKey =
   | "commandPalette"
@@ -85,16 +87,17 @@ export function resetShortcuts() {
   saveShortcuts(defaultShortcuts);
 }
 
-export function getAllShortcuts(): Record<ShortcutKey, { label: string; binding: ShortcutBinding }> {
+export function getAllShortcuts(locale: AppLocale = "ar"): Record<ShortcutKey, { label: string; binding: ShortcutBinding }> {
   const shortcuts = loadShortcuts();
+  const labels = getDictionary(locale).shared.shortcutsOverlay.labels;
   return {
-    commandPalette: { label: "فتح لوحة الأوامر", binding: shortcuts.commandPalette },
-    shortcutsHelp: { label: "عرض لوحة الاختصارات", binding: shortcuts.shortcutsHelp },
-    focusSearch: { label: "الانتقال إلى البحث", binding: shortcuts.focusSearch },
-    newRecord: { label: "إنشاء مادة جديدة", binding: shortcuts.newRecord },
-    saveRecord: { label: "حفظ التوصيف", binding: shortcuts.saveRecord },
-    focusComments: { label: "الانتقال إلى التعليقات", binding: shortcuts.focusComments },
-    focusTags: { label: "الانتقال إلى الوسوم", binding: shortcuts.focusTags }
+    commandPalette: { label: labels.commandPalette, binding: shortcuts.commandPalette },
+    shortcutsHelp: { label: labels.shortcutsHelp, binding: shortcuts.shortcutsHelp },
+    focusSearch: { label: labels.focusSearch, binding: shortcuts.focusSearch },
+    newRecord: { label: labels.newRecord, binding: shortcuts.newRecord },
+    saveRecord: { label: labels.saveRecord, binding: shortcuts.saveRecord },
+    focusComments: { label: labels.focusComments, binding: shortcuts.focusComments },
+    focusTags: { label: labels.focusTags, binding: shortcuts.focusTags }
   };
 }
 

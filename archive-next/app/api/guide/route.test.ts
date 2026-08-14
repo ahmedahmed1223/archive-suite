@@ -73,4 +73,18 @@ describe("GET /api/guide", () => {
     expect(response.status).toBe(401);
     expect((await response.json()).ok).toBe(false);
   });
+
+  test("uses the validated locale cookie for unauthenticated errors", async () => {
+    vi.stubEnv("ARCHIVE_API_BASE_URL", "http://laravel.test/api/v1");
+
+    const response = await GET(new Request("http://next.test/api/guide", {
+      headers: { Cookie: "archive_locale=en" },
+    }));
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: "Your guide access could not be verified. Sign in again.",
+    });
+  });
 });

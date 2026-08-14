@@ -30,7 +30,7 @@ type CollectionsLoadState =
 
 
 export default function CollectionsPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.pages.collections;
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
@@ -73,16 +73,16 @@ export default function CollectionsPage() {
     () => (state.status === "ready" ? state.records : []),
     [state]
   );
-  const types = useMemo(() => uniqueSorted(records.map((record) => record.type)), [records]);
-  const tags = useMemo(() => uniqueSorted(records.flatMap((record) => record.tags || [])), [records]);
+  const types = useMemo(() => uniqueSorted(records.map((record) => record.type), locale), [locale, records]);
+  const tags = useMemo(() => uniqueSorted(records.flatMap((record) => record.tags || []), locale), [locale, records]);
   const smartSuggestions = useMemo(() => {
-    const topTypes = countBy(records.map((record) => record.type || "").filter(Boolean)).slice(0, 4);
-    const topTags = countBy(records.flatMap((record) => record.tags || [])).slice(0, 4);
+    const topTypes = countBy(records.map((record) => record.type || "").filter(Boolean), locale).slice(0, 4);
+    const topTags = countBy(records.flatMap((record) => record.tags || []), locale).slice(0, 4);
     return [
       ...topTypes.map(([value, count]) => ({ label: copy.typeSuggestion.replace("{value}", value), type: value, tag: "all", count })),
       ...topTags.map(([value, count]) => ({ label: copy.tagSuggestion.replace("{value}", value), type: "all", tag: value, count }))
     ].slice(0, 6);
-  }, [records, copy]);
+  }, [records, copy, locale]);
 
   async function createCollection(payload: { name: string; query?: string; type?: string; tag?: string; icon?: string }) {
     setStatusMessage(copy.saving);
@@ -287,7 +287,7 @@ export default function CollectionsPage() {
                   <strong className="metric-value">{matches.length}</strong>
                 </div>
                 <dl className="mobile-field-list">
-                  <div><dt>{copy.type}</dt><dd>{collection.type === "all" ? copy.allTypes : collection.type}</dd></div><div><dt>{copy.tag}</dt><dd>{collection.tag === "all" ? copy.allTags : collection.tag}</dd></div><div><dt>{copy.created}</dt><dd>{collection.createdAt ? formatDate(collection.createdAt) : "-"}</dd></div>
+                  <div><dt>{copy.type}</dt><dd>{collection.type === "all" ? copy.allTypes : collection.type}</dd></div><div><dt>{copy.tag}</dt><dd>{collection.tag === "all" ? copy.allTags : collection.tag}</dd></div><div><dt>{copy.created}</dt><dd>{collection.createdAt ? formatDate(collection.createdAt, "-", locale) : "-"}</dd></div>
                 </dl>
                 <ChangeImpactPreview impact={buildChangeImpact({ action: "update", entity: copy.entity, affectedCount: 0 })} /><p className="helper-text">{state.status === "ready" ? copy.preview.replace("{count}", String(matches.length)) : copy.countUnavailable}</p>
                 <div className="button-row">

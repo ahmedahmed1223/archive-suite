@@ -27,7 +27,7 @@ type TagsLoadState =
   | { status: "error"; message: string };
 
 export default function TagsPage() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.pages.tags;
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageTags = useCapability("tags.manage");
@@ -86,14 +86,14 @@ export default function TagsPage() {
   const nodeByTag = useMemo(() => new Map(nodes.map((node) => [node.tag, node])), [nodes]);
 
   const tagRows = useMemo(() => {
-    const rows = countBy(records.flatMap((record) => record.tags || [])).map(([tag, count]) => ({
+    const rows = countBy(records.flatMap((record) => record.tags || []), locale).map(([tag, count]) => ({
       tag,
       count,
       parent: nodeByTag.get(tag)?.parent || ""
     }));
     const normalized = normalizeText(filter);
     return rows.filter((row) => !normalized || normalizeText(`${row.tag} ${row.parent}`).includes(normalized));
-  }, [filter, nodeByTag, records]);
+  }, [filter, locale, nodeByTag, records]);
 
   const duplicateGroups = useMemo(() => {
     const groups = new Map<string, string[]>();

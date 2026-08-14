@@ -354,6 +354,7 @@ export function UploadForm() {
     const uploaded = file.size >= CHUNKED_UPLOAD_THRESHOLD_BYTES
       ? await uploadFileInChunks(api, file, {
           folder: effectiveFolder,
+          locale,
           onProgress: ({ uploadedBytes, totalBytes }) => {
             const progressPercent = totalBytes > 0 ? Math.round((uploadedBytes / totalBytes) * 100) : 0;
             setFileProgress((current) => current.map((item) =>
@@ -392,6 +393,7 @@ export function UploadForm() {
     setState({ status: "uploading", current: file.name, stage: "uploading" });
     const staged = await uploadFileForSchedule(api, file, {
       folder: effectiveFolder,
+      locale,
       onProgress: ({ uploadedBytes, totalBytes }) => {
         const progressPercent = totalBytes > 0 ? Math.round((uploadedBytes / totalBytes) * 100) : 0;
         setFileProgress((current) => current.map((item) =>

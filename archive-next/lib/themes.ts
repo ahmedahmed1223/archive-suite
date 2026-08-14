@@ -82,7 +82,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     // ponytail: dark-only high-contrast preset (WCAG AAA text contrast); add a light variant if users request one
     id: "high-contrast",
-    name: "تباين عالٍ",
+    name: "High Contrast",
     tokens: {
       "color-bg-primary": "#000000",
       "color-bg-secondary": "#0D0D0D",

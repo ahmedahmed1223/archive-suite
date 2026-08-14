@@ -1,6 +1,6 @@
 import { forwardArchiveApiResponse } from "@/lib/archive-api-proxy";
 import { resolveRequestLocale } from "@/lib/i18n/resolve-locale";
-import { isAppLocale } from "@/lib/i18n/types";
+import { isAppLocale, type AppLocale } from "@/lib/i18n/types";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +19,29 @@ const FORWARDED_REQUEST_HEADERS = [
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
+function localeFromCookie(cookieHeader: string | null): AppLocale | null {
+  if (!cookieHeader) return null;
+
+  for (const part of cookieHeader.split(";")) {
+    const [name, ...value] = part.trim().split("=");
+    if (name === "archive_locale") {
+      const locale = value.join("=");
+      return isAppLocale(locale) ? locale : null;
+    }
+  }
+
+  return null;
+}
+
 async function proxyArchiveApi(request: Request, context: RouteContext): Promise<Response> {
   const forwardedLocale = request.headers.get("x-archive-locale");
   const locale = isAppLocale(forwardedLocale)
     ? forwardedLocale
-    : resolveRequestLocale({ acceptLanguage: request.headers.get("accept-language"), fallback: "ar" });
+    : resolveRequestLocale({
+        cookie: localeFromCookie(request.headers.get("cookie")),
+        acceptLanguage: request.headers.get("accept-language"),
+        fallback: "ar",
+      });
   const errors = locale === "en"
     ? { notConfigured: "The API service is not configured.", unavailable: "Could not connect to the API service." }
     : { notConfigured: "خدمة API غير مهيأة.", unavailable: "تعذر الاتصال بخدمة API." };

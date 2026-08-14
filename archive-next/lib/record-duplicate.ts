@@ -2,10 +2,11 @@
 // existing POST /records endpoint — no new API, no files/share links/rights copied (that
 // endpoint never accepts them). Source is recorded in metadata.duplicatedFrom for audit.
 import type { ArchiveRecord, CreateRecordPayload } from "@/lib/archive-api";
+import type { AppLocale } from "@/lib/i18n/types";
 
-export function buildDuplicateDraftPayload(record: ArchiveRecord): CreateRecordPayload {
+export function buildDuplicateDraftPayload(record: ArchiveRecord, locale: AppLocale = "ar"): CreateRecordPayload {
   return {
-    title: `نسخة من ${record.title}`,
+    title: locale === "en" ? `Copy of ${record.title}` : `نسخة من ${record.title}`,
     description: record.description ?? "",
     type: record.type ?? "",
     tags: [...(record.tags ?? [])],
