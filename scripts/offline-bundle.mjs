@@ -35,7 +35,11 @@ const normalizedVersion = (value) => {
 
 const rehearsalDiagnostics = (compose, childEnv) => [
   ["Compose service status", [...compose, "ps", "--all"]],
-  ["Compose service logs", [...compose, "logs", "--no-color", "--tail", "80"]],
+  // Keep each boundary separate: a migration-heavy Laravel log can otherwise
+  // consume the shared tail and hide the Next.js health-check failure that
+  // caused `compose up --wait` to stop.
+  ["Next application logs", [...compose, "logs", "--no-color", "--tail", "80", "next"]],
+  ["Laravel API logs", [...compose, "logs", "--no-color", "--tail", "80", "laravel", "laravel-fpm"]],
 ].map(([title, args]) => {
   const result = spawnSync("docker", args, { cwd: root, encoding: "utf8", env: childEnv });
   const output = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
