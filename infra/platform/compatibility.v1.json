@@ -151,7 +151,7 @@
         "redis": "provided by the Redis container"
       },
       "profiles": ["core", "media", "edge"],
-      "capabilities": ["ocr", "ai", "observability"],
+      "capabilities": ["ocr", "ai", "observability", "odbc"],
       "dataPathFamily": "windows",
       "resourceStatus": "provisional"
     },
@@ -170,7 +170,7 @@
         "redis": "provided by the Redis container"
       },
       "profiles": ["core", "media", "edge"],
-      "capabilities": ["ocr", "ai", "observability"],
+      "capabilities": ["ocr", "ai", "observability", "odbc"],
       "dataPathFamily": "linux",
       "resourceStatus": "provisional"
     },
@@ -189,7 +189,7 @@
         "redis": "optional; disabled by default, or operator-managed external endpoint"
       },
       "profiles": ["core", "media", "edge"],
-      "capabilities": ["ocr", "ai", "observability"],
+      "capabilities": ["ocr", "ai", "observability", "odbc"],
       "dataPathFamily": "windows",
       "resourceStatus": "supported"
     },
@@ -209,7 +209,7 @@
         "redis": "optional; disabled by default, or operator-managed external endpoint"
       },
       "profiles": ["core", "media", "edge"],
-      "capabilities": ["ocr", "ai", "observability"],
+      "capabilities": ["ocr", "ai", "observability", "odbc"],
       "dataPathFamily": "linux",
       "resourceStatus": "supported"
     }

@@ -63,10 +63,10 @@ test("platform contract loads the four constrained deployment targets", () => {
     ["supported", "supported", "supported", "supported"]
   );
   assert.deepEqual(Object.keys(contract.runtimeProfiles), ["core", "media", "edge"]);
-  assert.deepEqual(Object.keys(contract.capabilities), ["ocr", "ai", "observability"]);
+  assert.deepEqual(Object.keys(contract.capabilities), ["ocr", "ai", "observability", "odbc"]);
   for (const platform of contract.platforms) {
     assert.deepEqual(platform.profiles, ["core", "media", "edge"]);
-    assert.deepEqual(platform.capabilities, ["ocr", "ai", "observability"]);
+    assert.deepEqual(platform.capabilities, ["ocr", "ai", "observability", "odbc"]);
   }
   assert.ok(contract.ports.some((port) => port.exposure === "public"));
   assert.ok(contract.ports.some((port) => port.exposure === "internal"));
@@ -97,7 +97,7 @@ test("platform schema permits only the legal runtime profile and capability keys
 
   assert.deepEqual(Object.keys(runtimeProfiles.properties), ["core", "media", "edge"]);
   assert.equal(runtimeProfiles.additionalProperties, false);
-  assert.deepEqual(Object.keys(capabilities.properties), ["ocr", "ai", "observability"]);
+  assert.deepEqual(Object.keys(capabilities.properties), ["ocr", "ai", "observability", "odbc"]);
   assert.equal(capabilities.additionalProperties, false);
   assert.deepEqual(schema.properties.platforms.items.properties.status.enum, lifecycleStatuses);
   assert.deepEqual(schema.$defs.option.properties.status.enum, lifecycleStatuses);
@@ -116,4 +116,12 @@ test("runtime option gate rejects profile drift and never enables capabilities",
     }),
     /Docker Compose runtime profiles/i
   );
+});
+
+test("runtime option gate permits the documented CUDA auxiliary Compose profile", () => {
+  const contract = loadPlatformContract();
+
+  assert.doesNotThrow(() => validateRuntimeOptionSources(contract, {
+    composeSource: 'profiles: ["gpu"]\nprofiles: ["media"]\nprofiles: ["edge"]',
+  }));
 });

@@ -19,12 +19,13 @@
     },
     "capabilities": {
       "type": "object",
-      "required": ["ocr", "ai", "observability"],
+      "required": ["ocr", "ai", "observability", "odbc"],
       "additionalProperties": false,
       "properties": {
         "ocr": { "$ref": "#/$defs/option" },
         "ai": { "$ref": "#/$defs/option" },
-        "observability": { "$ref": "#/$defs/option" }
+        "observability": { "$ref": "#/$defs/option" },
+        "odbc": { "$ref": "#/$defs/option" }
       }
     },
     "ports": {
@@ -87,7 +88,7 @@
             "additionalProperties": { "type": "string", "minLength": 1 }
           },
           "profiles": { "type": "array", "minItems": 1, "items": { "enum": ["core", "media", "edge"] } },
-          "capabilities": { "type": "array", "minItems": 1, "items": { "enum": ["ocr", "ai", "observability"] } },
+          "capabilities": { "type": "array", "minItems": 1, "items": { "enum": ["ocr", "ai", "observability", "odbc"] } },
           "dataPathFamily": { "enum": ["windows", "linux"] },
           "resourceStatus": { "const": "provisional" }
         }

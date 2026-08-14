@@ -9,7 +9,11 @@ const PLATFORM_IDS = ["windows-10-11-docker", "linux-docker", "windows-native", 
 const MODES = ["docker", "native"];
 const STATUSES = ["supported", "conditional", "planned"];
 const RUNTIME_PROFILE_IDS = ["core", "media", "edge"];
-const CAPABILITY_IDS = ["ocr", "ai", "observability"];
+const CAPABILITY_IDS = ["ocr", "ai", "observability", "odbc"];
+// CUDA uses a separate worker image and is documented as an operator-run
+// Compose profile. It is intentionally not a Control Center runtime profile:
+// the shipped release has no CUDA runtime and cannot provision it itself.
+const AUXILIARY_COMPOSE_PROFILE_IDS = ["gpu"];
 const REQUIREMENT_IDS = ["node", "docker", "php", "composer", "postgresql", "redis"];
 
 function parseJson(path) {
@@ -60,7 +64,7 @@ export function validateRuntimeOptionSources(contract, {
   composeSource = readFileSync(COMPOSE_PATH, "utf8"),
 } = {}) {
   const composeProfiles = composeProfilesFrom(composeSource);
-  const expectedComposeProfiles = optionalRuntimeProfiles(contract);
+  const expectedComposeProfiles = [...optionalRuntimeProfiles(contract), ...AUXILIARY_COMPOSE_PROFILE_IDS];
   assertContract(
     hasExactly(composeProfiles, expectedComposeProfiles),
     `Docker Compose runtime profiles must be exactly ${expectedComposeProfiles.join(", ")}; capabilities must not be Docker Compose profiles`
