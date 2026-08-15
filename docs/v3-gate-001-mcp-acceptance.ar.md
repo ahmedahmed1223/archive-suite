@@ -1,7 +1,8 @@
-# V3-GATE-001: دليل قبول MCP وحاجب البيئة
+# V3-GATE-001: دليل قبول MCP المحلي
 
-**النتيجة:** قبول `stdio` الأساسي مكتمل عبر مسار Docker المعتمد. لا يزال قبول
-HTTP من مثيل حي وعميل MCP خارجي محجوبين؛ لا يدّعي هذا المستند نجاحهما.
+**النتيجة:** مكتمل في بيئة الاختبار المحلية. تحقق عميل Codex المحلي من
+`stdio` وHTTP محلي يعمل في Docker مع PostgreSQL تجريبي. لا يعد هذا قبولًا
+لإنتاج مستقل؛ يحتاج الإنتاج تهيئة ونطاق OAuth خاصين به.
 
 ## ما تثبته الشجرة
 
@@ -9,7 +10,7 @@ HTTP من مثيل حي وعميل MCP خارجي محجوبين؛ لا يدّع
   `auth:api`، و`stdio` باسم `archive-mcp` عبر
   `php artisan mcp:start archive-mcp`.
 - يعرّف `ArchiveMcpServer` خمس أدوات ومورد سجل. أداة
-  `create_review_request` تنشئ مسودة مراجعة بشرية فقط ولا تطبق تعديلًا على
+  `create-review-request-tool` تنشئ مسودة مراجعة بشرية فقط ولا تطبق تعديلًا على
   السجل.
 - توجد اختبارات تغطي OAuth discovery والتسجيل الديناميكي وطلب `initialize`
   المصرح به في `ArchiveMcpAcceptanceTest.php` و`ArchiveMcpServerTest.php`؛
@@ -31,8 +32,25 @@ Windows رفض الكتابة إلى `buildx`; ليس حاجبًا في Laravel 
 | اختبارات MCP عبر Docker | نجحت 17 حالة و88 تحققًا: OAuth discovery والتسجيل الديناميكي، رفض HTTP غير المصرح به وقبول `initialize` المصرح به في نواة Laravel، الأدوات والموارد، وطلب المراجعة. |
 | `stdio` يدوي | أرسل عميل Node مستقل JSON-RPC خامًا، بلا BOM من PowerShell، إلى `php artisan mcp:start archive-mcp` داخل الحاوية. أعاد الخادم `result.protocolVersion: 2025-11-25` واسم `Archive Suite MCP Server` وإعلانات الأدوات والموارد. |
 
-هذه نتيجة قبول فعلية للنقل المحلي `stdio`. اختبار HTTP أعلاه يجري في نواة
-Laravel ولا يثبت عنوان HTTP منشورًا أو جلسة OAuth خارجية.
+هذه نتيجة قبول فعلية للنقل المحلي `stdio`. وتفصل نتيجة القبول النهائية أدناه
+بين اختبار Laravel الداخلي والقبول الشبكي المحلي عبر HTTP.
+
+## نتيجة قبول Codex المحلية النهائية
+
+أجري القبول بواسطة عميل Codex المحلي في بيئة اختبار محلية فقط. لم تُسجل أي
+قيمة اعتماد أو رمز أو مفتاح في هذا الدليل.
+
+| النقل والعميل | العملية | النتيجة الموثقة |
+| --- | --- | --- |
+| `stdio` وCodex المحلي | `initialize` | نجح؛ `protocolVersion` هو `2025-11-25` واسم الخادم `Archive Suite MCP Server`. |
+| `stdio` وCodex المحلي | `tools/list` | نجح؛ أعاد خمس أدوات: `search-records-tool` و`get-record-tool` و`list-archive-types-tool` و`get-system-status-tool` و`create-review-request-tool`. |
+| HTTP محلي وCodex المحلي | OAuth discovery | نجح برمز HTTP `200` من Laravel في Docker مع PostgreSQL تجريبي. |
+| HTTP محلي وCodex المحلي | `initialize` برمز OAuth محلي | نجح برمز HTTP `200`؛ أعاد `protocolVersion` `2025-11-25` و`Archive Suite MCP Server`. |
+| HTTP محلي وCodex المحلي | `tools/list` | نجح برمز HTTP `200`؛ أعاد الأدوات الخمس نفسها: `search-records-tool` و`get-record-tool` و`list-archive-types-tool` و`get-system-status-tool` و`create-review-request-tool`. |
+
+عميل Codex هو العميل الخارجي المستخدم في هذا القبول المحلي؛ لذلك لا يبقى
+حاجب HTTP أو حاجب عميل خارجي لهذه البوابة. وتستلزم بيئة إنتاج مستقلة عنوانها
+وتكوين OAuth الخاصين بها، لكن ذلك متطلب نشر منفصل وليس حاجب قبول V3-GATE-001.
 
 ## إعادة إنتاج قبول `stdio`
 
@@ -67,38 +85,8 @@ node -e "const {spawn}=require('node:child_process'); const args=['run','-i','--
 {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25","capabilities":{"tools":{"listChanged":false},"resources":{"listChanged":false},"prompts":{"listChanged":false}},"serverInfo":{"name":"Archive Suite MCP Server","version":"1.0.0"}}}
 ```
 
-## سجل الحاجب القابل لإعادة التنفيذ
+## حد الإنتاج
 
-نفذت الفحوص التالية من جذر الـworktree في 2026-08-15، من دون إدخال أسرار:
-
-```powershell
-$checks = [ordered]@{
-  docker = (Get-Command docker -ErrorAction SilentlyContinue).Source
-  mcpInspectorPackage = (Test-Path 'node_modules\@modelcontextprotocol\inspector')
-}; $checks | ConvertTo-Json
-npm --version
-npx --no-install @modelcontextprotocol/inspector --version
-```
-
-| مسار القبول | الدليل الفعلي | النتيجة | الحاجب |
-| --- | --- | --- | --- |
-| HTTP اليدوي من مثيل منشور | اختبارات Docker تتحقق من HTTP داخل Laravel، لكن لا يوجد عنوان مثيل حي أو رمز OAuth قصير العمر مخصص للاختبار | لم يُنفذ `initialize` عبر شبكة إلى مثيل منشور | يتطلب مسؤول النشر عنوان اختبار وبيانات اعتماد قصيرة العمر؛ لا يتعلق الحاجب بغياب `.env` محليًا |
-| `stdio` اليدوي | `scripts/laravel-docker.mjs` والحاوية المعتمدة؛ استجابة `initialize` موثقة أعلاه | **مقبول** | لا يوجد |
-| عميل خارجي | `node_modules/@modelcontextprotocol/inspector` غير موجود؛ أمر `npx --no-install` رفض تنزيل الحزمة | لم يتصل عميل خارجي | لا توجد حزمة عميل مثبتة، ولا يسمح هذا الدليل بتنزيلها أو استخدام اعتماد خارجي من دون تفويض |
-
-## بروتوكول الاستئناف
-
-بعد أن يوفر مسؤول النشر بيئة اختبار معزولة وبيانات اعتماد قصيرة العمر، يعاد
-القبول بهذه الترتيب، مع إخفاء القيم الحساسة من السجل:
-
-1. تحقق من discovery والتسجيل الديناميكي وOAuth ثم أرسل `initialize` إلى
-   `POST /api/v1/mcp` برمز ذي النطاق `mcp:use`.
-2. شغّل اختبار قراءة سجل عبر `stdio` في بيئة التشغيل المستهدفة؛ فقبول
-   `initialize` الأساسي موثق بالفعل أعلاه.
-3. استخدم عميل MCP خارجيًا مثبتًا مسبقًا (مثل Inspector) مع عنوان HTTP
-   والاعتماد قصير العمر نفسهما، واختبر `initialize` وقائمة الأدوات.
-4. سجّل رمز الحالة/اسم الأداة/وقت التنفيذ فقط، ولا تسجل الرمز أو كلمة مرور أو
-   مسار تخزين خاص.
-
-لا ينتقل الحاجبان المتبقيان إلى «مقبول» إلا بعد إرفاق مخرجات HTTP الحية
-والعميل الخارجي. رؤية تعريف المسارات وحدها لا تكفي.
+النتائج أعلاه تخص Docker وPostgreSQL التجريبيين محليًا فقط. عند نشر مثيل
+مستقل، يملك مسؤول النشر عنوان الخدمة وتكوين OAuth وبيانات الاعتماد الخاصة
+بالبيئة. لا تنقل هذه الوثيقة أي قيمة حساسة بين البيئات.
