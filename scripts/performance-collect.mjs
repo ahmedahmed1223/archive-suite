@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ROOT, loadPerformanceContract } from "./performance-contract.mjs";
+import { ROOT, datasetEvidenceErrors, environmentProfileErrors, loadPerformanceContract, metricBudgets, validatePerformanceContract } from "./performance-contract.mjs";
 
 /**
  * The machine this run was actually measured on. Recorded because
@@ -46,21 +46,63 @@ export function observeEnvironmentProfile() {
   };
 }
 
-const METRICS = ["lcpP75Ms", "clsP75", "inpP75Ms", "searchP95Ms", "recordOpenP95Ms", "uploadSessionStartP95Ms"];
-
-/** Normalizes frontend web-vitals and API timing event arrays into one run artifact. */
-export function buildPerformanceRun(contract, environment, frontendEvents, apiEvents) {
-  const measurements = Object.fromEntries(METRICS.map((metric) => [metric, []]));
-  for (const event of [...frontendEvents, ...apiEvents]) {
-    if (METRICS.includes(event?.metric) && Number.isFinite(event.value)) measurements[event.metric].push(event.value);
-  }
-  return { contractVersion: contract.contractVersion, resourceProfileId: contract.resourceProfile.id, environmentProfile: observeEnvironmentProfile(), environment, collectedAt: new Date().toISOString(), measurements };
+function requiredMetrics(contract) {
+  return Object.keys(metricBudgets(contract));
 }
 
-async function main(environment, frontendPath, apiPath, outputPath) {
+export function eventErrors(events, expectedMetrics, inputName) {
+  if (!Array.isArray(events)) return [`${inputName} must contain a JSON array of measurement events.`];
+  const errors = [];
+  for (const [index, event] of events.entries()) {
+    if (!expectedMetrics.includes(event?.metric)) errors.push(`${inputName}[${index}].metric is not required by the contract.`);
+    if (!Number.isFinite(event?.value) || event.value < 0) errors.push(`${inputName}[${index}].value must be a finite non-negative number.`);
+  }
+  return errors;
+}
+
+export function measurementSampleErrors(contract, events) {
+  return requiredMetrics(contract).flatMap((metric) => {
+    const count = events.filter((event) => event?.metric === metric && Number.isFinite(event.value) && event.value >= 0).length;
+    return count < contract.measurement.minimumSamples ? [`${metric} requires ${contract.measurement.minimumSamples} samples.`] : [];
+  });
+}
+
+export function collectionErrors(contract, environment, datasetEvidence, frontendEvents, apiEvents, observedEnvironment = observeEnvironmentProfile()) {
+  const allEvents = Array.isArray(frontendEvents) && Array.isArray(apiEvents) ? [...frontendEvents, ...apiEvents] : [];
+  return [
+    ...validatePerformanceContract(contract),
+    ...(contract.measurement.environments.includes(environment) ? [] : ["run environment is not declared by the contract."]),
+    ...datasetEvidenceErrors(contract, datasetEvidence),
+    ...environmentProfileErrors(contract, observedEnvironment),
+    ...eventErrors(frontendEvents, requiredMetrics(contract), "frontend events"),
+    ...eventErrors(apiEvents, requiredMetrics(contract), "API events"),
+    ...measurementSampleErrors(contract, allEvents)
+  ];
+}
+
+/** Normalizes frontend web-vitals and API timing event arrays into one run artifact. */
+export function buildPerformanceRun(contract, environment, datasetEvidence, frontendEvents, apiEvents) {
+  const measurements = Object.fromEntries(requiredMetrics(contract).map((metric) => [metric, []]));
+  for (const event of [...frontendEvents, ...apiEvents]) {
+    if (Object.hasOwn(measurements, event?.metric) && Number.isFinite(event.value)) measurements[event.metric].push(event.value);
+  }
+  return {
+    contractVersion: contract.contractVersion,
+    resourceProfileId: contract.resourceProfile.id,
+    environmentProfile: observeEnvironmentProfile(),
+    environment,
+    datasetEvidence,
+    collectedAt: new Date().toISOString(),
+    measurements
+  };
+}
+
+async function main(environment, datasetPath, frontendPath, apiPath, outputPath) {
   const contract = await loadPerformanceContract();
-  const [frontendEvents, apiEvents] = await Promise.all([frontendPath, apiPath].map(async (file) => JSON.parse(await readFile(path.resolve(ROOT, file), "utf8"))));
-  const run = buildPerformanceRun(contract, environment, frontendEvents, apiEvents);
+  const [datasetEvidence, frontendEvents, apiEvents] = await Promise.all([datasetPath, frontendPath, apiPath].map(async (file) => JSON.parse(await readFile(path.resolve(ROOT, file), "utf8"))));
+  const errors = collectionErrors(contract, environment, datasetEvidence, frontendEvents, apiEvents);
+  if (errors.length) throw new Error(`Performance collection rejected:\n${errors.map((error) => `- ${error}`).join("\n")}`);
+  const run = buildPerformanceRun(contract, environment, datasetEvidence, frontendEvents, apiEvents);
   const target = path.resolve(ROOT, outputPath);
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, `${JSON.stringify(run, null, 2)}\n`);
@@ -68,7 +110,10 @@ async function main(environment, frontendPath, apiPath, outputPath) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const [, , environment, frontendPath, apiPath, outputPath] = process.argv;
-  if (!environment || !frontendPath || !apiPath || !outputPath) { console.error("Usage: node scripts/performance-collect.mjs <docker|native> <frontend-events.json> <api-events.json> <run.json>"); process.exitCode = 1; }
-  else await main(environment, frontendPath, apiPath, outputPath);
+  const [, , environment, datasetPath, frontendPath, apiPath, outputPath] = process.argv;
+  if (!environment || !datasetPath || !frontendPath || !apiPath || !outputPath) { console.error("Usage: node scripts/performance-collect.mjs <docker|native> <dataset-manifest.json> <frontend-events.json> <api-events.json> <run.json>"); process.exitCode = 1; }
+  else {
+    try { await main(environment, datasetPath, frontendPath, apiPath, outputPath); }
+    catch (error) { console.error(error instanceof Error ? error.message : error); process.exitCode = 1; }
+  }
 }
