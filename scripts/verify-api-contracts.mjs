@@ -214,6 +214,12 @@ for (const schemaName of [
   "CapabilitiesResponse",
   "UpdateCapabilitiesRequest",
   "ExperienceSettingValue",
+  "NavigationExperienceSettings",
+  "ArchiveViewExperienceSettings",
+  "ViewsExperienceSettings",
+  "ShortcutsExperienceSettings",
+  "NotificationsExperienceSettings",
+  "StudioLayoutExperienceSettings",
   "EffectiveExperienceSetting",
   "ExperienceSettings",
   "ExperienceProfileResponse",
@@ -414,5 +420,23 @@ for (const operation of [experiencePath.get, experiencePath.patch, experiencePat
 assert.equal(experiencePath.patch.requestBody.content["application/json"].schema.$ref, "#/components/schemas/UpdateExperienceProfileRequest");
 assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.additionalProperties, false);
 assert.deepEqual(contract.components.schemas.EffectiveExperienceSetting.required, ["value", "source", "editable"]);
+for (const schemaName of [
+  "NavigationExperienceSettings",
+  "ArchiveViewExperienceSettings",
+  "ViewsExperienceSettings",
+  "ShortcutsExperienceSettings",
+  "NotificationsExperienceSettings",
+  "StudioLayoutExperienceSettings"
+]) {
+  assert.equal(contract.components.schemas[schemaName].additionalProperties, false, `${schemaName} should reject unknown nested keys`);
+}
+assert.equal(contract.components.schemas.StudioLayoutExperienceSettings.properties.timelineHeight.type, "integer");
+assert.equal(contract.components.schemas.StudioLayoutExperienceSettings.properties.timelineHeight.minimum, 160);
+assert.equal(contract.components.schemas.StudioLayoutExperienceSettings.properties.timelineHeight.maximum, 720);
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.properties.navigation.$ref, "#/components/schemas/NavigationExperienceSettings");
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.properties.views.$ref, "#/components/schemas/ViewsExperienceSettings");
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.properties.shortcuts.$ref, "#/components/schemas/ShortcutsExperienceSettings");
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.properties.notifications.$ref, "#/components/schemas/NotificationsExperienceSettings");
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.properties.studioLayout.$ref, "#/components/schemas/StudioLayoutExperienceSettings");
 
 console.log("ok - api contracts");

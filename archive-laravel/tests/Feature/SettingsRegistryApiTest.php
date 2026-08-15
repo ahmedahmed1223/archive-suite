@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class SettingsRegistryApiTest extends TestCase
@@ -62,6 +63,22 @@ class SettingsRegistryApiTest extends TestCase
         $this->actingAs($admin)
             ->getJson('/api/v1/system/odbc')
             ->assertNotFound();
+    }
+
+    public function test_semantic_search_capability_does_not_claim_enabled_during_keyword_fallback(): void
+    {
+        config([
+            'embeddings.enabled' => true,
+            'embeddings.provider' => 'openai',
+            'embeddings.api_key' => 'sk-test',
+        ]);
+        $viewer = User::factory()->create(['role' => 'viewer']);
+
+        $this->actingAs($viewer)
+            ->getJson('/api/v1/system/capabilities')
+            ->assertOk()
+            ->assertJsonPath('capabilities.semanticSearch.value', false)
+            ->assertJsonPath('capabilities.semanticSearch.status', 'needs_configuration');
     }
 
     public function test_capability_update_rejects_unknown_keys_and_wrong_types(): void
@@ -198,6 +215,54 @@ class SettingsRegistryApiTest extends TestCase
             ->patchJson('/api/v1/account/experience', ['timeZone' => 'Not/AZone'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('timeZone');
+    }
+
+    /** @param array<string, mixed> $value */
+    #[DataProvider('unknownNestedExperienceKeys')]
+    public function test_experience_update_rejects_unknown_nested_keys(string $field, array $value, string $errorKey): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->patchJson('/api/v1/account/experience', [$field => $value])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors($errorKey);
+    }
+
+    /** @return array<string, array{string, array<string, mixed>, string}> */
+    public static function unknownNestedExperienceKeys(): array
+    {
+        return [
+            'navigation' => ['navigation', ['future' => []], 'navigation'],
+            'views' => ['views', ['archive' => ['future' => true]], 'views.archive'],
+            'shortcuts' => ['shortcuts', ['future' => 'F9'], 'shortcuts'],
+            'notifications' => ['notifications', ['future' => true], 'notifications'],
+            'studio layout' => ['studioLayout', ['future' => 'wide'], 'studioLayout'],
+        ];
+    }
+
+    /** @param array<string, mixed> $value */
+    #[DataProvider('invalidNestedExperienceTypes')]
+    public function test_experience_update_rejects_invalid_nested_types(string $field, array $value, string $errorKey): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->patchJson('/api/v1/account/experience', [$field => $value])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors($errorKey);
+    }
+
+    /** @return array<string, array{string, array<string, mixed>, string}> */
+    public static function invalidNestedExperienceTypes(): array
+    {
+        return [
+            'navigation order' => ['navigation', ['order' => 'archive'], 'navigation.order'],
+            'views page size' => ['views', ['archive' => ['pageSize' => 'many']], 'views.archive.pageSize'],
+            'shortcut binding' => ['shortcuts', ['playPause' => false], 'shortcuts.playPause'],
+            'notification digest' => ['notifications', ['dailyDigest' => 'yes'], 'notifications.dailyDigest'],
+            'studio timeline height' => ['studioLayout', ['timelineHeight' => 'huge'], 'studioLayout.timelineHeight'],
+        ];
     }
 
     public function test_experience_update_rejects_an_empty_payload(): void

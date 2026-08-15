@@ -3584,6 +3584,13 @@ export interface components {
             severity: "high" | "medium" | "low";
             title: string;
         };
+        ArchiveViewExperienceSettings: {
+            columns?: string[];
+            defaultSavedSearchId?: string | null;
+            /** @enum {string} */
+            mode?: "table" | "grid";
+            pageSize?: number;
+        };
         AuthResponse: components["schemas"]["OkEnvelope"] & {
             token?: string;
             user: components["schemas"]["User"];
@@ -4259,6 +4266,21 @@ export interface components {
             source: components["schemas"]["SettingSource"];
             value: components["schemas"]["ExperienceSettingValue"];
         };
+        EffectiveNavigationExperienceSetting: components["schemas"]["EffectiveExperienceSetting"] & {
+            value?: components["schemas"]["NavigationExperienceSettings"];
+        };
+        EffectiveNotificationsExperienceSetting: components["schemas"]["EffectiveExperienceSetting"] & {
+            value?: components["schemas"]["NotificationsExperienceSettings"];
+        };
+        EffectiveShortcutsExperienceSetting: components["schemas"]["EffectiveExperienceSetting"] & {
+            value?: components["schemas"]["ShortcutsExperienceSettings"];
+        };
+        EffectiveStudioLayoutExperienceSetting: components["schemas"]["EffectiveExperienceSetting"] & {
+            value?: components["schemas"]["StudioLayoutExperienceSettings"];
+        };
+        EffectiveViewsExperienceSetting: components["schemas"]["EffectiveExperienceSetting"] & {
+            value?: components["schemas"]["ViewsExperienceSettings"];
+        };
         EntityRef: {
             id: string;
             type: string;
@@ -4280,16 +4302,16 @@ export interface components {
             density: components["schemas"]["EffectiveExperienceSetting"];
             homePage: components["schemas"]["EffectiveExperienceSetting"];
             locale: components["schemas"]["EffectiveExperienceSetting"];
-            navigation: components["schemas"]["EffectiveExperienceSetting"];
-            notifications: components["schemas"]["EffectiveExperienceSetting"];
+            navigation: components["schemas"]["EffectiveNavigationExperienceSetting"];
+            notifications: components["schemas"]["EffectiveNotificationsExperienceSetting"];
             reducedMotion: components["schemas"]["EffectiveExperienceSetting"];
-            shortcuts: components["schemas"]["EffectiveExperienceSetting"];
-            studioLayout: components["schemas"]["EffectiveExperienceSetting"];
+            shortcuts: components["schemas"]["EffectiveShortcutsExperienceSetting"];
+            studioLayout: components["schemas"]["EffectiveStudioLayoutExperienceSetting"];
             textScale: components["schemas"]["EffectiveExperienceSetting"];
             theme: components["schemas"]["EffectiveExperienceSetting"];
             timeFormat: components["schemas"]["EffectiveExperienceSetting"];
             timeZone: components["schemas"]["EffectiveExperienceSetting"];
-            views: components["schemas"]["EffectiveExperienceSetting"];
+            views: components["schemas"]["EffectiveViewsExperienceSetting"];
         };
         ExperienceSettingValue: string | boolean | number | unknown[] | {
             [key: string]: unknown;
@@ -4640,6 +4662,14 @@ export interface components {
         };
         NamingRuleUpsertRequest: {
             prefix: string;
+        };
+        NavigationExperienceSettings: {
+            hiddenModules?: string[];
+            order?: string[];
+        };
+        NotificationsExperienceSettings: {
+            dailyDigest?: boolean;
+            optional?: ("reviewAssigned" | "commentMentioned" | "taskAssigned" | "rightsExpiring" | "mediaJobCompleted")[];
         };
         OdbcProbe: {
             driverLoaded: boolean;
@@ -5536,6 +5566,13 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        ShortcutsExperienceSettings: {
+            nextComment?: string;
+            playPause?: string;
+            previousComment?: string;
+            seekBackward?: string;
+            seekForward?: string;
+        };
         SmbPullRequest: {
             domain?: string;
             localPath?: string;
@@ -5586,6 +5623,14 @@ export interface components {
             at: string;
             totalBytes: number;
             usedBytes: number;
+        };
+        StudioLayoutExperienceSettings: {
+            /** @enum {string} */
+            comments?: "left" | "right" | "hidden";
+            panels?: ("comments" | "transcript" | "timeline" | "metadata")[];
+            timelineHeight?: number;
+            /** @enum {string} */
+            transcript?: "left" | "right" | "hidden";
         };
         SubtitleContentUpdateRequest: {
             content: string;
@@ -5830,19 +5875,11 @@ export interface components {
             homePage?: string;
             /** @enum {string} */
             locale?: "ar" | "en";
-            navigation?: {
-                [key: string]: unknown;
-            };
-            notifications?: {
-                [key: string]: unknown;
-            };
+            navigation?: components["schemas"]["NavigationExperienceSettings"];
+            notifications?: components["schemas"]["NotificationsExperienceSettings"];
             reducedMotion?: boolean;
-            shortcuts?: {
-                [key: string]: unknown;
-            };
-            studioLayout?: {
-                [key: string]: unknown;
-            };
+            shortcuts?: components["schemas"]["ShortcutsExperienceSettings"];
+            studioLayout?: components["schemas"]["StudioLayoutExperienceSettings"];
             /** @enum {string} */
             textScale?: "small" | "medium" | "large";
             /** @enum {string} */
@@ -5851,9 +5888,7 @@ export interface components {
             timeFormat?: "24h" | "12h";
             /** Format: timezone */
             timeZone?: string;
-            views?: {
-                [key: string]: unknown;
-            };
+            views?: components["schemas"]["ViewsExperienceSettings"];
         };
         /** @description Fields sent as null are ignored (not cleared); unknown extra fields are ignored by the server. */
         UpdateMontageProjectRequest: {
@@ -5992,6 +6027,9 @@ export interface components {
         UsersListResponse: components["schemas"]["OkEnvelope"] & {
             invitations: components["schemas"]["UserInvitation"][];
             users: components["schemas"]["UserAccount"][];
+        };
+        ViewsExperienceSettings: {
+            archive?: components["schemas"]["ArchiveViewExperienceSettings"];
         };
         VocabularyImportResponse: components["schemas"]["OkEnvelope"] & {
             created: number;

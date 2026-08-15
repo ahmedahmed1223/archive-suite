@@ -43,6 +43,61 @@ class SemanticSearchTest extends TestCase
         $this->assertFalse(app(EmbeddingService::class)->isEnabled());
     }
 
+    public function test_embedding_readiness_requires_the_feature_flag(): void
+    {
+        config([
+            'embeddings.enabled' => false,
+            'embeddings.provider' => 'openai',
+            'embeddings.api_key' => 'sk-test',
+        ]);
+
+        $this->assertFalse(app(EmbeddingService::class)->isEnabledForDriver('pgsql'));
+    }
+
+    public function test_embedding_readiness_requires_postgresql(): void
+    {
+        config([
+            'embeddings.enabled' => true,
+            'embeddings.provider' => 'openai',
+            'embeddings.api_key' => 'sk-test',
+        ]);
+
+        $this->assertFalse(app(EmbeddingService::class)->isEnabledForDriver('sqlite'));
+    }
+
+    public function test_embedding_readiness_requires_an_api_key(): void
+    {
+        config([
+            'embeddings.enabled' => true,
+            'embeddings.provider' => 'openai',
+            'embeddings.api_key' => null,
+        ]);
+
+        $this->assertFalse(app(EmbeddingService::class)->isEnabledForDriver('pgsql'));
+    }
+
+    public function test_embedding_readiness_requires_a_provider(): void
+    {
+        config([
+            'embeddings.enabled' => true,
+            'embeddings.provider' => '',
+            'embeddings.api_key' => 'sk-test',
+        ]);
+
+        $this->assertFalse(app(EmbeddingService::class)->isEnabledForDriver('pgsql'));
+    }
+
+    public function test_embedding_readiness_is_enabled_when_every_runtime_condition_is_met(): void
+    {
+        config([
+            'embeddings.enabled' => true,
+            'embeddings.provider' => 'openai',
+            'embeddings.api_key' => 'sk-test',
+        ]);
+
+        $this->assertTrue(app(EmbeddingService::class)->isEnabledForDriver('pgsql'));
+    }
+
     public function test_embed_returns_null_without_an_api_key(): void
     {
         config(['embeddings.enabled' => true, 'embeddings.api_key' => null]);

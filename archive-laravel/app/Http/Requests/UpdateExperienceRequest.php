@@ -17,11 +17,14 @@ class UpdateExperienceRequest extends FormRequest
     /** @return array<string, array<int, string>> */
     public function rules(): array
     {
-        return collect(config('archive-settings.experience', []))
-            ->mapWithKeys(fn (array $definition, string $key): array => [
-                $key => ['sometimes', ...$definition['validation']],
-            ])
-            ->all();
+        $rules = [];
+
+        foreach ((array) config('archive-settings.experience', []) as $key => $definition) {
+            $rules[$key] = ['sometimes', ...$definition['validation']];
+            $rules = [...$rules, ...(array) ($definition['nestedValidation'] ?? [])];
+        }
+
+        return $rules;
     }
 
     public function withValidator(Validator $validator): void

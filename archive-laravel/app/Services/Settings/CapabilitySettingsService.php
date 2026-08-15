@@ -6,10 +6,13 @@ namespace App\Services\Settings;
 
 use App\Models\CapabilitySetting;
 use App\Models\User;
+use App\Services\Search\EmbeddingService;
 use Illuminate\Support\Facades\DB;
 
 class CapabilitySettingsService
 {
+    public function __construct(private readonly EmbeddingService $embeddings) {}
+
     /**
      * @return array<string, array{value: bool, source: string, editable: bool, status: string, reason: ?string}>
      */
@@ -87,7 +90,9 @@ class CapabilitySettingsService
         $override = $deploymentAllows && ($definition['adminEditable'] ?? false)
             ? CapabilitySetting::query()->find($key)
             : null;
-        $value = $deploymentAllows && (bool) ($override?->value ?? $definition['default']);
+        $value = ($definition['adminEditable'] ?? false)
+            ? $deploymentAllows && (bool) ($override?->value ?? $definition['default'])
+            : $deploymentAllows;
         $source = $override ? 'system' : (string) ($definition['source'] ?? 'release');
         $editable = $deploymentAllows
             && (bool) ($definition['adminEditable'] ?? false)
@@ -110,6 +115,10 @@ class CapabilitySettingsService
     /** @param array<string, mixed> $definition */
     private function deploymentAllows(string $key, array $definition): bool
     {
+        if ($key === 'semanticSearch') {
+            return $this->embeddings->isEnabled();
+        }
+
         $required = $definition['requiresCapability'] ?? null;
 
         if (is_string($required) && $required !== '' && ! $this->isEnabled($required)) {

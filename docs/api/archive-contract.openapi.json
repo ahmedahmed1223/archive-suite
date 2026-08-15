@@ -8945,6 +8945,68 @@
           { "type": "null" }
         ]
       },
+      "NavigationExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "order": { "type": "array", "items": { "type": "string", "maxLength": 100 }, "uniqueItems": true },
+          "hiddenModules": { "type": "array", "items": { "type": "string", "maxLength": 100 }, "uniqueItems": true }
+        },
+        "additionalProperties": false
+      },
+      "ArchiveViewExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "mode": { "type": "string", "enum": ["table", "grid"] },
+          "pageSize": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "columns": { "type": "array", "items": { "type": "string", "maxLength": 100 }, "uniqueItems": true },
+          "defaultSavedSearchId": { "type": ["string", "null"], "maxLength": 255 }
+        },
+        "additionalProperties": false
+      },
+      "ViewsExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "archive": { "$ref": "#/components/schemas/ArchiveViewExperienceSettings" }
+        },
+        "additionalProperties": false
+      },
+      "ShortcutsExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "playPause": { "type": "string", "maxLength": 64 },
+          "seekForward": { "type": "string", "maxLength": 64 },
+          "seekBackward": { "type": "string", "maxLength": 64 },
+          "nextComment": { "type": "string", "maxLength": 64 },
+          "previousComment": { "type": "string", "maxLength": 64 }
+        },
+        "additionalProperties": false
+      },
+      "NotificationsExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "dailyDigest": { "type": "boolean" },
+          "optional": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["reviewAssigned", "commentMentioned", "taskAssigned", "rightsExpiring", "mediaJobCompleted"] },
+            "uniqueItems": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "StudioLayoutExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "comments": { "type": "string", "enum": ["left", "right", "hidden"] },
+          "transcript": { "type": "string", "enum": ["left", "right", "hidden"] },
+          "timelineHeight": { "type": "integer", "minimum": 160, "maximum": 720 },
+          "panels": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["comments", "transcript", "timeline", "metadata"] },
+            "uniqueItems": true
+          }
+        },
+        "additionalProperties": false
+      },
       "EffectiveExperienceSetting": {
         "type": "object",
         "required": ["value", "source", "editable"],
@@ -8954,6 +9016,36 @@
           "editable": { "type": "boolean" }
         },
         "additionalProperties": false
+      },
+      "EffectiveNavigationExperienceSetting": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          { "type": "object", "properties": { "value": { "$ref": "#/components/schemas/NavigationExperienceSettings" } } }
+        ]
+      },
+      "EffectiveViewsExperienceSetting": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          { "type": "object", "properties": { "value": { "$ref": "#/components/schemas/ViewsExperienceSettings" } } }
+        ]
+      },
+      "EffectiveShortcutsExperienceSetting": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          { "type": "object", "properties": { "value": { "$ref": "#/components/schemas/ShortcutsExperienceSettings" } } }
+        ]
+      },
+      "EffectiveNotificationsExperienceSetting": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          { "type": "object", "properties": { "value": { "$ref": "#/components/schemas/NotificationsExperienceSettings" } } }
+        ]
+      },
+      "EffectiveStudioLayoutExperienceSetting": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          { "type": "object", "properties": { "value": { "$ref": "#/components/schemas/StudioLayoutExperienceSettings" } } }
+        ]
       },
       "ExperienceSettings": {
         "type": "object",
@@ -8968,11 +9060,11 @@
           "textScale": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
           "reducedMotion": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
           "homePage": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
-          "navigation": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
-          "views": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
-          "shortcuts": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
-          "notifications": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
-          "studioLayout": { "$ref": "#/components/schemas/EffectiveExperienceSetting" }
+          "navigation": { "$ref": "#/components/schemas/EffectiveNavigationExperienceSetting" },
+          "views": { "$ref": "#/components/schemas/EffectiveViewsExperienceSetting" },
+          "shortcuts": { "$ref": "#/components/schemas/EffectiveShortcutsExperienceSetting" },
+          "notifications": { "$ref": "#/components/schemas/EffectiveNotificationsExperienceSetting" },
+          "studioLayout": { "$ref": "#/components/schemas/EffectiveStudioLayoutExperienceSetting" }
         },
         "additionalProperties": false
       },
@@ -9003,11 +9095,11 @@
           "textScale": { "type": "string", "enum": ["small", "medium", "large"] },
           "reducedMotion": { "type": "boolean" },
           "homePage": { "type": "string", "maxLength": 255, "pattern": "^/" },
-          "navigation": { "type": "object", "additionalProperties": true },
-          "views": { "type": "object", "additionalProperties": true },
-          "shortcuts": { "type": "object", "additionalProperties": true },
-          "notifications": { "type": "object", "additionalProperties": true },
-          "studioLayout": { "type": "object", "additionalProperties": true }
+          "navigation": { "$ref": "#/components/schemas/NavigationExperienceSettings" },
+          "views": { "$ref": "#/components/schemas/ViewsExperienceSettings" },
+          "shortcuts": { "$ref": "#/components/schemas/ShortcutsExperienceSettings" },
+          "notifications": { "$ref": "#/components/schemas/NotificationsExperienceSettings" },
+          "studioLayout": { "$ref": "#/components/schemas/StudioLayoutExperienceSettings" }
         },
         "additionalProperties": false
       },
