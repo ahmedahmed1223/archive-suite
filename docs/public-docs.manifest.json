@@ -40,6 +40,8 @@
   "excludedFiles": [
     { "path": "docs/release/v1.2.0-file-review.md", "lifecycle": "internal-release-review" },
     { "path": "docs/evidence/v1.1.0-native/README.md", "lifecycle": "release-evidence-index" },
-    { "path": "docs/evidence/v1.1.0-docker/README.md", "lifecycle": "release-evidence-index" }
+    { "path": "docs/evidence/v1.1.0-docker/README.md", "lifecycle": "release-evidence-index" },
+    { "path": "docs/v3-gate-001-capability-matrix.ar.md", "lifecycle": "internal-release-gate-evidence" },
+    { "path": "docs/v3-gate-001-mcp-acceptance.ar.md", "lifecycle": "internal-release-gate-evidence" }
   ]
 }
