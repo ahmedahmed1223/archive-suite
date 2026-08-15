@@ -1,7 +1,8 @@
 # V3-GATE-001: دليل قبول MCP المحلي
 
-**النتيجة:** مكتمل في بيئة الاختبار المحلية. تحقق عميل Codex المحلي من
-`stdio` وHTTP محلي يعمل في Docker مع PostgreSQL تجريبي. لا يعد هذا قبولًا
+**النتيجة:** مكتمل في بيئة الاختبار المحلية. تحقق عميل Node مستقل شغّله Codex
+وخارج عملية الخادم من `stdio` وHTTP محلي يعمل في Docker مع PostgreSQL تجريبي.
+لا يعد هذا قبولًا
 لإنتاج مستقل؛ يحتاج الإنتاج تهيئة ونطاق OAuth خاصين به.
 
 ## ما تثبته الشجرة
@@ -35,22 +36,23 @@ Windows رفض الكتابة إلى `buildx`; ليس حاجبًا في Laravel 
 هذه نتيجة قبول فعلية للنقل المحلي `stdio`. وتفصل نتيجة القبول النهائية أدناه
 بين اختبار Laravel الداخلي والقبول الشبكي المحلي عبر HTTP.
 
-## نتيجة قبول Codex المحلية النهائية
+## نتيجة القبول المحلي النهائية
 
-أجري القبول بواسطة عميل Codex المحلي في بيئة اختبار محلية فقط. لم تُسجل أي
-قيمة اعتماد أو رمز أو مفتاح في هذا الدليل.
+أجري القبول بواسطة عميل Node مستقل شغّله Codex، وهو خارج عملية الخادم، في بيئة
+اختبار محلية فقط. لم تُسجل أي قيمة اعتماد أو رمز أو مفتاح في هذا الدليل.
 
 | النقل والعميل | العملية | النتيجة الموثقة |
 | --- | --- | --- |
-| `stdio` وCodex المحلي | `initialize` | نجح؛ `protocolVersion` هو `2025-11-25` واسم الخادم `Archive Suite MCP Server`. |
-| `stdio` وCodex المحلي | `tools/list` | نجح؛ أعاد خمس أدوات: `search-records-tool` و`get-record-tool` و`list-archive-types-tool` و`get-system-status-tool` و`create-review-request-tool`. |
-| HTTP محلي وCodex المحلي | OAuth discovery | نجح برمز HTTP `200` من Laravel في Docker مع PostgreSQL تجريبي. |
-| HTTP محلي وCodex المحلي | `initialize` برمز OAuth محلي | نجح برمز HTTP `200`؛ أعاد `protocolVersion` `2025-11-25` و`Archive Suite MCP Server`. |
-| HTTP محلي وCodex المحلي | `tools/list` | نجح برمز HTTP `200`؛ أعاد الأدوات الخمس نفسها: `search-records-tool` و`get-record-tool` و`list-archive-types-tool` و`get-system-status-tool` و`create-review-request-tool`. |
+| `stdio` وعميل Node مستقل | `initialize` | نجح؛ `protocolVersion` هو `2025-11-25` واسم الخادم `Archive Suite MCP Server`. |
+| `stdio` وعميل Node مستقل | `tools/list` | نجح؛ أعاد خمس أدوات: `search-records-tool` و`get-record-tool` و`list-archive-types-tool` و`get-system-status-tool` و`create-review-request-tool`. |
+| HTTP محلي وعميل Node مستقل | OAuth discovery | نجح برمز HTTP `200` من Laravel في Docker مع PostgreSQL تجريبي. |
+| HTTP محلي وعميل Node مستقل | `initialize` برمز OAuth محلي | نجح برمز HTTP `200`؛ أعاد `protocolVersion` `2025-11-25` و`Archive Suite MCP Server`. |
+| HTTP محلي وعميل Node مستقل | `tools/list` | نجح برمز HTTP `200`؛ أعاد الأدوات الخمس نفسها: `search-records-tool` و`get-record-tool` و`list-archive-types-tool` و`get-system-status-tool` و`create-review-request-tool`. |
 
-عميل Codex هو العميل الخارجي المستخدم في هذا القبول المحلي؛ لذلك لا يبقى
-حاجب HTTP أو حاجب عميل خارجي لهذه البوابة. وتستلزم بيئة إنتاج مستقلة عنوانها
-وتكوين OAuth الخاصين بها، لكن ذلك متطلب نشر منفصل وليس حاجب قبول V3-GATE-001.
+عميل Node المستقل الذي شغّله Codex هو العميل الخارجي عن عملية الخادم المستخدم
+في هذا القبول المحلي؛ لذلك لا يبقى حاجب HTTP أو حاجب عميل خارجي لهذه البوابة.
+وتستلزم بيئة إنتاج مستقلة عنوانها وتكوين OAuth الخاصين بها، لكن ذلك متطلب نشر
+منفصل وليس حاجب قبول V3-GATE-001.
 
 ## إعادة إنتاج قبول `stdio`
 
