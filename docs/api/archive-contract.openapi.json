@@ -135,6 +135,40 @@
         }
       }
     },
+    "/account/experience": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Read the current user's effective experience profile with provenance",
+        "operationId": "getAccountExperience",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Effective experience profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExperienceProfileResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Auth"],
+        "summary": "Update allowlisted values in the current user's experience profile",
+        "operationId": "updateAccountExperience",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateExperienceProfileRequest" } } } },
+        "responses": {
+          "200": { "description": "Updated effective experience profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExperienceProfileResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Auth"],
+        "summary": "Reset the current user's experience profile to effective defaults",
+        "operationId": "resetAccountExperience",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Reset effective experience profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExperienceProfileResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/auth/refresh": {
       "post": {
         "tags": ["Auth"],
@@ -4377,6 +4411,31 @@
         }
       }
     },
+    "/system/capabilities": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Read actual deployment capabilities with status and provenance",
+        "operationId": "getSystemCapabilities",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Effective capability settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CapabilitiesResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["System"],
+        "summary": "Update the administrator-editable subset of deployment capabilities",
+        "operationId": "updateSystemCapabilities",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCapabilitiesRequest" } } } },
+        "responses": {
+          "200": { "description": "Updated effective capability settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CapabilitiesResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/SettingLocked" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/system/security-settings": {
       "get": {
         "tags": ["System"],
@@ -5522,6 +5581,14 @@
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/ErrorEnvelope" }
+          }
+        }
+      },
+      "SettingLocked": {
+        "description": "A deployment or release lock prevents the requested override",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/SettingLockedError" }
           }
         }
       },
@@ -8803,6 +8870,160 @@
       "StorageOperationPreviewRequest": { "type": "object", "required": ["action", "sourceProviderId", "items"], "properties": { "action": { "type": "string" }, "sourceProviderId": { "type": "string" }, "destinationProviderId": { "type": "string" }, "items": { "type": "array", "minItems": 1, "items": { "type": "object" } } } },
       "StorageOperationPreviewResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["preview"], "properties": { "preview": { "type": "object" } } }] },
       "StorageOperationResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["operation"], "properties": { "operation": { "type": "object" } } }] },
+      "SettingSource": {
+        "type": "string",
+        "enum": ["release", "deployment", "system", "default", "user"]
+      },
+      "CapabilityStatus": {
+        "type": "string",
+        "enum": ["enabled", "disabled", "needs_configuration", "unavailable"]
+      },
+      "EffectiveCapabilitySetting": {
+        "type": "object",
+        "required": ["value", "source", "editable", "status", "reason"],
+        "properties": {
+          "value": { "type": "boolean" },
+          "source": { "$ref": "#/components/schemas/SettingSource" },
+          "editable": { "type": "boolean" },
+          "status": { "$ref": "#/components/schemas/CapabilityStatus" },
+          "reason": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      },
+      "Capabilities": {
+        "type": "object",
+        "required": ["systemControl", "backups", "trash", "odbc", "broadcastMetadata", "semanticSearch", "mediaProcessing", "ocr", "mcp"],
+        "properties": {
+          "systemControl": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "backups": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "trash": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "odbc": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "broadcastMetadata": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "semanticSearch": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "mediaProcessing": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "ocr": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "mcp": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" }
+        },
+        "additionalProperties": false
+      },
+      "CapabilitiesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["schemaVersion", "capabilities"],
+            "properties": {
+              "schemaVersion": { "type": "integer", "minimum": 1 },
+              "capabilities": { "$ref": "#/components/schemas/Capabilities" }
+            }
+          }
+        ]
+      },
+      "UpdateCapabilitiesRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "systemControl": { "type": "boolean" },
+          "backups": { "type": "boolean" },
+          "trash": { "type": "boolean" },
+          "odbc": { "type": "boolean" },
+          "broadcastMetadata": { "type": "boolean" },
+          "semanticSearch": { "type": "boolean" },
+          "mediaProcessing": { "type": "boolean" },
+          "ocr": { "type": "boolean" },
+          "mcp": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "ExperienceSettingValue": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "boolean" },
+          { "type": "integer" },
+          { "type": "array", "items": {} },
+          { "type": "object", "additionalProperties": true },
+          { "type": "null" }
+        ]
+      },
+      "EffectiveExperienceSetting": {
+        "type": "object",
+        "required": ["value", "source", "editable"],
+        "properties": {
+          "value": { "$ref": "#/components/schemas/ExperienceSettingValue" },
+          "source": { "$ref": "#/components/schemas/SettingSource" },
+          "editable": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "ExperienceSettings": {
+        "type": "object",
+        "required": ["locale", "timeZone", "dateFormat", "timeFormat", "theme", "density", "textScale", "reducedMotion", "homePage", "navigation", "views", "shortcuts", "notifications", "studioLayout"],
+        "properties": {
+          "locale": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "timeZone": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "dateFormat": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "timeFormat": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "theme": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "density": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "textScale": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "reducedMotion": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "homePage": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "navigation": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "views": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "shortcuts": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "notifications": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "studioLayout": { "$ref": "#/components/schemas/EffectiveExperienceSetting" }
+        },
+        "additionalProperties": false
+      },
+      "ExperienceProfileResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["schemaVersion", "profileVersion", "experience"],
+            "properties": {
+              "schemaVersion": { "type": "integer", "minimum": 1 },
+              "profileVersion": { "type": "integer", "minimum": 0 },
+              "experience": { "$ref": "#/components/schemas/ExperienceSettings" }
+            }
+          }
+        ]
+      },
+      "UpdateExperienceProfileRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "locale": { "type": "string", "enum": ["ar", "en"] },
+          "timeZone": { "type": "string", "format": "timezone" },
+          "dateFormat": { "type": "string", "enum": ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"] },
+          "timeFormat": { "type": "string", "enum": ["24h", "12h"] },
+          "theme": { "type": "string", "enum": ["cinematic-dark", "luxury-dark", "ocean-dark", "neutral-light", "high-contrast"] },
+          "density": { "type": "string", "enum": ["comfortable", "compact"] },
+          "textScale": { "type": "string", "enum": ["small", "medium", "large"] },
+          "reducedMotion": { "type": "boolean" },
+          "homePage": { "type": "string", "maxLength": 255, "pattern": "^/" },
+          "navigation": { "type": "object", "additionalProperties": true },
+          "views": { "type": "object", "additionalProperties": true },
+          "shortcuts": { "type": "object", "additionalProperties": true },
+          "notifications": { "type": "object", "additionalProperties": true },
+          "studioLayout": { "type": "object", "additionalProperties": true }
+        },
+        "additionalProperties": false
+      },
+      "SettingLockedError": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ErrorEnvelope" },
+          {
+            "type": "object",
+            "required": ["code", "source"],
+            "properties": {
+              "code": { "const": "SETTING_LOCKED" },
+              "source": { "type": "string", "enum": ["release", "deployment"] }
+            }
+          }
+        ]
+      },
       "SecuritySettings": {
         "type": "object",
         "required": [

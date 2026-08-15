@@ -1,5 +1,24 @@
 // Generated from docs/api/archive-contract.openapi.json by pnpm api:generate. Do not edit.
 export interface paths {
+    "/account/experience": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the current user's effective experience profile with provenance */
+        get: operations["getAccountExperience"];
+        put?: never;
+        post?: never;
+        /** Reset the current user's experience profile to effective defaults */
+        delete: operations["resetAccountExperience"];
+        options?: never;
+        head?: never;
+        /** Update allowlisted values in the current user's experience profile */
+        patch: operations["updateAccountExperience"];
+        trace?: never;
+    };
     "/account/export": {
         parameters: {
             query?: never;
@@ -2542,6 +2561,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read actual deployment capabilities with status and provenance */
+        get: operations["getSystemCapabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the administrator-editable subset of deployment capabilities */
+        patch: operations["updateSystemCapabilities"];
+        trace?: never;
+    };
     "/system/control/{action}": {
         parameters: {
             query?: never;
@@ -3794,6 +3831,23 @@ export interface components {
             records: components["schemas"]["ArchiveRecord"][];
             store: string;
         };
+        Capabilities: {
+            backups: components["schemas"]["EffectiveCapabilitySetting"];
+            broadcastMetadata: components["schemas"]["EffectiveCapabilitySetting"];
+            mcp: components["schemas"]["EffectiveCapabilitySetting"];
+            mediaProcessing: components["schemas"]["EffectiveCapabilitySetting"];
+            ocr: components["schemas"]["EffectiveCapabilitySetting"];
+            odbc: components["schemas"]["EffectiveCapabilitySetting"];
+            semanticSearch: components["schemas"]["EffectiveCapabilitySetting"];
+            systemControl: components["schemas"]["EffectiveCapabilitySetting"];
+            trash: components["schemas"]["EffectiveCapabilitySetting"];
+        };
+        CapabilitiesResponse: components["schemas"]["OkEnvelope"] & {
+            capabilities: components["schemas"]["Capabilities"];
+            schemaVersion: number;
+        };
+        /** @enum {string} */
+        CapabilityStatus: "enabled" | "disabled" | "needs_configuration" | "unavailable";
         CollaborationDocument: {
             content: string;
             resourceId: string;
@@ -4193,6 +4247,18 @@ export interface components {
         DrProbeResponse: components["schemas"]["OkEnvelope"] & {
             dr: components["schemas"]["DrProbe"];
         };
+        EffectiveCapabilitySetting: {
+            editable: boolean;
+            reason: string | null;
+            source: components["schemas"]["SettingSource"];
+            status: components["schemas"]["CapabilityStatus"];
+            value: boolean;
+        };
+        EffectiveExperienceSetting: {
+            editable: boolean;
+            source: components["schemas"]["SettingSource"];
+            value: components["schemas"]["ExperienceSettingValue"];
+        };
         EntityRef: {
             id: string;
             type: string;
@@ -4204,6 +4270,30 @@ export interface components {
             /** @constant */
             ok: false;
         };
+        ExperienceProfileResponse: components["schemas"]["OkEnvelope"] & {
+            experience: components["schemas"]["ExperienceSettings"];
+            profileVersion: number;
+            schemaVersion: number;
+        };
+        ExperienceSettings: {
+            dateFormat: components["schemas"]["EffectiveExperienceSetting"];
+            density: components["schemas"]["EffectiveExperienceSetting"];
+            homePage: components["schemas"]["EffectiveExperienceSetting"];
+            locale: components["schemas"]["EffectiveExperienceSetting"];
+            navigation: components["schemas"]["EffectiveExperienceSetting"];
+            notifications: components["schemas"]["EffectiveExperienceSetting"];
+            reducedMotion: components["schemas"]["EffectiveExperienceSetting"];
+            shortcuts: components["schemas"]["EffectiveExperienceSetting"];
+            studioLayout: components["schemas"]["EffectiveExperienceSetting"];
+            textScale: components["schemas"]["EffectiveExperienceSetting"];
+            theme: components["schemas"]["EffectiveExperienceSetting"];
+            timeFormat: components["schemas"]["EffectiveExperienceSetting"];
+            timeZone: components["schemas"]["EffectiveExperienceSetting"];
+            views: components["schemas"]["EffectiveExperienceSetting"];
+        };
+        ExperienceSettingValue: string | boolean | number | unknown[] | {
+            [key: string]: unknown;
+        } | null;
         FavoriteCreateRequest: {
             recordId: string;
             /** @default archive-items */
@@ -5428,6 +5518,14 @@ export interface components {
         SecuritySettingsResponse: components["schemas"]["OkEnvelope"] & {
             settings: components["schemas"]["SecuritySettings"];
         };
+        SettingLockedError: components["schemas"]["ErrorEnvelope"] & {
+            /** @constant */
+            code: "SETTING_LOCKED";
+            /** @enum {string} */
+            source: "release" | "deployment";
+        };
+        /** @enum {string} */
+        SettingSource: "release" | "deployment" | "system" | "default" | "user";
         SharePayloadResponse: components["schemas"]["OkEnvelope"] & {
             comments?: {
                 [key: string]: unknown;
@@ -5704,6 +5802,17 @@ export interface components {
             name?: string;
             steps?: components["schemas"]["BulkMacroStep"][];
         };
+        UpdateCapabilitiesRequest: {
+            backups?: boolean;
+            broadcastMetadata?: boolean;
+            mcp?: boolean;
+            mediaProcessing?: boolean;
+            ocr?: boolean;
+            odbc?: boolean;
+            semanticSearch?: boolean;
+            systemControl?: boolean;
+            trash?: boolean;
+        };
         UpdateDisplaySettingsRequest: {
             /** @enum {string} */
             dateFormat?: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
@@ -5712,6 +5821,39 @@ export interface components {
             timeFormat?: "24h" | "12h";
             /** Format: timezone */
             timeZone?: string;
+        };
+        UpdateExperienceProfileRequest: {
+            /** @enum {string} */
+            dateFormat?: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
+            /** @enum {string} */
+            density?: "comfortable" | "compact";
+            homePage?: string;
+            /** @enum {string} */
+            locale?: "ar" | "en";
+            navigation?: {
+                [key: string]: unknown;
+            };
+            notifications?: {
+                [key: string]: unknown;
+            };
+            reducedMotion?: boolean;
+            shortcuts?: {
+                [key: string]: unknown;
+            };
+            studioLayout?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            textScale?: "small" | "medium" | "large";
+            /** @enum {string} */
+            theme?: "cinematic-dark" | "luxury-dark" | "ocean-dark" | "neutral-light" | "high-contrast";
+            /** @enum {string} */
+            timeFormat?: "24h" | "12h";
+            /** Format: timezone */
+            timeZone?: string;
+            views?: {
+                [key: string]: unknown;
+            };
         };
         /** @description Fields sent as null are ignored (not cleared); unknown extra fields are ignored by the server. */
         UpdateMontageProjectRequest: {
@@ -6064,6 +6206,15 @@ export interface components {
                 "application/json": components["schemas"]["SafetyPreviewError"];
             };
         };
+        /** @description A deployment or release lock prevents the requested override */
+        SettingLocked: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SettingLockedError"];
+            };
+        };
     };
     parameters: {
         FileKey: string;
@@ -6074,6 +6225,74 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getAccountExperience: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Effective experience profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperienceProfileResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    resetAccountExperience: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reset effective experience profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperienceProfileResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    updateAccountExperience: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateExperienceProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated effective experience profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperienceProfileResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
     exportAccountData: {
         parameters: {
             query?: never;
@@ -10950,6 +11169,54 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             500: components["responses"]["Error"];
+        };
+    };
+    getSystemCapabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Effective capability settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilitiesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    updateSystemCapabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCapabilitiesRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated effective capability settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilitiesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["SettingLocked"];
+            422: components["responses"]["Error"];
         };
     };
     runSystemControlAction: {

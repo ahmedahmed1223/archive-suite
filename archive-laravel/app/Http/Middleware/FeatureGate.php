@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Settings\CapabilitySettingsService;
 use App\Support\ApiError;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -15,12 +16,19 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class FeatureGate
 {
+    public function __construct(private readonly CapabilitySettingsService $settings) {}
+
     /**
      * @param  Closure(Request): Response  $next
      */
     public function handle(Request $request, Closure $next, string $flag): Response|JsonResponse
     {
-        if (! (bool) config("archive.features.{$flag}")) {
+        $key = match ($flag) {
+            'broadcast_metadata' => 'broadcastMetadata',
+            default => $flag,
+        };
+
+        if (! $this->settings->isEnabled($key)) {
             return response()->json(ApiError::envelope('Not found.', 404), 404);
         }
 

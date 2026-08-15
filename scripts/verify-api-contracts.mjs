@@ -28,6 +28,7 @@ for (const pathName of [
   "/auth/me",
   "/auth/refresh",
   "/auth/logout",
+  "/account/experience",
   "/records",
   "/records/{id}/attachments",
   "/records/{id}/attachments/{attachmentId}",
@@ -75,6 +76,7 @@ for (const pathName of [
   "/users/{id}",
   "/invitations/{token}/accept",
   "/system/security-settings",
+  "/system/capabilities",
   "/system/backups",
   "/system/backups/run",
   "/system/backups/preview",
@@ -205,6 +207,18 @@ for (const schemaName of [
   "InviteUserRequest",
   "AcceptInvitationRequest",
   "SecuritySettings",
+  "SettingSource",
+  "CapabilityStatus",
+  "EffectiveCapabilitySetting",
+  "Capabilities",
+  "CapabilitiesResponse",
+  "UpdateCapabilitiesRequest",
+  "ExperienceSettingValue",
+  "EffectiveExperienceSetting",
+  "ExperienceSettings",
+  "ExperienceProfileResponse",
+  "UpdateExperienceProfileRequest",
+  "SettingLockedError",
   "BackupInfo",
   "BackupListResponse",
   "BackupPreviewResponse",
@@ -384,5 +398,21 @@ assert.deepEqual(bulkMacroSchemas.BulkMacroTargetResult.properties.reason.enum, 
 
 assert.ok(contract.components?.securitySchemes?.bearerAuth, "API contract should define bearer auth");
 assert.ok(contract.components?.securitySchemes?.cookieAuth, "API contract should define cookie auth");
+
+const capabilitiesPath = contract.paths["/system/capabilities"];
+assert.equal(capabilitiesPath.get.responses["200"].content["application/json"].schema.$ref, "#/components/schemas/CapabilitiesResponse");
+assert.equal(capabilitiesPath.patch.requestBody.content["application/json"].schema.$ref, "#/components/schemas/UpdateCapabilitiesRequest");
+assert.equal(capabilitiesPath.patch.responses["403"].$ref, "#/components/responses/SettingLocked");
+assert.equal(contract.components.schemas.UpdateCapabilitiesRequest.additionalProperties, false);
+assert.deepEqual(contract.components.schemas.EffectiveCapabilitySetting.required, ["value", "source", "editable", "status", "reason"]);
+
+const experiencePath = contract.paths["/account/experience"];
+for (const operation of [experiencePath.get, experiencePath.patch, experiencePath.delete]) {
+  assert.deepEqual(operation.security, [{ bearerAuth: [] }, { cookieAuth: [] }]);
+  assert.equal(operation.responses["200"].content["application/json"].schema.$ref, "#/components/schemas/ExperienceProfileResponse");
+}
+assert.equal(experiencePath.patch.requestBody.content["application/json"].schema.$ref, "#/components/schemas/UpdateExperienceProfileRequest");
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.additionalProperties, false);
+assert.deepEqual(contract.components.schemas.EffectiveExperienceSetting.required, ["value", "source", "editable"]);
 
 console.log("ok - api contracts");
