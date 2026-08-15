@@ -34,16 +34,16 @@ test("performance gate rejects a run measured off the declared resource profile"
   const base = { contractVersion: "v1", environment: "docker", resourceProfileId: contract.resourceProfile.id, datasetEvidence, measurements };
 
   // Within budget on every metric, but measured on a developer workstation.
-  const foreign = evaluatePerformanceRun(contract, { ...base, environmentProfile: { platform: "win32", cpus: 28, memoryGiB: 31.7 } });
+  const foreign = evaluatePerformanceRun(contract, { ...base, environmentProfile: { platform: "win32", osRelease: { id: null, versionId: null }, cpus: 28, memoryGiB: 31.7 } });
   assert.equal(foreign.passed, false);
   assert.equal(foreign.violations.length, 0, "budgets are met; only the attribution must fail");
-  assert.equal(foreign.errors.length, 3);
+  assert.equal(foreign.errors.length, 4);
 
   // An absent observation must not pass either.
   assert.equal(evaluatePerformanceRun(contract, base).passed, false);
 
   // The declared profile itself passes.
-  assert.equal(evaluatePerformanceRun(contract, { ...base, environmentProfile: { platform: "linux", cpus: 4, memoryGiB: 8 } }).passed, true);
+  assert.equal(evaluatePerformanceRun(contract, { ...base, environmentProfile: { platform: "linux", osRelease: { id: "ubuntu", versionId: "24.04" }, cpus: 4, memoryGiB: 8 } }).passed, true);
 });
 
 test("performance gate rejects benchmark evidence with a smaller dataset", async () => {

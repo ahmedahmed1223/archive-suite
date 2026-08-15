@@ -28,13 +28,14 @@
 JavaScript والطابور، وشغّل بوابة التراجع:
 
 ```bash
-MSYS_NO_PATHCONV=1 node scripts/laravel-docker.mjs artisan archive:generate-benchmark-dataset --seed=42 --records=100000 --files=10000 --files-total-size=1073741824 --json > docs/performance/runs/dataset-manifest.json
+node scripts/performance-generate-dataset.mjs docs/performance/runs/dataset-manifest.json
 E2E_BASE_URL=http://localhost:3000 pnpm --filter @archive/next exec playwright test e2e/performance-baseline.authed.spec.ts --project=authenticated
 node scripts/performance-collect.mjs docker docs/performance/runs/dataset-manifest.json docs/performance/runs/frontend-events.json docs/performance/runs/api-events.json docs/performance/runs/run.docker.json
 node scripts/performance-regression.mjs docs/performance/runs/run.docker.json
 ```
 
-استخدم `native` بدل `docker` عند القياس على التشغيل المباشر. يرفض الحاصد كتابة
+يفصل الغلاف مخرجات Docker عن بيان JSON الوحيد، ويتحقق من البيان قبل كتابة ملف
+الدليل. استخدم `native` بدل `docker` عند القياس على التشغيل المباشر. يرفض الحاصد كتابة
 ملف نتيجة عند اختلاف البيئة أو مجموعة البيانات أو عند وجود بيانات أحداث غير
 صالحة. يجب أن يحتوي كل تشغيل على 20 عينة على الأقل لكل قياس مطلوب، وتعيد بوابة
 التراجع التحقق من ذلك قبل اعتماد الدليل.

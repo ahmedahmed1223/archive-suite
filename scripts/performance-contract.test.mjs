@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { datasetEvidenceErrors, loadPerformanceContract, metricBudgets, validatePerformanceContract } from "./performance-contract.mjs";
+import { datasetEvidenceErrors, environmentProfileErrors, loadPerformanceContract, metricBudgets, validatePerformanceContract } from "./performance-contract.mjs";
 import { collectionErrors, eventErrors } from "./performance-collect.mjs";
+import { parseDatasetManifestOutput } from "./performance-generate-dataset.mjs";
 
 test("performance contract rejects an unavailable dataset manifest", async () => {
   const contract = await loadPerformanceContract();
@@ -38,4 +39,19 @@ test("collector rejects an undeclared environment and incomplete samples before 
   );
   assert.ok(errors.includes("run environment is not declared by the contract."));
   assert.ok(errors.includes("studioOpenP95Ms requires 20 samples."));
+});
+
+test("environment attribution accepts only Ubuntu 24.04 with exactly 8 GiB", async () => {
+  const contract = await loadPerformanceContract();
+  const base = { platform: "linux", osRelease: { id: "ubuntu", versionId: "24.04" }, cpus: 4, memoryGiB: 8 };
+  assert.deepEqual(environmentProfileErrors(contract, base), []);
+  assert.ok(environmentProfileErrors(contract, { ...base, osRelease: { id: "debian", versionId: "12" } }).some((error) => error.includes("Ubuntu 24.04")));
+  assert.ok(environmentProfileErrors(contract, { ...base, memoryGiB: 7 }).some((error) => error.includes("exactly 8")));
+  assert.ok(environmentProfileErrors(contract, { ...base, memoryGiB: 9 }).some((error) => error.includes("exactly 8")));
+});
+
+test("dataset manifest wrapper extracts one JSON line instead of redirecting Docker output", () => {
+  const manifest = parseDatasetManifestOutput('sha256:docker-build-output\n{"ok":true,"seed":42,"records":100000,"files":10000,"filesBytes":1073741824,"store":"benchmark-synthetic"}\n');
+  assert.equal(manifest.filesBytes, 1073741824);
+  assert.throws(() => parseDatasetManifestOutput('{"one":1}\n{"two":2}\n'), /exactly one JSON manifest/);
 });

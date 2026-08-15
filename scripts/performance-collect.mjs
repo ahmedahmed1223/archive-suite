@@ -36,13 +36,23 @@ function readCgroupLimits() {
   return { cpus: Math.round(quotaV1 / periodV1), memoryGiB: unlimited ? null : toGiB(memoryV1) };
 }
 
+function readOsRelease() {
+  const contents = (() => { try { return readFileSync("/etc/os-release", "utf8"); } catch { return ""; } })();
+  const values = Object.fromEntries(contents.split(/\r?\n/).flatMap((line) => {
+    const match = line.match(/^([A-Z_]+)=(.*)$/);
+    return match ? [[match[1], match[2].replace(/^['"]|['"]$/g, "")]] : [];
+  }));
+  return { id: values.ID?.toLowerCase() ?? null, versionId: values.VERSION_ID ?? null };
+}
+
 export function observeEnvironmentProfile() {
   const limits = readCgroupLimits();
   return {
     platform: os.platform(),
     cpus: limits.cpus ?? os.cpus().length,
     memoryGiB: limits.memoryGiB ?? Math.round((os.totalmem() / 1024 ** 3) * 10) / 10,
-    constrained: limits.cpus !== null
+    constrained: limits.cpus !== null,
+    osRelease: readOsRelease()
   };
 }
 

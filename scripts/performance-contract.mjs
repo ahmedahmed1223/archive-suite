@@ -30,9 +30,10 @@ export function environmentProfileErrors(contract, observed) {
   const declared = contract.resourceProfile;
   const declaredCpus = Number.parseInt(String(declared.cpu), 10);
 
-  if (/ubuntu|linux/i.test(declared.os) && observed.platform !== "linux") errors.push(`environmentProfile.platform is ${observed.platform}; the profile declares ${declared.os}.`);
+  if (observed.platform !== "linux") errors.push(`environmentProfile.platform is ${observed.platform}; the profile declares ${declared.os}.`);
+  if (observed.osRelease?.id !== "ubuntu" || observed.osRelease?.versionId !== "24.04") errors.push(`environmentProfile.osRelease is ${JSON.stringify(observed.osRelease ?? null)}; the profile declares Ubuntu 24.04.`);
   if (Number.isFinite(declaredCpus) && observed.cpus !== declaredCpus) errors.push(`environmentProfile.cpus is ${observed.cpus}; the profile declares ${declaredCpus}.`);
-  if (Math.abs(Number(observed.memoryGiB) - Number(declared.memoryGiB)) > 1) errors.push(`environmentProfile.memoryGiB is ${observed.memoryGiB}; the profile declares ${declared.memoryGiB}.`);
+  if (Number(observed.memoryGiB) !== Number(declared.memoryGiB)) errors.push(`environmentProfile.memoryGiB is ${observed.memoryGiB}; the profile declares exactly ${declared.memoryGiB}.`);
   return errors;
 }
 

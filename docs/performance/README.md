@@ -31,13 +31,15 @@ collect 20 or more samples for every metric listed in
 and queue latency) and run the regression gate:
 
 ```bash
-MSYS_NO_PATHCONV=1 node scripts/laravel-docker.mjs artisan archive:generate-benchmark-dataset --seed=42 --records=100000 --files=10000 --files-total-size=1073741824 --json > docs/performance/runs/dataset-manifest.json
+node scripts/performance-generate-dataset.mjs docs/performance/runs/dataset-manifest.json
 E2E_BASE_URL=http://localhost:3000 pnpm --filter @archive/next exec playwright test e2e/performance-baseline.authed.spec.ts --project=authenticated
 node scripts/performance-collect.mjs docker docs/performance/runs/dataset-manifest.json docs/performance/runs/frontend-events.json docs/performance/runs/api-events.json docs/performance/runs/run.docker.json
 node scripts/performance-regression.mjs docs/performance/runs/run.docker.json
 ```
 
-Use `native` instead of `docker` for a direct-host run. The collector refuses
+The dataset wrapper separates Docker output from the one JSON manifest and
+validates it before writing the evidence file. Use `native` instead of
+`docker` for a direct-host run. The collector refuses
 to write a run artifact for an unapproved environment, incorrect dataset, or
 invalid event data. Each run must contain at least 20 samples per required
 measurement; the regression gate repeats that check before accepting evidence.
