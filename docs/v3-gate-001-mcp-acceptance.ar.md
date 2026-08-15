@@ -34,6 +34,39 @@ Windows رفض الكتابة إلى `buildx`; ليس حاجبًا في Laravel 
 هذه نتيجة قبول فعلية للنقل المحلي `stdio`. اختبار HTTP أعلاه يجري في نواة
 Laravel ولا يثبت عنوان HTTP منشورًا أو جلسة OAuth خارجية.
 
+## إعادة إنتاج قبول `stdio`
+
+شغّل أولًا تحضير الصورة وvolume التبعيات عبر المسار المعتمد. لا يحمل الأمر
+أي سر أو ملف بيئة إنتاج:
+
+```powershell
+$taskDockerConfig = 'D:\archiveaq\Arch_App\.worktrees\codex-v1.3\.tmp\docker-config-v3-gate-001'
+New-Item -ItemType Directory -Force -Path $taskDockerConfig | Out-Null
+$env:DOCKER_CONFIG = $taskDockerConfig
+node scripts/laravel-docker.mjs test tests/Feature/ArchiveMcpAcceptanceTest.php tests/Feature/ArchiveMcpServerTest.php tests/Feature/ArchiveMcpToolsTest.php tests/Feature/ArchiveMcpReviewRequestTest.php
+```
+
+ثم ينشئ الأمر التالي عملية Docker من Node ويرسل JSON-RPC خامًا إلى إدخال
+`stdio`؛ لا يمر الإدخال في أنبوبة PowerShell، ولذلك لا يضاف BOM:
+
+```powershell
+$taskDockerConfig = 'D:\archiveaq\Arch_App\.worktrees\codex-v1.3\.tmp\docker-config-v3-gate-001'
+$env:DOCKER_CONFIG = $taskDockerConfig
+node -e "const {spawn}=require('node:child_process'); const args=['run','-i','--rm','-v',process.cwd()+':/app','-v','archive-laravel-vendor:/app/archive-laravel/vendor','-w','/app/archive-laravel','archive-laravel-runtime-test','sh','-lc','test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction --no-progress --quiet; php artisan mcp:start archive-mcp']; const child=spawn('docker',args,{stdio:['pipe','pipe','pipe']}); child.stdout.pipe(process.stdout); child.stderr.pipe(process.stderr); child.stdin.end(JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-11-25',capabilities:{},clientInfo:{name:'v3-gate-001',version:'1.3'}}})+'\n'); child.on('exit',code=>process.exit(code ?? 1));"
+```
+
+المدخل المرسل هو:
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"v3-gate-001","version":"1.3"}}}
+```
+
+والمخرجات المنقحة الكافية لإثبات القبول هي:
+
+```json
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25","capabilities":{"tools":{"listChanged":false},"resources":{"listChanged":false},"prompts":{"listChanged":false}},"serverInfo":{"name":"Archive Suite MCP Server","version":"1.0.0"}}}
+```
+
 ## سجل الحاجب القابل لإعادة التنفيذ
 
 نفذت الفحوص التالية من جذر الـworktree في 2026-08-15، من دون إدخال أسرار:
