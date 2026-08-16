@@ -27,15 +27,15 @@ class SettingsRegistryApiTest extends TestCase
             ->assertJsonPath('capabilities.odbc.status', 'enabled')
             ->assertJsonStructure([
                 'capabilities' => [
-                    'systemControl' => ['value', 'source', 'editable', 'status', 'reason'],
-                    'backups' => ['value', 'source', 'editable', 'status', 'reason'],
-                    'trash' => ['value', 'source', 'editable', 'status', 'reason'],
-                    'odbc' => ['value', 'source', 'editable', 'status', 'reason'],
-                    'broadcastMetadata' => ['value', 'source', 'editable', 'status', 'reason'],
-                    'semanticSearch' => ['value', 'source', 'editable', 'status', 'reason'],
-                    'mediaProcessing' => ['value', 'source', 'editable', 'status', 'reason'],
-                    'ocr' => ['value', 'source', 'editable', 'status', 'reason'],
-                    'mcp' => ['value', 'source', 'editable', 'status', 'reason'],
+                    'systemControl' => ['value', 'source', 'editable', 'status', 'reason', 'version'],
+                    'backups' => ['value', 'source', 'editable', 'status', 'reason', 'version'],
+                    'trash' => ['value', 'source', 'editable', 'status', 'reason', 'version'],
+                    'odbc' => ['value', 'source', 'editable', 'status', 'reason', 'version'],
+                    'broadcastMetadata' => ['value', 'source', 'editable', 'status', 'reason', 'version'],
+                    'semanticSearch' => ['value', 'source', 'editable', 'status', 'reason', 'version'],
+                    'mediaProcessing' => ['value', 'source', 'editable', 'status', 'reason', 'version'],
+                    'ocr' => ['value', 'source', 'editable', 'status', 'reason', 'version'],
+                    'mcp' => ['value', 'source', 'editable', 'status', 'reason', 'version'],
                 ],
             ])
             ->assertJsonMissingPath('capabilities.askArchive')
@@ -115,6 +115,59 @@ class SettingsRegistryApiTest extends TestCase
         $this->actingAs($viewer)
             ->patchJson('/api/v1/system/capabilities', ['odbc' => false])
             ->assertForbidden();
+    }
+
+    public function test_capability_update_accepts_a_matching_expected_version(): void
+    {
+        config(['archive.features.odbc' => true]);
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->getJson('/api/v1/system/capabilities')
+            ->assertOk()
+            ->assertJsonPath('capabilities.odbc.version', 0);
+
+        $this->actingAs($admin)
+            ->patchJson('/api/v1/system/capabilities', [
+                'odbc' => false,
+                'expectedVersions' => ['odbc' => 0],
+            ])
+            ->assertOk()
+            ->assertJsonPath('capabilities.odbc.version', 1);
+    }
+
+    public function test_capability_update_rejects_a_stale_expected_version(): void
+    {
+        config(['archive.features.odbc' => true]);
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->patchJson('/api/v1/system/capabilities', ['odbc' => false])
+            ->assertOk()
+            ->assertJsonPath('capabilities.odbc.version', 1);
+
+        $this->actingAs($admin)
+            ->patchJson('/api/v1/system/capabilities', [
+                'odbc' => true,
+                'expectedVersions' => ['odbc' => 0],
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'CAPABILITY_VERSION_CONFLICT')
+            ->assertJsonPath('capabilities.odbc.value', false)
+            ->assertJsonPath('capabilities.odbc.version', 1);
+    }
+
+    public function test_capability_update_rejects_an_unknown_expected_version_key(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->patchJson('/api/v1/system/capabilities', [
+                'odbc' => false,
+                'expectedVersions' => ['futureAi' => 0],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('expectedVersions.futureAi');
     }
 
     public function test_deployment_lock_cannot_be_overridden(): void

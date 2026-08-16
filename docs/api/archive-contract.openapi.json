@@ -4432,6 +4432,7 @@
           "200": { "description": "Updated effective capability settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CapabilitiesResponse" } } } },
           "401": { "$ref": "#/components/responses/Error" },
           "403": { "$ref": "#/components/responses/SettingLocked" },
+          "409": { "$ref": "#/components/responses/Error" },
           "422": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -8880,13 +8881,14 @@
       },
       "EffectiveCapabilitySetting": {
         "type": "object",
-        "required": ["value", "source", "editable", "status", "reason"],
+        "required": ["value", "source", "editable", "status", "reason", "version"],
         "properties": {
           "value": { "type": "boolean" },
           "source": { "$ref": "#/components/schemas/SettingSource" },
           "editable": { "type": "boolean" },
           "status": { "$ref": "#/components/schemas/CapabilityStatus" },
-          "reason": { "type": ["string", "null"] }
+          "reason": { "type": ["string", "null"] },
+          "version": { "type": "integer", "minimum": 0, "description": "Optimistic-concurrency token for this capability's admin override; send back in expectedVersions on PATCH to detect a stale write." }
         },
         "additionalProperties": false
       },
@@ -8931,7 +8933,23 @@
           "semanticSearch": { "type": "boolean" },
           "mediaProcessing": { "type": "boolean" },
           "ocr": { "type": "boolean" },
-          "mcp": { "type": "boolean" }
+          "mcp": { "type": "boolean" },
+          "expectedVersions": {
+            "type": "object",
+            "description": "Optional per-key optimistic-concurrency check; omit a key to skip the check for it.",
+            "properties": {
+              "systemControl": { "type": "integer", "minimum": 0 },
+              "backups": { "type": "integer", "minimum": 0 },
+              "trash": { "type": "integer", "minimum": 0 },
+              "odbc": { "type": "integer", "minimum": 0 },
+              "broadcastMetadata": { "type": "integer", "minimum": 0 },
+              "semanticSearch": { "type": "integer", "minimum": 0 },
+              "mediaProcessing": { "type": "integer", "minimum": 0 },
+              "ocr": { "type": "integer", "minimum": 0 },
+              "mcp": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          }
         },
         "additionalProperties": false
       },

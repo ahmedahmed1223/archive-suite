@@ -29,12 +29,16 @@ class CapabilitySettingsService
 
     /**
      * @param  array<string, bool>  $values
+     * @param  array<string, int>  $expectedVersions  Optional per-key optimistic-concurrency
+     *   check: when a key is present, the update is rejected with a
+     *   CapabilityVersionConflictException if the stored version has moved on since the
+     *   caller read it (e.g. another admin changed it first).
      */
-    public function update(array $values, User $actor): void
+    public function update(array $values, User $actor, array $expectedVersions = []): void
     {
         $definitions = $this->definitions();
 
-        DB::transaction(function () use ($values, $actor, $definitions): void {
+        DB::transaction(function () use ($values, $actor, $definitions, $expectedVersions): void {
             foreach ($values as $key => $value) {
                 $definition = $definitions[$key];
 
@@ -50,12 +54,17 @@ class CapabilitySettingsService
                 }
 
                 $setting = CapabilitySetting::query()->find($key);
+                $currentVersion = $setting?->version ?? 0;
+
+                if (array_key_exists($key, $expectedVersions) && $expectedVersions[$key] !== $currentVersion) {
+                    throw new CapabilityVersionConflictException($key, $currentVersion);
+                }
 
                 CapabilitySetting::query()->updateOrCreate(
                     ['key' => $key],
                     [
                         'value' => $value,
-                        'version' => ($setting?->version ?? 0) + 1,
+                        'version' => $currentVersion + 1,
                         'updated_by_user_id' => $actor->getKey(),
                     ],
                 );
@@ -81,8 +90,19 @@ class CapabilitySettingsService
     }
 
     /**
+     * Resolves the effective value through a fixed precedence chain: the
+     * deployment/rollout flag gates availability first, an admin policy
+     * override (`CapabilitySetting`) takes the next say, and the release
+     * default is the final fallback.
+     *
+     * ponytail: no capability currently sets `userOverridable`, so a
+     * per-user-preference layer below the admin policy has no consumer yet
+     * — add a `user_capability_overrides` table (and a layer here, above
+     * default) when the first one needs it, instead of pre-building unused
+     * schema. Same for session-scoped grants: no capability opts in today.
+     *
      * @param  array<string, mixed>  $definition
-     * @return array{value: bool, source: string, editable: bool, status: string, reason: ?string}
+     * @return array{value: bool, source: string, editable: bool, status: string, reason: ?string, version: int}
      */
     private function effectiveSetting(string $key, array $definition, ?User $actor): array
     {
@@ -109,7 +129,9 @@ class CapabilitySettingsService
             $reason = null;
         }
 
-        return compact('value', 'source', 'editable', 'status', 'reason');
+        $version = $override?->version ?? 0;
+
+        return compact('value', 'source', 'editable', 'status', 'reason', 'version');
     }
 
     /** @param array<string, mixed> $definition */
