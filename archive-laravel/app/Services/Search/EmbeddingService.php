@@ -18,9 +18,16 @@ class EmbeddingService
 {
     public function isEnabled(): bool
     {
+        return $this->isEnabledForDriver(DB::getDriverName());
+    }
+
+    public function isEnabledForDriver(string $driver): bool
+    {
         return (bool) config('embeddings.enabled')
+            && is_string(config('embeddings.provider'))
+            && trim((string) config('embeddings.provider')) !== ''
             && ! empty(config('embeddings.api_key'))
-            && DB::getDriverName() === 'pgsql';
+            && $driver === 'pgsql';
     }
 
     /**

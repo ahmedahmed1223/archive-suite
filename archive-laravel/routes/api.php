@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AutomationRulesController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\BulkMacrosController;
+use App\Http\Controllers\Api\V1\CapabilitiesController;
 use App\Http\Controllers\Api\V1\CollaborationController;
 use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\ComplianceReportsController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Api\V1\DepartmentTemplateMetricsController;
 use App\Http\Controllers\Api\V1\DiscoverController;
 use App\Http\Controllers\Api\V1\DropboxController;
 use App\Http\Controllers\Api\V1\DropboxWebhookController;
+use App\Http\Controllers\Api\V1\ExperienceController;
 use App\Http\Controllers\Api\V1\FavoritesController;
 use App\Http\Controllers\Api\V1\FileHealthController;
 use App\Http\Controllers\Api\V1\FilesController;
@@ -244,6 +246,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::patch('/account/preferences', [AuthController::class, 'preferences']);
+        Route::get('/account/experience', [ExperienceController::class, 'show']);
+        Route::patch('/account/experience', [ExperienceController::class, 'update']);
+        Route::delete('/account/experience', [ExperienceController::class, 'destroy']);
 
         Route::get('/records', [RecordsController::class, 'index']);
         // V1-714: bulk record export/import via CSV. Kept off RecordsController
@@ -525,6 +530,7 @@ Route::prefix('v1')->group(function (): void {
         });
         Route::get('/system/display-settings', [SystemController::class, 'getDisplaySettings']);
         Route::get('/system/security-settings', [SystemController::class, 'getSecuritySettings']);
+        Route::get('/system/capabilities', [CapabilitiesController::class, 'index']);
         Route::get('/system/dropbox', [DropboxController::class, 'show']);
         Route::post('/system/dropbox/authorize', [DropboxController::class, 'authorize']);
         Route::post('/system/dropbox/callback', [DropboxController::class, 'callback']);
@@ -535,6 +541,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/system/dropbox', [DropboxController::class, 'disconnect']);
         Route::patch('/system/display-settings', [SystemController::class, 'updateDisplaySettings']);
         Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);
+        Route::patch('/system/capabilities', [CapabilitiesController::class, 'update']);
         Route::post('/system/test-storage', [SystemController::class, 'testStorageConnection']);
         Route::post('/system/test-database', [SystemController::class, 'testDatabaseConnection']);
         Route::get('/system/storages', [StorageWorkspaceController::class, 'index']);
