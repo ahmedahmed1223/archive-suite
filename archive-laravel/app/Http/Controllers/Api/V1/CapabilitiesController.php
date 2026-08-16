@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateCapabilitiesRequest;
 use App\Models\User;
 use App\Services\Settings\CapabilitySettingsService;
+use App\Services\Settings\CapabilityVersionConflictException;
 use App\Services\Settings\LockedSettingException;
 use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
@@ -36,12 +37,17 @@ class CapabilitiesController extends Controller
         $user = $request->attributes->get('archive_user');
 
         try {
-            $settings->update($request->validated(), $user);
+            $settings->update($request->values(), $user, $request->expectedVersions());
         } catch (LockedSettingException $exception) {
             return response()->json([
                 ...ApiError::envelope($exception->getMessage(), 403, 'SETTING_LOCKED'),
                 'source' => $exception->source,
             ], 403);
+        } catch (CapabilityVersionConflictException $exception) {
+            return response()->json([
+                ...ApiError::envelope($exception->getMessage(), 409, 'CAPABILITY_VERSION_CONFLICT'),
+                'capabilities' => $settings->capabilities($user),
+            ], 409);
         }
 
         return response()->json([

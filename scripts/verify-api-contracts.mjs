@@ -410,7 +410,9 @@ assert.equal(capabilitiesPath.get.responses["200"].content["application/json"].s
 assert.equal(capabilitiesPath.patch.requestBody.content["application/json"].schema.$ref, "#/components/schemas/UpdateCapabilitiesRequest");
 assert.equal(capabilitiesPath.patch.responses["403"].$ref, "#/components/responses/SettingLocked");
 assert.equal(contract.components.schemas.UpdateCapabilitiesRequest.additionalProperties, false);
-assert.deepEqual(contract.components.schemas.EffectiveCapabilitySetting.required, ["value", "source", "editable", "status", "reason"]);
+assert.deepEqual(contract.components.schemas.EffectiveCapabilitySetting.required, ["value", "source", "editable", "status", "reason", "version"]);
+assert.ok(contract.components.schemas.UpdateCapabilitiesRequest.properties.expectedVersions, "UpdateCapabilitiesRequest should accept expectedVersions");
+assert.equal(capabilitiesPath.patch.responses["409"].$ref, "#/components/responses/Error");
 
 const experiencePath = contract.paths["/account/experience"];
 for (const operation of [experiencePath.get, experiencePath.patch, experiencePath.delete]) {

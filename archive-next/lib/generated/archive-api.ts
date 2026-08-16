@@ -4260,6 +4260,8 @@ export interface components {
             source: components["schemas"]["SettingSource"];
             status: components["schemas"]["CapabilityStatus"];
             value: boolean;
+            /** @description Optimistic-concurrency token for this capability's admin override; send back in expectedVersions on PATCH to detect a stale write. */
+            version: number;
         };
         EffectiveExperienceSetting: {
             editable: boolean;
@@ -5850,6 +5852,18 @@ export interface components {
         UpdateCapabilitiesRequest: {
             backups?: boolean;
             broadcastMetadata?: boolean;
+            /** @description Optional per-key optimistic-concurrency check; omit a key to skip the check for it. */
+            expectedVersions?: {
+                backups?: number;
+                broadcastMetadata?: number;
+                mcp?: number;
+                mediaProcessing?: number;
+                ocr?: number;
+                odbc?: number;
+                semanticSearch?: number;
+                systemControl?: number;
+                trash?: number;
+            };
             mcp?: boolean;
             mediaProcessing?: boolean;
             ocr?: boolean;
@@ -11254,6 +11268,7 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             403: components["responses"]["SettingLocked"];
+            409: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };
