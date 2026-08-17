@@ -57,6 +57,12 @@ export type ReviewSession = GeneratedSchemas["ReviewSession"];
 export type ReviewSessionCreatePayload = GeneratedSchemas["ReviewSessionCreateRequest"];
 export type ReviewSessionTransitionPayload = GeneratedSchemas["ReviewSessionTransitionRequest"];
 
+export type MediaReviewCommentType = GeneratedSchemas["MediaReviewCommentType"];
+export type MediaReviewCommentState = GeneratedSchemas["MediaReviewCommentState"];
+export type MediaReviewComment = GeneratedSchemas["MediaReviewComment"];
+export type MediaReviewCommentCreatePayload = GeneratedSchemas["MediaReviewCommentCreateRequest"];
+export type MediaReviewCommentUpdatePayload = GeneratedSchemas["MediaReviewCommentUpdateRequest"];
+
 export type ScheduledUploadStatus = GeneratedSchemas["ScheduledUploadStatus"];
 export type ScheduledUpload = GeneratedSchemas["ScheduledUpload"];
 export type ScheduledUploadStaged = GeneratedSchemas["ScheduledUploadStaged"];
@@ -1625,6 +1631,20 @@ export interface ArchiveApiClient {
     payload?: ReviewSessionTransitionPayload,
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ session: ReviewSession }>>;
+  mediaReviewComments(
+    recordId: string,
+    params?: { store?: string; attachmentId?: string; reviewSessionId?: string },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ comments: MediaReviewComment[] }>>;
+  createMediaReviewComment(
+    recordId: string,
+    payload: MediaReviewCommentCreatePayload,
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ comment: MediaReviewComment }>>;
+  updateMediaReviewComment(id: string, payload: MediaReviewCommentUpdatePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: MediaReviewComment }>>;
+  deleteMediaReviewComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  resolveMediaReviewComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: MediaReviewComment }>>;
+  reopenMediaReviewComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: MediaReviewComment }>>;
   reviewLink(token: string): Promise<ApiEnvelope<ReviewLinkDetails>>;
   createReviewLink(payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>>;
   collaborationPresence(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
@@ -2618,6 +2638,24 @@ export function createArchiveApiClient({
       payload?: ReviewSessionTransitionPayload,
       options?: AuthRequestOptions
     ) => post<{ session: ReviewSession }>(`/review-sessions/${encodeURIComponent(id)}/${action}`, payload ?? {}, options),
+    mediaReviewComments: (recordId: string, params?: { store?: string; attachmentId?: string; reviewSessionId?: string }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.store) queryParams.set("store", params.store);
+      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
+      if (params?.reviewSessionId) queryParams.set("reviewSessionId", params.reviewSessionId);
+      const query = queryParams.toString();
+      return get<{ comments: MediaReviewComment[] }>(`/records/${encodeURIComponent(recordId)}/media-review-comments${query ? `?${query}` : ""}`, options);
+    },
+    createMediaReviewComment: (recordId: string, payload: MediaReviewCommentCreatePayload, options?: AuthRequestOptions) =>
+      post<{ comment: MediaReviewComment }>(`/records/${encodeURIComponent(recordId)}/media-review-comments`, payload, options),
+    updateMediaReviewComment: (id: string, payload: MediaReviewCommentUpdatePayload, options?: AuthRequestOptions) =>
+      patch<{ comment: MediaReviewComment }>(`/media-review-comments/${encodeURIComponent(id)}`, payload, options),
+    deleteMediaReviewComment: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/media-review-comments/${encodeURIComponent(id)}`, undefined, options),
+    resolveMediaReviewComment: (id: string, options?: AuthRequestOptions) =>
+      post<{ comment: MediaReviewComment }>(`/media-review-comments/${encodeURIComponent(id)}/resolve`, undefined, options),
+    reopenMediaReviewComment: (id: string, options?: AuthRequestOptions) =>
+      post<{ comment: MediaReviewComment }>(`/media-review-comments/${encodeURIComponent(id)}/reopen`, undefined, options),
     reviewLink: (token: string) =>
       get<ReviewLinkDetails>(`/review-links/${encodeURIComponent(token)}`),
     createReviewLink: (payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions) =>

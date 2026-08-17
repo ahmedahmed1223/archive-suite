@@ -19,6 +19,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { AppDictionary } from "@/lib/i18n/dictionaries";
 import MediaDerivativesTree from "../../archive/[id]/MediaDerivativesTree";
 import StudioCommentsPanel from "./StudioCommentsPanel";
+import StudioTimelinePanel from "./StudioTimelinePanel";
 import styles from "./studio.module.css";
 import "../media.css";
 
@@ -268,7 +269,14 @@ export default function MediaStudioPage() {
 
               <div className={styles.advancedPanels}>
                 <MediaDerivativesTree record={state.record} />
-                <ComingSoonPanel title={copy.timeline.title} heading={copy.timeline.comingSoonTitle} description={copy.timeline.comingSoonDescription} />
+                <StudioTimelinePanel
+                  recordId={state.record.id}
+                  store={state.record.store || "archive-items"}
+                  attachmentId={state.attachment?.id ?? null}
+                  durationSeconds={techSpec.durationSeconds}
+                  currentTime={currentTime}
+                  onSeek={seekTo}
+                />
                 <ComingSoonPanel title={copy.tasks.title} heading={copy.tasks.comingSoonTitle} description={copy.tasks.comingSoonDescription} />
               </div>
             </div>
