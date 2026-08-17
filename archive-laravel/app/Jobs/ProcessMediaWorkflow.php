@@ -4,7 +4,9 @@ namespace App\Jobs;
 
 use App\Exceptions\GpuUnavailableException;
 use App\Exceptions\JobCanceledException;
+use App\Models\MediaDerivative;
 use App\Models\MediaJob;
+use App\Services\Media\MediaDerivativeService;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaQueueStatusBroadcaster;
@@ -136,11 +138,13 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
                 'completed_at' => now(),
             ])->save();
             $broadcaster->notify($mediaJob);
+            $this->syncDerivativeOnSuccess($mediaJob, $artifacts);
         } catch (JobCanceledException) {
             // Intentional stop, not a failure: leave status as 'canceled'
             // (already set by the cancel endpoint), don't retry.
             $mediaJob->forceFill(['completed_at' => now()])->save();
             $broadcaster->notify($mediaJob);
+            $this->syncDerivativeOnFailure($mediaJob, 'Media job was canceled.');
         } catch (Throwable $error) {
             Log::error('Media job attempt failed', [
                 'mediaJobId' => $this->mediaJobId,
@@ -152,6 +156,11 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             $sanitizedError = $this->sanitizeError($error);
             $mediaJob->forceFill(['error' => $sanitizedError])->save();
             $broadcaster->notify($mediaJob);
+            // Not syncDerivativeOnFailure() here: this catch fires on every
+            // attempt, including ones Laravel will still retry. The
+            // derivative only flips to 'failed' once failed() below runs --
+            // i.e. once retries are actually exhausted -- mirroring how
+            // mediaJob.status itself only becomes 'failed' there, not here.
 
             if ($error instanceof GpuUnavailableException) {
                 app(MediaQueueStatusBroadcaster::class)->notify($sanitizedError);
@@ -159,6 +168,54 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
 
             throw $error;
         }
+    }
+
+    /**
+     * V3-MEDIA-006: a MediaJob with operation 'derivative' carries its
+     * media_derivatives row id in options.derivativeId. The processor
+     * itself (RealMediaProcessor/FakeMediaProcessor) stays unaware of that
+     * table -- it only ever returns an artifact array -- so this is the one
+     * place that closes the loop, using the first artifact's storage key as
+     * the derivative's final storage_key. No-op for every other operation.
+     *
+     * @param  array<int, array<string, mixed>>  $artifacts
+     */
+    private function syncDerivativeOnSuccess(MediaJob $mediaJob, array $artifacts): void
+    {
+        $derivative = $this->resolveDerivative($mediaJob);
+        if (! $derivative instanceof MediaDerivative) {
+            return;
+        }
+
+        $storageKey = $artifacts[0]['key'] ?? null;
+        if (! is_string($storageKey)) {
+            app(MediaDerivativeService::class)->markFailed($derivative, 'Derivative job completed without producing an output.');
+
+            return;
+        }
+
+        app(MediaDerivativeService::class)->markReady($derivative, $storageKey);
+    }
+
+    private function syncDerivativeOnFailure(MediaJob $mediaJob, string $error): void
+    {
+        $derivative = $this->resolveDerivative($mediaJob);
+        if (! $derivative instanceof MediaDerivative) {
+            return;
+        }
+
+        app(MediaDerivativeService::class)->markFailed($derivative, $error);
+    }
+
+    private function resolveDerivative(MediaJob $mediaJob): ?MediaDerivative
+    {
+        if ($mediaJob->operation !== 'derivative') {
+            return null;
+        }
+
+        $derivativeId = $mediaJob->options['derivativeId'] ?? null;
+
+        return is_string($derivativeId) ? MediaDerivative::query()->find($derivativeId) : null;
     }
 
     /**
@@ -175,12 +232,14 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             return;
         }
 
+        $sanitizedError = $this->sanitizeError($exception);
         $mediaJob->forceFill([
             'status' => 'failed',
-            'error' => $this->sanitizeError($exception),
+            'error' => $sanitizedError,
             'completed_at' => now(),
         ])->save();
         app(MediaJobProgressBroadcaster::class)->notify($mediaJob);
+        $this->syncDerivativeOnFailure($mediaJob, $sanitizedError);
     }
 
     /**

@@ -1115,6 +1115,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/media-derivatives": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a thumbnail, waveform, or proxy derivative
+         * @description Keyed on the source's checksum-derived version plus a hash of the generation settings: a matching ready or in-flight derivative is returned unchanged (200, cached=true) instead of dispatching duplicate work; otherwise a MediaJob is queued through the existing media processing pipeline (202, cached=false).
+         */
+        post: operations["requestMediaDerivative"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media-derivatives/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a derivative's status and storage key */
+        get: operations["getMediaDerivative"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media-review-comments/{id}": {
         parameters: {
             query?: never;
@@ -1900,6 +1937,23 @@ export interface paths {
         };
         /** List audit-backed change history for an archive record */
         get: operations["listRecordHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/media-derivatives": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List cached derivatives for a record */
+        get: operations["listMediaDerivatives"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4902,6 +4956,66 @@ export interface components {
             outSeconds?: number;
             title?: string;
         };
+        MediaDerivative: {
+            attachmentId: string | null;
+            /** Format: date-time */
+            createdAt: string | null;
+            createdBy: number | null;
+            derivativeType: components["schemas"]["MediaDerivativeType"];
+            error: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description False once the record source or attachment has been replaced since this derivative was generated -- it is still returned, but must not be treated as matching the current source. */
+            isCurrentVersion: boolean;
+            mediaJobId: string | null;
+            recordStore: string;
+            recordUid: string;
+            settings: components["schemas"]["MediaDerivativeSettings"];
+            status: components["schemas"]["MediaDerivativeStatus"];
+            /** @description Set once status is ready. */
+            storageKey: string | null;
+            /** Format: date-time */
+            updatedAt: string | null;
+            /** @description Same checksum-derived identity as ReviewSession.versionToken / MediaClip.versionToken -- pinned when this derivative was generated. */
+            versionToken: string;
+        };
+        MediaDerivativeRequest: {
+            attachmentId?: string | null;
+            recordId: string;
+            settings?: components["schemas"]["MediaDerivativeSettings"];
+            sourcePath: string;
+            store?: string;
+            type: components["schemas"]["MediaDerivativeType"];
+        };
+        MediaDerivativeResponse: components["schemas"]["OkEnvelope"] & {
+            /** @description True when an existing ready or in-flight derivative was returned instead of dispatching new work. */
+            cached?: boolean;
+            derivative: components["schemas"]["MediaDerivative"];
+        };
+        /** @description Generation settings, specific to the derivative type. Hashed (order-independent) into the cache key alongside the source version, so regenerating with different settings never collides with a derivative cached under different ones. */
+        MediaDerivativeSettings: {
+            /** @description proxy: request GPU (h264_nvenc) encoding. Only ever honored when the worker's NVIDIA runtime is verified healthy -- otherwise the job fails rather than silently falling back to CPU and misreporting the encoder used. */
+            accelerate?: boolean;
+            /** @description thumbnail: frame position. */
+            atSec?: number;
+            /** @description waveform: 6-digit hex color, no leading #. */
+            color?: string;
+            /** @description waveform height in pixels. */
+            height?: number;
+            /** @description proxy: maximum output width. */
+            maxWidth?: number;
+            /** @description proxy: target video bitrate. */
+            videoBitrateKbps?: number;
+            /** @description thumbnail/waveform width in pixels. */
+            width?: number;
+        };
+        MediaDerivativesResponse: components["schemas"]["OkEnvelope"] & {
+            derivatives: components["schemas"]["MediaDerivative"][];
+        };
+        /** @enum {string} */
+        MediaDerivativeStatus: "pending" | "processing" | "ready" | "failed";
+        /** @enum {string} */
+        MediaDerivativeType: "thumbnail" | "waveform" | "proxy";
         MediaJob: {
             /** Format: date-time */
             completedAt?: string | null;
@@ -8977,6 +9091,68 @@ export interface operations {
             401: components["responses"]["Error"];
         };
     };
+    requestMediaDerivative: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaDerivativeRequest"];
+            };
+        };
+        responses: {
+            /** @description Existing cached or in-flight derivative */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDerivativeResponse"];
+                };
+            };
+            /** @description Derivative generation queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDerivativeResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+            429: components["responses"]["Error"];
+        };
+    };
+    getMediaDerivative: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media derivative */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDerivativeResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
     getMediaReviewComment: {
         parameters: {
             query?: never;
@@ -10693,6 +10869,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecordHistoryResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    listMediaDerivatives: {
+        parameters: {
+            query?: {
+                attachmentId?: string;
+                store?: string;
+                type?: components["schemas"]["MediaDerivativeType"];
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media derivatives */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDerivativesResponse"];
                 };
             };
             401: components["responses"]["Error"];

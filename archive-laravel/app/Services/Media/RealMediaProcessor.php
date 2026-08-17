@@ -9,6 +9,8 @@ class RealMediaProcessor implements MediaProcessor
 {
     private readonly MediaPathGuard $pathGuard;
 
+    private readonly CudaCapabilityChecker $cudaCapability;
+
     public function __construct(
         private readonly ProcessRunner $runner,
         private readonly WhisperTranscriber $transcriber,
@@ -19,8 +21,10 @@ class RealMediaProcessor implements MediaProcessor
         private readonly ?AudioPreprocessor $audioPreprocessor = null,
         ?MediaPathGuard $pathGuard = null,
         private readonly ?MediaJobProgressBroadcaster $progress = null,
+        ?CudaCapabilityChecker $cudaCapability = null,
     ) {
         $this->pathGuard = $pathGuard ?? new MediaPathGuard;
+        $this->cudaCapability = $cudaCapability ?? new CudaCapabilityChecker($runner);
     }
 
     /**
@@ -52,8 +56,243 @@ class RealMediaProcessor implements MediaProcessor
             'transcription' => $this->processTranscription($job),
             'ocr' => $this->processOcr($job),
             'montage_export' => $this->processMontageExport($job),
+            'derivative' => $this->processDerivative($job),
             default => [],
         };
+    }
+
+    /**
+     * Cached, version-pinned derivative generation (V3-MEDIA-006): a
+     * thumbnail, waveform image, or lightweight preview (proxy) copy. The
+     * MediaDerivative row identified by options.derivativeId already
+     * carries the cache-key identity (source fingerprint + version +
+     * settings hash); this only ever produces the file. Promotion of that
+     * file to its final path is atomic (stage-then-rename) so a failed
+     * attempt can never leave a corrupt file at the location a client might
+     * already be reading from -- see stageDerivativeOutput()/
+     * promoteStagedOutput().
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function processDerivative(MediaJob $job): array
+    {
+        $type = $job->options['derivativeType'] ?? null;
+        $settings = is_array($job->options['settings'] ?? null) ? $job->options['settings'] : [];
+
+        return match ($type) {
+            'thumbnail' => $this->processDerivativeThumbnail($job, $settings),
+            'waveform' => $this->processDerivativeWaveform($job, $settings),
+            'proxy' => $this->processDerivativeProxy($job, $settings),
+            default => throw new \RuntimeException("Unknown derivative type: {$type}"),
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     * @return array<int, array<string, mixed>>
+     */
+    private function processDerivativeThumbnail(MediaJob $job, array $settings): array
+    {
+        $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
+        $atSec = (float) ($settings['atSec'] ?? 0);
+        $outputKey = "{$job->record_id}/derivatives/{$this->derivativeId($job)}.jpg";
+        [$outputPath, $tempPath] = $this->stageDerivativeOutput($outputKey, 'thumbnail derivative output');
+
+        $command = [$this->ffmpegPath, '-y', '-i', $sourcePath, '-ss', (string) $atSec];
+
+        $width = (int) ($settings['width'] ?? 0);
+        if ($width > 0) {
+            $command[] = '-vf';
+            $command[] = "scale={$width}:-2";
+        }
+
+        array_push($command, '-vframes', '1', '-q:v', '2', $tempPath);
+
+        $result = $this->runner->run($command, null, fn (): bool => $this->isCanceled($job));
+        $this->throwIfCanceled($result);
+        if ($result['exitCode'] !== 0) {
+            $this->discardStagedOutput($tempPath);
+            throw new \RuntimeException("ffmpeg derivative thumbnail failed: {$result['stderr']}");
+        }
+        $this->promoteStagedOutput($tempPath, $outputPath);
+
+        return [
+            [
+                'kind' => 'derivative_thumbnail',
+                'key' => $outputKey,
+                'url' => null,
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     * @return array<int, array<string, mixed>>
+     */
+    private function processDerivativeWaveform(MediaJob $job, array $settings): array
+    {
+        $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
+        $width = max(64, min((int) ($settings['width'] ?? 1280), 4096));
+        $height = max(32, min((int) ($settings['height'] ?? 240), 2048));
+        $color = $this->safeWaveformColor($settings['color'] ?? '3B82F6');
+        $outputKey = "{$job->record_id}/derivatives/{$this->derivativeId($job)}.png";
+        [$outputPath, $tempPath] = $this->stageDerivativeOutput($outputKey, 'waveform derivative output');
+
+        $command = [
+            $this->ffmpegPath,
+            '-y',
+            '-i', $sourcePath,
+            '-filter_complex', "showwavespic=s={$width}x{$height}:colors=#{$color}",
+            '-frames:v', '1',
+            $tempPath,
+        ];
+
+        $result = $this->runner->run($command, null, fn (): bool => $this->isCanceled($job));
+        $this->throwIfCanceled($result);
+        if ($result['exitCode'] !== 0) {
+            $this->discardStagedOutput($tempPath);
+            throw new \RuntimeException("ffmpeg derivative waveform failed: {$result['stderr']}");
+        }
+        $this->promoteStagedOutput($tempPath, $outputPath);
+
+        return [
+            [
+                'kind' => 'derivative_waveform',
+                'key' => $outputKey,
+                'url' => null,
+            ],
+        ];
+    }
+
+    /**
+     * Lightweight preview copy. GPU acceleration (h264_nvenc) is only ever
+     * used after CudaCapabilityChecker::assertAvailable() confirms a
+     * healthy NVIDIA runtime -- the exact fail-closed gate
+     * WhisperTranscriber already uses for --device cuda. A client asking
+     * for acceleration on a worker without a GPU gets a clean
+     * GpuUnavailableException, never a silent CPU fallback that would let
+     * the returned artifact falsely claim GPU encoding.
+     *
+     * @param  array<string, mixed>  $settings
+     * @return array<int, array<string, mixed>>
+     */
+    private function processDerivativeProxy(MediaJob $job, array $settings): array
+    {
+        $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
+        $maxWidth = max(64, min((int) ($settings['maxWidth'] ?? 640), 4096));
+        $videoBitrateKbps = max(64, min((int) ($settings['videoBitrateKbps'] ?? 600), 8000));
+        $outputKey = "{$job->record_id}/derivatives/{$this->derivativeId($job)}.mp4";
+        [$outputPath, $tempPath] = $this->stageDerivativeOutput($outputKey, 'proxy derivative output');
+
+        $encoder = 'libx264';
+        if ($this->truthy($settings['accelerate'] ?? false)) {
+            $this->cudaCapability->assertAvailable();
+            $encoder = 'h264_nvenc';
+        }
+
+        $command = [
+            $this->ffmpegPath,
+            '-y',
+            '-i', $sourcePath,
+            // The comma inside min(...) has to be backslash-escaped: this
+            // whole expression travels as a single argv element (no shell
+            // involved -- ProcessRunner execs ffmpeg directly), and within
+            // an ffmpeg filtergraph string an unescaped ',' is the filter
+            // separator, not part of the expression. Quoting it instead
+            // (scale='min(W,iw)':-2) parses but silently fails to apply --
+            // confirmed by RealMediaProcessorFfmpegSmokeTest against the
+            // real binary (output stayed at the source's original width).
+            '-vf', "scale=min({$maxWidth}\\,iw):-2",
+            '-c:v', $encoder,
+            '-b:v', "{$videoBitrateKbps}k",
+            '-preset', $encoder === 'h264_nvenc' ? 'p4' : 'veryfast',
+            '-c:a', 'aac',
+            '-b:a', '96k',
+            $tempPath,
+        ];
+
+        $result = $this->runner->run($command, null, fn (): bool => $this->isCanceled($job));
+        $this->throwIfCanceled($result);
+        if ($result['exitCode'] !== 0) {
+            $this->discardStagedOutput($tempPath);
+            throw new \RuntimeException("ffmpeg derivative proxy failed: {$result['stderr']}");
+        }
+        $this->promoteStagedOutput($tempPath, $outputPath);
+
+        return [
+            [
+                'kind' => 'derivative_proxy',
+                'key' => $outputKey,
+                'url' => null,
+                // Honest report of what actually ran, never just an echo of
+                // the client's requested settings.accelerate flag.
+                'encoder' => $encoder,
+            ],
+        ];
+    }
+
+    private function derivativeId(MediaJob $job): string
+    {
+        $id = $job->options['derivativeId'] ?? null;
+
+        return is_string($id) && trim($id) !== '' ? $id : $job->id;
+    }
+
+    /**
+     * Resolves the derivative's final output path (contained under the
+     * media storage root) alongside a sibling temp path in the same
+     * directory. Writing ffmpeg's output to the temp path and only
+     * rename()-ing it onto the final path on success means a failed or
+     * killed ffmpeg run never leaves a partial/corrupt file at the path a
+     * client might already be reading from (V3-MEDIA-006 acceptance:
+     * "never silently serve stale" extends to "never serve a half-written
+     * file" too). The temp path lives beside the final one so the rename is
+     * same-filesystem and therefore atomic.
+     *
+     * The marker is a fixed ".tmp-" infix, not a random suffix: the final
+     * output key already embeds the derivative's own id (see
+     * derivativeId()), so it is already unique per cache-key row, and
+     * WithoutOverlapping already stops two attempts of the *same* MediaJob
+     * running concurrently -- there is nothing left for a random name to
+     * protect against, and a fixed one keeps a retried attempt's leftover
+     * temp file self-cleaning (next attempt's ffmpeg -y overwrites it).
+     *
+     * It is an infix (".tmp-{basename}"), not a plain ".tmp" suffix: ffmpeg
+     * picks its output container/image format from the filename extension
+     * when -f isn't given, and a trailing ".tmp" hides the real extension
+     * from it -- confirmed by RealMediaProcessorFfmpegSmokeTest against the
+     * real binary ("Unable to choose an output format for
+     * ....png.tmp"). Keeping the real extension last avoids depending on
+     * every derivative command remembering to pass -f explicitly.
+     *
+     * @return array{0: string, 1: string} [outputPath, tempPath]
+     */
+    private function stageDerivativeOutput(string $outputKey, string $label): array
+    {
+        $outputPath = $this->pathGuard->resolveOutput($outputKey, $label);
+        $tempPath = dirname($outputPath).DIRECTORY_SEPARATOR.'.tmp-'.basename($outputPath);
+
+        return [$outputPath, $tempPath];
+    }
+
+    private function promoteStagedOutput(string $tempPath, string $outputPath): void
+    {
+        if (! @rename($tempPath, $outputPath)) {
+            @unlink($tempPath);
+            throw new \RuntimeException('Failed to promote generated derivative to its final location.');
+        }
+    }
+
+    private function discardStagedOutput(string $tempPath): void
+    {
+        @unlink($tempPath);
+    }
+
+    private function safeWaveformColor(mixed $color): string
+    {
+        $color = is_string($color) ? strtoupper((string) preg_replace('/[^0-9A-Fa-f]/', '', $color)) : '';
+
+        return preg_match('/^[0-9A-F]{6}$/', $color) === 1 ? $color : '3B82F6';
     }
 
     private function processThumbnail(MediaJob $job): array

@@ -1,6 +1,50 @@
 import contract from "../../docs/api/archive-contract.openapi.json";
 import type { components as GeneratedApiComponents } from "./generated/archive-api";
 import type { AppLocale } from "./i18n/types";
+import { createMediaReviewClient } from "./archive-api/media-review";
+import type {
+  MediaClip,
+  MediaClipCreatePayload,
+  MediaClipUpdatePayload,
+  MediaQueueStatus,
+  MediaReviewComment,
+  MediaReviewCommentCreatePayload,
+  MediaReviewCommentState,
+  MediaReviewCommentType,
+  MediaReviewCommentUpdatePayload,
+  ReviewSession,
+  ReviewSessionCreatePayload,
+  ReviewSessionState,
+  ReviewSessionTransitionPayload,
+  TranscriptCue,
+  TranscriptCurrentState,
+  TranscriptVersion,
+  TranscriptVersionRestorePayload,
+  TranscriptVersionStorePayload
+} from "./archive-api/media-review";
+
+// Re-exported so existing `import { type MediaClip } from "@/lib/archive-api"`
+// call sites keep working now that these types live in ./archive-api/media-review.
+export type {
+  MediaClip,
+  MediaClipCreatePayload,
+  MediaClipUpdatePayload,
+  MediaQueueStatus,
+  MediaReviewComment,
+  MediaReviewCommentCreatePayload,
+  MediaReviewCommentState,
+  MediaReviewCommentType,
+  MediaReviewCommentUpdatePayload,
+  ReviewSession,
+  ReviewSessionCreatePayload,
+  ReviewSessionState,
+  ReviewSessionTransitionPayload,
+  TranscriptCue,
+  TranscriptCurrentState,
+  TranscriptVersion,
+  TranscriptVersionRestorePayload,
+  TranscriptVersionStorePayload
+};
 
 export const ARCHIVE_UNAUTHORIZED_EVENT = "archive-next:unauthorized";
 
@@ -52,10 +96,9 @@ export type ArchiveRecord = GeneratedSchemas["ArchiveRecord"];
 export type RecordAttachment = GeneratedSchemas["RecordAttachment"];
 export type CreateRecordPayload = Omit<GeneratedSchemas["RecordCreateRequest"], "store"> & { store?: string };
 
-export type ReviewSessionState = GeneratedSchemas["ReviewSessionState"];
-export type ReviewSession = GeneratedSchemas["ReviewSession"];
-export type ReviewSessionCreatePayload = GeneratedSchemas["ReviewSessionCreateRequest"];
-export type ReviewSessionTransitionPayload = GeneratedSchemas["ReviewSessionTransitionRequest"];
+// ReviewSession*/MediaClip*/TranscriptVersion*/MediaReviewComment* types live in
+// ./archive-api/media-review.ts (re-exported above) alongside the client
+// methods that use them.
 
 export type WorkInboxItemType = GeneratedSchemas["WorkInboxItemType"];
 export type WorkInboxItem = GeneratedSchemas["WorkInboxItem"];
@@ -76,6 +119,11 @@ export type MediaReviewCommentState = GeneratedSchemas["MediaReviewCommentState"
 export type MediaReviewComment = GeneratedSchemas["MediaReviewComment"];
 export type MediaReviewCommentCreatePayload = GeneratedSchemas["MediaReviewCommentCreateRequest"];
 export type MediaReviewCommentUpdatePayload = GeneratedSchemas["MediaReviewCommentUpdateRequest"];
+
+export type MediaDerivative = GeneratedSchemas["MediaDerivative"];
+export type MediaDerivativeType = GeneratedSchemas["MediaDerivativeType"];
+export type MediaDerivativeSettings = GeneratedSchemas["MediaDerivativeSettings"];
+export type MediaDerivativeRequestPayload = GeneratedSchemas["MediaDerivativeRequest"];
 
 export type ScheduledUploadStatus = GeneratedSchemas["ScheduledUploadStatus"];
 export type ScheduledUpload = GeneratedSchemas["ScheduledUpload"];
@@ -346,15 +394,7 @@ export interface CreateRecordNotePayload {
 
 export type UpdateRecordNotePayload = Partial<CreateRecordNotePayload>;
 
-export interface RecordComment {
-  id: string;
-  itemId: string;
-  body: string;
-  authorId: string | null;
-  authorName: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
+export type RecordComment = GeneratedSchemas["RecordComment"];
 
 // V1-872: field-scoped missing-info request — assignee/due date/resolution, no new task platform.
 export interface RecordFieldRequest {
@@ -577,9 +617,7 @@ export interface RecordSegmentInput {
   endSeconds?: number | null;
 }
 
-export interface CreateRecordCommentPayload {
-  body: string;
-}
+export type CreateRecordCommentPayload = GeneratedSchemas["RecordCommentCreateRequest"];
 
 export interface IntakeTemplate {
   id: string;
@@ -802,12 +840,7 @@ export interface CreateAutomationRulePayload {
 
 export type UpdateAutomationRulePayload = Partial<CreateAutomationRulePayload>;
 
-export interface PaginationMeta {
-  total: number;
-  page: number;
-  limit: number;
-  hasMore: boolean;
-}
+export type PaginationMeta = GeneratedSchemas["PaginationMeta"];
 
 export interface RecordHistoryEntry {
   id: number | string;
@@ -1108,7 +1141,12 @@ export interface WatchedIngestBatch {
   entries: WatchedIngestEntry[];
 }
 
-export type MediaOperation = "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
+export type MediaOperation = GeneratedSchemas["MediaOperation"];
+// ponytail: the generated MediaJob.status enum only has queued/processing/
+// completed/failed -- the contract hasn't caught up to cancelMediaJob's
+// "canceled" outcome or the progressStage/progressPercent fields below.
+// Aliasing MediaJobStatus/MediaJob to the generated schema would silently
+// drop both; leave them hand-written until the contract is updated to match.
 export type MediaJobStatus = "queued" | "processing" | "completed" | "failed" | "canceled";
 
 export interface MediaJob {
@@ -1127,13 +1165,6 @@ export interface MediaJob {
   queuedAt?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
-}
-
-export interface MediaQueueStatus {
-  default: number;
-  gpu: number;
-  device: string;
-  resourceFailure: string | null;
 }
 
 export interface CreateMediaJobPayload {
@@ -1663,6 +1694,16 @@ export interface ArchiveApiClient {
     params?: { store?: string; attachmentId?: string },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ blob: Blob; filename: string }>>;
+  mediaDerivatives(
+    recordId: string,
+    params?: { store?: string; attachmentId?: string; type?: MediaDerivativeType },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ derivatives: MediaDerivative[] }>>;
+  requestMediaDerivative(
+    payload: MediaDerivativeRequestPayload,
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ derivative: MediaDerivative; cached?: boolean }>>;
+  getMediaDerivative(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ derivative: MediaDerivative }>>;
   transcriptVersions(recordId: string, params?: { store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ current: TranscriptCurrentState; versions: TranscriptVersion[] }>>;
   saveTranscriptVersion(recordId: string, payload: TranscriptVersionStorePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
   lockTranscriptVersion(recordId: string, payload?: { store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
@@ -2064,6 +2105,18 @@ export function createArchiveApiClient({
 
   const postSafetyPreview = async <T extends object>(path: string, body: unknown, options?: AuthRequestOptions): Promise<SafetyPreviewEnvelope<T>> =>
     asSafetyPreviewEnvelope(await post<T>(path, body, options));
+
+  const mediaReviewClient = createMediaReviewClient({
+    get,
+    post,
+    patch,
+    del,
+    fetchImpl,
+    baseUrl,
+    currentLocale,
+    getAccessToken: (options?: AuthRequestOptions) => options?.accessToken ?? cachedAccessToken,
+    clientUploadError
+  });
 
   return {
     health: () => get("/health"),
@@ -2493,7 +2546,6 @@ export function createArchiveApiClient({
       post<{ job: MediaJob }>("/media/jobs", payload, options),
     cancelMediaJob: (id: string, options?: AuthRequestOptions) =>
       post<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}/cancel`, {}, options),
-    mediaJobQueueStatus: (options?: AuthRequestOptions) => get<{ status: MediaQueueStatus }>("/media/jobs/queue-status", options),
     broadcastMetadata: (recordId: string, options?: AuthRequestOptions) =>
       get<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>(
         `/records/${encodeURIComponent(recordId)}/broadcast-metadata`,
@@ -2664,105 +2716,26 @@ export function createArchiveApiClient({
       post<{ comment: ReviewComment }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, payload, options),
     updateReviewComment: (id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions) =>
       patch<{ comment: ReviewComment }>(`/review-comments/${encodeURIComponent(id)}`, payload, options),
-    reviewSessions: (recordId: string, params?: { store?: string; attachmentId?: string }, options?: AuthRequestOptions) => {
-      const queryParams = new URLSearchParams();
-      if (params?.store) queryParams.set("store", params.store);
-      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
-      const query = queryParams.toString();
-      return get<{ sessions: ReviewSession[] }>(`/records/${encodeURIComponent(recordId)}/review-sessions${query ? `?${query}` : ""}`, options);
-    },
-    createReviewSession: (recordId: string, payload?: ReviewSessionCreatePayload, options?: AuthRequestOptions) =>
-      post<{ session: ReviewSession }>(`/records/${encodeURIComponent(recordId)}/review-sessions`, payload ?? {}, options),
-    transitionReviewSession: (
-      id: string,
-      action: "start" | "request-changes" | "approve" | "resume" | "close",
-      payload?: ReviewSessionTransitionPayload,
-      options?: AuthRequestOptions
-    ) => post<{ session: ReviewSession }>(`/review-sessions/${encodeURIComponent(id)}/${action}`, payload ?? {}, options),
-    mediaClips: (recordId: string, params?: { store?: string; attachmentId?: string }, options?: AuthRequestOptions) => {
-      const queryParams = new URLSearchParams();
-      if (params?.store) queryParams.set("store", params.store);
-      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
-      const query = queryParams.toString();
-      return get<{ clips: MediaClip[] }>(`/records/${encodeURIComponent(recordId)}/clips${query ? `?${query}` : ""}`, options);
-    },
-    createMediaClip: (recordId: string, payload: MediaClipCreatePayload, options?: AuthRequestOptions) =>
-      post<{ clip: MediaClip }>(`/records/${encodeURIComponent(recordId)}/clips`, payload, options),
-    updateMediaClip: (id: string, payload: MediaClipUpdatePayload, options?: AuthRequestOptions) =>
-      patch<{ clip: MediaClip }>(`/clips/${encodeURIComponent(id)}`, payload, options),
-    deleteMediaClip: (id: string, options?: AuthRequestOptions) =>
-      del<{ deleted: boolean }>(`/clips/${encodeURIComponent(id)}`, undefined, options),
-    downloadMediaClipsExport: async (
+    ...mediaReviewClient,
+    mediaDerivatives: (
       recordId: string,
-      format: "json" | "csv",
-      params?: { store?: string; attachmentId?: string },
+      params?: { store?: string; attachmentId?: string; type?: MediaDerivativeType },
       options?: AuthRequestOptions
     ) => {
-      const queryParams = new URLSearchParams({ format });
-      if (params?.store) queryParams.set("store", params.store);
-      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
-      const headers = new Headers({ Accept: format === "csv" ? "text/csv" : "application/json" });
-      const accessToken = options?.accessToken ?? cachedAccessToken;
-      if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
-
-      try {
-        const response = await fetchImpl(`${baseUrl}/records/${encodeURIComponent(recordId)}/clips/export?${queryParams.toString()}`, {
-          headers,
-          credentials: "include"
-        });
-        if (!response.ok) {
-          return { ok: false, error: clientUploadError(currentLocale(), "export", response.status) };
-        }
-        const contentDisposition = response.headers.get("content-disposition") || "";
-        const disposedName = contentDisposition.match(/filename=([^;]+)/i)?.[1]?.replace(/^"|"$/g, "");
-        const filename = disposedName || `clip-list-${recordId}.${format}`;
-        return { ok: true, blob: await response.blob(), filename };
-      } catch {
-        return {
-          ok: false,
-          error: currentLocale() === "en"
-            ? "Unable to connect to the server to export the clip list."
-            : "تعذر الاتصال بالخادم لتصدير قائمة المقاطع."
-        };
-      }
-    },
-    transcriptVersions: (recordId: string, params?: { store?: string }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.store) queryParams.set("store", params.store);
+      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
+      if (params?.type) queryParams.set("type", params.type);
       const query = queryParams.toString();
-      return get<{ current: TranscriptCurrentState; versions: TranscriptVersion[] }>(
-        `/records/${encodeURIComponent(recordId)}/transcript/versions${query ? `?${query}` : ""}`,
+      return get<{ derivatives: MediaDerivative[] }>(
+        `/records/${encodeURIComponent(recordId)}/media-derivatives${query ? `?${query}` : ""}`,
         options
       );
     },
-    saveTranscriptVersion: (recordId: string, payload: TranscriptVersionStorePayload, options?: AuthRequestOptions) =>
-      post<{ version: TranscriptVersion }>(`/records/${encodeURIComponent(recordId)}/transcript/versions`, payload, options),
-    lockTranscriptVersion: (recordId: string, payload?: { store?: string }, options?: AuthRequestOptions) =>
-      post<{ version: TranscriptVersion }>(`/records/${encodeURIComponent(recordId)}/transcript/lock`, payload ?? {}, options),
-    restoreTranscriptVersion: (recordId: string, versionId: string, payload?: TranscriptVersionRestorePayload, options?: AuthRequestOptions) =>
-      post<{ version: TranscriptVersion }>(
-        `/records/${encodeURIComponent(recordId)}/transcript/versions/${encodeURIComponent(versionId)}/restore`,
-        payload ?? {},
-        options
-      ),
-    mediaReviewComments: (recordId: string, params?: { store?: string; attachmentId?: string; reviewSessionId?: string }, options?: AuthRequestOptions) => {
-      const queryParams = new URLSearchParams();
-      if (params?.store) queryParams.set("store", params.store);
-      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
-      if (params?.reviewSessionId) queryParams.set("reviewSessionId", params.reviewSessionId);
-      const query = queryParams.toString();
-      return get<{ comments: MediaReviewComment[] }>(`/records/${encodeURIComponent(recordId)}/media-review-comments${query ? `?${query}` : ""}`, options);
-    },
-    createMediaReviewComment: (recordId: string, payload: MediaReviewCommentCreatePayload, options?: AuthRequestOptions) =>
-      post<{ comment: MediaReviewComment }>(`/records/${encodeURIComponent(recordId)}/media-review-comments`, payload, options),
-    updateMediaReviewComment: (id: string, payload: MediaReviewCommentUpdatePayload, options?: AuthRequestOptions) =>
-      patch<{ comment: MediaReviewComment }>(`/media-review-comments/${encodeURIComponent(id)}`, payload, options),
-    deleteMediaReviewComment: (id: string, options?: AuthRequestOptions) =>
-      del<{ deleted: boolean }>(`/media-review-comments/${encodeURIComponent(id)}`, undefined, options),
-    resolveMediaReviewComment: (id: string, options?: AuthRequestOptions) =>
-      post<{ comment: MediaReviewComment }>(`/media-review-comments/${encodeURIComponent(id)}/resolve`, undefined, options),
-    reopenMediaReviewComment: (id: string, options?: AuthRequestOptions) =>
-      post<{ comment: MediaReviewComment }>(`/media-review-comments/${encodeURIComponent(id)}/reopen`, undefined, options),
+    requestMediaDerivative: (payload: MediaDerivativeRequestPayload, options?: AuthRequestOptions) =>
+      post<{ derivative: MediaDerivative; cached?: boolean }>("/media-derivatives", payload, options),
+    getMediaDerivative: (id: string, options?: AuthRequestOptions) =>
+      get<{ derivative: MediaDerivative }>(`/media-derivatives/${encodeURIComponent(id)}`, options),
     reviewLink: (token: string) =>
       get<ReviewLinkDetails>(`/review-links/${encodeURIComponent(token)}`),
     createReviewLink: (payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions) =>

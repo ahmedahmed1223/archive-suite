@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Exceptions\GpuUnavailableException;
 use App\Models\MediaJob;
 use App\Services\Media\AudioPreprocessor;
 use App\Services\Media\FakeProcessRunner;
@@ -59,6 +60,7 @@ class RealMediaProcessorTest extends TestCase
         $this->removeMockDirectory('record-watermark');
         $this->removeMockDirectory('record-whisper');
         $this->removeMockDirectory('record-segmented');
+        $this->removeMockDirectory('record-derivative');
     }
 
     private function removeMockDirectory(string $dir): void
@@ -431,6 +433,225 @@ class RealMediaProcessorTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->processor->process($job);
     }
+
+    // V3-MEDIA-006: derivative generation (thumbnail/waveform/proxy). Like
+    // the pre-existing thumbnail/transcode tests above, FakeProcessRunner
+    // never actually writes a file -- it only reports success -- so these
+    // pre-create the *staged temp* file (RealMediaProcessor writes ffmpeg's
+    // output there, then rename()s it onto the final key on success) rather
+    // than the final key directly, to exercise the real stage-then-promote
+    // path instead of bypassing it.
+
+    private function stageDerivativeFixture(string $recordId, string $derivativeId, string $extension, string $content = 'mock derivative'): void
+    {
+        @mkdir("{$recordId}/derivatives", 0777, true);
+        // Matches RealMediaProcessor::stageDerivativeOutput()'s
+        // ".tmp-{basename}" infix (not a ".ext.tmp" suffix) -- the real
+        // extension has to stay last or ffmpeg can't infer the output
+        // format (see RealMediaProcessorFfmpegSmokeTest).
+        file_put_contents("{$recordId}/derivatives/.tmp-{$derivativeId}.{$extension}", $content);
+    }
+
+    public function test_derivative_thumbnail_stages_then_promotes_to_the_final_key(): void
+    {
+        $this->stageDerivativeFixture('record-derivative', 'deriv-thumb-1', 'jpg');
+
+        $job = new MediaJob;
+        $job->id = 'job-derivative-thumb';
+        $job->record_id = 'record-derivative';
+        $job->operation = 'derivative';
+        $job->source_path = 'archive/source.mov';
+        $job->options = [
+            'derivativeId' => 'deriv-thumb-1',
+            'derivativeType' => 'thumbnail',
+            'settings' => ['atSec' => 3],
+        ];
+
+        $artifacts = $this->processor->process($job);
+
+        $this->assertSame('derivative_thumbnail', $artifacts[0]['kind']);
+        $this->assertSame('record-derivative/derivatives/deriv-thumb-1.jpg', $artifacts[0]['key']);
+        // Promoted: final file exists, staged temp file is gone.
+        $this->assertFileExists('record-derivative/derivatives/deriv-thumb-1.jpg');
+        $this->assertFileDoesNotExist('record-derivative/derivatives/.tmp-deriv-thumb-1.jpg');
+
+        $command = $this->runner->lastCommand();
+        $this->assertContains('-y', $command);
+        $ssIndex = array_search('-ss', $command, true);
+        $this->assertSame('3', $command[$ssIndex + 1]);
+    }
+
+    public function test_derivative_waveform_builds_a_showwavespic_command_with_sanitized_color(): void
+    {
+        $this->stageDerivativeFixture('record-derivative', 'deriv-wave-1', 'png');
+
+        $job = new MediaJob;
+        $job->id = 'job-derivative-wave';
+        $job->record_id = 'record-derivative';
+        $job->operation = 'derivative';
+        $job->source_path = 'archive/source.wav';
+        $job->options = [
+            'derivativeId' => 'deriv-wave-1',
+            'derivativeType' => 'waveform',
+            // Deliberately not a clean 6-hex-digit value -- must be
+            // sanitized rather than interpolated as-is into the ffmpeg
+            // filtergraph string.
+            'settings' => ['width' => 640, 'height' => 120, 'color' => 'not-a-color!!'],
+        ];
+
+        $artifacts = $this->processor->process($job);
+
+        $this->assertSame('derivative_waveform', $artifacts[0]['kind']);
+        $this->assertFileExists('record-derivative/derivatives/deriv-wave-1.png');
+
+        $command = $this->runner->lastCommand();
+        $filterIndex = array_search('-filter_complex', $command, true);
+        $this->assertNotFalse($filterIndex);
+        // Unsanitizable input falls back to the safe default color rather
+        // than smuggling the invalid characters into the command.
+        $this->assertSame('showwavespic=s=640x120:colors=#3B82F6', $command[$filterIndex + 1]);
+    }
+
+    public function test_derivative_proxy_uses_cpu_encoder_by_default(): void
+    {
+        $this->stageDerivativeFixture('record-derivative', 'deriv-proxy-1', 'mp4');
+
+        $job = new MediaJob;
+        $job->id = 'job-derivative-proxy-cpu';
+        $job->record_id = 'record-derivative';
+        $job->operation = 'derivative';
+        $job->source_path = 'archive/source.mov';
+        $job->options = [
+            'derivativeId' => 'deriv-proxy-1',
+            'derivativeType' => 'proxy',
+            'settings' => ['maxWidth' => 480],
+        ];
+
+        $artifacts = $this->processor->process($job);
+
+        $this->assertSame('derivative_proxy', $artifacts[0]['kind']);
+        $this->assertSame('libx264', $artifacts[0]['encoder']);
+        $this->assertFileExists('record-derivative/derivatives/deriv-proxy-1.mp4');
+        $this->assertNotContains('nvidia-smi', $this->runner->lastCommand());
+    }
+
+    /**
+     * The fake runner's default nvidia-smi response reports a healthy GPU
+     * (see FakeProcessRunner), so a proxy that asks for acceleration here
+     * should genuinely get the GPU encoder -- confirming the "honest
+     * report" half of the acceptance criterion, not just the fail-closed
+     * half covered below.
+     */
+    public function test_derivative_proxy_uses_gpu_encoder_when_cuda_is_healthy(): void
+    {
+        $this->stageDerivativeFixture('record-derivative', 'deriv-proxy-gpu', 'mp4');
+
+        $job = new MediaJob;
+        $job->id = 'job-derivative-proxy-gpu';
+        $job->record_id = 'record-derivative';
+        $job->operation = 'derivative';
+        $job->source_path = 'archive/source.mov';
+        $job->options = [
+            'derivativeId' => 'deriv-proxy-gpu',
+            'derivativeType' => 'proxy',
+            'settings' => ['accelerate' => true],
+        ];
+
+        $artifacts = $this->processor->process($job);
+
+        $this->assertSame('h264_nvenc', $artifacts[0]['encoder']);
+        $this->assertContains('h264_nvenc', $this->runner->lastCommand());
+    }
+
+    /**
+     * V3-MEDIA-006 acceptance: never claim GPU acceleration unless a CUDA
+     * worker is actually present and healthy. With nvidia-smi reporting
+     * unhealthy, a proxy requesting acceleration must fail closed --
+     * GpuUnavailableException, same as WhisperTranscriber's --device cuda
+     * gate -- never a silent fallback to libx264 that would leave the
+     * caller unable to tell GPU encoding didn't actually happen.
+     */
+    public function test_derivative_proxy_fails_closed_instead_of_silently_falling_back_when_cuda_is_unhealthy(): void
+    {
+        $this->runner->setResponse('cuda-capability', [
+            'exitCode' => 1,
+            'stdout' => '',
+            'stderr' => 'NVIDIA-SMI has failed because it couldn\'t communicate with the NVIDIA driver.',
+        ]);
+
+        $job = new MediaJob;
+        $job->id = 'job-derivative-proxy-no-gpu';
+        $job->record_id = 'record-derivative';
+        $job->operation = 'derivative';
+        $job->source_path = 'archive/source.mov';
+        $job->options = [
+            'derivativeId' => 'deriv-proxy-no-gpu',
+            'derivativeType' => 'proxy',
+            'settings' => ['accelerate' => true],
+        ];
+
+        $this->expectException(GpuUnavailableException::class);
+        $this->processor->process($job);
+
+        $this->assertFileDoesNotExist('record-derivative/derivatives/deriv-proxy-no-gpu.mp4');
+    }
+
+    /**
+     * A failed generation must not corrupt/leave a stray file at the final
+     * derivative key -- and must never touch the source at all (ffmpeg only
+     * ever reads it via -i).
+     */
+    public function test_derivative_failure_leaves_no_partial_output_and_never_touches_the_source(): void
+    {
+        $this->stageDerivativeFixture('record-derivative', 'deriv-fail-1', 'jpg');
+        @mkdir('archive', 0777, true);
+        file_put_contents('archive/untouched-source.mov', 'original source bytes');
+
+        $this->runner->setResponse('default', [
+            'exitCode' => 1,
+            'stdout' => '',
+            'stderr' => 'Error: invalid input',
+        ]);
+
+        $job = new MediaJob;
+        $job->id = 'job-derivative-fail';
+        $job->record_id = 'record-derivative';
+        $job->operation = 'derivative';
+        $job->source_path = 'archive/untouched-source.mov';
+        $job->options = [
+            'derivativeId' => 'deriv-fail-1',
+            'derivativeType' => 'thumbnail',
+            'settings' => [],
+        ];
+
+        try {
+            $this->processor->process($job);
+            $this->fail('Expected a RuntimeException.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('ffmpeg derivative thumbnail failed', $exception->getMessage());
+        }
+
+        $this->assertFileDoesNotExist('record-derivative/derivatives/.tmp-deriv-fail-1.jpg');
+        $this->assertFileDoesNotExist('record-derivative/derivatives/deriv-fail-1.jpg');
+        $this->assertSame('original source bytes', file_get_contents('archive/untouched-source.mov'));
+
+        @unlink('archive/untouched-source.mov');
+        @rmdir('archive');
+    }
+
+    public function test_derivative_of_unknown_type_throws(): void
+    {
+        $job = new MediaJob;
+        $job->id = 'job-derivative-unknown';
+        $job->record_id = 'record-derivative';
+        $job->operation = 'derivative';
+        $job->source_path = 'archive/source.mov';
+        $job->options = ['derivativeType' => 'not-a-real-type', 'settings' => []];
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/Unknown derivative type/');
+        $this->processor->process($job);
+    }
 }
 
 class FfmpegProgressParserTest extends TestCase
@@ -479,5 +700,4 @@ class FfmpegProgressParserTest extends TestCase
         $this->assertLessThanOrEqual(1.0, $progress);
         $this->assertGreaterThanOrEqual(0.0, $progress);
     }
-
 }
