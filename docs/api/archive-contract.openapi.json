@@ -308,6 +308,296 @@
         "responses": { "200": { "$ref": "#/components/responses/Ok" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
       }
     },
+    "/records/{id}/review-sessions": {
+      "get": {
+        "tags": ["Review Sessions"],
+        "summary": "List review sessions for a record",
+        "operationId": "listReviewSessions",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "attachmentId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review sessions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Open a review session for a record version",
+        "operationId": "createReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created review session",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}": {
+      "get": {
+        "tags": ["Review Sessions"],
+        "summary": "Read a review session",
+        "operationId": "getReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review session",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Review Sessions"],
+        "summary": "Update review session notes",
+        "operationId": "updateReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated review session",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Review Sessions"],
+        "summary": "Delete a review session",
+        "operationId": "deleteReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}/start": {
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Move a review session from draft to in_review",
+        "operationId": "startReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionTransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review session moved to in_review",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}/request-changes": {
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Request changes on a review session that is in_review",
+        "operationId": "requestReviewSessionChanges",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionTransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review session moved to changes_requested",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}/approve": {
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Approve a review session that is in_review",
+        "operationId": "approveReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionTransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review session approved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}/resume": {
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Resume review after changes were requested",
+        "operationId": "resumeReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionTransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review session moved back to in_review",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}/close": {
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Close a review session",
+        "operationId": "closeReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionTransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review session closed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/transcript": {
       "patch": {
         "tags": ["Records"],
@@ -7996,6 +8286,97 @@
               "comments": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/ReviewComment" }
+              }
+            }
+          }
+        ]
+      },
+      "ReviewSessionState": {
+        "type": "string",
+        "enum": ["draft", "in_review", "changes_requested", "approved", "closed"]
+      },
+      "ReviewSession": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "attachmentId",
+          "versionToken",
+          "isCurrentVersion",
+          "state",
+          "notes",
+          "createdBy",
+          "decidedBy",
+          "decidedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "recordStore": { "type": "string" },
+          "recordUid": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "versionToken": { "type": "string" },
+          "isCurrentVersion": {
+            "type": "boolean",
+            "description": "False once the record source or attachment has been replaced after this session captured its version token; the session's decision stays pinned to the version it was granted on."
+          },
+          "state": { "$ref": "#/components/schemas/ReviewSessionState" },
+          "notes": { "type": ["string", "null"] },
+          "createdBy": { "type": ["integer", "null"] },
+          "decidedBy": { "type": ["integer", "null"] },
+          "decidedAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "ReviewSessionCreateRequest": {
+        "type": "object",
+        "properties": {
+          "store": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "notes": { "type": ["string", "null"], "maxLength": 4000 }
+        },
+        "additionalProperties": false
+      },
+      "ReviewSessionUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "notes": { "type": ["string", "null"], "maxLength": 4000 }
+        },
+        "required": ["notes"],
+        "additionalProperties": false
+      },
+      "ReviewSessionTransitionRequest": {
+        "type": "object",
+        "properties": {
+          "notes": { "type": ["string", "null"], "maxLength": 4000 }
+        },
+        "additionalProperties": false
+      },
+      "ReviewSessionResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["session"],
+            "properties": {
+              "session": { "$ref": "#/components/schemas/ReviewSession" }
+            }
+          }
+        ]
+      },
+      "ReviewSessionsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["sessions"],
+            "properties": {
+              "sessions": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ReviewSession" }
               }
             }
           }

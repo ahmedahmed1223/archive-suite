@@ -75,6 +75,14 @@ class AuditArchiveApiRequest
             ['DELETE', 'api/v1/record-notes/{id}'] => ['record_notes.delete', 'record_note'],
             ['POST', 'api/v1/records/{id}/comments'] => ['record_comments.create', 'record_comment'],
             ['DELETE', 'api/v1/record-comments/{id}'] => ['record_comments.delete', 'record_comment'],
+            ['POST', 'api/v1/records/{id}/review-sessions'] => ['review_sessions.create', 'review_session'],
+            ['PATCH', 'api/v1/review-sessions/{id}'] => ['review_sessions.update', 'review_session'],
+            ['DELETE', 'api/v1/review-sessions/{id}'] => ['review_sessions.delete', 'review_session'],
+            ['POST', 'api/v1/review-sessions/{id}/start'] => ['review_sessions.start', 'review_session'],
+            ['POST', 'api/v1/review-sessions/{id}/request-changes'] => ['review_sessions.request_changes', 'review_session'],
+            ['POST', 'api/v1/review-sessions/{id}/approve'] => ['review_sessions.approve', 'review_session'],
+            ['POST', 'api/v1/review-sessions/{id}/resume'] => ['review_sessions.resume', 'review_session'],
+            ['POST', 'api/v1/review-sessions/{id}/close'] => ['review_sessions.close', 'review_session'],
             ['POST', 'api/v1/rights'] => ['rights.upsert', 'rights_record'],
             ['POST', 'api/v1/relations'] => ['relations.create', 'record_relation'],
             ['DELETE', 'api/v1/relations/{id}'] => ['relations.delete', 'record_relation'],
@@ -163,6 +171,13 @@ class AuditArchiveApiRequest
             'api/v1/record-notes/{id}',
             'api/v1/records/{id}/comments',
             'api/v1/record-comments/{id}',
+            'api/v1/records/{id}/review-sessions',
+            'api/v1/review-sessions/{id}',
+            'api/v1/review-sessions/{id}/start',
+            'api/v1/review-sessions/{id}/request-changes',
+            'api/v1/review-sessions/{id}/approve',
+            'api/v1/review-sessions/{id}/resume',
+            'api/v1/review-sessions/{id}/close',
         ], true)) {
             $resourceId = $request->route('id');
         }
