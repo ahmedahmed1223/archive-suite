@@ -3,6 +3,7 @@ export const nav = {
     "/uploads": "إضافة مادة",
     "/uploads/scheduled": "الرفعات المجدولة",
     "/inbox": "الوارد",
+    "/work-inbox": "صندوق العمل",
     "/ingest": "الاستيراد",
     "/media/jobs": "الوسائط",
     "/transcriber": "التفريغ",

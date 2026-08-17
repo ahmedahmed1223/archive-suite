@@ -95,6 +95,7 @@ use App\Http\Controllers\Api\V1\VocabularyController;
 use App\Http\Controllers\Api\V1\VocabularyRelinkController;
 use App\Http\Controllers\Api\V1\WatchedIngestRulesController;
 use App\Http\Controllers\Api\V1\WebhooksController;
+use App\Http\Controllers\Api\V1\WorkInboxController;
 use App\Models\ScheduledUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
@@ -623,5 +624,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/notifications/{id}/unread', [NotificationsController::class, 'markUnread']);
         Route::post('/notifications/mark-all-read', [NotificationsController::class, 'markAllRead']);
         Route::delete('/notifications/{id}', [NotificationsController::class, 'destroy']);
+
+        // V3-WORK-001: unified work inbox — read/aggregation surface over the
+        // routes above (project tasks, review sessions, rights, notifications).
+        Route::get('/work-inbox', [WorkInboxController::class, 'index']);
     });
 });

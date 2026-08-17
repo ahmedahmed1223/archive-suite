@@ -8,6 +8,7 @@ const navItemMeta = [
   // ── الإدخال والمعالجة ──
   { href: "/uploads", section: "capture", icon: "UploadCloud" },
   { href: "/uploads/scheduled", section: "capture", icon: "CalendarClock" },
+  { href: "/work-inbox", section: "capture", icon: "ListChecks" },
   { href: "/inbox", section: "capture", icon: "Inbox" },
   { href: "/ingest", section: "capture", icon: "FileInput" },
   { href: "/media/jobs", section: "capture", icon: "Film" },
@@ -79,7 +80,7 @@ export function getLocalizedNavigation(locale: "ar" | "en") {
 }
 
 const dailyRoutes: Record<NavSection, readonly string[]> = {
-  capture: ["/uploads", "/inbox", "/ingest", "/media/jobs"],
+  capture: ["/uploads", "/work-inbox", "/inbox", "/ingest", "/media/jobs"],
   library: ["/", "/archive", "/search", "/favorites"],
   organize: ["/collections", "/tags", "/duplicates", "/projects"],
   collaborate: ["/shares", "/collaboration", "/broadcast", "/rights"],

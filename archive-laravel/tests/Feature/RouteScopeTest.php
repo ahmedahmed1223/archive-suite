@@ -373,6 +373,7 @@ class RouteScopeTest extends TestCase
         'POST api/v1/notifications/{id}/unread' => self::V1,
         'POST api/v1/notifications/mark-all-read' => self::V1,
         'DELETE api/v1/notifications/{id}' => self::V1,
+        'GET api/v1/work-inbox' => self::V1,
 
         // MCP-801/802: laravel/mcp's Streamable HTTP transport (routes/ai.php).
         // Gated by Passport OAuth (auth:api), not archive.auth — an emerging
@@ -766,6 +767,10 @@ class RouteScopeTest extends TestCase
         'POST api/v1/notifications/{id}/unread' => self::ROLE_ANY,
         'POST api/v1/notifications/mark-all-read' => self::ROLE_ANY,
         'DELETE api/v1/notifications/{id}' => self::ROLE_ANY,
+        // V3-WORK-001: read-only aggregation, scoped to the caller inside the
+        // controller (see WorkInboxApiTest) — every authenticated role reads
+        // their own feed, same bar as GET /notifications and GET /rights.
+        'GET api/v1/work-inbox' => self::ROLE_ANY,
 
         // MCP-801/802: no archive.auth role check at the route level — Passport
         // (auth:api) is the gate, and per-tool authorization happens inside

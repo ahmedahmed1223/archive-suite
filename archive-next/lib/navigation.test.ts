@@ -20,7 +20,7 @@ describe("role-focused navigation", () => {
     const editorNavigation = getDailyNavigation("capture", "editor");
     const viewerNavigation = getDailyNavigation("library", "viewer");
 
-    expect(editorNavigation.daily.map((item) => item.href)).toEqual(["/uploads", "/inbox", "/ingest", "/media/jobs"]);
+    expect(editorNavigation.daily.map((item) => item.href)).toEqual(["/uploads", "/work-inbox", "/inbox", "/ingest", "/media/jobs"]);
     expect(viewerNavigation.daily.map((item) => item.href)).toEqual(["/", "/archive", "/search", "/favorites"]);
   });
 
@@ -115,6 +115,6 @@ describe("mobile daily navigation respects a visible-hrefs filter", () => {
 
   it("keeps full navigation when no filter is passed (existing callers untouched)", () => {
     const navigation = getDailyNavigation("capture", "editor");
-    expect(navigation.daily.map((item) => item.href)).toEqual(["/uploads", "/inbox", "/ingest", "/media/jobs"]);
+    expect(navigation.daily.map((item) => item.href)).toEqual(["/uploads", "/work-inbox", "/inbox", "/ingest", "/media/jobs"]);
   });
 });

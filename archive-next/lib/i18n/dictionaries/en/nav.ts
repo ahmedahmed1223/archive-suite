@@ -3,6 +3,7 @@ export const nav = {
     "/uploads": "Add material",
     "/uploads/scheduled": "Scheduled uploads",
     "/inbox": "Inbox",
+    "/work-inbox": "Work inbox",
     "/ingest": "Import",
     "/media/jobs": "Media",
     "/transcriber": "Transcription",
