@@ -1867,6 +1867,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/review-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List review sessions for a record */
+        get: operations["listReviewSessions"];
+        put?: never;
+        /** Open a review session for a record version */
+        post: operations["createReviewSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/segments": {
         parameters: {
             query?: never;
@@ -2209,6 +2227,110 @@ export interface paths {
         get: operations["getReviewLink"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a review session */
+        get: operations["getReviewSession"];
+        put?: never;
+        post?: never;
+        /** Delete a review session */
+        delete: operations["deleteReviewSession"];
+        options?: never;
+        head?: never;
+        /** Update review session notes */
+        patch: operations["updateReviewSession"];
+        trace?: never;
+    };
+    "/review-sessions/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a review session that is in_review */
+        post: operations["approveReviewSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-sessions/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a review session */
+        post: operations["closeReviewSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-sessions/{id}/request-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request changes on a review session that is in_review */
+        post: operations["requestReviewSessionChanges"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-sessions/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume review after changes were requested */
+        post: operations["resumeReviewSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-sessions/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a review session from draft to in_review */
+        post: operations["startReviewSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5309,6 +5431,47 @@ export interface components {
             w: number;
             x: number;
             y: number;
+        };
+        ReviewSession: {
+            /** Format: uuid */
+            attachmentId: string | null;
+            /** Format: date-time */
+            createdAt: string | null;
+            createdBy: number | null;
+            /** Format: date-time */
+            decidedAt: string | null;
+            decidedBy: number | null;
+            /** Format: uuid */
+            id: string;
+            /** @description False once the record source or attachment has been replaced after this session captured its version token; the session's decision stays pinned to the version it was granted on. */
+            isCurrentVersion: boolean;
+            notes: string | null;
+            recordStore: string;
+            recordUid: string;
+            state: components["schemas"]["ReviewSessionState"];
+            /** Format: date-time */
+            updatedAt: string | null;
+            versionToken: string;
+        };
+        ReviewSessionCreateRequest: {
+            /** Format: uuid */
+            attachmentId?: string | null;
+            notes?: string | null;
+            store?: string;
+        };
+        ReviewSessionResponse: components["schemas"]["OkEnvelope"] & {
+            session: components["schemas"]["ReviewSession"];
+        };
+        ReviewSessionsResponse: components["schemas"]["OkEnvelope"] & {
+            sessions: components["schemas"]["ReviewSession"][];
+        };
+        /** @enum {string} */
+        ReviewSessionState: "draft" | "in_review" | "changes_requested" | "approved" | "closed";
+        ReviewSessionTransitionRequest: {
+            notes?: string | null;
+        };
+        ReviewSessionUpdateRequest: {
+            notes: string | null;
         };
         RightsEnforcementResponse: components["schemas"]["OkEnvelope"] & ({
             allowed: boolean;
@@ -9982,6 +10145,63 @@ export interface operations {
             401: components["responses"]["Error"];
         };
     };
+    listReviewSessions: {
+        parameters: {
+            query?: {
+                attachmentId?: string;
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Review sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    createReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created review session */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
     listRecordSegments: {
         parameters: {
             query?: never;
@@ -10644,6 +10864,227 @@ export interface operations {
                 };
             };
             404: components["responses"]["Error"];
+        };
+    };
+    getReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Review session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    deleteReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated review session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    approveReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Review session approved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    closeReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Review session closed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    requestReviewSessionChanges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Review session moved to changes_requested */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    resumeReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Review session moved back to in_review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    startReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Review session moved to in_review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
         };
     };
     getRightsByItem: {
