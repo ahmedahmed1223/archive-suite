@@ -37,6 +37,7 @@ import { mediaJobsPage } from "./mediaJobsPage";
 import { mediaJobLookup } from "./mediaJobLookup";
 import { mediaReview } from "./mediaReview";
 import { mediaPlay } from "./mediaPlay";
+import { mediaStudio } from "./mediaStudio";
 import { metadataTemplates } from "./metadataTemplates";
 import { notifications } from "./notifications";
 import { notificationsPanel } from "./notificationsPanel";
@@ -121,6 +122,7 @@ export const pages = {
   mediaJobLookup,
   mediaReview,
   mediaPlay,
+  mediaStudio,
   metadataTemplates,
   notifications,
   notificationsPanel,
