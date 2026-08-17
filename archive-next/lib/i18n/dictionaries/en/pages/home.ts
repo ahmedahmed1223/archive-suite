@@ -18,5 +18,17 @@ export const home = {
   most: "Most common",
   quickLinks: { uploads: "Add material", search: "Search", collections: "Collections", tags: "Tags", types: "Types" },
   roles: { admin: "Archive manager", editor: "Media editor", viewer: "Viewer / researcher" },
-  greetings: { admin: "Welcome back — manage your archive with confidence", editor: "Welcome back — let’s continue describing materials", viewer: "Welcome back — discover what is new" }
+  greetings: { admin: "Welcome back — manage your archive with confidence", editor: "Welcome back — let’s continue describing materials", viewer: "Welcome back — discover what is new" },
+  activity: {
+    ariaLabel: "Activity summary",
+    heading: "Activity summary",
+    loading: "Calculating the activity summary...",
+    error: "Could not calculate the activity summary.",
+    weeklyAdditions: "Additions in the last 7 days",
+    descriptionCompletion: "Description completion",
+    descriptionCompletionHint: "{complete} of {total} records have a complete description",
+    typeDistribution: "Media type distribution",
+    noData: "Not enough data yet",
+    otherTypesLabel: "Other types"
+  }
 } as const;
