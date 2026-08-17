@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import AppShell from "@/components/AppShell";
@@ -8,10 +9,22 @@ import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type MediaJob } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { parseSubtitles, formatCueTime, type Cue } from "@/lib/media/subtitles";
-import CueEditor from "./CueEditor";
 import styles from "./transcriber.module.css";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+
+// V3-PERF-004: CueEditor pulls in MediaPlayer plus subtitle serialization
+// utilities that the job-submission form above it doesn't need. Splitting
+// it out lets the form and recent-jobs list hydrate without waiting on
+// that chunk to parse.
+const CueEditor = dynamic(() => import("./CueEditor"), {
+  ssr: false,
+  loading: () => (
+    <section className="panel">
+      <Skeleton variant="block" lines={4} />
+    </section>
+  )
+});
 
 const POLL_INTERVAL_MS = 3000;
 

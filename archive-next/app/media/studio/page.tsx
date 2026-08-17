@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
@@ -19,9 +20,21 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { AppDictionary } from "@/lib/i18n/dictionaries";
 import MediaDerivativesTree from "../../archive/[id]/MediaDerivativesTree";
 import StudioCommentsPanel from "./StudioCommentsPanel";
-import StudioTimelinePanel from "./StudioTimelinePanel";
 import styles from "./studio.module.css";
 import "../media.css";
+
+// V3-PERF-004: the timeline panel is a secondary side-column panel (realtime
+// comments + markers over the Echo/Reverb client) that isn't needed for the
+// primary player/transcript to become interactive, so it's split into its
+// own chunk and streamed in after the main studio UI.
+const StudioTimelinePanel = dynamic(() => import("./StudioTimelinePanel"), {
+  ssr: false,
+  loading: () => (
+    <div className="panel">
+      <Skeleton variant="block" lines={3} />
+    </div>
+  )
+});
 
 const EMPTY_TECH_SPEC: MediaTechSpec = {
   widthPx: null,

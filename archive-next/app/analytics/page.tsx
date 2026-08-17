@@ -1,28 +1,34 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-  XAxis,
-  YAxis
-} from "recharts";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
 import "./analytics.css";
+
+// V3-PERF-004: recharts (+ its d3 dependencies) is the heaviest import on
+// this route. Deferring it lets the page shell hydrate while the chart
+// chunk and the records query load in parallel; see AnalyticsCharts.tsx.
+const chartLoading = (
+  <section className="panel analytics-chart analytics-recharts-panel">
+    <Skeleton variant="block" lines={4} />
+  </section>
+);
+const MonthlyGrowthChart = dynamic(() => import("./AnalyticsCharts").then((mod) => mod.MonthlyGrowthChart), {
+  ssr: false,
+  loading: () => chartLoading
+});
+const TypeDistributionChart = dynamic(() => import("./AnalyticsCharts").then((mod) => mod.TypeDistributionChart), {
+  ssr: false,
+  loading: () => chartLoading
+});
 
 type TimeRange = "30d" | "90d" | "1y" | "all";
 
@@ -35,15 +41,6 @@ interface AnalyticsData {
   taggedCount: number;
   taggedPct: number;
 }
-
-const chartColors = [
-  "var(--color-brand-primary)",
-  "var(--color-brand-indigo)",
-  "var(--color-brand-gold)",
-  "var(--color-accent-rose)",
-  "var(--color-status-success)",
-  "var(--color-status-warning)"
-];
 
 function calculateAnalytics(records: ArchiveRecord[], daysAgo?: number): AnalyticsData {
   const now = Date.now();
@@ -250,34 +247,7 @@ export default function AnalyticsPage() {
           </div>
 
           {analytics.monthlyGrowth.length > 0 ? (
-            <section className="panel analytics-chart analytics-recharts-panel" aria-label={copy.monthlyGrowthAriaLabel}>
-              <div className="panel-title-row">
-                <div>
-                  <h2>{copy.monthlyGrowth}</h2>
-                  <p>{copy.monthlyGrowthDescription}</p>
-                </div>
-                <span className="badge">{copy.monthCount.replace("{count}", String(analytics.monthlyGrowth.length))}</span>
-              </div>
-              <div className="analytics-recharts" role="img" aria-label={copy.monthlyGrowthChartAriaLabel}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={analytics.monthlyGrowth} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke="var(--color-border-secondary)" vertical={false} />
-                    <XAxis dataKey="month" stroke="var(--color-text-tertiary)" tickLine={false} axisLine={false} />
-                    <YAxis stroke="var(--color-text-tertiary)" tickLine={false} axisLine={false} width={34} />
-                    <RechartsTooltip
-                      cursor={{ fill: "color-mix(in srgb, var(--color-brand-primary) 10%, transparent)" }}
-                      contentStyle={{
-                        background: "var(--color-bg-secondary)",
-                        border: "1px solid var(--color-border-secondary)",
-                        borderRadius: "var(--radius-lg)",
-                        color: "var(--color-text-primary)"
-                      }}
-                    />
-                    <Bar dataKey="count" name={copy.chartItems} fill="var(--color-brand-primary)" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </section>
+            <MonthlyGrowthChart copy={copy} monthlyGrowth={analytics.monthlyGrowth} />
           ) : null}
 
           <div className="analytics-columns">
@@ -315,42 +285,7 @@ export default function AnalyticsPage() {
           </div>
 
           {typeChartData.length > 0 ? (
-            <section className="panel analytics-chart analytics-recharts-panel" aria-label={copy.typeChartAriaLabel}>
-              <div className="panel-title-row">
-                <div>
-                  <h2>{copy.typeMap}</h2>
-                  <p>{copy.typeMapDescription}</p>
-                </div>
-                <span className="badge">{copy.typesCount.replace("{count}", String(typeChartData.length))}</span>
-              </div>
-              <div className="analytics-recharts" role="img" aria-label={copy.typePieChartAriaLabel}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={typeChartData}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius="48%"
-                      outerRadius="74%"
-                      paddingAngle={3}
-                    >
-                      {typeChartData.map((entry, index) => (
-                        <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />
-                      ))}
-                    </Pie>
-                    <Legend />
-                    <RechartsTooltip
-                      contentStyle={{
-                        background: "var(--color-bg-secondary)",
-                        border: "1px solid var(--color-border-secondary)",
-                        borderRadius: "var(--radius-lg)",
-                        color: "var(--color-text-primary)"
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </section>
+            <TypeDistributionChart copy={copy} typeChartData={typeChartData} />
           ) : null}
 
           {analytics.topTags.length > 0 ? (

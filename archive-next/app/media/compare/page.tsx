@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
@@ -7,10 +8,23 @@ import MediaPlayer from "@/components/MediaPlayer";
 import MediaSourcePicker from "@/components/MediaSourcePicker";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
-import RecordVersionCompare from "./RecordVersionCompare";
+import { Skeleton } from "@/components/ui/Skeleton";
 import styles from "./compare.module.css";
 import "../media.css";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+
+// V3-PERF-004: RecordVersionCompare (synced playback, clip list) only
+// renders when the page is opened with ?recordId=. The default manual
+// two-path compare mode below never touches it, so it's split into its
+// own chunk instead of shipping on every /media/compare load.
+const RecordVersionCompare = dynamic(() => import("./RecordVersionCompare"), {
+  ssr: false,
+  loading: () => (
+    <div className="panel">
+      <Skeleton variant="block" lines={4} />
+    </div>
+  )
+});
 
 type SyncMode = "off" | "on";
 
