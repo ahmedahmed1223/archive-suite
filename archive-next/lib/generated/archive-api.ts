@@ -365,6 +365,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a clip */
+        get: operations["getMediaClip"];
+        put?: never;
+        post?: never;
+        /** Delete a clip */
+        delete: operations["deleteMediaClip"];
+        options?: never;
+        head?: never;
+        /** Update a clip's title, notes, in/out range, or frame rate */
+        patch: operations["updateMediaClip"];
+        trace?: never;
+    };
     "/collaboration/rooms/{roomKey}/documents/{resourceId}": {
         parameters: {
             query?: never;
@@ -1667,6 +1686,44 @@ export interface paths {
         put?: never;
         /** Preview record change impact */
         post: operations["previewRecordChangeImpact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/clips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List non-destructive clips for a record version */
+        get: operations["listMediaClips"];
+        put?: never;
+        /** Create a non-destructive clip pinned to a record version */
+        post: operations["createMediaClip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/clips/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export a record's clip list as JSON or CSV
+         * @description Every exported clip carries its record/attachment identity, pinned version token, and frame rate, so the list is unambiguous when replayed against the source later.
+         */
+        get: operations["exportMediaClips"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4638,6 +4695,56 @@ export interface components {
             rememberMe?: boolean;
             totp?: string;
         };
+        MediaClip: {
+            /** Format: uuid */
+            attachmentId: string | null;
+            /** Format: date-time */
+            createdAt: string | null;
+            createdBy: number | null;
+            fps: number;
+            /** Format: uuid */
+            id: string;
+            inSeconds: number;
+            /** @description False once the record source or attachment has been replaced after this clip's timecodes were captured. */
+            isCurrentVersion: boolean;
+            notes: string | null;
+            outSeconds: number;
+            recordStore: string;
+            recordUid: string;
+            title: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+            /** @description Same checksum-derived identity as ReviewSession.versionToken -- pinned once at creation so the clip's in/out times stay unambiguous even after the source is replaced. */
+            versionToken: string;
+        };
+        MediaClipCreateRequest: {
+            /** Format: uuid */
+            attachmentId?: string | null;
+            fps?: number;
+            inSeconds: number;
+            notes?: string | null;
+            outSeconds: number;
+            store?: string;
+            title: string;
+        };
+        MediaClipResponse: components["schemas"]["OkEnvelope"] & {
+            clip: components["schemas"]["MediaClip"];
+        };
+        MediaClipsExportResponse: components["schemas"]["OkEnvelope"] & {
+            clips: components["schemas"]["MediaClip"][];
+            recordStore: string;
+            recordUid: string;
+        };
+        MediaClipsResponse: components["schemas"]["OkEnvelope"] & {
+            clips: components["schemas"]["MediaClip"][];
+        };
+        MediaClipUpdateRequest: {
+            fps?: number;
+            inSeconds?: number;
+            notes?: string | null;
+            outSeconds?: number;
+            title?: string;
+        };
         MediaJob: {
             /** Format: date-time */
             completedAt?: string | null;
@@ -5016,11 +5123,13 @@ export interface components {
             checksumSha256: string;
             /** Format: date-time */
             createdAt?: string | null;
+            disk: string;
             /** Format: uuid */
             id: string;
             isPrimary: boolean;
             mimeType?: string | null;
             originalName: string;
+            path: string;
             processingStatus: string;
             recordStore: string;
             recordUid: string;
@@ -7134,6 +7243,77 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             404: components["responses"]["BulkMacroNotFound"];
+        };
+    };
+    getMediaClip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media clip */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClipResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    deleteMediaClip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateMediaClip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaClipUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated clip */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClipResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     getCollaborationDocument: {
@@ -9699,6 +9879,93 @@ export interface operations {
                     "application/json": components["schemas"]["RecordChangeImpactResponse"];
                 };
             };
+        };
+    };
+    listMediaClips: {
+        parameters: {
+            query?: {
+                attachmentId?: string;
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media clips */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClipsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    createMediaClip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaClipCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created clip */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClipResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    exportMediaClips: {
+        parameters: {
+            query?: {
+                attachmentId?: string;
+                format?: "json" | "csv";
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Clip list export */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClipsExportResponse"];
+                    "text/csv": string;
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listRecordComments: {
