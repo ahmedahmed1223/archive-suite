@@ -139,4 +139,10 @@ export const shared = {
     dismiss: "Hide",
     feedbackError: "Unable to save the suggestion feedback."
   },
+  vocabularyLinker: {
+    toggleLabel: "Auto-link vocabulary terms",
+    synonymOf: "Synonym of “{term}”",
+    openTermPage: "Open in vocabulary",
+    definitionAriaLabel: "Definition of “{term}”"
+  },
 } as const satisfies DictionaryShape<typeof arabicShared>;

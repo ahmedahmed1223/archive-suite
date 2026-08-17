@@ -44,6 +44,13 @@ export const archiveDetail = {
   suggestions: {
     feedbackError: "Could not save the suggestion feedback."
   },
+  readSurface: {
+    title: "Summary and description",
+    descriptionLabel: "Description",
+    noDescription: "No description has been saved for this record yet.",
+    transcriptLabel: "Transcript excerpt",
+    noTranscript: "No transcript has been saved for this record."
+  },
   recordInfo: {
     title: "Record information",
     idLabel: "ID",

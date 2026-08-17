@@ -44,6 +44,13 @@ export const archiveDetail = {
   suggestions: {
     feedbackError: "تعذر حفظ تقييم الاقتراح."
   },
+  readSurface: {
+    title: "الملخص والوصف",
+    descriptionLabel: "الوصف",
+    noDescription: "لا يوجد وصف محفوظ لهذا السجل بعد.",
+    transcriptLabel: "مقتطف من التفريغ",
+    noTranscript: "لا يوجد نص تفريغ محفوظ لهذا السجل."
+  },
   recordInfo: {
     title: "معلومات السجل",
     idLabel: "المعرّف",
