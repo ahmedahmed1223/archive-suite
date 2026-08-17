@@ -1,3 +1,66 @@
+.settings-legacy-divider {
+  margin-block: var(--space-6, 2rem) var(--space-3, 1rem);
+  padding-block-start: var(--space-4, 1.5rem);
+  border-block-start: 1px solid var(--color-border-secondary);
+}
+
+.settings-legacy-divider h2 {
+  margin: 0 0 var(--space-1, 0.35rem);
+}
+
+.settings-hub__sections {
+  display: grid;
+  gap: var(--space-4, 1.5rem);
+}
+
+.settings-hub__section h3 {
+  margin-block-end: var(--space-1, 0.35rem);
+}
+
+.settings-hub__capability-list {
+  display: grid;
+  gap: var(--space-3, 1rem);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settings-hub__capability-row {
+  padding: var(--space-3, 1rem);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.settings-hub__capability-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 0.75rem);
+  flex-wrap: wrap;
+}
+
+.settings-hub__capability-row-header label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.settings-hub__lock-reason {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.settings-hub__field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3, 1rem);
+}
+
 /* Status badges: icon + label so status never relies on color alone (V1-778). */
 .status-badge {
   gap: var(--space-1, 0.35rem);
