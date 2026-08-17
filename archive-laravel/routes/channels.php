@@ -35,6 +35,21 @@ Broadcast::channel('review.media.{mediaUid}', function ($request, string $mediaU
     ];
 });
 
+// V3-MEDIA-003: studio timeline comments, scoped per record -- same
+// any-authenticated-user rule as review.media above.
+Broadcast::channel('media-review-comments.{recordUid}', function ($request, string $recordUid) {
+    $user = $request->attributes->get('archive_user');
+
+    if (! $user instanceof User) {
+        return false;
+    }
+
+    return [
+        'id' => (string) $user->id,
+        'name' => $user->name ?: $user->email,
+    ];
+});
+
 // RT-801: same admin-or-creator rule as MediaJobsController::canAccess() —
 // live progress for a job is exactly as visible as the job itself already is.
 Broadcast::channel('media-job.{jobId}', function ($request, string $jobId) {

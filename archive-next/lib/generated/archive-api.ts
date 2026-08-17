@@ -1115,6 +1115,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/media-review-comments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a studio timeline comment */
+        get: operations["getMediaReviewComment"];
+        put?: never;
+        post?: never;
+        /** Delete a studio timeline comment */
+        delete: operations["deleteMediaReviewComment"];
+        options?: never;
+        head?: never;
+        /** Edit a studio timeline comment's body, type, or timestamps */
+        patch: operations["updateMediaReviewComment"];
+        trace?: never;
+    };
+    "/media-review-comments/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen a resolved studio timeline comment */
+        post: operations["reopenMediaReviewComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media-review-comments/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve an open studio timeline comment */
+        post: operations["resolveMediaReviewComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media/{mediaUid}/review-links": {
         parameters: {
             query?: never;
@@ -1849,6 +1902,24 @@ export interface paths {
         get: operations["listRecordHistory"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/media-review-comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List studio timeline comments for a record */
+        get: operations["listMediaReviewComments"];
+        put?: never;
+        /** Create a studio timeline marker/comment */
+        post: operations["createMediaReviewComment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4852,6 +4923,60 @@ export interface components {
         };
         /** @enum {string} */
         MediaOperation: "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
+        MediaReviewComment: {
+            /** Format: uuid */
+            attachmentId: string | null;
+            body: string;
+            /** Format: date-time */
+            createdAt: string | null;
+            createdBy: number | null;
+            /** @description Null for a point-in-time marker; set for a time-range marker. */
+            endSeconds: number | null;
+            /** Format: uuid */
+            id: string;
+            recordStore: string;
+            recordUid: string;
+            /** Format: date-time */
+            resolvedAt: string | null;
+            resolvedBy: number | null;
+            /** Format: uuid */
+            reviewSessionId: string | null;
+            startSeconds: number;
+            state: components["schemas"]["MediaReviewCommentState"];
+            type: components["schemas"]["MediaReviewCommentType"];
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        MediaReviewCommentCreateRequest: {
+            /** Format: uuid */
+            attachmentId?: string | null;
+            body: string;
+            /** @description Real media duration measured by the caller, used to seed/validate the server-cached known duration. */
+            clientDurationSeconds?: number | null;
+            endSeconds?: number | null;
+            /** Format: uuid */
+            reviewSessionId?: string | null;
+            startSeconds: number;
+            store?: string;
+            type: components["schemas"]["MediaReviewCommentType"];
+        };
+        MediaReviewCommentResponse: components["schemas"]["OkEnvelope"] & {
+            comment: components["schemas"]["MediaReviewComment"];
+        };
+        MediaReviewCommentsResponse: components["schemas"]["OkEnvelope"] & {
+            comments: components["schemas"]["MediaReviewComment"][];
+        };
+        /** @enum {string} */
+        MediaReviewCommentState: "open" | "resolved";
+        /** @enum {string} */
+        MediaReviewCommentType: "issue" | "suggestion" | "highlight" | "chapter";
+        MediaReviewCommentUpdateRequest: {
+            body?: string;
+            clientDurationSeconds?: number | null;
+            endSeconds?: number | null;
+            startSeconds?: number;
+            type?: components["schemas"]["MediaReviewCommentType"];
+        };
         MentionableUser: {
             id: string;
             name: string;
@@ -8805,6 +8930,129 @@ export interface operations {
             401: components["responses"]["Error"];
         };
     };
+    getMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media review comment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    deleteMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaReviewCommentUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated media review comment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    reopenMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comment moved back to open */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    resolveMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comment marked resolved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
     createReviewLink: {
         parameters: {
             query?: never;
@@ -10402,6 +10650,64 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    listMediaReviewComments: {
+        parameters: {
+            query?: {
+                attachmentId?: string;
+                reviewSessionId?: string;
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media review comments, ordered by startSeconds */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    createMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaReviewCommentCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created media review comment */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     mergeRecords: {

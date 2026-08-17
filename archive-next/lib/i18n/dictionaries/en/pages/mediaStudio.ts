@@ -49,8 +49,34 @@ export const mediaStudio = {
   },
   timeline: {
     title: "Timeline",
-    comingSoonTitle: "Timeline markers are not available yet",
-    comingSoonDescription: "Chapter and marker timelines ship in a later update."
+    description: "Point-in-time and range markers, visible to the team working on this media.",
+    liveLabel: "Live",
+    pollingLabel: "Polling",
+    loadingLabel: "Loading timeline comments…",
+    loadError: "Could not load timeline comments.",
+    durationUnavailable: "Play the file once to enable the marker strip.",
+    typeLabel: "Type",
+    types: {
+      issue: "Issue",
+      suggestion: "Suggestion",
+      highlight: "Highlight",
+      chapter: "Chapter"
+    },
+    markRangeButton: "Mark range start",
+    clearRangeButton: "Clear range",
+    bodyLabel: "New marker",
+    bodyPlaceholder: "Describe what happens at this point…",
+    postButton: "Add marker",
+    postingButton: "Adding…",
+    postError: "Could not add the marker.",
+    empty: "No timeline markers yet.",
+    jumpAriaLabel: "Jump to this marker's timestamp",
+    resolvedLabel: "Resolved",
+    resolveButton: "Resolve",
+    reopenButton: "Reopen",
+    deleteAriaLabel: "Delete marker",
+    deleteConfirm: "Delete this marker?",
+    stripAriaLabel: "Timeline marker strip"
   },
   tasks: {
     title: "Tasks",

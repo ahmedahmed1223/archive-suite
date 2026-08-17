@@ -89,6 +89,11 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/records/{id}/clips'] => ['media_clips.create', 'media_clip'],
             ['PATCH', 'api/v1/clips/{id}'] => ['media_clips.update', 'media_clip'],
             ['DELETE', 'api/v1/clips/{id}'] => ['media_clips.delete', 'media_clip'],
+            ['POST', 'api/v1/records/{id}/media-review-comments'] => ['media_review_comments.create', 'media_review_comment'],
+            ['PATCH', 'api/v1/media-review-comments/{id}'] => ['media_review_comments.update', 'media_review_comment'],
+            ['DELETE', 'api/v1/media-review-comments/{id}'] => ['media_review_comments.delete', 'media_review_comment'],
+            ['POST', 'api/v1/media-review-comments/{id}/resolve'] => ['media_review_comments.resolve', 'media_review_comment'],
+            ['POST', 'api/v1/media-review-comments/{id}/reopen'] => ['media_review_comments.reopen', 'media_review_comment'],
             ['POST', 'api/v1/rights'] => ['rights.upsert', 'rights_record'],
             ['POST', 'api/v1/relations'] => ['relations.create', 'record_relation'],
             ['DELETE', 'api/v1/relations/{id}'] => ['relations.delete', 'record_relation'],
@@ -194,6 +199,15 @@ class AuditArchiveApiRequest
             'api/v1/review-sessions/{id}/close',
             'api/v1/records/{id}/clips',
             'api/v1/clips/{id}',
+        ], true)) {
+            $resourceId = $request->route('id');
+        }
+
+        if (in_array($route, [
+            'api/v1/records/{id}/media-review-comments',
+            'api/v1/media-review-comments/{id}',
+            'api/v1/media-review-comments/{id}/resolve',
+            'api/v1/media-review-comments/{id}/reopen',
         ], true)) {
             $resourceId = $request->route('id');
         }

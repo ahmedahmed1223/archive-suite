@@ -751,6 +751,182 @@
         }
       }
     },
+    "/records/{id}/media-review-comments": {
+      "get": {
+        "tags": ["Media Review Comments"],
+        "summary": "List studio timeline comments for a record",
+        "operationId": "listMediaReviewComments",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "attachmentId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "reviewSessionId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media review comments, ordered by startSeconds",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Media Review Comments"],
+        "summary": "Create a studio timeline marker/comment",
+        "operationId": "createMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaReviewCommentCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created media review comment",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media-review-comments/{id}": {
+      "get": {
+        "tags": ["Media Review Comments"],
+        "summary": "Read a studio timeline comment",
+        "operationId": "getMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media review comment",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Media Review Comments"],
+        "summary": "Edit a studio timeline comment's body, type, or timestamps",
+        "operationId": "updateMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaReviewCommentUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated media review comment",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Media Review Comments"],
+        "summary": "Delete a studio timeline comment",
+        "operationId": "deleteMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media-review-comments/{id}/resolve": {
+      "post": {
+        "tags": ["Media Review Comments"],
+        "summary": "Resolve an open studio timeline comment",
+        "operationId": "resolveMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment marked resolved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media-review-comments/{id}/reopen": {
+      "post": {
+        "tags": ["Media Review Comments"],
+        "summary": "Reopen a resolved studio timeline comment",
+        "operationId": "reopenMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment moved back to open",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/transcript": {
       "patch": {
         "tags": ["Records"],
@@ -8899,6 +9075,112 @@
               "versions": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/TranscriptVersion" }
+              }
+            }
+          }
+        ]
+      },
+      "MediaReviewCommentType": {
+        "type": "string",
+        "enum": ["issue", "suggestion", "highlight", "chapter"]
+      },
+      "MediaReviewCommentState": {
+        "type": "string",
+        "enum": ["open", "resolved"]
+      },
+      "MediaReviewComment": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "attachmentId",
+          "reviewSessionId",
+          "type",
+          "startSeconds",
+          "endSeconds",
+          "body",
+          "state",
+          "createdBy",
+          "resolvedBy",
+          "resolvedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "recordStore": { "type": "string" },
+          "recordUid": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "reviewSessionId": { "type": ["string", "null"], "format": "uuid" },
+          "type": { "$ref": "#/components/schemas/MediaReviewCommentType" },
+          "startSeconds": { "type": "number", "minimum": 0 },
+          "endSeconds": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "description": "Null for a point-in-time marker; set for a time-range marker."
+          },
+          "body": { "type": "string" },
+          "state": { "$ref": "#/components/schemas/MediaReviewCommentState" },
+          "createdBy": { "type": ["integer", "null"] },
+          "resolvedBy": { "type": ["integer", "null"] },
+          "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "MediaReviewCommentCreateRequest": {
+        "type": "object",
+        "required": ["type", "startSeconds", "body"],
+        "properties": {
+          "store": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "reviewSessionId": { "type": ["string", "null"], "format": "uuid" },
+          "type": { "$ref": "#/components/schemas/MediaReviewCommentType" },
+          "startSeconds": { "type": "number", "minimum": 0 },
+          "endSeconds": { "type": ["number", "null"], "minimum": 0 },
+          "body": { "type": "string", "maxLength": 4000 },
+          "clientDurationSeconds": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "description": "Real media duration measured by the caller, used to seed/validate the server-cached known duration."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaReviewCommentUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "$ref": "#/components/schemas/MediaReviewCommentType" },
+          "startSeconds": { "type": "number", "minimum": 0 },
+          "endSeconds": { "type": ["number", "null"], "minimum": 0 },
+          "body": { "type": "string", "maxLength": 4000 },
+          "clientDurationSeconds": { "type": ["number", "null"], "minimum": 0 }
+        },
+        "additionalProperties": false
+      },
+      "MediaReviewCommentResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["comment"],
+            "properties": {
+              "comment": { "$ref": "#/components/schemas/MediaReviewComment" }
+            }
+          }
+        ]
+      },
+      "MediaReviewCommentsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["comments"],
+            "properties": {
+              "comments": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MediaReviewComment" }
               }
             }
           }

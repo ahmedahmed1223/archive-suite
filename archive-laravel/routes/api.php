@@ -66,6 +66,7 @@ use App\Http\Controllers\Api\V1\RecordTriageFlagController;
 use App\Http\Controllers\Api\V1\RelationsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
+use App\Http\Controllers\Api\V1\MediaReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewSessionsController;
 use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SafetyPreviewController;
@@ -295,6 +296,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/records/{id}/clips', [ClipsController::class, 'index']);
         Route::post('/records/{id}/clips', [ClipsController::class, 'store']);
         Route::get('/records/{id}/clips/export', [ClipsController::class, 'export']);
+        Route::get('/records/{id}/media-review-comments', [MediaReviewCommentsController::class, 'index']);
+        Route::post('/records/{id}/media-review-comments', [MediaReviewCommentsController::class, 'store']);
         Route::get('/records/{id}/history', [RecordHistoryController::class, 'index']);
         // V1-001: niche broadcast (MOS/MXF) integration — experimental, flagged.
         Route::middleware('archive.feature:broadcast_metadata')->group(function (): void {
@@ -551,6 +554,11 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/clips/{id}', [ClipsController::class, 'show']);
         Route::patch('/clips/{id}', [ClipsController::class, 'update']);
         Route::delete('/clips/{id}', [ClipsController::class, 'destroy']);
+        Route::get('/media-review-comments/{id}', [MediaReviewCommentsController::class, 'show']);
+        Route::patch('/media-review-comments/{id}', [MediaReviewCommentsController::class, 'update']);
+        Route::delete('/media-review-comments/{id}', [MediaReviewCommentsController::class, 'destroy']);
+        Route::post('/media-review-comments/{id}/resolve', [MediaReviewCommentsController::class, 'resolve']);
+        Route::post('/media-review-comments/{id}/reopen', [MediaReviewCommentsController::class, 'reopen']);
 
         // V1-001: generic external-database (ODBC) proxy — experimental, flagged.
         Route::middleware('archive.feature:odbc')->group(function (): void {

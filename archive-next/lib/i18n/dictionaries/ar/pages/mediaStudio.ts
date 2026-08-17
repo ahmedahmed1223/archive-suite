@@ -49,8 +49,34 @@ export const mediaStudio = {
   },
   timeline: {
     title: "الخط الزمني",
-    comingSoonTitle: "علامات الخط الزمني غير متاحة بعد",
-    comingSoonDescription: "ستتوفر خطوط زمنية للفصول والعلامات في تحديث لاحق."
+    description: "علامات لحظية أو لمدى زمني، مرئية لفريق العمل على هذه المادة.",
+    liveLabel: "مباشر",
+    pollingLabel: "تحديث دوري",
+    loadingLabel: "جارٍ تحميل علامات الخط الزمني…",
+    loadError: "تعذر تحميل علامات الخط الزمني.",
+    durationUnavailable: "شغّل الملف مرة واحدة لتفعيل شريط العلامات.",
+    typeLabel: "النوع",
+    types: {
+      issue: "مشكلة",
+      suggestion: "اقتراح",
+      highlight: "تمييز",
+      chapter: "فصل"
+    },
+    markRangeButton: "تحديد بداية المدى",
+    clearRangeButton: "إلغاء المدى",
+    bodyLabel: "علامة جديدة",
+    bodyPlaceholder: "صف ما يحدث عند هذه النقطة…",
+    postButton: "إضافة علامة",
+    postingButton: "جارٍ الإضافة…",
+    postError: "تعذر إضافة العلامة.",
+    empty: "لا توجد علامات على الخط الزمني بعد.",
+    jumpAriaLabel: "الانتقال إلى توقيت هذه العلامة",
+    resolvedLabel: "تم الحل",
+    resolveButton: "حلّ",
+    reopenButton: "إعادة الفتح",
+    deleteAriaLabel: "حذف العلامة",
+    deleteConfirm: "حذف هذه العلامة؟",
+    stripAriaLabel: "شريط علامات الخط الزمني"
   },
   tasks: {
     title: "المهام",
