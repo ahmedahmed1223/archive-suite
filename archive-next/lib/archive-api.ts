@@ -2692,69 +2692,7 @@ export function createArchiveApiClient({
       post<{ comment: ReviewComment }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, payload, options),
     updateReviewComment: (id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions) =>
       patch<{ comment: ReviewComment }>(`/review-comments/${encodeURIComponent(id)}`, payload, options),
-<<<<<<< HEAD
-    reviewSessions: (recordId: string, params?: { store?: string; attachmentId?: string }, options?: AuthRequestOptions) => {
-      const queryParams = new URLSearchParams();
-      if (params?.store) queryParams.set("store", params.store);
-      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
-      const query = queryParams.toString();
-      return get<{ sessions: ReviewSession[] }>(`/records/${encodeURIComponent(recordId)}/review-sessions${query ? `?${query}` : ""}`, options);
-    },
-    createReviewSession: (recordId: string, payload?: ReviewSessionCreatePayload, options?: AuthRequestOptions) =>
-      post<{ session: ReviewSession }>(`/records/${encodeURIComponent(recordId)}/review-sessions`, payload ?? {}, options),
-    transitionReviewSession: (
-      id: string,
-      action: "start" | "request-changes" | "approve" | "resume" | "close",
-      payload?: ReviewSessionTransitionPayload,
-      options?: AuthRequestOptions
-    ) => post<{ session: ReviewSession }>(`/review-sessions/${encodeURIComponent(id)}/${action}`, payload ?? {}, options),
-    mediaClips: (recordId: string, params?: { store?: string; attachmentId?: string }, options?: AuthRequestOptions) => {
-      const queryParams = new URLSearchParams();
-      if (params?.store) queryParams.set("store", params.store);
-      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
-      const query = queryParams.toString();
-      return get<{ clips: MediaClip[] }>(`/records/${encodeURIComponent(recordId)}/clips${query ? `?${query}` : ""}`, options);
-    },
-    createMediaClip: (recordId: string, payload: MediaClipCreatePayload, options?: AuthRequestOptions) =>
-      post<{ clip: MediaClip }>(`/records/${encodeURIComponent(recordId)}/clips`, payload, options),
-    updateMediaClip: (id: string, payload: MediaClipUpdatePayload, options?: AuthRequestOptions) =>
-      patch<{ clip: MediaClip }>(`/clips/${encodeURIComponent(id)}`, payload, options),
-    deleteMediaClip: (id: string, options?: AuthRequestOptions) =>
-      del<{ deleted: boolean }>(`/clips/${encodeURIComponent(id)}`, undefined, options),
-    downloadMediaClipsExport: async (
-      recordId: string,
-      format: "json" | "csv",
-      params?: { store?: string; attachmentId?: string },
-      options?: AuthRequestOptions
-    ) => {
-      const queryParams = new URLSearchParams({ format });
-      if (params?.store) queryParams.set("store", params.store);
-      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
-      const headers = new Headers({ Accept: format === "csv" ? "text/csv" : "application/json" });
-      const accessToken = options?.accessToken ?? cachedAccessToken;
-      if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
-
-      try {
-        const response = await fetchImpl(`${baseUrl}/records/${encodeURIComponent(recordId)}/clips/export?${queryParams.toString()}`, {
-          headers,
-          credentials: "include"
-        });
-        if (!response.ok) {
-          return { ok: false, error: clientUploadError(currentLocale(), "export", response.status) };
-        }
-        const contentDisposition = response.headers.get("content-disposition") || "";
-        const disposedName = contentDisposition.match(/filename=([^;]+)/i)?.[1]?.replace(/^"|"$/g, "");
-        const filename = disposedName || `clip-list-${recordId}.${format}`;
-        return { ok: true, blob: await response.blob(), filename };
-      } catch {
-        return {
-          ok: false,
-          error: currentLocale() === "en"
-            ? "Unable to connect to the server to export the clip list."
-            : "تعذر الاتصال بالخادم لتصدير قائمة المقاطع."
-        };
-      }
-    },
+    ...mediaReviewClient,
     mediaDerivatives: (
       recordId: string,
       params?: { store?: string; attachmentId?: string; type?: MediaDerivativeType },
@@ -2774,46 +2712,6 @@ export function createArchiveApiClient({
       post<{ derivative: MediaDerivative; cached?: boolean }>("/media-derivatives", payload, options),
     getMediaDerivative: (id: string, options?: AuthRequestOptions) =>
       get<{ derivative: MediaDerivative }>(`/media-derivatives/${encodeURIComponent(id)}`, options),
-    transcriptVersions: (recordId: string, params?: { store?: string }, options?: AuthRequestOptions) => {
-      const queryParams = new URLSearchParams();
-      if (params?.store) queryParams.set("store", params.store);
-      const query = queryParams.toString();
-      return get<{ current: TranscriptCurrentState; versions: TranscriptVersion[] }>(
-        `/records/${encodeURIComponent(recordId)}/transcript/versions${query ? `?${query}` : ""}`,
-        options
-      );
-    },
-    saveTranscriptVersion: (recordId: string, payload: TranscriptVersionStorePayload, options?: AuthRequestOptions) =>
-      post<{ version: TranscriptVersion }>(`/records/${encodeURIComponent(recordId)}/transcript/versions`, payload, options),
-    lockTranscriptVersion: (recordId: string, payload?: { store?: string }, options?: AuthRequestOptions) =>
-      post<{ version: TranscriptVersion }>(`/records/${encodeURIComponent(recordId)}/transcript/lock`, payload ?? {}, options),
-    restoreTranscriptVersion: (recordId: string, versionId: string, payload?: TranscriptVersionRestorePayload, options?: AuthRequestOptions) =>
-      post<{ version: TranscriptVersion }>(
-        `/records/${encodeURIComponent(recordId)}/transcript/versions/${encodeURIComponent(versionId)}/restore`,
-        payload ?? {},
-        options
-      ),
-    mediaReviewComments: (recordId: string, params?: { store?: string; attachmentId?: string; reviewSessionId?: string }, options?: AuthRequestOptions) => {
-      const queryParams = new URLSearchParams();
-      if (params?.store) queryParams.set("store", params.store);
-      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
-      if (params?.reviewSessionId) queryParams.set("reviewSessionId", params.reviewSessionId);
-      const query = queryParams.toString();
-      return get<{ comments: MediaReviewComment[] }>(`/records/${encodeURIComponent(recordId)}/media-review-comments${query ? `?${query}` : ""}`, options);
-    },
-    createMediaReviewComment: (recordId: string, payload: MediaReviewCommentCreatePayload, options?: AuthRequestOptions) =>
-      post<{ comment: MediaReviewComment }>(`/records/${encodeURIComponent(recordId)}/media-review-comments`, payload, options),
-    updateMediaReviewComment: (id: string, payload: MediaReviewCommentUpdatePayload, options?: AuthRequestOptions) =>
-      patch<{ comment: MediaReviewComment }>(`/media-review-comments/${encodeURIComponent(id)}`, payload, options),
-    deleteMediaReviewComment: (id: string, options?: AuthRequestOptions) =>
-      del<{ deleted: boolean }>(`/media-review-comments/${encodeURIComponent(id)}`, undefined, options),
-    resolveMediaReviewComment: (id: string, options?: AuthRequestOptions) =>
-      post<{ comment: MediaReviewComment }>(`/media-review-comments/${encodeURIComponent(id)}/resolve`, undefined, options),
-    reopenMediaReviewComment: (id: string, options?: AuthRequestOptions) =>
-      post<{ comment: MediaReviewComment }>(`/media-review-comments/${encodeURIComponent(id)}/reopen`, undefined, options),
-=======
-    ...mediaReviewClient,
->>>>>>> codex/v1.3-perf-003
     reviewLink: (token: string) =>
       get<ReviewLinkDetails>(`/review-links/${encodeURIComponent(token)}`),
     createReviewLink: (payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions) =>
