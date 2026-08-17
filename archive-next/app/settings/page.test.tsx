@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import SettingsPage from "./page";
+import { DEFAULT_CAPABILITIES, DEFAULT_EXPERIENCE } from "@/lib/experience-profile";
 
 const displaySettings = { timeZone: "Europe/Istanbul", dateFormat: "DD/MM/YYYY" as const, timeFormat: "24h" as const, showSeconds: false };
 
@@ -16,6 +17,24 @@ vi.mock("@/components/AppearanceSettings", () => ({ default: () => null }));
 vi.mock("@/components/LanguageSettings", () => ({ default: () => null }));
 vi.mock("@/lib/contextual-tips", () => ({ isTipsEnabledGlobally: () => true, setTipsEnabledGlobally: vi.fn() }));
 vi.mock("@/lib/auth-session", () => ({ useAuthSession: () => ({ user: { role: "admin" } }) }));
+vi.mock("@/lib/experience-profile-context", () => ({
+  useExperienceProfile: () => ({
+    status: "ready",
+    capabilities: DEFAULT_CAPABILITIES,
+    capabilitiesStatus: "ready",
+    capabilitiesError: null,
+    experience: DEFAULT_EXPERIENCE,
+    experienceStatus: "ready",
+    experienceError: null,
+    profileVersion: 0,
+    writeConflict: null,
+    clearWriteConflict: vi.fn(),
+    retryLoad: vi.fn(),
+    updateExperience: vi.fn().mockResolvedValue({ ok: true }),
+    resetExperience: vi.fn().mockResolvedValue({ ok: true }),
+    updateCapabilities: vi.fn().mockResolvedValue({ ok: true })
+  })
+}));
 vi.mock("@/lib/display-settings-context", () => ({
   useDisplaySettings: () => ({
     settings: displaySettings,

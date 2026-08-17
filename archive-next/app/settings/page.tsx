@@ -2,7 +2,7 @@
 
 import "./settings.css";
 import { useEffect, useState } from "react";
-import { Activity, AlertTriangle, CheckCircle2, DatabaseZap, Eye, Fingerprint, Info, KeyRound, LifeBuoy, MinusCircle, RefreshCw, Settings, ShieldCheck, Users, XCircle } from "lucide-react";
+import { Activity, AlertTriangle, DatabaseZap, Eye, Fingerprint, KeyRound, LifeBuoy, RefreshCw, Settings, ShieldCheck, Users } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useAuthSession } from "@/lib/auth-session";
@@ -27,6 +27,10 @@ import {
   type StorageConnectionResult
 } from "@/lib/archive-api";
 import type { AppDictionary } from "@/lib/i18n/dictionaries";
+import { StatusBadge, type StatusBadgeTone } from "./StatusBadgeControl";
+import SettingsHub from "./SettingsHub";
+
+export { StatusBadge, type StatusBadgeTone };
 
 type SettingsCopy = AppDictionary["pages"]["settings"];
 
@@ -57,36 +61,6 @@ type DatabaseTestForm = {
 };
 
 const getDefaultOdbcKeyColumn = (table: OdbcCoreTable) => (table === "settings" ? "key" : "id");
-
-export type StatusBadgeTone = "success" | "warning" | "danger" | "info" | "neutral";
-
-// ponytail: icons chosen for distinct outline shape (circle+check, triangle,
-// circle+x, circle+i, circle+dash) so tone never relies on color alone.
-const STATUS_BADGE_ICONS: Record<StatusBadgeTone, typeof CheckCircle2> = {
-  success: CheckCircle2,
-  warning: AlertTriangle,
-  danger: XCircle,
-  info: Info,
-  neutral: MinusCircle
-};
-
-const STATUS_BADGE_CLASS: Record<StatusBadgeTone, string> = {
-  success: "badge-success",
-  warning: "badge-warning",
-  danger: "badge-danger",
-  info: "badge-info",
-  neutral: ""
-};
-
-export function StatusBadge({ children, tone = "neutral" }: Readonly<{ children: string; tone?: StatusBadgeTone }>) {
-  const Icon = STATUS_BADGE_ICONS[tone];
-  return (
-    <span className={`badge status-badge ${STATUS_BADGE_CLASS[tone]}`.trim()} data-tone={tone}>
-      <Icon size={14} aria-hidden="true" />
-      {children}
-    </span>
-  );
-}
 
 function odbcStatusLabel(status: OdbcProbe["status"], copy: SettingsCopy["odbc"]) {
   const labels: Record<OdbcProbe["status"], string> = {
@@ -502,6 +476,13 @@ export default function SettingsPage() {
           <a className="button button-secondary button-small" href="/first-run">{settingsCopy.setupBanner.viewTour}</a>
         </div>
       </section>
+
+      <SettingsHub />
+
+      <div className="settings-legacy-divider" role="separator" aria-label={settingsCopy.legacyTools.ariaLabel}>
+        <h2>{settingsCopy.legacyTools.heading}</h2>
+        <p className="helper-text">{settingsCopy.legacyTools.description}</p>
+      </div>
 
       <MetricStrip
         ariaLabel={settingsCopy.metrics.ariaLabel}

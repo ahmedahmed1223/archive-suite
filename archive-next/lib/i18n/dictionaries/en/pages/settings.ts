@@ -1,4 +1,9 @@
 export const settings = {
+  legacyTools: {
+    ariaLabel: "Advanced operational tools",
+    heading: "Advanced operational tools",
+    description: "Security diagnostics, ODBC, Whisper processing, and connection tests, still outside the unified settings hub above."
+  },
   toolbar: {
     eyebrow: "Settings center",
     title: "{brand} settings",
@@ -254,5 +259,129 @@ export const settings = {
     statusTitle: "System status",
     statusDescription: "Monitor server connectivity and performance.",
     statusLink: "View status"
+  },
+  hub: {
+    ariaLabel: "Unified settings hub",
+    heading: "Unified settings hub",
+    description: "Four sections that reflect what is actually enabled on this deployment, and explain why a locked value is locked instead of hiding it.",
+    loading: "Loading your profile...",
+    fallbackTitle: "Could not load settings from the server",
+    fallbackDescription: "Safe default values are shown for now. Retry to reconnect to the server.",
+    retry: "Retry",
+    writeConflictTitle: "This value changed elsewhere",
+    dismiss: "Dismiss",
+    administration: {
+      heading: "Administration",
+      description: "System-level controls, available to administrators only. The effective value reflects deployment configuration first, then admin policy, then the release default.",
+      notEditableNote: "This value is fixed on this deployment and cannot be changed here.",
+      statusLabels: {
+        enabled: "Enabled",
+        disabled: "Disabled",
+        needs_configuration: "Needs configuration",
+        unavailable: "Unavailable on this deployment"
+      },
+      sourceLabels: {
+        release: "Release default",
+        deployment: "Deployment configuration",
+        system: "Admin policy",
+        default: "Default value",
+        user: "Personal preference"
+      },
+      capabilities: {
+        systemControl: { label: "System control", description: "Access to server operating tools and controls from the interface." },
+        backups: { label: "Backups", description: "Enable scheduled and on-demand backup jobs." },
+        trash: { label: "Trash", description: "Keep deleted items recoverable before permanent deletion." },
+        odbc: { label: "ODBC bridge", description: "Legacy system integration over ODBC with restricted read/write." },
+        broadcastMetadata: { label: "Broadcast metadata", description: "Extract and display broadcast-specific metadata." },
+        semanticSearch: { label: "Semantic search", description: "Meaning-based search instead of literal text matching only." },
+        mediaProcessing: { label: "Real media processing", description: "Genuine video and audio processing instead of simulation." },
+        ocr: { label: "OCR", description: "Extract text from scanned images and documents." },
+        mcp: { label: "MCP protocol", description: "Let external tools connect to the archive via the Model Context Protocol." }
+      }
+    },
+    myExperience: {
+      heading: "My experience",
+      description: "Personal preferences that are always editable; saved to your account only and never affect other users. These values override the central date-and-time setting below for you alone.",
+      save: "Save",
+      saving: "Saving...",
+      saveSuccess: "Saved.",
+      saveError: "Could not save.",
+      reset: "Restore default",
+      resetSuccess: "Restored to the default.",
+      resetError: "Could not restore the default.",
+      fields: {
+        locale: { label: "Interface language (my experience)", options: { ar: "Arabic", en: "English" } },
+        timeZone: { label: "Personal time zone", hint: "An IANA time zone name, such as Europe/Istanbul." },
+        dateFormat: {
+          label: "Personal date format",
+          options: { dayFirst: "Day/Month/Year", monthFirst: "Month/Day/Year", yearFirst: "Year-Month-Day" }
+        },
+        timeFormat: { label: "Personal time format", options: { h24: "24-hour", h12: "12-hour" } },
+        theme: {
+          label: "Visual theme",
+          options: {
+            cinematicDark: "Cinematic dark",
+            luxuryDark: "Luxury dark",
+            oceanDark: "Ocean dark",
+            neutralLight: "Neutral light",
+            highContrast: "High contrast"
+          }
+        },
+        density: { label: "Display density", options: { comfortable: "Comfortable", compact: "Compact" } },
+        textScale: { label: "Text size", options: { small: "Small", medium: "Medium", large: "Large" } },
+        reducedMotion: { label: "Reduce motion and transitions" },
+        homePage: { label: "Landing page on sign-in", hint: "An internal path starting with /, such as /discover." },
+        navigation: {
+          label: "Navigation order",
+          hiddenModulesTemplate: "Hidden modules: {count}",
+          customOrderYes: "Custom order applied",
+          customOrderNo: "Default order"
+        }
+      }
+    },
+    media: {
+      heading: "Media",
+      description: "Review studio layout, playback shortcuts, and how archive lists are displayed. Media processing status below is for context only.",
+      capabilitiesHeading: "Media processing status on this deployment",
+      studioLayout: {
+        heading: "Review studio layout",
+        comments: { label: "Comments position", options: { left: "Left", right: "Right", hidden: "Hidden" } },
+        transcript: { label: "Transcript position", options: { left: "Left", right: "Right", hidden: "Hidden" } },
+        timelineHeight: { label: "Timeline height (px)", hint: "From 160 to 720." },
+        panels: {
+          label: "Visible panels",
+          options: { comments: "Comments", transcript: "Transcript", timeline: "Timeline", metadata: "Metadata" }
+        }
+      },
+      shortcuts: {
+        heading: "Playback shortcuts",
+        playPause: "Play/pause",
+        seekForward: "Seek forward",
+        seekBackward: "Seek backward",
+        nextComment: "Next comment",
+        previousComment: "Previous comment"
+      },
+      views: {
+        heading: "Archive view",
+        mode: { label: "View mode", options: { table: "Table", grid: "Grid" } },
+        pageSize: { label: "Items per page", hint: "From 1 to 200." },
+        columnsSummaryTemplate: "Custom columns: {count}",
+        savedSearchSummary: "Default saved search: {value}",
+        savedSearchNone: "None"
+      }
+    },
+    notifications: {
+      heading: "Notifications",
+      description: "Choose the daily digest and the events you want to be notified about.",
+      dailyDigestLabel: "Daily email digest",
+      optionalHeading: "Additional notifications",
+      events: {
+        reviewAssigned: "Assigned a review",
+        commentMentioned: "Mentioned in a comment",
+        taskAssigned: "Assigned a task",
+        rightsExpiring: "Rights approaching expiry",
+        mediaJobCompleted: "Media job completed"
+      }
+    }
   }
 } as const;
