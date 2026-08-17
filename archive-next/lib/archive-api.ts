@@ -1125,6 +1125,13 @@ export interface MediaJob {
   completedAt?: string | null;
 }
 
+export interface MediaQueueStatus {
+  default: number;
+  gpu: number;
+  device: string;
+  resourceFailure: string | null;
+}
+
 export interface CreateMediaJobPayload {
   recordId: string;
   operation: MediaOperation;
@@ -1573,6 +1580,7 @@ export interface ArchiveApiClient {
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[]; pagination?: PaginationMeta }>>;
   createMediaJob(payload: CreateMediaJobPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   cancelMediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
+  mediaJobQueueStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ status: MediaQueueStatus }>>;
   broadcastMetadata(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   updateBroadcastMetadata(recordId: string, payload: BroadcastMetadataPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   ingestScan(payload?: { subdir?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
@@ -2477,6 +2485,7 @@ export function createArchiveApiClient({
       post<{ job: MediaJob }>("/media/jobs", payload, options),
     cancelMediaJob: (id: string, options?: AuthRequestOptions) =>
       post<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}/cancel`, {}, options),
+    mediaJobQueueStatus: (options?: AuthRequestOptions) => get<{ status: MediaQueueStatus }>("/media/jobs/queue-status", options),
     broadcastMetadata: (recordId: string, options?: AuthRequestOptions) =>
       get<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>(
         `/records/${encodeURIComponent(recordId)}/broadcast-metadata`,

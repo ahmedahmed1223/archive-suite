@@ -7,7 +7,7 @@ import { z } from "zod";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import { FieldError } from "@/components/ui/Form";
-import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation, type PaginationMeta } from "@/lib/archive-api";
+import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation, type MediaQueueStatus, type PaginationMeta } from "@/lib/archive-api";
 import { getEchoClient, onConnectionStateChange, type EchoConnectionState } from "@/lib/echo";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { mediaJobs } from "@/lib/i18n/dictionaries/ar/pages/mediaJobs";
@@ -37,12 +37,8 @@ type IngestState =
   | { status: "done"; ingested: number; skipped: number }
   | { status: "error"; message: string };
 
-interface MediaQueueStatus {
-  default: number;
-  gpu: number;
-  device: string;
-  resourceFailure: string | null;
-}
+/** V3-PERF-005: matches StudioTimelinePanel's poll-when-disconnected fallback cadence. */
+const QUEUE_STATUS_POLL_INTERVAL_MS = 8000;
 
 const OPERATIONS: readonly MediaOperation[] = ["thumbnail", "transcode", "transcription"];
 function createMediaJobFormSchema(copy: MediaJobsCopy) {
@@ -257,19 +253,62 @@ export function MediaJobsList() {
     return onConnectionStateChange(setConnectionState);
   }, [activeJobIds.length]);
 
-  // RT-802: aggregate CPU/GPU queue depth — push-only, no fetch endpoint, so
-  // this stays empty until the first broadcast (next job queued or a status
-  // transition) rather than showing a stale/misleading initial count.
+  // RT-802 aggregate CPU/GPU queue depth, kept fresh via realtime broadcast
+  // with a poll-when-disconnected fallback (V3-PERF-005; same idea as
+  // StudioTimelinePanel's comment feed and MediaJobsList's own job-list
+  // fallback above): fetch once on mount, then either poll on a fixed
+  // interval (no Reverb configured) or subscribe and only poll while the
+  // socket is down, reconciling with a full refetch on reconnect.
+  const fetchQueueStatus = useCallback(async () => {
+    const response = await api.mediaJobQueueStatus();
+    if (response.ok) setQueueStatus(response.status);
+  }, [api]);
+
+  useEffect(() => {
+    void fetchQueueStatus();
+  }, [fetchQueueStatus]);
+
   useEffect(() => {
     const echo = getEchoClient();
-    if (!echo) return;
+    if (!echo) {
+      const interval = setInterval(() => void fetchQueueStatus(), QUEUE_STATUS_POLL_INTERVAL_MS);
+      return () => clearInterval(interval);
+    }
 
-    echo.private("media-queue-status").listen(".media-queue.updated", (event: { status: MediaQueueStatus }) => {
+    const channelName = "media-queue-status";
+    const channel = echo.private(channelName);
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+    const startPolling = () => {
+      if (pollTimer) return;
+      pollTimer = setInterval(() => void fetchQueueStatus(), QUEUE_STATUS_POLL_INTERVAL_MS);
+    };
+
+    channel.listen(".media-queue.updated", (event: { status: MediaQueueStatus }) => {
       setQueueStatus(event.status);
     });
 
-    return () => echo.leave("media-queue-status");
-  }, []);
+    const unbindConnectionState = onConnectionStateChange((connectionState) => {
+      if (connectionState === "connected") {
+        stopPolling();
+        void fetchQueueStatus();
+      } else {
+        startPolling();
+      }
+    });
+
+    return () => {
+      unbindConnectionState();
+      stopPolling();
+      echo.leave(channelName);
+    };
+  }, [fetchQueueStatus]);
 
   const handleCreate = createForm.handleSubmit(async (values) => {
     createForm.clearErrors();
