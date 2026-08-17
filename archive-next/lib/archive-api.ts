@@ -52,6 +52,11 @@ export type ArchiveRecord = GeneratedSchemas["ArchiveRecord"];
 export type RecordAttachment = GeneratedSchemas["RecordAttachment"];
 export type CreateRecordPayload = Omit<GeneratedSchemas["RecordCreateRequest"], "store"> & { store?: string };
 
+export type ReviewSessionState = GeneratedSchemas["ReviewSessionState"];
+export type ReviewSession = GeneratedSchemas["ReviewSession"];
+export type ReviewSessionCreatePayload = GeneratedSchemas["ReviewSessionCreateRequest"];
+export type ReviewSessionTransitionPayload = GeneratedSchemas["ReviewSessionTransitionRequest"];
+
 export type ScheduledUploadStatus = GeneratedSchemas["ScheduledUploadStatus"];
 export type ScheduledUpload = GeneratedSchemas["ScheduledUpload"];
 export type ScheduledUploadStaged = GeneratedSchemas["ScheduledUploadStaged"];
@@ -1612,6 +1617,14 @@ export interface ArchiveApiClient {
   reviewComments(mediaUid: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: ReviewComment[] }>>;
   createReviewComment(mediaUid: string, payload: { body: string; timecodeSeconds: number; annotation?: ReviewRect[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
   updateReviewComment(id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
+  reviewSessions(recordId: string, params?: { store?: string; attachmentId?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sessions: ReviewSession[] }>>;
+  createReviewSession(recordId: string, payload?: ReviewSessionCreatePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ session: ReviewSession }>>;
+  transitionReviewSession(
+    id: string,
+    action: "start" | "request-changes" | "approve" | "resume" | "close",
+    payload?: ReviewSessionTransitionPayload,
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ session: ReviewSession }>>;
   reviewLink(token: string): Promise<ApiEnvelope<ReviewLinkDetails>>;
   createReviewLink(payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>>;
   collaborationPresence(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
@@ -2590,6 +2603,21 @@ export function createArchiveApiClient({
       post<{ comment: ReviewComment }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, payload, options),
     updateReviewComment: (id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions) =>
       patch<{ comment: ReviewComment }>(`/review-comments/${encodeURIComponent(id)}`, payload, options),
+    reviewSessions: (recordId: string, params?: { store?: string; attachmentId?: string }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.store) queryParams.set("store", params.store);
+      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
+      const query = queryParams.toString();
+      return get<{ sessions: ReviewSession[] }>(`/records/${encodeURIComponent(recordId)}/review-sessions${query ? `?${query}` : ""}`, options);
+    },
+    createReviewSession: (recordId: string, payload?: ReviewSessionCreatePayload, options?: AuthRequestOptions) =>
+      post<{ session: ReviewSession }>(`/records/${encodeURIComponent(recordId)}/review-sessions`, payload ?? {}, options),
+    transitionReviewSession: (
+      id: string,
+      action: "start" | "request-changes" | "approve" | "resume" | "close",
+      payload?: ReviewSessionTransitionPayload,
+      options?: AuthRequestOptions
+    ) => post<{ session: ReviewSession }>(`/review-sessions/${encodeURIComponent(id)}/${action}`, payload ?? {}, options),
     reviewLink: (token: string) =>
       get<ReviewLinkDetails>(`/review-links/${encodeURIComponent(token)}`),
     createReviewLink: (payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions) =>
