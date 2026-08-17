@@ -31,6 +31,11 @@ return [
     // rows are never touched regardless of age.
     'job_retention_days' => (int) env('MEDIA_JOB_RETENTION_DAYS', 90),
 
+    // V3-PERF-005: backpressure. MediaJobsController::store() rejects a new
+    // dispatch with 429 once a queue (default/gpu) already has this many
+    // queued+processing rows, instead of letting the queue grow unbounded.
+    'max_queued_jobs_per_queue' => (int) env('MEDIA_MAX_QUEUED_JOBS_PER_QUEUE', 50),
+
     // Base URL of the ocr-service microservice (infra/ocr-service);
     // POST {base}/ocr, multipart file upload, returns { text, lines, lang }.
     // Port 8788 matches main.py's PORT default / the service's Dockerfile EXPOSE.

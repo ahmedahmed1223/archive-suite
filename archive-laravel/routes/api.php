@@ -401,6 +401,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/files/browser', [FilesController::class, 'browser']);
         Route::get('/media/jobs', [MediaJobsController::class, 'index']);
         Route::post('/media/jobs', [MediaJobsController::class, 'store']);
+        // Must precede the {id} route below, or "queue-status" is swallowed as an id.
+        Route::get('/media/jobs/queue-status', [MediaJobsController::class, 'queueStatus']);
         Route::get('/media/jobs/{id}', [MediaJobsController::class, 'show']);
         Route::post('/media/jobs/{id}/cancel', [MediaJobsController::class, 'cancel']);
 

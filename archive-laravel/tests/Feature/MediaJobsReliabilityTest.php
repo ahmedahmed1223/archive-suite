@@ -187,6 +187,52 @@ class MediaJobsReliabilityTest extends TestCase
         $this->assertSame('canceled', $mediaJob->refresh()->status);
     }
 
+    /**
+     * V3-PERF-005: cancellation must actually stop a running ffmpeg
+     * subprocess, not just take effect at the next checkpoint. Distinct from
+     * test_processor_refuses_to_run_a_canceled_job above -- that one is
+     * canceled before process() ever starts (the entry guard catches it).
+     * Here the job is still 'processing' when process() starts (the entry
+     * guard passes) and only flips to canceled once the ffmpeg subprocess is
+     * "running" -- SymfonyProcessRunner's poll loop (via the fake runner) is
+     * what has to notice it.
+     */
+    public function test_thumbnail_processing_stops_when_canceled_during_the_ffmpeg_subprocess(): void
+    {
+        $mediaJob = MediaJob::query()->create([
+            'id' => 'canceled-during-thumbnail-subprocess',
+            'record_id' => 'record-thumb-cancel',
+            'operation' => 'thumbnail',
+            'status' => 'processing',
+            'source_path' => 'archive/source.mov',
+            'options' => [],
+            'queued_at' => now(),
+        ]);
+
+        // Simulates cancel() landing exactly while ffmpeg is running: flips
+        // the DB row right before the runner checks isCanceled(), so it's
+        // the runner-level check -- not the entry guard -- that catches it.
+        $runner = new class extends FakeProcessRunner
+        {
+            public function run(array $command, ?callable $onProgress = null, ?callable $isCanceled = null): array
+            {
+                MediaJob::query()->where('id', 'canceled-during-thumbnail-subprocess')->update(['status' => 'canceled']);
+
+                return parent::run($command, $onProgress, $isCanceled);
+            }
+        };
+
+        $processor = $this->realProcessor($runner);
+
+        $this->expectException(JobCanceledException::class);
+
+        try {
+            $processor->process($mediaJob);
+        } finally {
+            $this->assertSame('canceled', $mediaJob->refresh()->status);
+        }
+    }
+
     public function test_cancel_exception_leaves_job_canceled_without_marking_it_failed(): void
     {
         $mediaJob = MediaJob::query()->create([

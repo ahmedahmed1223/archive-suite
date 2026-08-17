@@ -145,6 +145,11 @@ function SearchPageContent() {
   const [savedStatus, setSavedStatus] = useState("");
   const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);
   const hasCompletedWorkspacePreferenceRestore = useRef(false);
+  // V3-PERF-005: a later search() call can resolve before an earlier one
+  // (out-of-order network responses). Each call stamps this ref with its own
+  // id before awaiting; a response only gets applied if it's still the most
+  // recent call, so a stale result can never overwrite a newer one.
+  const searchRequestIdRef = useRef(0);
 
   // Per-user filter/view persistence (V1-752); URL params still win on load.
   useEffect(() => {
@@ -198,11 +203,15 @@ function SearchPageContent() {
   const search = useCallback(
     async (q: string, s: string, page: number = 1, type: string = typeFilter, tag: string = tagFilter, mode: SearchMode = searchMode) => {
       if (!q.trim() && !s && type === "all" && !tag && page === 1) {
+        // Bump the id too: an earlier in-flight call must not overwrite this
+        // idle reset once it resolves.
+        ++searchRequestIdRef.current;
         setState({ status: "idle" });
         setAllRecords([]);
         return;
       }
 
+      const requestId = ++searchRequestIdRef.current;
       setState({ status: "loading" });
       const response = await api.search({
         q,
@@ -215,6 +224,11 @@ function SearchPageContent() {
         limit: 100,
         mode
       });
+
+      // A newer search() call started (and possibly already resolved) while
+      // this one was in flight -- its result is stale, drop it so it can't
+      // clobber fresher state.
+      if (searchRequestIdRef.current !== requestId) return;
 
       if (!response.ok) {
         setState({ status: "error", message: response.error });
@@ -232,6 +246,7 @@ function SearchPageContent() {
         facets: response.facets
       });
       const suggestionsResponse = await api.suggestions({ context: "search" });
+      if (searchRequestIdRef.current !== requestId) return;
       setSuggestions(suggestionsResponse.ok ? suggestionsResponse.suggestions : []);
       updateParams(q, s, page, type, tag, mode);
     },

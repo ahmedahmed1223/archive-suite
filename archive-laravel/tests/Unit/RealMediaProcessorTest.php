@@ -331,6 +331,39 @@ class RealMediaProcessorTest extends TestCase
         $this->assertNull($artifacts[0]['url']);
     }
 
+    /**
+     * V3-PERF-005: a retried attempt (fixed output key, e.g. "record-1/thumb.jpg")
+     * must overwrite cleanly rather than fail against a leftover partial file
+     * from the earlier attempt -- ffmpeg needs -y for that.
+     */
+    public function test_thumbnail_command_includes_the_overwrite_flag_for_idempotent_retries(): void
+    {
+        $job = new MediaJob;
+        $job->id = 'job-idempotent-thumb';
+        $job->record_id = 'record-1';
+        $job->operation = 'thumbnail';
+        $job->source_path = 'archive/source.mov';
+        $job->options = [];
+
+        $this->processor->process($job);
+
+        $this->assertContains('-y', $this->runner->lastCommand());
+    }
+
+    public function test_transcode_command_includes_the_overwrite_flag_for_idempotent_retries(): void
+    {
+        $job = new MediaJob;
+        $job->id = 'job-idempotent-transcode';
+        $job->record_id = 'record-2';
+        $job->operation = 'transcode';
+        $job->source_path = 'archive/source.mov';
+        $job->options = [];
+
+        $this->processor->process($job);
+
+        $this->assertContains('-y', $this->runner->lastCommand());
+    }
+
     public function test_ignores_unknown_operation(): void
     {
         $job = new MediaJob;
@@ -342,6 +375,61 @@ class RealMediaProcessorTest extends TestCase
         $artifacts = $this->processor->process($job);
 
         $this->assertEmpty($artifacts);
+    }
+
+    // NOTE: these three were previously misplaced inside FfmpegProgressParserTest
+    // below, where `$this->processor`/`$this->runner` don't exist (undefined
+    // property -> fatal error on every run). Moved here, where setUp()
+    // actually defines them, while touching this file for V3-PERF-005.
+    public function test_montage_export_concatenates_clips(): void
+    {
+        $job = new MediaJob;
+        $job->id = 'job-montage-1';
+        $job->record_id = 'record-montage-1';
+        $job->operation = 'montage_export';
+        $job->options = [
+            'clips' => [
+                ['path' => 'archive/clip-a.mp4', 'inSec' => 0, 'outSec' => 5],
+                ['path' => 'archive/clip-b.mp4', 'inSec' => 2, 'outSec' => 9],
+            ],
+        ];
+
+        $artifacts = $this->processor->process($job);
+
+        $this->assertCount(1, $artifacts);
+        $this->assertSame('montage_mp4', $artifacts[0]['kind']);
+        $this->assertStringContainsString('record-montage-1/montage.mp4', $artifacts[0]['key']);
+    }
+
+    public function test_montage_export_commands_include_the_overwrite_flag_for_idempotent_retries(): void
+    {
+        $job = new MediaJob;
+        $job->id = 'job-montage-idempotent';
+        $job->record_id = 'record-montage-idempotent';
+        $job->operation = 'montage_export';
+        $job->options = [
+            'clips' => [
+                ['path' => 'archive/clip-a.mp4', 'inSec' => 0, 'outSec' => 5],
+            ],
+        ];
+
+        $this->processor->process($job);
+
+        // Both the per-clip trim and the final concat are fixed-key ffmpeg
+        // writes; the concat command is the last one the fake runner saw.
+        $this->assertContains('-y', $this->runner->lastCommand());
+    }
+
+    public function test_montage_export_requires_clips(): void
+    {
+        $job = new MediaJob;
+        $job->id = 'job-montage-2';
+        $job->record_id = 'record-montage-2';
+        $job->operation = 'montage_export';
+        $job->options = ['clips' => []];
+
+        $this->expectException(\RuntimeException::class);
+        $this->processor->process($job);
     }
 }
 
@@ -392,35 +480,4 @@ class FfmpegProgressParserTest extends TestCase
         $this->assertGreaterThanOrEqual(0.0, $progress);
     }
 
-    public function test_montage_export_concatenates_clips(): void
-    {
-        $job = new MediaJob;
-        $job->id = 'job-montage-1';
-        $job->record_id = 'record-montage-1';
-        $job->operation = 'montage_export';
-        $job->options = [
-            'clips' => [
-                ['path' => 'archive/clip-a.mp4', 'inSec' => 0, 'outSec' => 5],
-                ['path' => 'archive/clip-b.mp4', 'inSec' => 2, 'outSec' => 9],
-            ],
-        ];
-
-        $artifacts = $this->processor->process($job);
-
-        $this->assertCount(1, $artifacts);
-        $this->assertSame('montage_mp4', $artifacts[0]['kind']);
-        $this->assertStringContainsString('record-montage-1/montage.mp4', $artifacts[0]['key']);
-    }
-
-    public function test_montage_export_requires_clips(): void
-    {
-        $job = new MediaJob;
-        $job->id = 'job-montage-2';
-        $job->record_id = 'record-montage-2';
-        $job->operation = 'montage_export';
-        $job->options = ['clips' => []];
-
-        $this->expectException(\RuntimeException::class);
-        $this->processor->process($job);
-    }
 }
