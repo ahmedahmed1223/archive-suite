@@ -2566,6 +2566,95 @@
         }
       }
     },
+    "/records/{id}/media-derivatives": {
+      "get": {
+        "tags": ["Media Derivatives"],
+        "summary": "List cached derivatives for a record",
+        "operationId": "listMediaDerivatives",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "attachmentId", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "type", "in": "query", "required": false, "schema": { "$ref": "#/components/schemas/MediaDerivativeType" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media derivatives",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaDerivativesResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media-derivatives": {
+      "post": {
+        "tags": ["Media Derivatives"],
+        "summary": "Request a thumbnail, waveform, or proxy derivative",
+        "description": "Keyed on the source's checksum-derived version plus a hash of the generation settings: a matching ready or in-flight derivative is returned unchanged (200, cached=true) instead of dispatching duplicate work; otherwise a MediaJob is queued through the existing media processing pipeline (202, cached=false).",
+        "operationId": "requestMediaDerivative",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaDerivativeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing cached or in-flight derivative",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaDerivativeResponse" }
+              }
+            }
+          },
+          "202": {
+            "description": "Derivative generation queued",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaDerivativeResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media-derivatives/{id}": {
+      "get": {
+        "tags": ["Media Derivatives"],
+        "summary": "Read a derivative's status and storage key",
+        "operationId": "getMediaDerivative",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media derivative",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaDerivativeResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/uploads": {
       "post": {
         "tags": ["Uploads"],
@@ -8965,6 +9054,118 @@
               "clips": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/MediaClip" }
+              }
+            }
+          }
+        ]
+      },
+      "MediaDerivativeType": {
+        "type": "string",
+        "enum": ["thumbnail", "waveform", "proxy"]
+      },
+      "MediaDerivativeStatus": {
+        "type": "string",
+        "enum": ["pending", "processing", "ready", "failed"]
+      },
+      "MediaDerivativeSettings": {
+        "type": "object",
+        "description": "Generation settings, specific to the derivative type. Hashed (order-independent) into the cache key alongside the source version, so regenerating with different settings never collides with a derivative cached under different ones.",
+        "properties": {
+          "atSec": { "type": "number", "minimum": 0, "description": "thumbnail: frame position." },
+          "width": { "type": "integer", "minimum": 16, "maximum": 4096, "description": "thumbnail/waveform width in pixels." },
+          "height": { "type": "integer", "minimum": 16, "maximum": 2048, "description": "waveform height in pixels." },
+          "color": { "type": "string", "maxLength": 6, "description": "waveform: 6-digit hex color, no leading #." },
+          "maxWidth": { "type": "integer", "minimum": 64, "maximum": 4096, "description": "proxy: maximum output width." },
+          "videoBitrateKbps": { "type": "integer", "minimum": 64, "maximum": 8000, "description": "proxy: target video bitrate." },
+          "accelerate": {
+            "type": "boolean",
+            "description": "proxy: request GPU (h264_nvenc) encoding. Only ever honored when the worker's NVIDIA runtime is verified healthy -- otherwise the job fails rather than silently falling back to CPU and misreporting the encoder used."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaDerivative": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "attachmentId",
+          "derivativeType",
+          "versionToken",
+          "isCurrentVersion",
+          "settings",
+          "status",
+          "storageKey",
+          "mediaJobId",
+          "error",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "recordStore": { "type": "string" },
+          "recordUid": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"] },
+          "derivativeType": { "$ref": "#/components/schemas/MediaDerivativeType" },
+          "versionToken": {
+            "type": "string",
+            "description": "Same checksum-derived identity as ReviewSession.versionToken / MediaClip.versionToken -- pinned when this derivative was generated."
+          },
+          "isCurrentVersion": {
+            "type": "boolean",
+            "description": "False once the record source or attachment has been replaced since this derivative was generated -- it is still returned, but must not be treated as matching the current source."
+          },
+          "settings": { "$ref": "#/components/schemas/MediaDerivativeSettings" },
+          "status": { "$ref": "#/components/schemas/MediaDerivativeStatus" },
+          "storageKey": { "type": ["string", "null"], "description": "Set once status is ready." },
+          "mediaJobId": { "type": ["string", "null"] },
+          "error": { "type": ["string", "null"] },
+          "createdBy": { "type": ["integer", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "MediaDerivativeRequest": {
+        "type": "object",
+        "required": ["recordId", "type", "sourcePath"],
+        "properties": {
+          "recordId": { "type": "string" },
+          "store": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"] },
+          "type": { "$ref": "#/components/schemas/MediaDerivativeType" },
+          "sourcePath": { "type": "string", "maxLength": 2048 },
+          "settings": { "$ref": "#/components/schemas/MediaDerivativeSettings" }
+        },
+        "additionalProperties": false
+      },
+      "MediaDerivativeResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["derivative"],
+            "properties": {
+              "derivative": { "$ref": "#/components/schemas/MediaDerivative" },
+              "cached": {
+                "type": "boolean",
+                "description": "True when an existing ready or in-flight derivative was returned instead of dispatching new work."
+              }
+            }
+          }
+        ]
+      },
+      "MediaDerivativesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["derivatives"],
+            "properties": {
+              "derivatives": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MediaDerivative" }
               }
             }
           }
