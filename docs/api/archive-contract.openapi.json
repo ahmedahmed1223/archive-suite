@@ -3415,6 +3415,30 @@
         }
       }
     },
+    "/work-inbox": {
+      "get": {
+        "tags": ["WorkInbox"],
+        "summary": "List the current user's aggregated work inbox (pending tasks, review sessions, expiring rights, notifications)",
+        "operationId": "listWorkInbox",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 100 } },
+          { "name": "types[]", "in": "query", "required": false, "schema": { "type": "array", "items": { "$ref": "#/components/schemas/WorkInboxItemType" } }, "description": "Restrict the feed to one or more source types; defaults to all four." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated work inbox items",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WorkInboxResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/vocabulary": {
       "get": {
         "tags": ["Vocabulary"],
@@ -8251,6 +8275,52 @@
             "required": ["item"],
             "properties": {
               "item": { "$ref": "#/components/schemas/InboxItem" }
+            }
+          }
+        ]
+      },
+      "WorkInboxItemType": {
+        "type": "string",
+        "enum": ["task", "review", "rights", "notification"]
+      },
+      "WorkInboxItem": {
+        "type": "object",
+        "required": ["id", "type", "title", "status", "dueAt", "createdAt", "href"],
+        "description": "A single row in the unified work inbox (V3-WORK-001) — always a reference into an existing source record (project task, review session, rights record, or notification), never a copy of one.",
+        "properties": {
+          "id": { "type": "string", "description": "Composite id of the form \"{type}:{sourceId}\"." },
+          "type": { "$ref": "#/components/schemas/WorkInboxItemType" },
+          "title": { "type": "string" },
+          "status": { "type": "string", "description": "Source-specific status label (task status, review state, \"expiring\", or notification type)." },
+          "dueAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "href": { "type": "string", "description": "App-relative path back to the source record." },
+          "meta": { "type": "object", "description": "Source-specific extra fields (projectId, recordUid, rightsHolder, notificationId, ...)." }
+        }
+      },
+      "WorkInboxCounts": {
+        "type": "object",
+        "required": ["task", "review", "rights", "notification"],
+        "properties": {
+          "task": { "type": "integer" },
+          "review": { "type": "integer" },
+          "rights": { "type": "integer" },
+          "notification": { "type": "integer" }
+        }
+      },
+      "WorkInboxResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["items", "pagination", "counts"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/WorkInboxItem" }
+              },
+              "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
+              "counts": { "$ref": "#/components/schemas/WorkInboxCounts" }
             }
           }
         ]

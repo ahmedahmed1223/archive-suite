@@ -81,6 +81,7 @@ import { uploadForm } from "./uploadForm";
 import { uploadLinksPanel } from "./uploadLinksPanel";
 import { uploads } from "./uploads";
 import { whatsNewDialog } from "./whatsNewDialog";
+import { workInbox } from "./workInbox";
 
 export const pages = {
   activity,
@@ -166,4 +167,5 @@ export const pages = {
   uploadLinksPanel,
   uploads,
   whatsNewDialog,
+  workInbox,
 } as const;

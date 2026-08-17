@@ -29,6 +29,7 @@ export const pageTitles = {
   rights: "Rights",
   usersAndRoles: "Users and roles",
   inbox: "Inbox",
+  workInbox: "Work inbox",
   tags: "Tags",
   shareLinks: "Share links",
   shares: "Shares",

@@ -29,6 +29,7 @@ export const pageTitles = {
   rights: "الحقوق",
   usersAndRoles: "المستخدمون والأدوار",
   inbox: "صندوق الوارد",
+  workInbox: "صندوق العمل",
   tags: "الوسوم",
   shareLinks: "روابط المشاركة",
   shares: "المشاركات",

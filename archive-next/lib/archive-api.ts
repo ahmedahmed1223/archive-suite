@@ -57,6 +57,10 @@ export type ReviewSession = GeneratedSchemas["ReviewSession"];
 export type ReviewSessionCreatePayload = GeneratedSchemas["ReviewSessionCreateRequest"];
 export type ReviewSessionTransitionPayload = GeneratedSchemas["ReviewSessionTransitionRequest"];
 
+export type WorkInboxItemType = GeneratedSchemas["WorkInboxItemType"];
+export type WorkInboxItem = GeneratedSchemas["WorkInboxItem"];
+export type WorkInboxCounts = GeneratedSchemas["WorkInboxCounts"];
+
 export type MediaClip = GeneratedSchemas["MediaClip"];
 export type MediaClipCreatePayload = GeneratedSchemas["MediaClipCreateRequest"];
 export type MediaClipUpdatePayload = GeneratedSchemas["MediaClipUpdateRequest"];
@@ -1717,6 +1721,10 @@ export interface ArchiveApiClient {
   collectionRecords(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[] }>>;
   addCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   removeCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
+  workInbox(
+    params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ items: WorkInboxItem[]; pagination: PaginationMeta; counts: WorkInboxCounts }>>;
   inboxItems(options?: AuthRequestOptions): Promise<ApiEnvelope<{ items: InboxItem[] }>>;
   createInboxItem(payload: CreateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
   updateInboxItem(id: string, payload: UpdateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
@@ -2861,6 +2869,14 @@ export function createArchiveApiClient({
       post<Record<string, never>>(`/collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     removeCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) =>
       del<Record<string, never>>(`/collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
+    workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.set("page", String(params.page));
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      for (const type of params?.types ?? []) queryParams.append("types[]", type);
+      const query = queryParams.toString();
+      return get<{ items: WorkInboxItem[]; pagination: PaginationMeta; counts: WorkInboxCounts }>(`/work-inbox${query ? `?${query}` : ""}`, options);
+    },
     inboxItems: (options?: AuthRequestOptions) => get<{ items: InboxItem[] }>("/inbox", options),
     createInboxItem: (payload: CreateInboxItemPayload, options?: AuthRequestOptions) =>
       post<{ item: InboxItem }>("/inbox", payload, options),
