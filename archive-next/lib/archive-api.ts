@@ -104,22 +104,6 @@ export type WorkInboxItemType = GeneratedSchemas["WorkInboxItemType"];
 export type WorkInboxItem = GeneratedSchemas["WorkInboxItem"];
 export type WorkInboxCounts = GeneratedSchemas["WorkInboxCounts"];
 
-export type MediaClip = GeneratedSchemas["MediaClip"];
-export type MediaClipCreatePayload = GeneratedSchemas["MediaClipCreateRequest"];
-export type MediaClipUpdatePayload = GeneratedSchemas["MediaClipUpdateRequest"];
-
-export type TranscriptCue = GeneratedSchemas["TranscriptCue"];
-export type TranscriptVersion = GeneratedSchemas["TranscriptVersion"];
-export type TranscriptCurrentState = GeneratedSchemas["TranscriptCurrentState"];
-export type TranscriptVersionStorePayload = GeneratedSchemas["TranscriptVersionStoreRequest"];
-export type TranscriptVersionRestorePayload = GeneratedSchemas["TranscriptVersionRestoreRequest"];
-
-export type MediaReviewCommentType = GeneratedSchemas["MediaReviewCommentType"];
-export type MediaReviewCommentState = GeneratedSchemas["MediaReviewCommentState"];
-export type MediaReviewComment = GeneratedSchemas["MediaReviewComment"];
-export type MediaReviewCommentCreatePayload = GeneratedSchemas["MediaReviewCommentCreateRequest"];
-export type MediaReviewCommentUpdatePayload = GeneratedSchemas["MediaReviewCommentUpdateRequest"];
-
 export type MediaDerivative = GeneratedSchemas["MediaDerivative"];
 export type MediaDerivativeType = GeneratedSchemas["MediaDerivativeType"];
 export type MediaDerivativeSettings = GeneratedSchemas["MediaDerivativeSettings"];
