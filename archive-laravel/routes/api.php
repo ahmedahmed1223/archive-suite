@@ -65,6 +65,7 @@ use App\Http\Controllers\Api\V1\RecordTriageFlagController;
 use App\Http\Controllers\Api\V1\RelationsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
+use App\Http\Controllers\Api\V1\ReviewSessionsController;
 use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SafetyPreviewController;
 use App\Http\Controllers\Api\V1\SavedSearchesController;
@@ -276,6 +277,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/{id}/notes', [RecordNotesController::class, 'store']);
         Route::get('/records/{id}/comments', [RecordCommentsController::class, 'index']);
         Route::post('/records/{id}/comments', [RecordCommentsController::class, 'store']);
+        Route::get('/records/{id}/review-sessions', [ReviewSessionsController::class, 'index']);
+        Route::post('/records/{id}/review-sessions', [ReviewSessionsController::class, 'store']);
         Route::get('/records/{id}/history', [RecordHistoryController::class, 'index']);
         // V1-001: niche broadcast (MOS/MXF) integration — experimental, flagged.
         Route::middleware('archive.feature:broadcast_metadata')->group(function (): void {
@@ -519,6 +522,15 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'store']);
         Route::post('/media/{mediaUid}/review-links', [ReviewLinksController::class, 'store']);
         Route::patch('/review-comments/{id}', [ReviewCommentsController::class, 'update']);
+
+        Route::get('/review-sessions/{id}', [ReviewSessionsController::class, 'show']);
+        Route::patch('/review-sessions/{id}', [ReviewSessionsController::class, 'update']);
+        Route::delete('/review-sessions/{id}', [ReviewSessionsController::class, 'destroy']);
+        Route::post('/review-sessions/{id}/start', [ReviewSessionsController::class, 'start']);
+        Route::post('/review-sessions/{id}/request-changes', [ReviewSessionsController::class, 'requestChanges']);
+        Route::post('/review-sessions/{id}/approve', [ReviewSessionsController::class, 'approve']);
+        Route::post('/review-sessions/{id}/resume', [ReviewSessionsController::class, 'resume']);
+        Route::post('/review-sessions/{id}/close', [ReviewSessionsController::class, 'close']);
 
         // V1-001: generic external-database (ODBC) proxy — experimental, flagged.
         Route::middleware('archive.feature:odbc')->group(function (): void {
