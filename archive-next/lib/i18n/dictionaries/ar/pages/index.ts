@@ -71,6 +71,7 @@ import { types } from "./types";
 import { trash } from "./trash";
 import { tags } from "./tags";
 import { vocabulary } from "./vocabulary";
+import { vocabTemplates } from "./vocabTemplates";
 import { files } from "./files";
 import { collections } from "./collections";
 import { copilot } from "./copilot";
@@ -154,6 +155,7 @@ export const pages = {
   trash,
   tags,
   vocabulary,
+  vocabTemplates,
   files,
   collections,
   copilot,
