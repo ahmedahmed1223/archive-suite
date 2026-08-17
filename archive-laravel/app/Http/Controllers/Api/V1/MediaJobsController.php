@@ -11,6 +11,7 @@ use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaJobQueueRouter;
 use App\Services\Media\MediaPathGuard;
 use App\Support\ApiError;
+use App\Support\RequestCorrelation;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,7 @@ class MediaJobsController extends Controller
             'queued_at' => now(),
         ]);
 
-        ProcessMediaWorkflow::dispatch($mediaJob->id)->onQueue($queue);
+        ProcessMediaWorkflow::dispatch($mediaJob->id, RequestCorrelation::id())->onQueue($queue);
         app(MediaJobProgressBroadcaster::class)->notify($mediaJob);
 
         return response()->json([

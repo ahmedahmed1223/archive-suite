@@ -5,6 +5,7 @@ namespace App\Services\Uploads;
 use App\Exceptions\UploadContentMismatchException;
 use App\Jobs\ProcessMediaWorkflow;
 use App\Repositories\StorageRowRepository;
+use App\Support\RequestCorrelation;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -128,6 +129,6 @@ class UploadFinalizer
             'updated_at' => $now,
         ]);
 
-        ProcessMediaWorkflow::dispatch($jobId);
+        ProcessMediaWorkflow::dispatch($jobId, RequestCorrelation::id());
     }
 }

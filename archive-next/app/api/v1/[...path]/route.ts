@@ -1,6 +1,7 @@
 import { forwardArchiveApiResponse } from "@/lib/archive-api-proxy";
 import { resolveRequestLocale } from "@/lib/i18n/resolve-locale";
 import { isAppLocale, type AppLocale } from "@/lib/i18n/types";
+import { buildSlowRequestLogLine } from "@/lib/request-tracing";
 
 export const dynamic = "force-dynamic";
 
@@ -65,12 +66,34 @@ async function proxyArchiveApi(request: Request, context: RouteContext): Promise
     init.body = await request.arrayBuffer();
   }
 
+  const startedAt = performance.now();
   try {
-    return forwardArchiveApiResponse(await fetch(target, init));
+    const upstream = await fetch(target, init);
+    logIfSlow(request, headers, new URL(request.url).pathname, upstream.status, startedAt);
+    return forwardArchiveApiResponse(upstream);
   } catch (error) {
     console.error("Archive API proxy request failed", error instanceof Error ? error.message : error);
+    logIfSlow(request, headers, new URL(request.url).pathname, 502, startedAt);
     return Response.json({ ok: false, error: errors.unavailable }, { status: 502 });
   }
+}
+
+/**
+ * V3-PERF-002: this route already awaits the full Next -> Laravel round
+ * trip, so it is the one place on the Next.js side that can measure real
+ * request latency (edge middleware in proxy.ts runs before the response
+ * exists, so it can only originate/forward the request id). `route` is the
+ * pathname only -- no query string, no body, no filesystem path.
+ */
+function logIfSlow(request: Request, headers: Headers, route: string, status: number, startedAt: number): void {
+  const logLine = buildSlowRequestLogLine({
+    requestId: headers.get("x-request-id") ?? "",
+    method: request.method,
+    route,
+    status,
+    durationMs: performance.now() - startedAt,
+  });
+  if (logLine) console.warn(JSON.stringify(logLine));
 }
 
 export const GET = proxyArchiveApi;

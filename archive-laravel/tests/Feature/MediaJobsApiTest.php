@@ -46,6 +46,50 @@ class MediaJobsApiTest extends TestCase
         Queue::assertPushed(ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $jobId);
     }
 
+    /**
+     * V3-PERF-002: the whole point of request tracing is that a caller's
+     * X-Request-Id survives past the HTTP boundary into the queued job that
+     * request triggered, not just into the HTTP response header.
+     */
+    public function test_the_callers_request_id_propagates_onto_the_queued_job(): void
+    {
+        Queue::fake();
+
+        $headers = [...$this->authHeaders(), 'X-Request-Id' => 'trace-e2e-4711'];
+
+        $response = $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-trace',
+            'operation' => 'thumbnail',
+            'sourcePath' => 'archive/media-record-trace.mov',
+        ], $headers)->assertAccepted();
+
+        $this->assertSame('trace-e2e-4711', $response->headers->get('X-Request-Id'));
+
+        Queue::assertPushed(
+            ProcessMediaWorkflow::class,
+            fn (ProcessMediaWorkflow $job): bool => $job->requestId === 'trace-e2e-4711'
+        );
+    }
+
+    public function test_a_missing_request_id_is_generated_and_still_propagates_onto_the_job(): void
+    {
+        Queue::fake();
+
+        $response = $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-generated-trace',
+            'operation' => 'thumbnail',
+            'sourcePath' => 'archive/media-record-generated-trace.mov',
+        ], $this->authHeaders())->assertAccepted();
+
+        $generatedId = $response->headers->get('X-Request-Id');
+        $this->assertNotEmpty($generatedId);
+
+        Queue::assertPushed(
+            ProcessMediaWorkflow::class,
+            fn (ProcessMediaWorkflow $job): bool => $job->requestId === $generatedId
+        );
+    }
+
     public function test_cpu_transcriptions_stay_on_the_default_queue(): void
     {
         Queue::fake();
