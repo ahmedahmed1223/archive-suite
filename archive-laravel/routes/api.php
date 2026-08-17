@@ -65,6 +65,7 @@ use App\Http\Controllers\Api\V1\RecordTriageFlagController;
 use App\Http\Controllers\Api\V1\RelationsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
+use App\Http\Controllers\Api\V1\MediaReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewSessionsController;
 use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SafetyPreviewController;
@@ -279,6 +280,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/{id}/comments', [RecordCommentsController::class, 'store']);
         Route::get('/records/{id}/review-sessions', [ReviewSessionsController::class, 'index']);
         Route::post('/records/{id}/review-sessions', [ReviewSessionsController::class, 'store']);
+        Route::get('/records/{id}/media-review-comments', [MediaReviewCommentsController::class, 'index']);
+        Route::post('/records/{id}/media-review-comments', [MediaReviewCommentsController::class, 'store']);
         Route::get('/records/{id}/history', [RecordHistoryController::class, 'index']);
         // V1-001: niche broadcast (MOS/MXF) integration — experimental, flagged.
         Route::middleware('archive.feature:broadcast_metadata')->group(function (): void {
@@ -531,6 +534,12 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/review-sessions/{id}/approve', [ReviewSessionsController::class, 'approve']);
         Route::post('/review-sessions/{id}/resume', [ReviewSessionsController::class, 'resume']);
         Route::post('/review-sessions/{id}/close', [ReviewSessionsController::class, 'close']);
+
+        Route::get('/media-review-comments/{id}', [MediaReviewCommentsController::class, 'show']);
+        Route::patch('/media-review-comments/{id}', [MediaReviewCommentsController::class, 'update']);
+        Route::delete('/media-review-comments/{id}', [MediaReviewCommentsController::class, 'destroy']);
+        Route::post('/media-review-comments/{id}/resolve', [MediaReviewCommentsController::class, 'resolve']);
+        Route::post('/media-review-comments/{id}/reopen', [MediaReviewCommentsController::class, 'reopen']);
 
         // V1-001: generic external-database (ODBC) proxy — experimental, flagged.
         Route::middleware('archive.feature:odbc')->group(function (): void {
