@@ -65,6 +65,7 @@ class RealMediaProcessor implements MediaProcessor
 
         $command = [
             $this->ffmpegPath,
+            '-y', // V3-PERF-005: overwrite unconditionally so a retried attempt (fixed output key) is idempotent instead of failing on a leftover partial file from the prior attempt.
             '-i', $sourcePath,
             '-ss', (string) $atSec,
             '-vframes', '1',
@@ -72,7 +73,8 @@ class RealMediaProcessor implements MediaProcessor
             $outputPath,
         ];
 
-        $result = $this->runner->run($command);
+        $result = $this->runner->run($command, null, fn (): bool => $this->isCanceled($job));
+        $this->throwIfCanceled($result);
         if ($result['exitCode'] !== 0) {
             throw new \RuntimeException("ffmpeg thumbnail failed: {$result['stderr']}");
         }
@@ -95,6 +97,7 @@ class RealMediaProcessor implements MediaProcessor
 
         $command = [
             $this->ffmpegPath,
+            '-y', // V3-PERF-005: idempotent overwrite on retry, see processThumbnail().
             '-i', $sourcePath,
         ];
 
@@ -118,7 +121,8 @@ class RealMediaProcessor implements MediaProcessor
             $outputPath,
         );
 
-        $result = $this->runner->run($command);
+        $result = $this->runner->run($command, null, fn (): bool => $this->isCanceled($job));
+        $this->throwIfCanceled($result);
         if ($result['exitCode'] !== 0) {
             throw new \RuntimeException("ffmpeg transcode failed: {$result['stderr']}");
         }
@@ -427,6 +431,7 @@ class RealMediaProcessor implements MediaProcessor
 
             $trimCommand = [
                 $this->ffmpegPath,
+                '-y', // V3-PERF-005: idempotent overwrite on retry, see processThumbnail().
                 '-i', $clipPath,
                 '-ss', (string) $inSec,
             ];
@@ -438,7 +443,8 @@ class RealMediaProcessor implements MediaProcessor
 
             array_push($trimCommand, '-c', 'copy', $segmentPath);
 
-            $trimResult = $this->runner->run($trimCommand);
+            $trimResult = $this->runner->run($trimCommand, null, fn (): bool => $this->isCanceled($job));
+            $this->throwIfCanceled($trimResult);
             if ($trimResult['exitCode'] !== 0) {
                 throw new \RuntimeException("ffmpeg montage segment failed: {$trimResult['stderr']}");
             }
@@ -454,6 +460,7 @@ class RealMediaProcessor implements MediaProcessor
 
         $concatCommand = [
             $this->ffmpegPath,
+            '-y', // V3-PERF-005: idempotent overwrite on retry, see processThumbnail().
             '-f', 'concat',
             '-safe', '0',
             '-i', $listFile,
@@ -461,8 +468,9 @@ class RealMediaProcessor implements MediaProcessor
             $outputPath,
         ];
 
-        $concatResult = $this->runner->run($concatCommand);
+        $concatResult = $this->runner->run($concatCommand, null, fn (): bool => $this->isCanceled($job));
         @unlink($listFile);
+        $this->throwIfCanceled($concatResult);
 
         if ($concatResult['exitCode'] !== 0) {
             throw new \RuntimeException("ffmpeg montage concat failed: {$concatResult['stderr']}");
@@ -573,21 +581,43 @@ class RealMediaProcessor implements MediaProcessor
     }
 
     /**
-     * Re-reads the job's persisted status and stops processing if it was
-     * canceled via the cancel API. No-ops for unsaved/in-memory jobs (unit
-     * tests that construct a MediaJob without persisting it) since there is
-     * nothing in the database to have been canceled.
+     * Re-reads the job's persisted status. No-ops (returns false) for
+     * unsaved/in-memory jobs (unit tests that construct a MediaJob without
+     * persisting it) since there is nothing in the database to have been
+     * canceled.
+     *
+     * Used two ways: as a one-shot guard between steps (guardNotCanceled(),
+     * below) and as the polling callback SymfonyProcessRunner checks while a
+     * single ffmpeg subprocess is still running, so cancellation can kill
+     * that subprocess instead of only taking effect at the next checkpoint
+     * (V3-PERF-005).
+     */
+    private function isCanceled(MediaJob $job): bool
+    {
+        if (! $job->exists) {
+            return false;
+        }
+
+        return MediaJob::query()->whereKey($job->getKey())->value('status') === 'canceled';
+    }
+
+    /**
+     * Stops processing if the job was canceled via the cancel API.
      */
     private function guardNotCanceled(MediaJob $job): void
     {
-        if (! $job->exists) {
-            return;
-        }
-
-        $status = MediaJob::query()->whereKey($job->getKey())->value('status');
-
-        if ($status === 'canceled') {
+        if ($this->isCanceled($job)) {
             throw new JobCanceledException('Media job was canceled before completion.');
+        }
+    }
+
+    /**
+     * @param  array{exitCode: int, stdout: string, stderr: string, canceled?: bool}  $result
+     */
+    private function throwIfCanceled(array $result): void
+    {
+        if (($result['canceled'] ?? false) === true) {
+            throw new JobCanceledException('Media job was canceled during processing.');
         }
     }
 

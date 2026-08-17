@@ -65,11 +65,19 @@ class FakeProcessRunner implements ProcessRunner
     /**
      * Run a fake command.
      *
+     * $isCanceled is checked once, before "running" the fake command, so
+     * tests can simulate a cancellation that arrives while an ffmpeg call is
+     * in flight (V3-PERF-005) without needing a real subprocess to kill.
+     *
      * @param  string[]  $command
      */
-    public function run(array $command, ?callable $onProgress = null): array
+    public function run(array $command, ?callable $onProgress = null, ?callable $isCanceled = null): array
     {
         $this->lastCommand = $command;
+
+        if ($isCanceled !== null && $isCanceled()) {
+            return ['exitCode' => 1, 'stdout' => '', 'stderr' => '', 'canceled' => true];
+        }
 
         if (($command[0] ?? null) === 'nvidia-smi') {
             return $this->responses['cuda-capability'];
