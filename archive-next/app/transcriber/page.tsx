@@ -8,6 +8,7 @@ import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type MediaJob } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { parseSubtitles, formatCueTime, type Cue } from "@/lib/media/subtitles";
+import CueEditor from "./CueEditor";
 import styles from "./transcriber.module.css";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
@@ -246,6 +247,8 @@ export default function TranscriberPage() {
         {subtitleMessage ? <p className="helper-text" role="status">{subtitleMessage}</p> : null}
         {subtitleContent ? <div className={styles.subtitlePreview} style={{ fontSize: `${subtitleFontSize}px`, color: subtitleColor, textAlign: subtitleAlign === "middle" ? "center" : subtitleAlign }} aria-label={t.pages.transcriber.subtitles.previewAriaLabel}>{parseSubtitles(subtitleContent).slice(0, 3).map((cue) => <p key={cue.index}>{cue.text}</p>)}</div> : null}
       </section>
+
+      <CueEditor />
 
       <div className={`split-layout ${styles.console}`} aria-label={t.pages.transcriber.form.ariaLabel}>
         <div className={styles.formPanel}>

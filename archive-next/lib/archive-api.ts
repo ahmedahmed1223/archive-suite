@@ -61,6 +61,12 @@ export type MediaClip = GeneratedSchemas["MediaClip"];
 export type MediaClipCreatePayload = GeneratedSchemas["MediaClipCreateRequest"];
 export type MediaClipUpdatePayload = GeneratedSchemas["MediaClipUpdateRequest"];
 
+export type TranscriptCue = GeneratedSchemas["TranscriptCue"];
+export type TranscriptVersion = GeneratedSchemas["TranscriptVersion"];
+export type TranscriptCurrentState = GeneratedSchemas["TranscriptCurrentState"];
+export type TranscriptVersionStorePayload = GeneratedSchemas["TranscriptVersionStoreRequest"];
+export type TranscriptVersionRestorePayload = GeneratedSchemas["TranscriptVersionRestoreRequest"];
+
 export type ScheduledUploadStatus = GeneratedSchemas["ScheduledUploadStatus"];
 export type ScheduledUpload = GeneratedSchemas["ScheduledUpload"];
 export type ScheduledUploadStaged = GeneratedSchemas["ScheduledUploadStaged"];
@@ -1639,6 +1645,10 @@ export interface ArchiveApiClient {
     params?: { store?: string; attachmentId?: string },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ blob: Blob; filename: string }>>;
+  transcriptVersions(recordId: string, params?: { store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ current: TranscriptCurrentState; versions: TranscriptVersion[] }>>;
+  saveTranscriptVersion(recordId: string, payload: TranscriptVersionStorePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
+  lockTranscriptVersion(recordId: string, payload?: { store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
+  restoreTranscriptVersion(recordId: string, versionId: string, payload?: TranscriptVersionRestorePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
   reviewLink(token: string): Promise<ApiEnvelope<ReviewLinkDetails>>;
   createReviewLink(payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>>;
   collaborationPresence(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
@@ -2679,6 +2689,25 @@ export function createArchiveApiClient({
         };
       }
     },
+    transcriptVersions: (recordId: string, params?: { store?: string }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.store) queryParams.set("store", params.store);
+      const query = queryParams.toString();
+      return get<{ current: TranscriptCurrentState; versions: TranscriptVersion[] }>(
+        `/records/${encodeURIComponent(recordId)}/transcript/versions${query ? `?${query}` : ""}`,
+        options
+      );
+    },
+    saveTranscriptVersion: (recordId: string, payload: TranscriptVersionStorePayload, options?: AuthRequestOptions) =>
+      post<{ version: TranscriptVersion }>(`/records/${encodeURIComponent(recordId)}/transcript/versions`, payload, options),
+    lockTranscriptVersion: (recordId: string, payload?: { store?: string }, options?: AuthRequestOptions) =>
+      post<{ version: TranscriptVersion }>(`/records/${encodeURIComponent(recordId)}/transcript/lock`, payload ?? {}, options),
+    restoreTranscriptVersion: (recordId: string, versionId: string, payload?: TranscriptVersionRestorePayload, options?: AuthRequestOptions) =>
+      post<{ version: TranscriptVersion }>(
+        `/records/${encodeURIComponent(recordId)}/transcript/versions/${encodeURIComponent(versionId)}/restore`,
+        payload ?? {},
+        options
+      ),
     reviewLink: (token: string) =>
       get<ReviewLinkDetails>(`/review-links/${encodeURIComponent(token)}`),
     createReviewLink: (payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions) =>

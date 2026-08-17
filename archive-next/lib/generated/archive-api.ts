@@ -2079,6 +2079,40 @@ export interface paths {
         patch: operations["updateRecordTranscript"];
         trace?: never;
     };
+    "/records/{id}/transcript/export/{format}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download the current transcript as SRT or WebVTT */
+        get: operations["exportTranscript"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/transcript/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Certify the current transcript version so it can no longer be silently overwritten */
+        post: operations["lockTranscriptVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/transcript/subtitles": {
         parameters: {
             query?: never;
@@ -2091,6 +2125,41 @@ export interface paths {
         put: operations["saveRecordSubtitles"];
         /** Import an SRT or WebVTT file into a record transcript */
         post: operations["importRecordSubtitles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/transcript/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the current transcript and its version history */
+        get: operations["listTranscriptVersions"];
+        put?: never;
+        /** Save an edited cue list as a new transcript version */
+        post: operations["createTranscriptVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/transcript/versions/{versionId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore an earlier transcript version as a new current version */
+        post: operations["restoreTranscriptVersion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6021,6 +6090,63 @@ export interface components {
             icon?: string | null;
             parent?: string;
             tag?: string;
+        };
+        TranscriptCue: {
+            endSeconds: number;
+            startSeconds: number;
+            text: string;
+        };
+        TranscriptCurrentState: {
+            cues: components["schemas"]["TranscriptCue"][];
+            /** @enum {string} */
+            format: "srt" | "vtt";
+            locked: boolean;
+            /** @description The current cues serialized as SRT. */
+            srt: string;
+            /** Format: uuid */
+            versionId: string | null;
+            /** @description The current cues serialized as WebVTT. */
+            vtt: string;
+        };
+        TranscriptVersion: {
+            /** Format: date-time */
+            createdAt: string | null;
+            createdBy: number | null;
+            cues: components["schemas"]["TranscriptCue"][];
+            /** @enum {string} */
+            format: "srt" | "vtt";
+            /** Format: uuid */
+            id: string;
+            /** @description True once this version has been explicitly certified/approved. A locked version can only be replaced by a save or restore that passes unlock=true -- this is what keeps an approved transcript from being silently overwritten. */
+            locked: boolean;
+            /** Format: date-time */
+            lockedAt: string | null;
+            lockedBy: number | null;
+            recordStore: string;
+            recordUid: string;
+            /** Format: uuid */
+            restoredFromVersionId: string | null;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        TranscriptVersionResponse: components["schemas"]["OkEnvelope"] & {
+            version: components["schemas"]["TranscriptVersion"];
+        };
+        TranscriptVersionRestoreRequest: {
+            store?: string;
+            unlock?: boolean;
+        };
+        TranscriptVersionsResponse: components["schemas"]["OkEnvelope"] & {
+            current: components["schemas"]["TranscriptCurrentState"];
+            versions: components["schemas"]["TranscriptVersion"][];
+        };
+        TranscriptVersionStoreRequest: {
+            cues: components["schemas"]["TranscriptCue"][];
+            /** @enum {string} */
+            format: "srt" | "vtt";
+            store?: string;
+            /** @description Required (true) to save over a locked transcript. This explicit flag is the visible action that authorizes overwriting an approved transcript. */
+            unlock?: boolean;
         };
         TrashEntry: {
             /** Format: date-time */
@@ -10710,6 +10836,64 @@ export interface operations {
             422: components["responses"]["Error"];
         };
     };
+    exportTranscript: {
+        parameters: {
+            query?: {
+                store?: string;
+            };
+            header?: never;
+            path: {
+                format: "srt" | "vtt";
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subtitle file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    lockTranscriptVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    store?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Locked transcript version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptVersionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
     saveRecordSubtitles: {
         parameters: {
             query?: never;
@@ -10775,6 +10959,94 @@ export interface operations {
             403: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listTranscriptVersions: {
+        parameters: {
+            query?: {
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current transcript state and version history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptVersionsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    createTranscriptVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranscriptVersionStoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Created transcript version */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptVersionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    restoreTranscriptVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                versionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TranscriptVersionRestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description The restored transcript, saved as a new version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptVersionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
         };
     };
     getRecordTriageFlag: {

@@ -27,6 +27,7 @@
     { "name": "Rights" },
     { "name": "Share" },
     { "name": "Review" },
+    { "name": "Transcript" },
     { "name": "Collaboration" },
     { "name": "System" },
     { "name": "Ingest" },
@@ -819,6 +820,155 @@
         "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubtitleContentUpdateRequest" } } } },
         "responses": { "200": { "description": "Updated record", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/records/{id}/transcript/versions": {
+      "get": {
+        "tags": ["Transcript"],
+        "summary": "Read the current transcript and its version history",
+        "operationId": "listTranscriptVersions",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current transcript state and version history",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TranscriptVersionsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Transcript"],
+        "summary": "Save an edited cue list as a new transcript version",
+        "operationId": "createTranscriptVersion",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TranscriptVersionStoreRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created transcript version",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TranscriptVersionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/transcript/lock": {
+      "post": {
+        "tags": ["Transcript"],
+        "summary": "Certify the current transcript version so it can no longer be silently overwritten",
+        "operationId": "lockTranscriptVersion",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "store": { "type": "string" } },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Locked transcript version",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TranscriptVersionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/transcript/versions/{versionId}/restore": {
+      "post": {
+        "tags": ["Transcript"],
+        "summary": "Restore an earlier transcript version as a new current version",
+        "operationId": "restoreTranscriptVersion",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "versionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TranscriptVersionRestoreRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The restored transcript, saved as a new version",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TranscriptVersionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/transcript/export/{format}": {
+      "get": {
+        "tags": ["Transcript"],
+        "summary": "Download the current transcript as SRT or WebVTT",
+        "operationId": "exportTranscript",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "format", "in": "path", "required": true, "schema": { "type": "string", "enum": ["srt", "vtt"] } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subtitle file",
+            "content": {
+              "text/plain": { "schema": { "type": "string" } }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
       }
     },
     "/records/{id}/notes": {
@@ -8639,6 +8789,116 @@
               "clips": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/MediaClip" }
+              }
+            }
+          }
+        ]
+      },
+      "TranscriptCue": {
+        "type": "object",
+        "required": ["startSeconds", "endSeconds", "text"],
+        "properties": {
+          "startSeconds": { "type": "number", "minimum": 0 },
+          "endSeconds": { "type": "number", "minimum": 0 },
+          "text": { "type": "string", "maxLength": 10000 }
+        },
+        "additionalProperties": false
+      },
+      "TranscriptVersion": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "format",
+          "cues",
+          "locked",
+          "lockedBy",
+          "lockedAt",
+          "restoredFromVersionId",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "recordStore": { "type": "string" },
+          "recordUid": { "type": "string" },
+          "format": { "type": "string", "enum": ["srt", "vtt"] },
+          "cues": { "type": "array", "items": { "$ref": "#/components/schemas/TranscriptCue" } },
+          "locked": {
+            "type": "boolean",
+            "description": "True once this version has been explicitly certified/approved. A locked version can only be replaced by a save or restore that passes unlock=true -- this is what keeps an approved transcript from being silently overwritten."
+          },
+          "lockedBy": { "type": ["integer", "null"] },
+          "lockedAt": { "type": ["string", "null"], "format": "date-time" },
+          "restoredFromVersionId": { "type": ["string", "null"], "format": "uuid" },
+          "createdBy": { "type": ["integer", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "TranscriptCurrentState": {
+        "type": "object",
+        "required": ["versionId", "cues", "format", "locked", "srt", "vtt"],
+        "properties": {
+          "versionId": { "type": ["string", "null"], "format": "uuid" },
+          "cues": { "type": "array", "items": { "$ref": "#/components/schemas/TranscriptCue" } },
+          "format": { "type": "string", "enum": ["srt", "vtt"] },
+          "locked": { "type": "boolean" },
+          "srt": { "type": "string", "description": "The current cues serialized as SRT." },
+          "vtt": { "type": "string", "description": "The current cues serialized as WebVTT." }
+        }
+      },
+      "TranscriptVersionStoreRequest": {
+        "type": "object",
+        "required": ["format", "cues"],
+        "properties": {
+          "store": { "type": "string" },
+          "format": { "type": "string", "enum": ["srt", "vtt"] },
+          "unlock": {
+            "type": "boolean",
+            "description": "Required (true) to save over a locked transcript. This explicit flag is the visible action that authorizes overwriting an approved transcript."
+          },
+          "cues": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/TranscriptCue" }
+          }
+        },
+        "additionalProperties": false
+      },
+      "TranscriptVersionRestoreRequest": {
+        "type": "object",
+        "properties": {
+          "store": { "type": "string" },
+          "unlock": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "TranscriptVersionResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["version"],
+            "properties": {
+              "version": { "$ref": "#/components/schemas/TranscriptVersion" }
+            }
+          }
+        ]
+      },
+      "TranscriptVersionsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["current", "versions"],
+            "properties": {
+              "current": { "$ref": "#/components/schemas/TranscriptCurrentState" },
+              "versions": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/TranscriptVersion" }
               }
             }
           }

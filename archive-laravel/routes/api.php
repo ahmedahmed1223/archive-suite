@@ -81,6 +81,7 @@ use App\Http\Controllers\Api\V1\SystemControlController;
 use App\Http\Controllers\Api\V1\SystemController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
 use App\Http\Controllers\Api\V1\TagNodesController;
+use App\Http\Controllers\Api\V1\TranscriptVersionsController;
 use App\Http\Controllers\Api\V1\TrashController;
 use App\Http\Controllers\Api\V1\TypesController;
 use App\Http\Controllers\Api\V1\UnusedFilesController;
@@ -274,6 +275,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/{id}/transcript/subtitles', [RecordTranscriptController::class, 'importSrt']);
         Route::put('/records/{id}/transcript/subtitles', [RecordTranscriptController::class, 'updateSubtitles']);
         Route::patch('/records/{id}/transcript', [RecordTranscriptController::class, 'update']);
+        // V3-MEDIA-005: cue-level transcript editor -- versioned, lockable,
+        // exportable. Separate from the legacy raw-text routes above.
+        Route::get('/records/{id}/transcript/versions', [TranscriptVersionsController::class, 'index']);
+        Route::post('/records/{id}/transcript/versions', [TranscriptVersionsController::class, 'store']);
+        Route::post('/records/{id}/transcript/lock', [TranscriptVersionsController::class, 'lock']);
+        Route::post('/records/{id}/transcript/versions/{versionId}/restore', [TranscriptVersionsController::class, 'restore']);
+        Route::get('/records/{id}/transcript/export/{format}', [TranscriptVersionsController::class, 'export']);
         Route::get('/records/{id}/notes', [RecordNotesController::class, 'index']);
         Route::post('/records/{id}/notes', [RecordNotesController::class, 'store']);
         Route::get('/records/{id}/comments', [RecordCommentsController::class, 'index']);

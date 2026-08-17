@@ -75,6 +75,9 @@ class AuditArchiveApiRequest
             ['DELETE', 'api/v1/record-notes/{id}'] => ['record_notes.delete', 'record_note'],
             ['POST', 'api/v1/records/{id}/comments'] => ['record_comments.create', 'record_comment'],
             ['DELETE', 'api/v1/record-comments/{id}'] => ['record_comments.delete', 'record_comment'],
+            ['POST', 'api/v1/records/{id}/transcript/versions'] => ['transcript_versions.create', 'transcript_version'],
+            ['POST', 'api/v1/records/{id}/transcript/lock'] => ['transcript_versions.lock', 'transcript_version'],
+            ['POST', 'api/v1/records/{id}/transcript/versions/{versionId}/restore'] => ['transcript_versions.restore', 'transcript_version'],
             ['POST', 'api/v1/records/{id}/review-sessions'] => ['review_sessions.create', 'review_session'],
             ['PATCH', 'api/v1/review-sessions/{id}'] => ['review_sessions.update', 'review_session'],
             ['DELETE', 'api/v1/review-sessions/{id}'] => ['review_sessions.delete', 'review_session'],
@@ -166,6 +169,14 @@ class AuditArchiveApiRequest
         }
 
         if ($route === 'api/v1/relations/{id}') {
+            $resourceId = $request->route('id');
+        }
+
+        if (in_array($route, [
+            'api/v1/records/{id}/transcript/versions',
+            'api/v1/records/{id}/transcript/lock',
+            'api/v1/records/{id}/transcript/versions/{versionId}/restore',
+        ], true)) {
             $resourceId = $request->route('id');
         }
 

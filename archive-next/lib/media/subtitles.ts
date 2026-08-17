@@ -73,3 +73,69 @@ export function formatCueTime(seconds: number): string {
     ? `${hours}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`
     : `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }
+
+function formatTimecode(totalSeconds: number, millisSeparator: "," | "."): string {
+  const safe = Math.max(0, Number(totalSeconds) || 0);
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  let seconds = Math.floor(safe % 60);
+  let millis = Math.round((safe - Math.floor(safe)) * 1000);
+  if (millis === 1000) {
+    millis = 0;
+    seconds += 1;
+  }
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}${millisSeparator}${String(millis).padStart(3, "0")}`;
+}
+
+/** Serializes a cue list to SRT text. Mirrors SubtitleCueCodec::toSrt on the backend. */
+export function serializeSrt(cues: Cue[]): string {
+  return cues
+    .map((cue, index) => `${index + 1}\n${formatTimecode(cue.start, ",")} --> ${formatTimecode(cue.end, ",")}\n${cue.text}`)
+    .join("\n\n")
+    .concat("\n");
+}
+
+/** Serializes a cue list to WebVTT text. Mirrors SubtitleCueCodec::toVtt on the backend. */
+export function serializeVtt(cues: Cue[]): string {
+  const blocks = ["WEBVTT", ...cues.map((cue) => `${formatTimecode(cue.start, ".")} --> ${formatTimecode(cue.end, ".")}\n${cue.text}`)];
+  return blocks.join("\n\n").concat("\n");
+}
+
+export interface CueOrderError {
+  cueIndex: number;
+  otherCueIndex?: number;
+  kind: "inverted" | "out-of-order" | "overlap";
+}
+
+/**
+ * Client-side mirror of the backend's CueValidator: cues must be
+ * chronologically ordered and must not overlap. Runs on every edit so the
+ * user sees the problem before a save round-trip rejects it. Returns
+ * structured errors (no message strings) so callers render them through
+ * their own i18n dictionary.
+ */
+export function validateCueOrder(cues: Cue[]): CueOrderError[] {
+  const errors: CueOrderError[] = [];
+  let previous: { start: number; end: number; index: number } | null = null;
+
+  cues.forEach((cue, position) => {
+    const index = position + 1;
+
+    if (cue.end <= cue.start) {
+      errors.push({ cueIndex: index, kind: "inverted" });
+    }
+
+    if (previous) {
+      if (cue.start < previous.start) {
+        errors.push({ cueIndex: index, otherCueIndex: previous.index, kind: "out-of-order" });
+      } else if (cue.start < previous.end) {
+        errors.push({ cueIndex: index, otherCueIndex: previous.index, kind: "overlap" });
+      }
+    }
+
+    previous = { start: cue.start, end: cue.end, index };
+  });
+
+  return errors;
+}
