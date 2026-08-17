@@ -136,4 +136,10 @@ export const shared = {
     dismiss: "إخفاء",
     feedbackError: "تعذر حفظ تقييم الاقتراح."
   },
+  vocabularyLinker: {
+    toggleLabel: "ربط مصطلحات المفردات تلقائيًا",
+    synonymOf: "مرادف لـ «{term}»",
+    openTermPage: "فتح في المفردات",
+    definitionAriaLabel: "تعريف مصطلح «{term}»"
+  },
 } as const;

@@ -46,6 +46,7 @@ import RecordPresence from "@/components/RecordPresence";
 import RecordAttachmentsPanel from "@/components/RecordAttachmentsPanel";
 import RecordSourceReplacementPanel from "@/components/RecordSourceReplacementPanel";
 import RecordChangeImpactPanel from "@/components/RecordChangeImpactPanel";
+import VocabularyLinkedText, { VocabularyLinkToggle } from "@/components/VocabularyLinkedText";
 
 export { RecordDescribeForm, type RecordDescribePatch };
 
@@ -1088,6 +1089,41 @@ function RecordReadinessPanel({
   );
 }
 
+// V3-VOCAB-002: read-only surface for the description and transcript excerpt
+// with vocabulary terms auto-linked. Purely presentational - it renders
+// `record.description`/`record.transcript` as-is, it never edits them.
+function RecordReadSurfacePanel({ record }: Readonly<{ record: ArchiveRecord }>) {
+  const { t } = useLocale();
+  const copy = t.pages.archiveDetail.readSurface;
+
+  return (
+    <article className="panel">
+      <div className="panel-section-header panel-title-row">
+        <h2>{copy.title}</h2>
+        <VocabularyLinkToggle className="helper-text" />
+      </div>
+      <div className="stack">
+        <div>
+          <strong>{copy.descriptionLabel}</strong>
+          {record.description ? (
+            <p><VocabularyLinkedText text={record.description} /></p>
+          ) : (
+            <p className="helper-text">{copy.noDescription}</p>
+          )}
+        </div>
+        <div>
+          <strong>{copy.transcriptLabel}</strong>
+          {record.transcript ? (
+            <p><VocabularyLinkedText text={record.transcript} /></p>
+          ) : (
+            <p className="helper-text">{copy.noTranscript}</p>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function ArchiveDetailPage() {
   const { t, locale } = useLocale();
   const copy = t.pages.archiveDetail.page;
@@ -1759,6 +1795,7 @@ export default function ArchiveDetailPage() {
                 </div>
               ) : null}
             </article>
+            <RecordReadSurfacePanel record={state.record} />
             <RecordAiAssistPanel onAnalyze={handleAiAssist} canEdit={canEditRecords} />
             <SuggestionsPanel suggestions={suggestions} title={copy.suggestionsTitle} onFeedback={handleSuggestionFeedback} />
             {canEditRecords && <RecordDescribeForm key={id} record={state.record} onSave={handleSaveRecord} />}
