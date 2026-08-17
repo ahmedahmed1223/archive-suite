@@ -61,6 +61,11 @@ export type MediaClip = GeneratedSchemas["MediaClip"];
 export type MediaClipCreatePayload = GeneratedSchemas["MediaClipCreateRequest"];
 export type MediaClipUpdatePayload = GeneratedSchemas["MediaClipUpdateRequest"];
 
+export type MediaDerivative = GeneratedSchemas["MediaDerivative"];
+export type MediaDerivativeType = GeneratedSchemas["MediaDerivativeType"];
+export type MediaDerivativeSettings = GeneratedSchemas["MediaDerivativeSettings"];
+export type MediaDerivativeRequestPayload = GeneratedSchemas["MediaDerivativeRequest"];
+
 export type TranscriptCue = GeneratedSchemas["TranscriptCue"];
 export type TranscriptVersion = GeneratedSchemas["TranscriptVersion"];
 export type TranscriptCurrentState = GeneratedSchemas["TranscriptCurrentState"];
@@ -1659,6 +1664,16 @@ export interface ArchiveApiClient {
     params?: { store?: string; attachmentId?: string },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ blob: Blob; filename: string }>>;
+  mediaDerivatives(
+    recordId: string,
+    params?: { store?: string; attachmentId?: string; type?: MediaDerivativeType },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ derivatives: MediaDerivative[] }>>;
+  requestMediaDerivative(
+    payload: MediaDerivativeRequestPayload,
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ derivative: MediaDerivative; cached?: boolean }>>;
+  getMediaDerivative(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ derivative: MediaDerivative }>>;
   transcriptVersions(recordId: string, params?: { store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ current: TranscriptCurrentState; versions: TranscriptVersion[] }>>;
   saveTranscriptVersion(recordId: string, payload: TranscriptVersionStorePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
   lockTranscriptVersion(recordId: string, payload?: { store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
@@ -2718,6 +2733,25 @@ export function createArchiveApiClient({
         };
       }
     },
+    mediaDerivatives: (
+      recordId: string,
+      params?: { store?: string; attachmentId?: string; type?: MediaDerivativeType },
+      options?: AuthRequestOptions
+    ) => {
+      const queryParams = new URLSearchParams();
+      if (params?.store) queryParams.set("store", params.store);
+      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
+      if (params?.type) queryParams.set("type", params.type);
+      const query = queryParams.toString();
+      return get<{ derivatives: MediaDerivative[] }>(
+        `/records/${encodeURIComponent(recordId)}/media-derivatives${query ? `?${query}` : ""}`,
+        options
+      );
+    },
+    requestMediaDerivative: (payload: MediaDerivativeRequestPayload, options?: AuthRequestOptions) =>
+      post<{ derivative: MediaDerivative; cached?: boolean }>("/media-derivatives", payload, options),
+    getMediaDerivative: (id: string, options?: AuthRequestOptions) =>
+      get<{ derivative: MediaDerivative }>(`/media-derivatives/${encodeURIComponent(id)}`, options),
     transcriptVersions: (recordId: string, params?: { store?: string }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.store) queryParams.set("store", params.store);

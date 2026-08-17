@@ -202,6 +202,10 @@ class RouteScopeTest extends TestCase
         'GET api/v1/media/jobs/queue-status' => self::V1,
         'GET api/v1/media/jobs/{id}' => self::V1,
         'POST api/v1/media/jobs/{id}/cancel' => self::V1,
+        // V3-MEDIA-006: cached, version-pinned thumbnail/waveform/proxy derivatives.
+        'GET api/v1/records/{id}/media-derivatives' => self::V1,
+        'POST api/v1/media-derivatives' => self::V1,
+        'GET api/v1/media-derivatives/{id}' => self::V1,
         'GET api/v1/montage-projects' => self::V1,
         'POST api/v1/montage-projects' => self::V1,
         'GET api/v1/montage-projects/{id}' => self::V1,
@@ -583,6 +587,12 @@ class RouteScopeTest extends TestCase
         'GET api/v1/media/jobs/queue-status' => self::ROLE_ANY,
         'GET api/v1/media/jobs/{id}' => self::ROLE_ANY,
         'POST api/v1/media/jobs/{id}/cancel' => self::ROLE_ANY,
+        // V3-MEDIA-006: reads only require auth; requesting a derivative
+        // requires editor (or admin) via Controller::requireEditor(), same
+        // bar as review sessions/clips.
+        'GET api/v1/records/{id}/media-derivatives' => self::ROLE_ANY,
+        'POST api/v1/media-derivatives' => self::ROLE_EDITOR,
+        'GET api/v1/media-derivatives/{id}' => self::ROLE_ANY,
         'GET api/v1/montage-projects' => self::ROLE_ANY,
         'POST api/v1/montage-projects' => self::ROLE_EDITOR,
         'GET api/v1/montage-projects/{id}' => self::ROLE_ANY,

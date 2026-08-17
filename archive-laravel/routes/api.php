@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\IntakeTemplatesController;
 use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\LinkAuditController;
+use App\Http\Controllers\Api\V1\MediaDerivativesController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\MetadataTemplatesController;
 use App\Http\Controllers\Api\V1\MontageProjectsController;
@@ -405,6 +406,14 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/media/jobs/queue-status', [MediaJobsController::class, 'queueStatus']);
         Route::get('/media/jobs/{id}', [MediaJobsController::class, 'show']);
         Route::post('/media/jobs/{id}/cancel', [MediaJobsController::class, 'cancel']);
+
+        // V3-MEDIA-006: cached, version-pinned thumbnail/waveform/proxy
+        // derivatives. /records/{id}/media-derivatives lists derivatives for
+        // a record; /media-derivatives is the request+read endpoint keyed
+        // by the derivative's own id.
+        Route::get('/records/{id}/media-derivatives', [MediaDerivativesController::class, 'index']);
+        Route::post('/media-derivatives', [MediaDerivativesController::class, 'store']);
+        Route::get('/media-derivatives/{id}', [MediaDerivativesController::class, 'show']);
 
         Route::get('/montage-projects', [MontageProjectsController::class, 'index']);
         Route::post('/montage-projects', [MontageProjectsController::class, 'store']);

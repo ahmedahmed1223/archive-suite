@@ -43,8 +43,37 @@ class FakeMediaProcessor implements MediaProcessor
                     'url' => null,
                 ],
             ],
+            'derivative' => $this->fakeDerivative($job),
             default => [],
         };
+    }
+
+    /**
+     * Deterministic fake artifact for the V3-MEDIA-006 derivative pipeline
+     * (thumbnail/waveform/proxy). Mirrors RealMediaProcessor's
+     * "{recordId}/derivatives/{derivativeId}.{ext}" key shape so tests and
+     * offline mode exercise the same storage_key format the real processor
+     * produces.
+     *
+     * @return array<int, array{kind: string, key: string, url: null}>
+     */
+    private function fakeDerivative(MediaJob $job): array
+    {
+        $type = is_string($job->options['derivativeType'] ?? null) ? $job->options['derivativeType'] : 'thumbnail';
+        $derivativeId = is_string($job->options['derivativeId'] ?? null) ? $job->options['derivativeId'] : $job->id;
+        $extension = match ($type) {
+            'waveform' => 'png',
+            'proxy' => 'mp4',
+            default => 'jpg',
+        };
+
+        return [
+            [
+                'kind' => "derivative_{$type}",
+                'key' => "{$job->record_id}/derivatives/{$derivativeId}.{$extension}",
+                'url' => null,
+            ],
+        ];
     }
 
     /**
