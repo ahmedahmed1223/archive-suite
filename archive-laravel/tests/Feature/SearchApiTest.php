@@ -72,6 +72,34 @@ class SearchApiTest extends TestCase
             ->assertJsonPath('suggestions.0.value', 'Riyadh archive interview');
     }
 
+    /**
+     * V3-PERF-005: backpressure + stable cache key for suggestions. The
+     * underlying record pool is cached under one fixed key (independent of
+     * `q` -- every keystroke used to trigger a fresh unbounded scan), so a
+     * record created after the first request isn't visible in a second
+     * request within the TTL window.
+     */
+    public function test_suggestions_pool_is_cached_across_requests(): void
+    {
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [['uid' => 'sugg-clip-001', 'title' => 'Suggestion cache alpha', 'type' => 'video']],
+        ], $this->authHeaders())->assertOk();
+
+        $this->getJson('/api/v1/search/suggestions?q=Suggestion%20cache&limit=8', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(1, 'suggestions');
+
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [['uid' => 'sugg-clip-002', 'title' => 'Suggestion cache beta', 'type' => 'video']],
+        ], $this->authHeaders())->assertOk();
+
+        $this->getJson('/api/v1/search/suggestions?q=Suggestion%20cache&limit=8', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(1, 'suggestions');
+    }
+
     public function test_it_supports_search_cursor_pagination(): void
     {
         $this->seedRecords();
@@ -164,6 +192,48 @@ class SearchApiTest extends TestCase
         $this->getJson('/api/v1/search?store=archive-items&q='.rawurlencode($query), $this->authHeaders())
             ->assertUnprocessable()
             ->assertJsonValidationErrors('q');
+    }
+
+    /**
+     * V3-PERF-005: cursor and limit are deliberately excluded from the cache
+     * key (the pool is built once and paginated in-memory), so paging
+     * through the same base query must reuse the pool as it was when page 1
+     * was cached -- not silently rebuild against live data and splice in a
+     * record that arrived after the fact.
+     */
+    public function test_paging_through_the_same_query_reuses_the_cached_pool(): void
+    {
+        $this->seedRecords();
+
+        $firstPage = $this->getJson('/api/v1/search?q=archive&limit=1', $this->authHeaders())->assertOk();
+        $cursor = $firstPage->json('nextCursor');
+        $this->assertIsString($cursor);
+
+        $this->postJson('/api/v1/records/bulk', [
+            'store' => 'archive-items',
+            'records' => [['uid' => 'clip-004-late', 'title' => 'Late archive arrival', 'type' => 'video']],
+        ], $this->authHeaders())->assertOk();
+
+        $secondPage = $this->getJson('/api/v1/search?q=archive&limit=5&cursor='.$cursor, $this->authHeaders())->assertOk();
+        $uids = collect($secondPage->json('records'))->pluck('uid')->all();
+
+        $this->assertNotContains('clip-004-late', $uids);
+    }
+
+    /**
+     * Different queries must never share a cache entry: q=riyadh and
+     * q=jeddah are two distinct requests within the same short TTL window,
+     * and each must see its own matching record, not the other's.
+     */
+    public function test_different_queries_never_collide_in_the_cache(): void
+    {
+        $this->seedRecords();
+
+        $riyadh = $this->getJson('/api/v1/search?store=archive-items&q=riyadh&limit=10', $this->authHeaders())->assertOk();
+        $jeddah = $this->getJson('/api/v1/search?store=archive-items&q=jeddah&limit=10', $this->authHeaders())->assertOk();
+
+        $this->assertSame('clip-001', $riyadh->json('records.0.uid'));
+        $this->assertSame('clip-002', $jeddah->json('records.0.uid'));
     }
 
     public function test_it_rejects_unauthenticated_search_requests(): void
