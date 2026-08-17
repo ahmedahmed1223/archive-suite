@@ -66,8 +66,13 @@ describe("SettingsHub", () => {
     render(<SettingsHub />);
 
     expect(screen.queryByRole("heading", { name: "الإدارة" })).not.toBeInTheDocument();
-    // Not just visually hidden -- the controls must not exist in the tree at all.
-    expect(screen.queryByLabelText("التحكم بالنظام")).not.toBeInTheDocument();
+    // Not just visually hidden -- the admin-only capability control must not
+    // exist in the tree at all. Matched by id rather than label text: since
+    // V3-SET-006, NavigationCustomizationSection also renders a (non-admin,
+    // legitimately visible-to-everyone) checkbox whose label happens to be
+    // the same nav item name ("التحكم بالنظام"), so label text alone is no
+    // longer a unique fingerprint for the admin-only control.
+    expect(document.getElementById("capability-systemControl")).not.toBeInTheDocument();
   });
 
   test("renders the server-provided lock reason for a locked capability, verbatim", () => {
