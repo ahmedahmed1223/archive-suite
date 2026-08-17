@@ -67,5 +67,6 @@ export const pageTitles = {
   visualReview: "المراجعة المرئية",
   transcription: "التفريغ الصوتي",
   mediaPlayer: "مشغل الوسائط",
+  mediaStudio: "استوديو الوسائط",
   timeline: "الخط الزمني",
 } as const;
