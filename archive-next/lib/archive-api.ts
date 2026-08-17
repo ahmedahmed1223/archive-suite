@@ -57,6 +57,10 @@ export type ReviewSession = GeneratedSchemas["ReviewSession"];
 export type ReviewSessionCreatePayload = GeneratedSchemas["ReviewSessionCreateRequest"];
 export type ReviewSessionTransitionPayload = GeneratedSchemas["ReviewSessionTransitionRequest"];
 
+export type MediaClip = GeneratedSchemas["MediaClip"];
+export type MediaClipCreatePayload = GeneratedSchemas["MediaClipCreateRequest"];
+export type MediaClipUpdatePayload = GeneratedSchemas["MediaClipUpdateRequest"];
+
 export type ScheduledUploadStatus = GeneratedSchemas["ScheduledUploadStatus"];
 export type ScheduledUpload = GeneratedSchemas["ScheduledUpload"];
 export type ScheduledUploadStaged = GeneratedSchemas["ScheduledUploadStaged"];
@@ -1625,6 +1629,16 @@ export interface ArchiveApiClient {
     payload?: ReviewSessionTransitionPayload,
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ session: ReviewSession }>>;
+  mediaClips(recordId: string, params?: { store?: string; attachmentId?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ clips: MediaClip[] }>>;
+  createMediaClip(recordId: string, payload: MediaClipCreatePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ clip: MediaClip }>>;
+  updateMediaClip(id: string, payload: MediaClipUpdatePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ clip: MediaClip }>>;
+  deleteMediaClip(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  downloadMediaClipsExport(
+    recordId: string,
+    format: "json" | "csv",
+    params?: { store?: string; attachmentId?: string },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ blob: Blob; filename: string }>>;
   reviewLink(token: string): Promise<ApiEnvelope<ReviewLinkDetails>>;
   createReviewLink(payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>>;
   collaborationPresence(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
@@ -2618,6 +2632,53 @@ export function createArchiveApiClient({
       payload?: ReviewSessionTransitionPayload,
       options?: AuthRequestOptions
     ) => post<{ session: ReviewSession }>(`/review-sessions/${encodeURIComponent(id)}/${action}`, payload ?? {}, options),
+    mediaClips: (recordId: string, params?: { store?: string; attachmentId?: string }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.store) queryParams.set("store", params.store);
+      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
+      const query = queryParams.toString();
+      return get<{ clips: MediaClip[] }>(`/records/${encodeURIComponent(recordId)}/clips${query ? `?${query}` : ""}`, options);
+    },
+    createMediaClip: (recordId: string, payload: MediaClipCreatePayload, options?: AuthRequestOptions) =>
+      post<{ clip: MediaClip }>(`/records/${encodeURIComponent(recordId)}/clips`, payload, options),
+    updateMediaClip: (id: string, payload: MediaClipUpdatePayload, options?: AuthRequestOptions) =>
+      patch<{ clip: MediaClip }>(`/clips/${encodeURIComponent(id)}`, payload, options),
+    deleteMediaClip: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/clips/${encodeURIComponent(id)}`, undefined, options),
+    downloadMediaClipsExport: async (
+      recordId: string,
+      format: "json" | "csv",
+      params?: { store?: string; attachmentId?: string },
+      options?: AuthRequestOptions
+    ) => {
+      const queryParams = new URLSearchParams({ format });
+      if (params?.store) queryParams.set("store", params.store);
+      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
+      const headers = new Headers({ Accept: format === "csv" ? "text/csv" : "application/json" });
+      const accessToken = options?.accessToken ?? cachedAccessToken;
+      if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+
+      try {
+        const response = await fetchImpl(`${baseUrl}/records/${encodeURIComponent(recordId)}/clips/export?${queryParams.toString()}`, {
+          headers,
+          credentials: "include"
+        });
+        if (!response.ok) {
+          return { ok: false, error: clientUploadError(currentLocale(), "export", response.status) };
+        }
+        const contentDisposition = response.headers.get("content-disposition") || "";
+        const disposedName = contentDisposition.match(/filename=([^;]+)/i)?.[1]?.replace(/^"|"$/g, "");
+        const filename = disposedName || `clip-list-${recordId}.${format}`;
+        return { ok: true, blob: await response.blob(), filename };
+      } catch {
+        return {
+          ok: false,
+          error: currentLocale() === "en"
+            ? "Unable to connect to the server to export the clip list."
+            : "تعذر الاتصال بالخادم لتصدير قائمة المقاطع."
+        };
+      }
+    },
     reviewLink: (token: string) =>
       get<ReviewLinkDetails>(`/review-links/${encodeURIComponent(token)}`),
     createReviewLink: (payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions) =>

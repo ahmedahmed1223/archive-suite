@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\AutomationRulesController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\BulkMacrosController;
 use App\Http\Controllers\Api\V1\CapabilitiesController;
+use App\Http\Controllers\Api\V1\ClipsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
 use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\ComplianceReportsController;
@@ -279,6 +280,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/{id}/comments', [RecordCommentsController::class, 'store']);
         Route::get('/records/{id}/review-sessions', [ReviewSessionsController::class, 'index']);
         Route::post('/records/{id}/review-sessions', [ReviewSessionsController::class, 'store']);
+        // V3-MEDIA-004: non-destructive clip lists for the version-compare studio.
+        // export is registered before the bare /records/{id}/clips route would
+        // ever matter -- there is no /records/{id}/clips/{clipId} route to
+        // shadow, but keeping it grouped with index/store here for readability.
+        Route::get('/records/{id}/clips', [ClipsController::class, 'index']);
+        Route::post('/records/{id}/clips', [ClipsController::class, 'store']);
+        Route::get('/records/{id}/clips/export', [ClipsController::class, 'export']);
         Route::get('/records/{id}/history', [RecordHistoryController::class, 'index']);
         // V1-001: niche broadcast (MOS/MXF) integration — experimental, flagged.
         Route::middleware('archive.feature:broadcast_metadata')->group(function (): void {
@@ -531,6 +539,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/review-sessions/{id}/approve', [ReviewSessionsController::class, 'approve']);
         Route::post('/review-sessions/{id}/resume', [ReviewSessionsController::class, 'resume']);
         Route::post('/review-sessions/{id}/close', [ReviewSessionsController::class, 'close']);
+
+        Route::get('/clips/{id}', [ClipsController::class, 'show']);
+        Route::patch('/clips/{id}', [ClipsController::class, 'update']);
+        Route::delete('/clips/{id}', [ClipsController::class, 'destroy']);
 
         // V1-001: generic external-database (ODBC) proxy — experimental, flagged.
         Route::middleware('archive.feature:odbc')->group(function (): void {

@@ -598,6 +598,158 @@
         }
       }
     },
+    "/records/{id}/clips": {
+      "get": {
+        "tags": ["Media Clips"],
+        "summary": "List non-destructive clips for a record version",
+        "operationId": "listMediaClips",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "attachmentId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media clips",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaClipsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Media Clips"],
+        "summary": "Create a non-destructive clip pinned to a record version",
+        "operationId": "createMediaClip",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaClipCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created clip",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaClipResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/clips/export": {
+      "get": {
+        "tags": ["Media Clips"],
+        "summary": "Export a record's clip list as JSON or CSV",
+        "description": "Every exported clip carries its record/attachment identity, pinned version token, and frame rate, so the list is unambiguous when replayed against the source later.",
+        "operationId": "exportMediaClips",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "attachmentId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "format", "in": "query", "required": false, "schema": { "type": "string", "enum": ["json", "csv"], "default": "json" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Clip list export",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/MediaClipsExportResponse" } },
+              "text/csv": { "schema": { "type": "string" } }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/clips/{id}": {
+      "get": {
+        "tags": ["Media Clips"],
+        "summary": "Read a clip",
+        "operationId": "getMediaClip",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media clip",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaClipResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Media Clips"],
+        "summary": "Update a clip's title, notes, in/out range, or frame rate",
+        "operationId": "updateMediaClip",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaClipUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated clip",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaClipResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Media Clips"],
+        "summary": "Delete a clip",
+        "operationId": "deleteMediaClip",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/transcript": {
       "patch": {
         "tags": ["Records"],
@@ -6079,8 +6231,8 @@
         "additionalProperties": false
       },
       "RecordAttachment": {
-        "type": "object", "required": ["id", "recordStore", "recordUid", "originalName", "sizeBytes", "checksumSha256", "isPrimary", "processingStatus"],
-        "properties": { "id": { "type": "string", "format": "uuid" }, "recordStore": { "type": "string" }, "recordUid": { "type": "string" }, "originalName": { "type": "string" }, "mimeType": { "type": ["string", "null"] }, "sizeBytes": { "type": "integer", "minimum": 0 }, "checksumSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "isPrimary": { "type": "boolean" }, "processingStatus": { "type": "string" }, "createdAt": { "type": ["string", "null"], "format": "date-time" } }
+        "type": "object", "required": ["id", "recordStore", "recordUid", "disk", "path", "originalName", "sizeBytes", "checksumSha256", "isPrimary", "processingStatus"],
+        "properties": { "id": { "type": "string", "format": "uuid" }, "recordStore": { "type": "string" }, "recordUid": { "type": "string" }, "disk": { "type": "string" }, "path": { "type": "string" }, "originalName": { "type": "string" }, "mimeType": { "type": ["string", "null"] }, "sizeBytes": { "type": "integer", "minimum": 0 }, "checksumSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "isPrimary": { "type": "boolean" }, "processingStatus": { "type": "string" }, "createdAt": { "type": ["string", "null"], "format": "date-time" } }
       },
       "RecordAttachmentsResponse": {
         "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["attachments"], "properties": { "attachments": { "type": "array", "items": { "$ref": "#/components/schemas/RecordAttachment" } } } }]
@@ -8377,6 +8529,116 @@
               "sessions": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/ReviewSession" }
+              }
+            }
+          }
+        ]
+      },
+      "MediaClip": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "attachmentId",
+          "versionToken",
+          "isCurrentVersion",
+          "title",
+          "notes",
+          "inSeconds",
+          "outSeconds",
+          "fps",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "recordStore": { "type": "string" },
+          "recordUid": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "versionToken": {
+            "type": "string",
+            "description": "Same checksum-derived identity as ReviewSession.versionToken -- pinned once at creation so the clip's in/out times stay unambiguous even after the source is replaced."
+          },
+          "isCurrentVersion": {
+            "type": "boolean",
+            "description": "False once the record source or attachment has been replaced after this clip's timecodes were captured."
+          },
+          "title": { "type": "string" },
+          "notes": { "type": ["string", "null"] },
+          "inSeconds": { "type": "number", "minimum": 0 },
+          "outSeconds": { "type": "number", "minimum": 0 },
+          "fps": { "type": "integer", "minimum": 1, "maximum": 120 },
+          "createdBy": { "type": ["integer", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "MediaClipCreateRequest": {
+        "type": "object",
+        "required": ["title", "inSeconds", "outSeconds"],
+        "properties": {
+          "store": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "title": { "type": "string", "maxLength": 255 },
+          "notes": { "type": ["string", "null"], "maxLength": 4000 },
+          "inSeconds": { "type": "number", "minimum": 0 },
+          "outSeconds": { "type": "number", "minimum": 0 },
+          "fps": { "type": "integer", "minimum": 1, "maximum": 120 }
+        },
+        "additionalProperties": false
+      },
+      "MediaClipUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "maxLength": 255 },
+          "notes": { "type": ["string", "null"], "maxLength": 4000 },
+          "inSeconds": { "type": "number", "minimum": 0 },
+          "outSeconds": { "type": "number", "minimum": 0 },
+          "fps": { "type": "integer", "minimum": 1, "maximum": 120 }
+        },
+        "additionalProperties": false
+      },
+      "MediaClipResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["clip"],
+            "properties": {
+              "clip": { "$ref": "#/components/schemas/MediaClip" }
+            }
+          }
+        ]
+      },
+      "MediaClipsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["clips"],
+            "properties": {
+              "clips": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MediaClip" }
+              }
+            }
+          }
+        ]
+      },
+      "MediaClipsExportResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["recordStore", "recordUid", "clips"],
+            "properties": {
+              "recordStore": { "type": "string" },
+              "recordUid": { "type": "string" },
+              "clips": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MediaClip" }
               }
             }
           }

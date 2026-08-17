@@ -140,7 +140,14 @@ final class ReviewSessionService
         }
     }
 
-    private function resolveVersionToken(string $recordStore, string $recordUid, ?string $attachmentId): string
+    /**
+     * Derives the checksum-based version identity for a record or attachment.
+     * Public so other media features that need to pin content to a specific
+     * version -- e.g. MediaClipService (V3-MEDIA-004) -- share this exact
+     * algorithm instead of growing a second, possibly-diverging one. See the
+     * class docblock for what the token protects against.
+     */
+    public function resolveVersionToken(string $recordStore, string $recordUid, ?string $attachmentId): string
     {
         if ($attachmentId !== null) {
             $attachment = DB::table('record_attachments')
