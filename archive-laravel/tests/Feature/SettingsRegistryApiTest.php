@@ -216,6 +216,23 @@ class SettingsRegistryApiTest extends TestCase
             ]);
     }
 
+    public function test_pre_existing_user_locale_migrates_into_experience_profile(): void
+    {
+        // Simulates a user who set users.locale before the experience
+        // registry existed (V3-SET-003) and has never touched
+        // PATCH /account/experience — the upgrade must not lose it.
+        $user = User::factory()->create(['locale' => 'en']);
+
+        $this->assertDatabaseMissing('user_experience_profiles', ['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/account/experience')
+            ->assertOk()
+            ->assertJsonPath('profileVersion', 0)
+            ->assertJsonPath('experience.locale.value', 'en')
+            ->assertJsonPath('experience.locale.source', 'user');
+    }
+
     public function test_user_can_update_and_persist_their_experience_profile(): void
     {
         $user = User::factory()->create(['locale' => 'ar']);
