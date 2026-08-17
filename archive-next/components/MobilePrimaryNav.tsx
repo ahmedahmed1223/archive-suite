@@ -4,18 +4,25 @@ import * as Icons from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { openCommandPalette } from "@/components/CommandPalette";
-import { getDailyNavigation, getLocalizedNavigation, isActivePath } from "@/lib/navigation";
+import { getDailyNavigation, getLocalizedNavigation, isActivePath, visibleNavHrefs } from "@/lib/navigation";
 import { useAuthSession } from "@/lib/auth-session";
+import { useExperienceProfile } from "@/lib/experience-profile-context";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { resolveIcon } from "@/lib/icon-registry";
+import type { components } from "@/lib/generated/archive-api";
+
+type NavigationExperienceSettings = components["schemas"]["NavigationExperienceSettings"];
 
 export default function MobilePrimaryNav() {
   const { locale, t } = useLocale();
   const pathname = usePathname() || "/";
   const auth = useAuthSession();
+  const { experience, capabilities } = useExperienceProfile();
   const { items } = getLocalizedNavigation(locale);
   const activeSection = items.find((link) => isActivePath(pathname, link.href))?.section;
-  const mobileItems = getDailyNavigation(activeSection, auth.user?.role ?? "viewer").daily
+  const navigationValue = experience.navigation.value as NavigationExperienceSettings | undefined;
+  const visibleHrefs = visibleNavHrefs(items, navigationValue, capabilities);
+  const mobileItems = getDailyNavigation(activeSection, auth.user?.role ?? "viewer", visibleHrefs).daily
     .map((item) => items.find((localized) => localized.href === item.href) ?? item);
 
   function openAllRoutes() {

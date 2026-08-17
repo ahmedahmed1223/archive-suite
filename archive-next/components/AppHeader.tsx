@@ -2,12 +2,13 @@
 
 import * as Icons from "lucide-react";
 import { BRAND } from "@/lib/brand";
-import { getLocalizedNavigation, isActivePath } from "@/lib/navigation";
+import { applyNavigationVisibility, getLocalizedNavigation, isActivePath, reorderNavigationSections } from "@/lib/navigation";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
 import { useAuthSession } from "@/lib/auth-session";
+import { useExperienceProfile } from "@/lib/experience-profile-context";
 import Breadcrumb, { type BreadcrumbItem } from "@/components/Breadcrumb";
 import DensityToggle from "@/components/DensityToggle";
 import FocusModeToggle from "@/components/FocusModeToggle";
@@ -18,6 +19,9 @@ import { useTheme } from "@/components/ThemeProvider";
 import { filterGuideChapters, getGuideChapterForPath } from "@/lib/in-app-guide";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { resolveIcon } from "@/lib/icon-registry";
+import type { components } from "@/lib/generated/archive-api";
+
+type NavigationExperienceSettings = components["schemas"]["NavigationExperienceSettings"];
 
 const navIcon = (name: string) => resolveIcon(name, Icons.Circle);
 
@@ -38,6 +42,7 @@ export default function AppHeader({
   const pathname = usePathname() || "/";
   const router = useRouter();
   const auth = useAuthSession();
+  const { experience, capabilities } = useExperienceProfile();
   const theme = useTheme();
   const isLightTheme = theme.settings.currentPreset === LIGHT_PRESET;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -95,11 +100,14 @@ export default function AppHeader({
   const activeLink = items.find((link) => isActivePath(pathname, link.href));
   const activeSection = activeLink?.section;
   const role = auth.user?.role ?? "viewer";
-  const navigationGroups = Object.entries(sections).map(([section, label]) => ({
+  const navigationValue = experience.navigation.value as NavigationExperienceSettings | undefined;
+  const visibleItems = applyNavigationVisibility(items, navigationValue, capabilities);
+  const orderedSections = reorderNavigationSections(sections, navigationValue?.order);
+  const navigationGroups = orderedSections.map(([section, label]) => ({
     section,
     label,
-    items: items.filter((item) => item.section === section)
-  }));
+    items: visibleItems.filter((item) => item.section === section)
+  })).filter((group) => group.items.length > 0);
   const breadcrumbItems: BreadcrumbItem[] = [{ label: t.shell.home, href: "/" }];
   const contextualGuide = getGuideChapterForPath(pathname, filterGuideChapters([
     { id: "viewer-search", title: "", audience: ["viewer", "editor", "admin"] as const, body: "", href: "/search" },

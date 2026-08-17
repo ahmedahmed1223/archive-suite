@@ -18,5 +18,17 @@ export const home = {
   most: "الأكثر",
   quickLinks: { uploads: "إضافة مادة", search: "البحث", collections: "المجموعات", tags: "الوسوم", types: "الأنواع" },
   roles: { admin: "مدير الأرشيف", editor: "محرر إعلامي", viewer: "مشاهد/باحث" },
-  greetings: { admin: "مرحبًا بعودتك، أدر أرشيفك بثقة", editor: "مرحبًا بعودتك، هيا نكمل التوصيف", viewer: "مرحبًا بعودتك، اكتشف ما هو جديد" }
+  greetings: { admin: "مرحبًا بعودتك، أدر أرشيفك بثقة", editor: "مرحبًا بعودتك، هيا نكمل التوصيف", viewer: "مرحبًا بعودتك، اكتشف ما هو جديد" },
+  activity: {
+    ariaLabel: "ملخص النشاط",
+    heading: "ملخص النشاط",
+    loading: "جارٍ حساب ملخص النشاط...",
+    error: "تعذر حساب ملخص النشاط.",
+    weeklyAdditions: "إضافات آخر 7 أيام",
+    descriptionCompletion: "اكتمال الوصف",
+    descriptionCompletionHint: "{complete} من {total} سجلاً بوصف مكتمل",
+    typeDistribution: "توزيع أنواع الوسائط",
+    noData: "لا توجد بيانات كافية بعد",
+    otherTypesLabel: "أنواع أخرى"
+  }
 } as const;

@@ -7,6 +7,9 @@ import AdministrationSection from "./AdministrationSection";
 import MyExperienceSection from "./MyExperienceSection";
 import MediaSection from "./MediaSection";
 import NotificationsSection from "./NotificationsSection";
+import PresetsSection from "./PresetsSection";
+import NavigationCustomizationSection from "./NavigationCustomizationSection";
+import ViewCustomizationSection from "./ViewCustomizationSection";
 
 export default function SettingsHub() {
   const { t } = useLocale();
@@ -56,8 +59,11 @@ export default function SettingsHub() {
 
       <div className="settings-hub__sections">
         {isAdmin && <AdministrationSection capabilities={profile.capabilities} onUpdate={profile.updateCapabilities} />}
+        <PresetsSection onUpdate={profile.updateExperience} />
         <MyExperienceSection experience={profile.experience} onUpdate={profile.updateExperience} />
+        <NavigationCustomizationSection experience={profile.experience} capabilities={profile.capabilities} onUpdate={profile.updateExperience} />
         <MediaSection experience={profile.experience} capabilities={profile.capabilities} onUpdate={profile.updateExperience} />
+        <ViewCustomizationSection experience={profile.experience} onUpdate={profile.updateExperience} />
         <NotificationsSection experience={profile.experience} onUpdate={profile.updateExperience} />
       </div>
     </article>

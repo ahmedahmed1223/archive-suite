@@ -382,6 +382,42 @@ export const settings = {
         rightsExpiring: "Rights approaching expiry",
         mediaJobCompleted: "Media job completed"
       }
+    },
+    presets: {
+      heading: "Ready-made profiles",
+      description: "Applying a profile copies its values into your own experience right away — editing the profile later never changes what you already applied, and it can never hide a mandatory security alert or a module this deployment has disabled.",
+      apply: "Apply",
+      applying: "Applying...",
+      applySuccess: "Profile applied. You can still adjust any value by hand afterward.",
+      applyError: "Could not apply the profile.",
+      items: {
+        archivist: { name: "Archivist", description: "Archive as the landing page, a detailed table view, and capture/organize prioritized in navigation." },
+        reviewer: { name: "Reviewer", description: "Daily queue as the landing page, collaboration and review prioritized, heavy ingest tools hidden." },
+        "media-editor": { name: "Media editor", description: "Media jobs as the landing page, a visual grid view, and system-administration tools hidden from navigation." },
+        simple: { name: "Simple view", description: "The fewest navigation items and archive columns, for fast, uncluttered use." }
+      }
+    },
+    navigationCustomization: {
+      heading: "Navigation customization",
+      description: "Reorder navigation groups and hide what you don't need. Settings and safety can never be hidden, and modules this deployment has disabled never show no matter what you choose.",
+      orderHeading: "Group order",
+      moveUp: "Move up",
+      moveDown: "Move down",
+      visibilityHeading: "Show navigation items",
+      lockedMandatory: "Mandatory item, cannot be hidden",
+      lockedByCapability: "Disabled on this deployment",
+      saveError: "Could not save the navigation setting."
+    },
+    viewCustomization: {
+      heading: "Archive columns and default search",
+      description: "Choose which columns show in the archive table view, and a saved search to use as the default.",
+      columnsHeading: "Columns",
+      columns: { title: "Title", store: "Store", type: "Type", updated: "Last updated" },
+      titleColumnLockedNote: "The title column always stays visible.",
+      filtersHeading: "Default saved search",
+      filtersNone: "None",
+      filtersHint: "Applied whenever you open the archive fresh.",
+      saveError: "Could not save the view setting."
     }
   }
 } as const;
