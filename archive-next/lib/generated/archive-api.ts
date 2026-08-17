@@ -2484,6 +2484,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/review-links/{token}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record an external reviewer's approve / request-changes decision */
+        post: operations["decideReviewLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-links/{token}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream the reviewed media for a public review link (derivative-preferred) */
+        get: operations["getReviewLinkMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-links/{token}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Internal audit report proving version + reviewers + decision for a review link */
+        get: operations["getReviewLinkReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/review-sessions/{id}": {
         parameters: {
             query?: never;
@@ -4402,6 +4453,14 @@ export interface components {
             type: components["schemas"]["RelationType"];
         };
         CreateReviewLinkRequest: {
+            /** @default false */
+            allowDownload?: boolean | null;
+            /** Format: uuid */
+            attachmentId?: string | null;
+            /** Format: uuid */
+            derivativeId?: string | null;
+            /** @description V3-MEDIA-007: configurable link lifetime. Neither this nor expiresAt given still yields a time-bounded link (defaults to 7 days server-side). */
+            durationHours?: number | null;
             /** Format: date-time */
             expiresAt?: string | null;
             /**
@@ -4409,16 +4468,33 @@ export interface components {
              * @enum {string}
              */
             permission?: "view" | "comment";
+            /**
+             * @default 1
+             * @enum {integer|null}
+             */
+            requiredApprovals?: 1 | 2 | null;
+            /** @description Server-validated relative path, trusted only from the authenticated internal creator. Fallback when no derivative is attached or ready. */
+            sourcePath?: string | null;
+            store?: string | null;
+            /**
+             * @default none
+             * @enum {string|null}
+             */
+            watermarkPolicy?: "none" | "visible" | null;
         };
         CreateReviewLinkResponse: components["schemas"]["OkEnvelope"] & {
+            allowDownload?: boolean;
             /** Format: date-time */
             expiresAt?: string | null;
             mediaUid: string;
             path: string;
             /** @enum {string} */
             permission: "view" | "comment";
+            requiredApprovals?: number;
             token: string;
             url: string;
+            /** @enum {string} */
+            watermarkPolicy?: "none" | "visible";
         };
         CreateScheduledUploadRequest: {
             idempotencyKey: string;
@@ -5829,18 +5905,98 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string | null;
         };
+        ReviewLinkDecisionRequest: {
+            /** @enum {string} */
+            decision: "approve" | "request_changes";
+            notes?: string | null;
+            /** Format: email */
+            reviewerEmail?: string | null;
+            reviewerName: string;
+        };
+        ReviewLinkDecisionResponse: components["schemas"]["OkEnvelope"] & {
+            approvals: {
+                received?: number;
+                required?: number;
+            };
+            decision: {
+                /** Format: date-time */
+                decidedAt?: string | null;
+                /** @enum {string} */
+                decision?: "approve" | "request_changes";
+                /** Format: uuid */
+                id?: string;
+                reviewerName?: string;
+            };
+            session: {
+                state?: components["schemas"]["ReviewSessionState"];
+            } | null;
+        };
         ReviewLinkPayloadResponse: components["schemas"]["OkEnvelope"] & {
             comments: components["schemas"]["ReviewComment"][];
             mediaUid: string;
             review: {
+                allowDownload?: boolean;
                 /** Format: date-time */
                 createdAt?: string | null;
+                derivative?: {
+                    derivativeType?: components["schemas"]["MediaDerivativeType"];
+                    /** Format: uuid */
+                    id?: string;
+                    status?: string;
+                } | null;
                 /** Format: date-time */
                 expiresAt?: string | null;
+                isCurrentVersion?: boolean | null;
                 /** @enum {string} */
                 permission: "view" | "comment";
+                requiredApprovals?: number;
                 /** Format: date-time */
                 updatedAt?: string | null;
+                versionToken?: string | null;
+                /** @enum {string} */
+                watermarkPolicy?: "none" | "visible";
+            };
+        };
+        ReviewLinkReportResponse: components["schemas"]["OkEnvelope"] & {
+            /** @description Audit-proof: which version was reviewed, who the reviewers were, and what the decision was. */
+            report: {
+                allowDownload?: boolean;
+                approvals?: {
+                    received?: number;
+                    required?: number;
+                };
+                /** Format: uuid */
+                attachmentId?: string | null;
+                /** Format: date-time */
+                expiresAt?: string | null;
+                isCurrentVersion?: boolean | null;
+                isExpired?: boolean;
+                mediaUid?: string;
+                recordStore?: string | null;
+                requiredApprovals?: number;
+                reviewers?: {
+                    /** Format: date-time */
+                    decidedAt?: string | null;
+                    /** @enum {string} */
+                    decision?: "approve" | "request_changes";
+                    /** Format: uuid */
+                    id?: string;
+                    notes?: string | null;
+                    reviewerEmail?: string | null;
+                    reviewerName?: string;
+                }[];
+                session?: {
+                    /** Format: date-time */
+                    decidedAt?: string | null;
+                    decidedBy?: number | null;
+                    /** Format: uuid */
+                    id?: string;
+                    state?: components["schemas"]["ReviewSessionState"];
+                } | null;
+                token?: string;
+                versionToken?: string | null;
+                /** @enum {string} */
+                watermarkPolicy?: "none" | "visible";
             };
         };
         ReviewRect: {
@@ -11912,6 +12068,86 @@ export interface operations {
                     "application/json": components["schemas"]["ReviewLinkPayloadResponse"];
                 };
             };
+            404: components["responses"]["Error"];
+        };
+    };
+    decideReviewLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewLinkDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Decision recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewLinkDecisionResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+            429: components["responses"]["Error"];
+        };
+    };
+    getReviewLinkMedia: {
+        parameters: {
+            query?: {
+                /** @description Requests an attachment disposition; only honored when the link's allowDownload is true. */
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media bytes (derivative when available and current, otherwise the source) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+            404: components["responses"]["Error"];
+        };
+    };
+    getReviewLinkReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Review link audit report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewLinkReportResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             404: components["responses"]["Error"];
         };
     };

@@ -35,6 +35,9 @@ class RouteScopeTest extends TestCase
         'GET api/v1/public/catalog' => self::V1,
         'GET api/v1/share/{token}' => self::V1,
         'GET api/v1/review-links/{token}' => self::V1,
+        // V3-MEDIA-007: public token-gated media stream + reviewer decision.
+        'GET api/v1/review-links/{token}/media' => self::V1,
+        'POST api/v1/review-links/{token}/decisions' => self::V1,
         'POST api/v1/invitations/{token}/accept' => self::V1,
         'GET api/v1/upload-links/{token}' => self::V1,
         'POST api/v1/auth/login' => self::V1,
@@ -314,6 +317,8 @@ class RouteScopeTest extends TestCase
         'GET api/v1/media/{mediaUid}/review-comments' => self::V1,
         'POST api/v1/media/{mediaUid}/review-comments' => self::V1,
         'POST api/v1/media/{mediaUid}/review-links' => self::V1,
+        // V3-MEDIA-007: internal-only audit report, kept off the public token surface.
+        'GET api/v1/review-links/{token}/report' => self::V1,
         'PATCH api/v1/review-comments/{id}' => self::V1,
         'GET api/v1/records/{id}/review-sessions' => self::V1,
         'POST api/v1/records/{id}/review-sessions' => self::V1,
@@ -402,6 +407,8 @@ class RouteScopeTest extends TestCase
         'GET api/v1/public/catalog',
         'GET api/v1/share/{token}',
         'GET api/v1/review-links/{token}',
+        'GET api/v1/review-links/{token}/media',
+        'POST api/v1/review-links/{token}/decisions',
         'POST api/v1/invitations/{token}/accept',
         'GET api/v1/upload-links/{token}',
         'POST api/v1/auth/login',
@@ -705,6 +712,9 @@ class RouteScopeTest extends TestCase
         'GET api/v1/media/{mediaUid}/review-comments' => self::ROLE_ANY,
         'POST api/v1/media/{mediaUid}/review-comments' => self::ROLE_ANY,
         'POST api/v1/media/{mediaUid}/review-links' => self::ROLE_ANY,
+        // V3-MEDIA-007: internal audit report requires editor, matching every
+        // other review_links mutation/read that isn't on the public token surface.
+        'GET api/v1/review-links/{token}/report' => self::ROLE_EDITOR,
         'PATCH api/v1/review-comments/{id}' => self::ROLE_ANY,
         // V3-MEDIA-002: reads only require auth; every state transition and
         // mutation requires editor (or admin) via Controller::requireEditor().

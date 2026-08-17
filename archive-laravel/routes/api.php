@@ -219,6 +219,14 @@ Route::prefix('v1')->group(function (): void {
     // and unrelated traffic on one route silently exhausts another's budget.
     Route::get('/share/{token}', [ShareController::class, 'show'])->middleware('throttle:30,1,share-view');
     Route::get('/review-links/{token}', [ReviewLinksController::class, 'show'])->middleware('throttle:30,1,review-link-view');
+    // V3-MEDIA-007: media stream needs a roomier budget than the metadata
+    // read above (video seeking issues many ranged GETs per playback), and
+    // the decision endpoint is throttled on its own prefix since it is a
+    // distinct, lower-frequency, higher-value action (approve/request
+    // changes) that a token-guessing sweep would otherwise share a budget
+    // with the read endpoints for.
+    Route::get('/review-links/{token}/media', [ReviewLinksController::class, 'media'])->middleware('throttle:60,1,review-link-media');
+    Route::post('/review-links/{token}/decisions', [ReviewLinksController::class, 'decide'])->middleware('throttle:20,1,review-link-decide');
     Route::post('/invitations/{token}/accept', [InvitationsController::class, 'accept'])->middleware('throttle:30,1,invitation-accept');
     // Public validation for external upload-link recipients (no archive session).
     Route::get('/upload-links/{token}', [UploadLinksController::class, 'show'])->middleware('throttle:30,1,upload-link-view');
@@ -551,6 +559,10 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'index']);
         Route::post('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'store']);
         Route::post('/media/{mediaUid}/review-links', [ReviewLinksController::class, 'store']);
+        // Internal-only audit report (version + reviewers + decision) --
+        // kept off the public token surface, see ReviewLinksController::
+        // report() docblock.
+        Route::get('/review-links/{token}/report', [ReviewLinksController::class, 'report']);
         Route::patch('/review-comments/{id}', [ReviewCommentsController::class, 'update']);
 
         Route::get('/review-sessions/{id}', [ReviewSessionsController::class, 'show']);

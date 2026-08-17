@@ -4036,6 +4036,100 @@
         }
       }
     },
+    "/review-links/{token}/media": {
+      "get": {
+        "tags": ["Review"],
+        "summary": "Stream the reviewed media for a public review link (derivative-preferred)",
+        "operationId": "getReviewLinkMedia",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean" },
+            "description": "Requests an attachment disposition; only honored when the link's allowDownload is true."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media bytes (derivative when available and current, otherwise the source)",
+            "content": { "*/*": { "schema": { "type": "string", "format": "binary" } } }
+          },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-links/{token}/decisions": {
+      "post": {
+        "tags": ["Review"],
+        "summary": "Record an external reviewer's approve / request-changes decision",
+        "operationId": "decideReviewLink",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewLinkDecisionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Decision recorded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewLinkDecisionResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-links/{token}/report": {
+      "get": {
+        "tags": ["Review"],
+        "summary": "Internal audit report proving version + reviewers + decision for a review link",
+        "operationId": "getReviewLinkReport",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review link audit report",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewLinkReportResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/collaboration/rooms/{roomKey}/presence": {
       "get": {
         "tags": ["Collaboration"],
@@ -8812,7 +8906,21 @@
         "type": "object",
         "properties": {
           "permission": { "type": "string", "enum": ["view", "comment"], "default": "view" },
-          "expiresAt": { "type": ["string", "null"], "format": "date-time" }
+          "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+          "durationHours": {
+            "type": ["number", "null"],
+            "description": "V3-MEDIA-007: configurable link lifetime. Neither this nor expiresAt given still yields a time-bounded link (defaults to 7 days server-side)."
+          },
+          "store": { "type": ["string", "null"] },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "sourcePath": {
+            "type": ["string", "null"],
+            "description": "Server-validated relative path, trusted only from the authenticated internal creator. Fallback when no derivative is attached or ready."
+          },
+          "derivativeId": { "type": ["string", "null"], "format": "uuid" },
+          "allowDownload": { "type": ["boolean", "null"], "default": false },
+          "watermarkPolicy": { "type": ["string", "null"], "enum": ["none", "visible"], "default": "none" },
+          "requiredApprovals": { "type": ["integer", "null"], "enum": [1, 2], "default": 1 }
         }
       },
       "CreateReviewLinkResponse": {
@@ -8827,7 +8935,10 @@
               "path": { "type": "string" },
               "mediaUid": { "type": "string" },
               "permission": { "type": "string", "enum": ["view", "comment"] },
-              "expiresAt": { "type": ["string", "null"], "format": "date-time" }
+              "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+              "allowDownload": { "type": "boolean" },
+              "watermarkPolicy": { "type": "string", "enum": ["none", "visible"] },
+              "requiredApprovals": { "type": "integer" }
             }
           }
         ]
@@ -8847,12 +8958,125 @@
                   "permission": { "type": "string", "enum": ["view", "comment"] },
                   "expiresAt": { "type": ["string", "null"], "format": "date-time" },
                   "createdAt": { "type": ["string", "null"], "format": "date-time" },
-                  "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+                  "updatedAt": { "type": ["string", "null"], "format": "date-time" },
+                  "allowDownload": { "type": "boolean" },
+                  "watermarkPolicy": { "type": "string", "enum": ["none", "visible"] },
+                  "requiredApprovals": { "type": "integer" },
+                  "versionToken": { "type": ["string", "null"] },
+                  "isCurrentVersion": { "type": ["boolean", "null"] },
+                  "derivative": {
+                    "type": ["object", "null"],
+                    "properties": {
+                      "id": { "type": "string", "format": "uuid" },
+                      "derivativeType": { "$ref": "#/components/schemas/MediaDerivativeType" },
+                      "status": { "type": "string" }
+                    }
+                  }
                 }
               },
               "comments": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/ReviewComment" }
+              }
+            }
+          }
+        ]
+      },
+      "ReviewLinkDecisionRequest": {
+        "type": "object",
+        "required": ["reviewerName", "decision"],
+        "properties": {
+          "reviewerName": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "reviewerEmail": { "type": ["string", "null"], "format": "email" },
+          "decision": { "type": "string", "enum": ["approve", "request_changes"] },
+          "notes": { "type": ["string", "null"], "maxLength": 4000 }
+        },
+        "additionalProperties": false
+      },
+      "ReviewLinkDecisionResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["decision", "session", "approvals"],
+            "properties": {
+              "decision": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "reviewerName": { "type": "string" },
+                  "decision": { "type": "string", "enum": ["approve", "request_changes"] },
+                  "decidedAt": { "type": ["string", "null"], "format": "date-time" }
+                }
+              },
+              "session": {
+                "type": ["object", "null"],
+                "properties": { "state": { "$ref": "#/components/schemas/ReviewSessionState" } }
+              },
+              "approvals": {
+                "type": "object",
+                "properties": {
+                  "required": { "type": "integer" },
+                  "received": { "type": "integer" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ReviewLinkReportResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["report"],
+            "properties": {
+              "report": {
+                "type": "object",
+                "description": "Audit-proof: which version was reviewed, who the reviewers were, and what the decision was.",
+                "properties": {
+                  "token": { "type": "string" },
+                  "mediaUid": { "type": "string" },
+                  "recordStore": { "type": ["string", "null"] },
+                  "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+                  "versionToken": { "type": ["string", "null"] },
+                  "isCurrentVersion": { "type": ["boolean", "null"] },
+                  "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+                  "isExpired": { "type": "boolean" },
+                  "allowDownload": { "type": "boolean" },
+                  "watermarkPolicy": { "type": "string", "enum": ["none", "visible"] },
+                  "requiredApprovals": { "type": "integer" },
+                  "session": {
+                    "type": ["object", "null"],
+                    "properties": {
+                      "id": { "type": "string", "format": "uuid" },
+                      "state": { "$ref": "#/components/schemas/ReviewSessionState" },
+                      "decidedBy": { "type": ["integer", "null"] },
+                      "decidedAt": { "type": ["string", "null"], "format": "date-time" }
+                    }
+                  },
+                  "reviewers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "reviewerName": { "type": "string" },
+                        "reviewerEmail": { "type": ["string", "null"] },
+                        "decision": { "type": "string", "enum": ["approve", "request_changes"] },
+                        "notes": { "type": ["string", "null"] },
+                        "decidedAt": { "type": ["string", "null"], "format": "date-time" }
+                      }
+                    }
+                  },
+                  "approvals": {
+                    "type": "object",
+                    "properties": {
+                      "required": { "type": "integer" },
+                      "received": { "type": "integer" }
+                    }
+                  }
+                }
               }
             }
           }

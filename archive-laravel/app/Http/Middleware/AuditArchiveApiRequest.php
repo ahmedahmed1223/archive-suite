@@ -86,6 +86,11 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/review-sessions/{id}/approve'] => ['review_sessions.approve', 'review_session'],
             ['POST', 'api/v1/review-sessions/{id}/resume'] => ['review_sessions.resume', 'review_session'],
             ['POST', 'api/v1/review-sessions/{id}/close'] => ['review_sessions.close', 'review_session'],
+            // V3-MEDIA-007: resourceId intentionally left unset below (falls
+            // through to null) -- mirrors share.create, since the response
+            // carries the newly minted bearer token and that must not be
+            // persisted into the permanent audit trail either.
+            ['POST', 'api/v1/media/{mediaUid}/review-links'] => ['review_links.create', 'review_link'],
             ['POST', 'api/v1/records/{id}/clips'] => ['media_clips.create', 'media_clip'],
             ['PATCH', 'api/v1/clips/{id}'] => ['media_clips.update', 'media_clip'],
             ['DELETE', 'api/v1/clips/{id}'] => ['media_clips.delete', 'media_clip'],
