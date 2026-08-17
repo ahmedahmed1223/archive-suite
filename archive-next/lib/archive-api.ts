@@ -1392,18 +1392,89 @@ export interface ReviewComment {
 }
 
 export type ReviewLinkPermission = "view" | "comment";
+export type ReviewLinkWatermarkPolicy = "none" | "visible";
+export type ReviewLinkDecisionValue = "approve" | "request_changes";
 
 export interface ReviewLinkMetadata {
   permission: ReviewLinkPermission;
   expiresAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  allowDownload?: boolean;
+  watermarkPolicy?: ReviewLinkWatermarkPolicy;
+  requiredApprovals?: number;
+  versionToken?: string | null;
+  isCurrentVersion?: boolean | null;
+  derivative?: { id: string; derivativeType: MediaDerivativeType; status: string } | null;
 }
 
 export interface ReviewLinkDetails {
   mediaUid: string;
   review: ReviewLinkMetadata;
   comments: ReviewComment[];
+}
+
+export interface CreateReviewLinkPayload {
+  mediaUid: string;
+  permission?: ReviewLinkPermission;
+  expiresAt?: string;
+  durationHours?: number;
+  store?: string;
+  attachmentId?: string;
+  sourcePath?: string;
+  derivativeId?: string;
+  allowDownload?: boolean;
+  watermarkPolicy?: ReviewLinkWatermarkPolicy;
+  requiredApprovals?: 1 | 2;
+}
+
+export interface CreateReviewLinkResult {
+  token: string;
+  url?: string;
+  path?: string;
+  mediaUid: string;
+  permission: ReviewLinkPermission;
+  expiresAt?: string | null;
+  allowDownload?: boolean;
+  watermarkPolicy?: ReviewLinkWatermarkPolicy;
+  requiredApprovals?: number;
+}
+
+export interface ReviewLinkDecisionPayload {
+  reviewerName: string;
+  reviewerEmail?: string;
+  decision: ReviewLinkDecisionValue;
+  notes?: string;
+}
+
+export interface ReviewLinkDecisionResult {
+  decision: { id: string; reviewerName: string; decision: ReviewLinkDecisionValue; decidedAt?: string | null };
+  session: { state: string } | null;
+  approvals: { required: number; received: number };
+}
+
+export interface ReviewLinkReport {
+  token: string;
+  mediaUid: string;
+  recordStore: string | null;
+  attachmentId: string | null;
+  versionToken: string | null;
+  isCurrentVersion: boolean | null;
+  expiresAt: string | null;
+  isExpired: boolean;
+  allowDownload: boolean;
+  watermarkPolicy: ReviewLinkWatermarkPolicy;
+  requiredApprovals: number;
+  session: { id: string; state: string; decidedBy: number | null; decidedAt: string | null } | null;
+  reviewers: Array<{
+    id: string;
+    reviewerName: string;
+    reviewerEmail: string | null;
+    decision: ReviewLinkDecisionValue;
+    notes: string | null;
+    decidedAt: string | null;
+  }>;
+  approvals: { required: number; received: number };
 }
 
 export type CollaborationStatus = "active" | "viewing" | "reviewing" | "editing" | "idle";
@@ -1707,7 +1778,10 @@ export interface ArchiveApiClient {
   resolveMediaReviewComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: MediaReviewComment }>>;
   reopenMediaReviewComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: MediaReviewComment }>>;
   reviewLink(token: string): Promise<ApiEnvelope<ReviewLinkDetails>>;
-  createReviewLink(payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>>;
+  createReviewLink(payload: CreateReviewLinkPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<CreateReviewLinkResult>>;
+  reviewLinkMediaUrl(token: string): string;
+  decideReviewLink(token: string, payload: ReviewLinkDecisionPayload): Promise<ApiEnvelope<ReviewLinkDecisionResult>>;
+  reviewLinkReport(token: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ report: ReviewLinkReport }>>;
   collaborationPresence(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
   sendCollaborationHeartbeat(roomKey: string, payload?: { status?: CollaborationStatus; resourceId?: string; cursor?: Record<string, unknown> }, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
   collaborationLocks(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationLocksPayload>>;
@@ -2722,12 +2796,31 @@ export function createArchiveApiClient({
       get<{ derivative: MediaDerivative }>(`/media-derivatives/${encodeURIComponent(id)}`, options),
     reviewLink: (token: string) =>
       get<ReviewLinkDetails>(`/review-links/${encodeURIComponent(token)}`),
-    createReviewLink: (payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions) =>
-      post<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>(
+    createReviewLink: (payload: CreateReviewLinkPayload, options?: AuthRequestOptions) =>
+      post<CreateReviewLinkResult>(
         `/media/${encodeURIComponent(payload.mediaUid)}/review-links`,
-        { permission: payload.permission, expiresAt: payload.expiresAt },
+        {
+          permission: payload.permission,
+          expiresAt: payload.expiresAt,
+          durationHours: payload.durationHours,
+          store: payload.store,
+          attachmentId: payload.attachmentId,
+          sourcePath: payload.sourcePath,
+          derivativeId: payload.derivativeId,
+          allowDownload: payload.allowDownload,
+          watermarkPolicy: payload.watermarkPolicy,
+          requiredApprovals: payload.requiredApprovals
+        },
         options
       ),
+    // Not a fetch call: the token is embedded directly in a <video>/<audio>/
+    // <img> src so the browser streams (and range-requests) it natively,
+    // same pattern the rest of the app uses for direct media URLs.
+    reviewLinkMediaUrl: (token: string) => `${baseUrl}/review-links/${encodeURIComponent(token)}/media`,
+    decideReviewLink: (token: string, payload: ReviewLinkDecisionPayload) =>
+      post<ReviewLinkDecisionResult>(`/review-links/${encodeURIComponent(token)}/decisions`, payload),
+    reviewLinkReport: (token: string, options?: AuthRequestOptions) =>
+      get<{ report: ReviewLinkReport }>(`/review-links/${encodeURIComponent(token)}/report`, options),
     listUsers: (options?: AuthRequestOptions) =>
       get<{ users: ManagedUser[]; invitations: PendingInvitation[] }>("/users", options),
     mentionableUsers: (options?: AuthRequestOptions) =>

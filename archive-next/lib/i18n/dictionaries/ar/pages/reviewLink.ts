@@ -25,6 +25,30 @@ export const reviewLink = {
       expired: "منتهية",
       soon: "تنتهي قريبًا",
       active: "نشطة"
+    },
+    media: {
+      title: "المادة قيد المراجعة",
+      unavailable: "لا تتوفر مادة معروضة عبر هذا الرابط حتى الآن.",
+      watermarkBanner: "نسخة مراجعة تحمل علامة مائية — غير مخصصة للتوزيع",
+      downloadLabel: "تنزيل"
+    },
+    decision: {
+      title: "قرارك",
+      reviewerNameLabel: "اسمك",
+      reviewerNamePlaceholder: "أدخل اسمك",
+      reviewerEmailLabel: "بريدك الإلكتروني (اختياري)",
+      notesLabel: "ملاحظات (اختياري)",
+      notesPlaceholder: "أضف سياقًا لقرارك",
+      approve: "موافقة",
+      requestChanges: "طلب تعديلات",
+      submitting: "جارٍ الإرسال…",
+      submitted: "تم تسجيل القرار",
+      approvedFull: "تمت الموافقة — اكتمل عدد الموافقات المطلوب",
+      approvalsProgress: "الموافقات الواردة: {received} من {required}",
+      changesRequested: "طُلبت تعديلات",
+      reviewerNameRequired: "أدخل اسمك قبل إرسال القرار.",
+      errorGeneric: "تعذر إرسال قرارك. قد يكون الرابط منتهي الصلاحية.",
+      sessionState: "حالة المراجعة"
     }
   }
 } as const;

@@ -25,6 +25,30 @@ export const reviewLink = {
       expired: "Expired",
       soon: "Expires soon",
       active: "Active"
+    },
+    media: {
+      title: "Reviewed media",
+      unavailable: "No media is available through this link yet.",
+      watermarkBanner: "Watermarked review copy — not for distribution",
+      downloadLabel: "Download"
+    },
+    decision: {
+      title: "Your decision",
+      reviewerNameLabel: "Your name",
+      reviewerNamePlaceholder: "Enter your name",
+      reviewerEmailLabel: "Your email (optional)",
+      notesLabel: "Notes (optional)",
+      notesPlaceholder: "Add context for your decision",
+      approve: "Approve",
+      requestChanges: "Request changes",
+      submitting: "Submitting…",
+      submitted: "Decision recorded",
+      approvedFull: "Approved — required approvals reached",
+      approvalsProgress: "Approvals received: {received} of {required}",
+      changesRequested: "Changes requested",
+      reviewerNameRequired: "Enter your name before submitting a decision.",
+      errorGeneric: "Could not submit your decision. The link may have expired.",
+      sessionState: "Review status"
     }
   }
 } as const;

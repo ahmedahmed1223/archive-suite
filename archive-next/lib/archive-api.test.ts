@@ -192,6 +192,58 @@ describe("bulk macro API client", () => {
   });
 });
 
+describe("review link external review API client", () => {
+  it("builds the derivative-preferred media URL without a fetch call", () => {
+    const api = createArchiveApiClient({ baseUrl: "http://archive.test/api/v1" });
+
+    expect(api.reviewLinkMediaUrl("tok_123")).toBe("http://archive.test/api/v1/review-links/tok_123/media");
+  });
+
+  it("posts a reviewer decision without an access token (public token-gated route)", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(Response.json({
+      ok: true,
+      decision: { id: "dec-1", reviewerName: "Sara", decision: "approve", decidedAt: "2026-01-01T00:00:00.000Z" },
+      session: { state: "approved" },
+      approvals: { required: 1, received: 1 }
+    }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    const response = await api.decideReviewLink("tok_123", { reviewerName: "Sara", decision: "approve" });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "/api/v1/review-links/tok_123/decisions",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ reviewerName: "Sara", decision: "approve" }) })
+    );
+    if (!response.ok) throw new Error("Expected a successful decision response");
+    expect(response.approvals).toEqual({ required: 1, received: 1 });
+  });
+
+  it("passes the extended create-link fields through to the request body", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(Response.json({
+      ok: true,
+      token: "tok_456",
+      mediaUid: "record-1",
+      permission: "comment",
+      allowDownload: true,
+      watermarkPolicy: "visible",
+      requiredApprovals: 2
+    }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    await api.createReviewLink({
+      mediaUid: "record-1",
+      permission: "comment",
+      durationHours: 48,
+      allowDownload: true,
+      watermarkPolicy: "visible",
+      requiredApprovals: 2
+    });
+
+    const body = JSON.parse((fetchImpl.mock.calls[0]?.[1] as RequestInit).body as string);
+    expect(body).toMatchObject({ durationHours: 48, allowDownload: true, watermarkPolicy: "visible", requiredApprovals: 2 });
+  });
+});
+
 // V1-818: Arabic error text is keyed on the machine `code`, not the English
 // sentence. V1-815 guarantees every {ok:false} envelope carries one.
 describe("Arabic API error localization", () => {
