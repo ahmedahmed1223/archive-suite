@@ -3,6 +3,7 @@
 namespace App\Services\Ingest;
 
 use App\Jobs\ProcessMediaWorkflow;
+use App\Support\RequestCorrelation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -154,6 +155,6 @@ class IngestScanner
         ]);
 
         // Dispatch job via Laravel queue
-        ProcessMediaWorkflow::dispatch($jobId);
+        ProcessMediaWorkflow::dispatch($jobId, RequestCorrelation::id());
     }
 }

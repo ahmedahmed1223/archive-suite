@@ -22,9 +22,37 @@ final class CorrelateRequest
         $request->attributes->set('request_id', $requestId);
         Log::withContext(['request_id' => $requestId]);
 
+        $startedAt = microtime(true);
         $response = $next($request);
+        $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+
         $response->headers->set('X-Request-ID', $requestId);
 
+        $this->logIfSlow($request, $response, $requestId, $durationMs);
+
         return $response;
+    }
+
+    /**
+     * Allowlisted metadata only -- never the request/response body, headers,
+     * query string, or a filesystem path. `route` is the route pattern
+     * (e.g. "api/v1/records/{id}"), matching the convention already used by
+     * AuditArchiveApiRequest, not the resolved path with real values.
+     */
+    private function logIfSlow(Request $request, Response $response, string $requestId, int $durationMs): void
+    {
+        $threshold = (int) config('observability.slow_request_threshold_ms', 1000);
+        if ($durationMs < $threshold) {
+            return;
+        }
+
+        Log::warning('slow_request', [
+            'request_id' => $requestId,
+            'method' => $request->method(),
+            'route' => $request->route()?->uri() ?? $request->path(),
+            'status' => $response->getStatusCode(),
+            'duration_ms' => $durationMs,
+            'timestamp' => now()->toIso8601String(),
+        ]);
     }
 }

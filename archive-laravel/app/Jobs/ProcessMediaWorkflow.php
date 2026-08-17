@@ -8,6 +8,7 @@ use App\Models\MediaJob;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaQueueStatusBroadcaster;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -35,8 +36,27 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
     /** How long the uniqueId() lock is held (seconds). */
     public int $uniqueFor;
 
-    public function __construct(public readonly string $mediaJobId)
-    {
+    /** ISO-8601 timestamp this job instance was constructed (== enqueued). */
+    public readonly string $dispatchedAt;
+
+    /**
+     * requestId/dispatchedAt are optional so existing dispatch(...) call
+     * sites and direct `new ProcessMediaWorkflow($id)` construction (tests,
+     * console-triggered ingest scans) keep working unchanged. dispatchedAt
+     * defaults to construction time -- right before the job enters the
+     * queue at every call site -- so handle() can compute how long it
+     * actually waited (a readonly promoted property can't be reassigned to
+     * apply that default, hence the explicit property above).
+     */
+    public function __construct(
+        public readonly string $mediaJobId,
+        public readonly ?string $requestId = null,
+        ?string $dispatchedAt = null,
+    ) {
+        // toISOString() (not toIso8601String()) so sub-second precision
+        // survives the round trip -- a job constructed and handled within
+        // the same second must still report a non-zero queue wait.
+        $this->dispatchedAt = $dispatchedAt ?? CarbonImmutable::now()->toISOString();
         $this->timeout = (int) config('media.job_timeout_seconds', 900);
         $this->tries = (int) config('media.job_tries', 3);
         $this->uniqueFor = (int) config('media.job_unique_for_seconds', 3600);
@@ -79,6 +99,11 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
         // the queue system's own container method-injection — don't all need
         // a second explicit argument.
         $broadcaster ??= app(MediaJobProgressBroadcaster::class);
+
+        if ($this->requestId !== null) {
+            Log::withContext(['request_id' => $this->requestId]);
+        }
+        $this->logIfSlowQueueWait();
 
         $mediaJob = MediaJob::query()->find($this->mediaJobId);
 
@@ -156,6 +181,29 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             'completed_at' => now(),
         ])->save();
         app(MediaJobProgressBroadcaster::class)->notify($mediaJob);
+    }
+
+    /**
+     * V3-PERF-002: allowlisted metadata only, mirroring CorrelateRequest's
+     * slow_request event -- request id, timing, no mediaJobId/path/payload.
+     */
+    private function logIfSlowQueueWait(): void
+    {
+        // diffInMilliseconds returns a signed float here (dispatchedAt - now,
+        // not the unsigned int the method name implies), so round+abs it
+        // explicitly rather than trust the sign or the fractional part.
+        $queueWaitMs = (int) round(abs(CarbonImmutable::now()->diffInMilliseconds(CarbonImmutable::parse($this->dispatchedAt))));
+        $threshold = (int) config('observability.slow_queue_wait_threshold_ms', 5000);
+        if ($queueWaitMs < $threshold) {
+            return;
+        }
+
+        Log::warning('slow_queue_job', [
+            'request_id' => $this->requestId,
+            'job' => 'ProcessMediaWorkflow',
+            'queue_wait_ms' => $queueWaitMs,
+            'timestamp' => now()->toIso8601String(),
+        ]);
     }
 
     /**
