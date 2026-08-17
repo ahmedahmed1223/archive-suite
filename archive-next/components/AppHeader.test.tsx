@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import AppHeader from "./AppHeader";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+import { DEFAULT_CAPABILITIES, DEFAULT_EXPERIENCE } from "@/lib/experience-profile";
 
 const mockUseAuthSession = vi.fn();
 const mockUsePathname = vi.fn();
@@ -10,6 +11,14 @@ const mockUsePathname = vi.fn();
 vi.mock("next/link", () => ({ default: ({ children, ...props }: React.ComponentProps<"a">) => <a {...props}>{children}</a> }));
 vi.mock("next/navigation", () => ({ usePathname: () => mockUsePathname(), useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock("@/lib/auth-session", () => ({ useAuthSession: () => mockUseAuthSession() }));
+// V3-SET-006: AppHeader now reads navigation.order/hiddenModules and
+// capability status straight from the experience profile to decide which
+// nav groups/items render. The rest of this suite exercises the default
+// (nothing hidden, everything enabled) case; navigation.test.ts and
+// experience-presets.test.ts cover the filtering/reordering logic itself.
+vi.mock("@/lib/experience-profile-context", () => ({
+  useExperienceProfile: () => ({ experience: DEFAULT_EXPERIENCE, capabilities: DEFAULT_CAPABILITIES })
+}));
 vi.mock("@/components/CommandPalette", () => ({ openCommandPalette: vi.fn() }));
 vi.mock("@/components/DensityToggle", () => ({ default: () => null }));
 vi.mock("@/components/FocusModeToggle", () => ({ default: () => null }));

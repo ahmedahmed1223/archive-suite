@@ -1,4 +1,8 @@
 import { getDictionary } from "./i18n/dictionaries";
+import type { Capabilities, CapabilityKey } from "./experience-profile";
+import type { components } from "./generated/archive-api";
+
+type NavigationExperienceSettings = components["schemas"]["NavigationExperienceSettings"];
 
 const navItemMeta = [
   // ── الإدخال والمعالجة ──
@@ -89,19 +93,125 @@ const roleHomeSection: Record<NavigationRole, NavSection> = {
   viewer: "library"
 };
 
-export function getDailyNavigation(section: NavSection | undefined, role: NavigationRole = "viewer") {
+/**
+ * `visibleHrefs`, when passed, restricts both the daily bar and the "more"
+ * groups to that set -- used to apply a user's/preset's navigation
+ * customization (V3-SET-006) to the mobile bar the same way the desktop
+ * sidebar applies it. Omit it to get the full unfiltered navigation, which
+ * keeps every existing call site (and the existing unit test) unchanged.
+ */
+export function getDailyNavigation(
+  section: NavSection | undefined,
+  role: NavigationRole = "viewer",
+  visibleHrefs?: ReadonlySet<string>
+) {
   const focusedSection = section ?? roleHomeSection[role];
   const dailyHrefs = new Set(dailyRoutes[focusedSection]);
-  const daily = primaryNav.filter((item) => dailyHrefs.has(item.href));
+  const source = visibleHrefs ? primaryNav.filter((item) => visibleHrefs.has(item.href)) : primaryNav;
+  const daily = source.filter((item) => dailyHrefs.has(item.href));
   const more = (Object.keys(navSectionLabels) as NavSection[])
     .map((groupSection) => ({
       section: groupSection,
       label: navSectionLabels[groupSection],
-      items: primaryNav.filter((item) => item.section === groupSection && !dailyHrefs.has(item.href))
+      items: source.filter((item) => item.section === groupSection && !dailyHrefs.has(item.href))
     }))
     .filter((group) => group.items.length > 0);
 
   return { daily, more };
+}
+
+// ── V3-SET-006: navigation customization (presets + settings hub) ──
+//
+// Two independent gates decide whether a nav item renders, applied in this
+// order:
+//   1. Capability gate (deployment truth, server-sourced): a module whose
+//      backing capability is not "enabled" on this deployment never renders,
+//      no matter what the user's preference says. A preset cannot turn it on.
+//   2. Mandatory gate: /settings and /safety-preview always render once they
+//      pass the capability gate -- a preset or a user's own hiddenModules
+//      list can never remove them. /safety-preview is the "mandatory
+//      security alert" surface named in the acceptance criteria.
+// Everything else is hidden only if the user (directly, or via an applied
+// preset's one-time copy) added it to navigation.hiddenModules.
+export const NAV_MODULE_CAPABILITY: Readonly<Partial<Record<string, CapabilityKey>>> = {
+  "/system/control": "systemControl",
+  "/backup": "backups",
+  "/trash": "trash",
+  "/data-center": "odbc",
+  "/broadcast": "broadcastMetadata",
+  "/discover": "semanticSearch",
+  "/media/jobs": "mediaProcessing",
+  "/transcriber": "ocr",
+  "/plugins": "mcp"
+};
+
+export const MANDATORY_NAV_HREFS: readonly string[] = ["/settings", "/safety-preview"];
+
+export function isMandatoryNavHref(href: string): boolean {
+  return MANDATORY_NAV_HREFS.includes(href);
+}
+
+export function isNavHrefCapabilityLocked(href: string, capabilities: Capabilities): boolean {
+  const capabilityKey = NAV_MODULE_CAPABILITY[href];
+  if (!capabilityKey) return false;
+  return capabilities[capabilityKey].status !== "enabled";
+}
+
+/** Full set of hrefs that are allowed to render for this user right now. */
+export function visibleNavHrefs(
+  items: readonly { href: string }[],
+  navigation: NavigationExperienceSettings | undefined,
+  capabilities: Capabilities
+): Set<string> {
+  const hidden = new Set(navigation?.hiddenModules ?? []);
+  const visible = new Set<string>();
+
+  for (const item of items) {
+    if (isNavHrefCapabilityLocked(item.href, capabilities)) continue;
+    if (isMandatoryNavHref(item.href) || !hidden.has(item.href)) visible.add(item.href);
+  }
+
+  return visible;
+}
+
+export function applyNavigationVisibility<T extends { href: string }>(
+  items: readonly T[],
+  navigation: NavigationExperienceSettings | undefined,
+  capabilities: Capabilities
+): T[] {
+  const visible = visibleNavHrefs(items, navigation, capabilities);
+  return items.filter((item) => visible.has(item.href));
+}
+
+/**
+ * Reorders section groups per `navigation.order` (a list of section keys).
+ * Sections not named in `order` keep their original relative order,
+ * appended after the ones the user did place.
+ */
+export function reorderNavigationSections<S extends string>(
+  sections: Record<S, string>,
+  order: readonly string[] | undefined
+): Array<[S, string]> {
+  const entries = Object.entries(sections) as Array<[S, string]>;
+  if (!order || order.length === 0) return entries;
+
+  const bySection = new Map<string, string>(entries);
+  const ordered: Array<[S, string]> = [];
+  const seen = new Set<string>();
+
+  for (const key of order) {
+    const label = bySection.get(key);
+    if (label !== undefined && !seen.has(key)) {
+      ordered.push([key as S, label]);
+      seen.add(key);
+    }
+  }
+
+  for (const [key, label] of entries) {
+    if (!seen.has(key)) ordered.push([key, label]);
+  }
+
+  return ordered;
 }
 
 export function isActivePath(pathname: string, href: string) {
