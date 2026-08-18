@@ -17,7 +17,7 @@ const manifest: readonly GuideManifestEntry[] = [
   { id: "files-previews", titles: { ar: "الملفات والمعاينات والتنزيل", en: "Files, previews, and downloads" }, audience: ["viewer", "editor", "admin"], href: "/files", sourceStem: "files-previews" },
   { id: "rights-sharing", titles: { ar: "الحقوق والمشاركة", en: "Rights and sharing" }, audience: ["viewer", "editor", "admin"], href: "/rights", sourceStem: "rights-sharing" },
   { id: "editor-upload", titles: { ar: "إضافة المواد ووصفها", en: "Add and describe materials" }, audience: ["editor", "admin"], href: "/uploads", sourceStem: "editor-upload" },
-  { id: "collaboration-projects", titles: { ar: "المجموعات والمشاريع والتعاون", en: "Projects and collaboration" }, audience: ["editor", "admin"], href: "/projects", sourceStem: "collaboration-projects" },
+  { id: "collaboration-projects", titles: { ar: "المجموعات والمشاريع والتعاون", en: "Projects and collaboration" }, audience: ["editor", "admin"], href: "/project-groups", sourceStem: "collaboration-projects" },
   { id: "media-review", titles: { ar: "معالجة الوسائط ومراجعتها", en: "Media processing and review" }, audience: ["editor", "admin"], href: "/media/jobs", sourceStem: "media-review" },
   { id: "users-permissions", titles: { ar: "المستخدمون والأدوار والصلاحيات", en: "Users, roles, and permissions" }, audience: ["admin"], href: "/settings/users", sourceStem: "users-permissions" },
   { id: "settings-integrations", titles: { ar: "الإعدادات والتخزين والتكاملات", en: "Settings, storage, and integrations" }, audience: ["admin"], href: "/settings", sourceStem: "settings-integrations" },
