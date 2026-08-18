@@ -71,11 +71,7 @@ export interface ArchiveUser {
   totpEnabled?: boolean;
 }
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-  rememberMe?: boolean;
-}
+export type LoginRequest = GeneratedSchemas["LoginRequest"];
 
 export interface AuthSession {
   user: ArchiveUser;
@@ -137,11 +133,7 @@ export interface CreateScheduledUploadPayload {
   record: Pick<ArchiveRecord, "title" | "type" | "subtype" | "tags" | "metadata">;
 }
 
-export interface RescheduleUploadRequest {
-  scheduledAt: string;
-  timeZone: string;
-  version: number;
-}
+export type RescheduleUploadRequest = GeneratedSchemas["RescheduleUploadRequest"];
 
 export interface SearchSuggestion {
   kind: "record" | "tag" | "type" | "recent";
@@ -150,62 +142,21 @@ export interface SearchSuggestion {
   recordId?: string;
 }
 
-export interface PublicCatalogRecord {
-  id: string;
-  uid: string;
-  title: string;
-  description?: string | null;
-  type?: string | null;
-  subtype?: string | null;
-  tags: string[];
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
+export type PublicCatalogRecord = GeneratedSchemas["PublicCatalogRecord"];
 
 export type PluginPermissionRisk = "low" | "medium" | "high" | string;
 export type PluginStatus = "reviewed" | "draft" | "blocked" | string;
 export type PluginCategory = "metadata" | "workflow" | "ai" | "integration" | string;
 
-export interface PluginRuntimePolicy {
-  mode: string;
-  allowsRemoteInstall: boolean;
-  allowsCodeExecution: boolean;
-  requiresAdminReview: boolean;
-  description: string;
-}
+export type PluginRuntimePolicy = GeneratedSchemas["PluginRuntimePolicy"];
 
-export interface PluginPermission {
-  scope: string;
-  risk: PluginPermissionRisk;
-  reason: string;
-}
+export type PluginPermission = GeneratedSchemas["PluginPermission"];
 
-export interface PluginSecurityReview {
-  networkAccess: boolean;
-  fileSystemAccess: boolean;
-  executesCode: boolean;
-  dataLeavesTenant: boolean;
-  adminApprovalRequired: boolean;
-}
+export type PluginSecurityReview = GeneratedSchemas["PluginSecurityReview"];
 
-export interface PluginCatalogItem {
-  id: string;
-  name: string;
-  vendor: string;
-  version: string;
-  category: PluginCategory;
-  summary: string;
-  status: PluginStatus;
-  trustLevel: string;
-  permissions: PluginPermission[];
-  securityReview: PluginSecurityReview;
-}
+export type PluginCatalogItem = GeneratedSchemas["PluginCatalogItem"];
 
-export interface PluginPermissionScopeSummary {
-  scope: string;
-  risk: PluginPermissionRisk;
-  pluginCount: number;
-}
+export type PluginPermissionScopeSummary = GeneratedSchemas["PluginPermissionScopeSummary"];
 
 export interface RecordListPayload {
   records: ArchiveRecord[];
@@ -241,25 +192,12 @@ export function deriveRecordSourcePath(record: ArchiveRecord): { sourcePath: str
 
 export type DiscoverSectionKey = "explore" | "trending" | "random" | "active" | "forgotten" | "needsMetadata";
 
-export interface DiscoverSection {
-  key: DiscoverSectionKey;
-  label: string;
-  description: string;
-  count: number;
-  records: ArchiveRecord[];
-}
+export type DiscoverSection = GeneratedSchemas["DiscoverSection"];
 
 export type SuggestionContext = "discover" | "search" | "detail";
 export type SuggestionFeedbackValue = "useful" | "not-useful" | "dismissed";
 
-export interface ArchiveSuggestion {
-  key: string;
-  title: string;
-  detail: string;
-  severity: "high" | "medium" | "low" | string;
-  count: number;
-  actionHref: string;
-}
+export type ArchiveSuggestion = GeneratedSchemas["ArchiveSuggestion"];
 
 export interface ArchiveSuggestionFeedback {
   key: string;
@@ -297,40 +235,13 @@ export interface RecordRelation {
   updatedAt?: string | null;
 }
 
-export interface RelationGraphNode {
-  id: string;
-  uid?: string;
-  label: string;
-  kind: "item";
-  type: string;
-  tags: string[];
-  degree: number;
-  record?: ArchiveRecord;
-}
+export type RelationGraphNode = GeneratedSchemas["RelationGraphNode"];
 
 export type RelationGraphEdgeKind = "manual" | "shared-tag" | "same-type";
 
-export interface RelationGraphEdge {
-  id: string;
-  relationId?: string;
-  source: string;
-  target: string;
-  kind: RelationGraphEdgeKind;
-  type: string;
-  label: string;
-  weight: number;
-  note?: string | null;
-  sharedTags?: string[];
-  sharedType?: string;
-}
+export type RelationGraphEdge = GeneratedSchemas["RelationGraphEdge"];
 
-export interface RelationGraphStats {
-  nodeCount: number;
-  edgeCount: number;
-  manualEdgeCount: number;
-  inferredEdgeCount: number;
-  focusId?: string | null;
-}
+export type RelationGraphStats = GeneratedSchemas["RelationGraphStats"];
 
 export interface RelationGraphPayload {
   nodes: RelationGraphNode[];
@@ -351,24 +262,9 @@ export interface UpdateRelationPayload {
   note?: string | null;
 }
 
-export interface RecordNoteRegion {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+export type RecordNoteRegion = GeneratedSchemas["RecordNoteRegion"];
 
-export interface RecordNote {
-  id: string;
-  itemId: string;
-  body: string;
-  timestampSeconds: number | null;
-  region: RecordNoteRegion | null;
-  authorId: string | null;
-  authorName: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
+export type RecordNote = GeneratedSchemas["RecordNote"];
 
 export interface CreateRecordNotePayload {
   body: string;
@@ -414,34 +310,18 @@ export interface RecordAiAssist {
   changesApplied: [];
 }
 
-export interface DepartmentFieldOwner { id: string; departmentId: string; field: string; owner: string; }
-export interface DepartmentTemplateMetrics { departmentId: string; templateCount: number; publishedTemplateCount: number; qualityRuleCount: number; recordCount: number; missingFieldCounts: Record<string, number>; }
+export type DepartmentFieldOwner = GeneratedSchemas["DepartmentFieldOwner"];
+export type DepartmentTemplateMetrics = GeneratedSchemas["DepartmentTemplateMetrics"];
 export interface DepartmentHandoff { id: string; recordId: string; fromDepartmentId: string; toDepartmentId: string; sentBy: string; receivedBy: string | null; summary: { openFieldRequests: number; hasRights: boolean; openComments: number }; }
 
 // V1-868: last recorded source per metadata field, opt-in via bulkRecords' fieldSources.
-export interface RecordFieldSource {
-  field: string;
-  source: "manual" | "template" | "csv" | "bulk";
-  updatedAt: string;
-}
+export type RecordFieldSource = GeneratedSchemas["RecordFieldSource"];
 
 // V1-860: on-demand checksum verification history per attachment.
-export interface FileHealthCheck {
-  id: string;
-  attachmentId: string;
-  status: "match" | "mismatch" | "missing" | "error";
-  checksumSha256: string | null;
-  checkedAt: string;
-}
+export type FileHealthCheck = GeneratedSchemas["FileHealthCheck"];
 
 // V1-853: files with no record_attachments reference — read-only review candidates.
-export interface UnusedFile {
-  key: string;
-  name: string;
-  size: number | null;
-  modifiedAt: string;
-  reason: string;
-}
+export type UnusedFile = GeneratedSchemas["UnusedFile"];
 
 // V1-850: preview + relink records affected by a deleted/changed vocabulary term.
 export interface VocabularyRelinkPreview {
@@ -451,20 +331,10 @@ export interface VocabularyRelinkPreview {
 }
 
 // V1-866: enforced at the API level in RecordsController::bulk — admins can override.
-export interface RecordFreeze {
-  recordId: string;
-  reason: string;
-  frozenBy: string | null;
-  createdAt: string;
-}
+export type RecordFreeze = GeneratedSchemas["RecordFreeze"];
 
 // V1-848: short-lived, informational-only edit presence marker.
-export interface RecordEditClaim {
-  recordId: string;
-  claimedBy: string | null;
-  claimedByName: string;
-  expiresAt: string;
-}
+export type RecordEditClaim = GeneratedSchemas["RecordEditClaim"];
 
 // V1-839: merges duplicate records into a chosen primary. Duplicates are
 // soft-deleted (restorable via /trash/restore), their own files untouched.
@@ -482,37 +352,15 @@ export interface RecordMergeResult {
 }
 
 // V1-834: prior metadata snapshots, captured on every record write.
-export interface RecordSnapshot {
-  id: string;
-  recordId: string;
-  changedBy: string | null;
-  createdAt: string;
-}
+export type RecordSnapshot = GeneratedSchemas["RecordSnapshot"];
 
-export interface RecordSnapshotFieldDiff {
-  field: string;
-  previous: unknown;
-  current: unknown;
-  changed: boolean;
-}
+export type RecordSnapshotFieldDiff = GeneratedSchemas["RecordSnapshotFieldDiff"];
 
 // V1-837: quick-triage "needs info" flag, one per record, team-visible.
-export interface RecordTriageFlag {
-  recordId: string;
-  reason: string;
-  flaggedBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type RecordTriageFlag = GeneratedSchemas["RecordTriageFlag"];
 
 // V1-841: read-only scan for record relations pointing at a record that no longer exists.
-export interface BrokenLink {
-  relationId: string;
-  sourceRecordId: string;
-  targetRecordId: string;
-  missingSource: boolean;
-  missingTarget: boolean;
-}
+export type BrokenLink = GeneratedSchemas["BrokenLink"];
 
 // V1-827: per-type metadata templates; applying one to a draft is client-side only.
 export interface MetadataTemplate {
@@ -558,15 +406,11 @@ export interface MetadataTemplateVersion {
   createdAt: string;
 }
 
-export interface DepartmentQualityRule { id: string; departmentId: string; typeId: string | null; requiredFields: string[]; enabled: boolean; }
+export type DepartmentQualityRule = GeneratedSchemas["DepartmentQualityRule"];
 export interface DepartmentQualityPreview { ready: boolean; missingFields: string[]; ruleId: string | null; }
 
 // ponytail: shared DB-backed filename prefix rules (V1-858) — key is a project or type id.
-export interface NamingRule {
-  key: string;
-  prefix: string;
-  updatedAt: string;
-}
+export type NamingRule = GeneratedSchemas["NamingRule"];
 
 // V1-861: lightweight grouping of records, never moves them out of type/folder.
 export interface Project {
@@ -581,17 +425,7 @@ export type ProjectTaskStatus = "todo" | "in_progress" | "review" | "done";
 export interface ProjectTask { id: string; projectId: string; title: string; status: ProjectTaskStatus; assignee: string | null; recordId: string | null; dueDate: string | null; createdAt: string; updatedAt: string; }
 
 // V1-840: named time/topic segments on a record, no file copy.
-export interface RecordSegment {
-  id: string;
-  recordId: string;
-  title: string;
-  description: string;
-  tags: string[];
-  startSeconds: number | null;
-  endSeconds: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type RecordSegment = GeneratedSchemas["RecordSegment"];
 
 export interface RecordSegmentInput {
   title?: string;
@@ -621,24 +455,9 @@ export interface CreateIntakeTemplatePayload {
 
 export type ImportSuggestedType = "video" | "image" | "audio" | "document" | "file";
 
-export interface ImportPreview {
-  url: string;
-  contentType: string;
-  contentLength: number | null;
-  suggestedType: ImportSuggestedType;
-  suggestedTitle: string;
-}
+export type ImportPreview = GeneratedSchemas["ImportPreview"];
 
-export interface UploadLink {
-  id: string;
-  token?: string;
-  label: string | null;
-  folder: string | null;
-  expiresAt: string;
-  revoked: boolean;
-  uploadCount: number;
-  createdAt: string | null;
-}
+export type UploadLink = GeneratedSchemas["UploadLink"];
 
 export interface CreateUploadLinkPayload {
   label?: string;
@@ -668,16 +487,7 @@ export interface CreateSavedSearchPayload {
   departmentId?: string;
 }
 
-export interface Collection {
-  id: string;
-  name: string;
-  query: string | null;
-  type: string;
-  tag: string;
-  icon?: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
+export type Collection = GeneratedSchemas["Collection"];
 
 export interface CreateCollectionPayload {
   name: string;
@@ -715,12 +525,7 @@ export interface UpdateInboxItemPayload {
   status?: InboxStatus;
 }
 
-export interface DepartmentRoutingPreview {
-  blocked: boolean;
-  reason: string | null;
-  fromDepartmentId: string | null;
-  toDepartmentId: string;
-}
+export type DepartmentRoutingPreview = GeneratedSchemas["DepartmentRoutingPreview"];
 
 export type VocabularyKind = "type" | "tag" | "person" | "place" | "event" | "custom" | (string & {});
 
@@ -857,39 +662,13 @@ export interface ComplianceReportFilters {
   limit?: number;
 }
 
-export interface ComplianceReportEntry {
-  id: number | string;
-  event: string;
-  resourceType: string | null;
-  resourceId: string | null;
-  actorId: string | null;
-  outcome: "success" | "rejected" | "failed";
-  statusCode: number;
-  action: string;
-  createdAt: string | null;
-}
+export type ComplianceReportEntry = GeneratedSchemas["ComplianceReportEntry"];
 
-export interface ComplianceReportSummary {
-  total: number;
-  outcomes: Record<"success" | "rejected" | "failed", number>;
-  events: Record<string, number>;
-  resourceTypes: Record<string, number>;
-}
+export type ComplianceReportSummary = GeneratedSchemas["ComplianceReportSummary"];
 
-export interface SyncLogEntry {
-  uid: string;
-  store: string;
-  status: "synced" | "conflict";
-  syncVersion: number | null;
-  lastModifiedBy: Record<string, unknown> | null;
-  updatedAt: string | null;
-}
+export type SyncLogEntry = GeneratedSchemas["SyncLogEntry"];
 
-export interface SyncSummary {
-  total: number;
-  synced: number;
-  conflicts: number;
-}
+export type SyncSummary = GeneratedSchemas["SyncSummary"];
 
 export interface ArchiveFile {
   key: string;
@@ -973,12 +752,7 @@ export interface DrDrillStatus {
   passed: boolean | null;
 }
 
-export interface DrProbe {
-  lastBackupAt: string | null;
-  lastBackupName: string | null;
-  lastRestoreTestAt: string | null;
-  lastRestoreTestOk: boolean | null;
-}
+export type DrProbe = GeneratedSchemas["DrProbe"];
 
 /**
  * V1-760: raw per-queue counters as the API reports them. Structurally a
@@ -998,11 +772,7 @@ export interface QueueMetrics {
  * that lib/storage-forecast.ts fits a trend to; `totalBytes` supplies the
  * capacity the exhaustion date is measured against.
  */
-export interface StorageSample {
-  at: string;
-  usedBytes: number;
-  totalBytes: number;
-}
+export type StorageSample = GeneratedSchemas["StorageSample"];
 
 export interface SystemMetrics {
   cpuLoad: number[];
@@ -1020,15 +790,7 @@ export interface SystemControlResult {
   detail: Record<string, unknown>;
 }
 
-export interface AccountExport {
-  user: Record<string, unknown>;
-  savedSearches: Record<string, unknown>[];
-  recordNotes: Record<string, unknown>[];
-  recordComments: Record<string, unknown>[];
-  uploadLinks: Record<string, unknown>[];
-  intakeTemplates: Record<string, unknown>[];
-  exportedAt: string;
-}
+export type AccountExport = GeneratedSchemas["AccountExport"];
 
 export interface BulkDeleteResultItem {
   uid: string;
@@ -1099,13 +861,7 @@ export interface SmbPullPayload {
   localPath?: string;
 }
 
-export interface SavedFavorite {
-  recordId: string;
-  store: string;
-  title: string | null;
-  type: string | null;
-  addedAt: string | null;
-}
+export type SavedFavorite = GeneratedSchemas["SavedFavorite"];
 
 export interface WatchedIngestEntry {
   id: string;
@@ -1116,14 +872,10 @@ export interface WatchedIngestEntry {
   routing: { ruleId?: string; metadataTemplateId?: string | null; tags?: string[]; stagingDirectory?: string } | null;
 }
 
-export interface WatchedIngestRuleInput { matchType: "path_prefix" | "filename_pattern"; pattern: string; metadataTemplateId?: string | null; tags?: string[]; stagingDirectory: string; enabled?: boolean; }
-export interface WatchedIngestRule extends WatchedIngestRuleInput { id: string; }
+export type WatchedIngestRuleInput = GeneratedSchemas["WatchedIngestRuleInput"];
+export type WatchedIngestRule = GeneratedSchemas["WatchedIngestRule"];
 
-export interface WatchedIngestBatch {
-  id: string;
-  status: "pending" | "completed";
-  entries: WatchedIngestEntry[];
-}
+export type WatchedIngestBatch = GeneratedSchemas["WatchedIngestBatch"];
 
 export type MediaOperation = GeneratedSchemas["MediaOperation"];
 // ponytail: the generated MediaJob.status enum only has queued/processing/
@@ -1176,29 +928,10 @@ export interface BroadcastMetadataPayload {
   raw?: Record<string, unknown>;
 }
 
-export interface UploadedRecord {
-  id: string;
-  uid?: string;
-  title: string;
-  fileName: string;
-  filePath: string;
-  checksum: string;
-  source: "upload";
-  createdAt?: string;
-  updatedAt?: string;
-}
+export type UploadedRecord = GeneratedSchemas["UploadedRecord"];
 
 /** V1-711: resumable chunked upload session state. */
-export interface UploadSession {
-  id: string;
-  fileName: string;
-  totalSize: number;
-  chunkSize: number;
-  totalChunks: number;
-  receivedChunks: number[];
-  status: "pending" | "completed" | "aborted";
-  expiresAt: string;
-}
+export type UploadSession = GeneratedSchemas["UploadSession"];
 
 export type ManagedUserRole = "admin" | "editor" | "viewer";
 
@@ -1210,10 +943,7 @@ export interface ManagedUser {
   createdAt?: string;
 }
 
-export interface MentionableUser {
-  id: string;
-  name: string;
-}
+export type MentionableUser = GeneratedSchemas["MentionableUser"];
 
 export interface DelegatedAccessParty {
   id: number;
@@ -1278,15 +1008,9 @@ export interface ArchiveTypeFieldCondition {
 
 export type OnboardingStageId = "organization" | "storage" | "invitation" | "first_record" | "first_search";
 
-export interface OnboardingStage {
-  id: OnboardingStageId;
-  status: "pending" | "completed";
-  completedAt: string | null;
-}
+export type OnboardingStage = GeneratedSchemas["OnboardingStage"];
 
-export interface OnboardingProgress {
-  stages: OnboardingStage[];
-}
+export type OnboardingProgress = GeneratedSchemas["OnboardingProgress"];
 
 export interface ArchiveTypeField {
   name: string;
@@ -1308,27 +1032,11 @@ export interface ArchiveType {
   updatedAt?: string;
 }
 
-export interface SecuritySettings {
-  accessTokenTtlMinutes: number;
-  perUserRateLimit: number;
-  webhookUrlAllowlist: string[];
-  legacyPasswordUpgrade: boolean;
-  whisperDevice: "cpu" | "cuda";
-  cspPolicy: string;
-  corsOrigins: string[];
-}
+export type SecuritySettings = GeneratedSchemas["SecuritySettings"];
 
 export type OdbcProbeStatus = "disabled" | "missing-dsn" | "driver-unavailable" | "connected" | "failed";
 
-export interface OdbcProbe {
-  enabled: boolean;
-  driverLoaded: boolean;
-  dsn: string;
-  status: OdbcProbeStatus;
-  message?: string;
-  error?: string;
-  tables: string[];
-}
+export type OdbcProbe = GeneratedSchemas["OdbcProbe"];
 
 export interface OdbcTablePreview {
   table: string;
@@ -1345,11 +1053,7 @@ export interface StorageConnectionResult {
   testedAt: string;
 }
 
-export interface DropboxConnection {
-  status: "disabled" | "disconnected" | "connected";
-  configured: boolean;
-  folderPath: string | null;
-}
+export type DropboxConnection = GeneratedSchemas["DropboxConnection"];
 
 export type StorageWorkspaceCapability = "browse" | "download" | "upload" | "create_folder" | "rename" | "copy" | "move" | "delete" | "restore" | "checksum";
 export interface StorageWorkspaceProvider { id: string; type: string; label: string; capabilities: StorageWorkspaceCapability[]; status: "available" | "not_configured"; }
@@ -1372,12 +1076,7 @@ export interface OdbcWriteResult {
   affected: number;
 }
 
-export interface ReviewRect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+export type ReviewRect = GeneratedSchemas["ReviewRect"];
 
 export interface ReviewComment {
   id: string;
@@ -1479,16 +1178,7 @@ export interface ReviewLinkReport {
 
 export type CollaborationStatus = "active" | "viewing" | "reviewing" | "editing" | "idle";
 
-export interface CollaborationParticipant {
-  id: string;
-  roomKey: string;
-  userId: string;
-  displayName: string;
-  status: CollaborationStatus;
-  resourceId?: string | null;
-  cursor?: Record<string, unknown> | null;
-  lastSeenAt?: string | null;
-}
+export type CollaborationParticipant = GeneratedSchemas["CollaborationParticipant"];
 
 export interface CollaborationPresencePayload {
   roomKey: string;
@@ -1496,29 +1186,14 @@ export interface CollaborationPresencePayload {
   participants: CollaborationParticipant[];
 }
 
-export interface CollaborationLock {
-  id: string;
-  roomKey: string;
-  resourceId: string;
-  userId: string;
-  displayName: string;
-  expiresAt?: string | null;
-  updatedAt?: string | null;
-}
+export type CollaborationLock = GeneratedSchemas["CollaborationLock"];
 
 export interface CollaborationLocksPayload {
   roomKey: string;
   locks: CollaborationLock[];
 }
 
-export interface CollaborationDocument {
-  roomKey: string;
-  resourceId: string;
-  content: string;
-  version: number;
-  updatedByDisplayName?: string | null;
-  updatedAt?: string | null;
-}
+export type CollaborationDocument = GeneratedSchemas["CollaborationDocument"];
 
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
