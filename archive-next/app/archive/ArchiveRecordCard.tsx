@@ -5,7 +5,8 @@ import { ContextMenu, type ContextMenuPosition } from "@/components/ui/ContextMe
 import type { ArchiveRecord } from "@/lib/archive-api";
 import { deriveRecordStatus } from "@/lib/record-status";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
-import { formatDate, type ArchiveItemSize, type SelectClickModifiers } from "./page";
+import { formatDate, type ArchiveItemSize } from "./page";
+import type { SelectClickModifiers } from "./selection";
 
 const PLAIN_CLICK_MODIFIERS: SelectClickModifiers = { shiftKey: false, ctrlKey: false, metaKey: false };
 
