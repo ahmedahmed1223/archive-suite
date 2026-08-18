@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { ArchiveRecord, RightsRecord } from "@/lib/archive-api";
-import { buildReadinessItems } from "./page";
+import { buildReadinessItems } from "./RecordReadinessPanel";
 
 const baseRecord: ArchiveRecord = { id: "rec-1", title: "" };
 
