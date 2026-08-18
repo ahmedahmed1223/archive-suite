@@ -8,7 +8,7 @@ const SOURCE_ROOTS = ["app", "components"];
 
 // Locale-aware API payloads; not browser UI copy.
 // Search-normalization regex; Arabic characters are data, not UI copy.
-const ALLOWED_PATHS = new Set(["app/api/guide/route.ts", "app/api/v1/[...path]/route.ts", "app/archive/page.tsx"]);
+const ALLOWED_PATHS = new Set(["app/api/guide/route.ts", "app/api/v1/[...path]/route.ts", "app/archive/archive-filters.ts"]);
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

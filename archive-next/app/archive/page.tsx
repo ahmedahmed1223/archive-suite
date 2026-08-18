@@ -15,12 +15,11 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { createArchiveApiClient, type ArchiveRecord, type SavedSearch, type SearchFacets } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveRecord, type SearchFacets } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
-import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query";
 import { isIncompleteRecord } from "@/lib/work-lists";
 import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import styles from "./archive.module.css";
@@ -28,8 +27,6 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { movePinnedFilter, orderPinnedFilters } from "@/lib/pinned-filters";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useDisplaySettings } from "@/lib/display-settings-context";
-import { formatDate as formatDisplayDate, DEFAULT_DISPLAY_SETTINGS, type DisplaySettings } from "@/lib/display-settings";
-import type { AppLocale } from "@/lib/i18n/types";
 import {
   computeDragSelectedIds,
   resolveGridSelectionClick,
@@ -37,6 +34,34 @@ import {
   type RectLike,
   type SelectClickModifiers
 } from "./selection";
+import {
+  ARCHIVE_VIEW_STATE_PAGE,
+  ITEM_SIZE_VALUES,
+  SORT_FIELD_VALUES,
+  VIEW_MODE_VALUES,
+  WORKFLOW_STATES,
+  formatDate,
+  getInitialCompletion,
+  getInitialItemSize,
+  getInitialSortField,
+  getInitialStatus,
+  getInitialViewMode,
+  getRecordSearchText,
+  getRecordTime,
+  getRecordWorkflowStatus,
+  getUniqueValues,
+  inferRecordTypeFromFile,
+  isSavedArchiveView,
+  normalizeText,
+  savedArchiveViewFromSearch,
+  type ArchiveItemSize,
+  type ArchivePersistedViewState,
+  type ArchiveSortDirection,
+  type ArchiveSortField,
+  type ArchiveViewMode,
+  type SavedArchiveView,
+  type WorkflowStatus
+} from "./archive-filters";
 
 export type { GridSelectionResult, RectLike, SelectClickModifiers } from "./selection";
 export { computeDragSelectedIds, resolveGridSelectionClick } from "./selection";
@@ -49,168 +74,10 @@ interface DeleteBatch {
   count: number;
 }
 
-// Workflow states mirrored from the legacy SPA's itemStatus state machine —
-// the server-authoritative state machine. The Laravel search/records endpoints
-// do not expose a status column or query param (verified against
-// SearchController/RecordsController), so this is a client-side facet only:
-// it reads `record.workflowStatus` when present, defaulting to "draft".
-type WorkflowStatus = "draft" | "editing" | "review" | "approved" | "published" | "archived";
-
-const WORKFLOW_STATES: WorkflowStatus[] = ["draft", "editing", "review", "approved", "published", "archived"];
-
-function getRecordWorkflowStatus(record: ArchiveRecord): WorkflowStatus {
-  const value = record.workflowStatus;
-  return typeof value === "string" && (WORKFLOW_STATES as string[]).includes(value)
-    ? (value as WorkflowStatus)
-    : "draft";
-}
-
 type ArchiveState =
   | { status: "loading" }
   | { status: "ready"; records: ArchiveRecord[]; facets?: SearchFacets }
   | { status: "error"; message: string };
-
-type ArchiveViewMode = "grid" | "gallery" | "compact" | "list" | "details" | "split";
-export type ArchiveItemSize = "compact" | "comfortable" | "large";
-type ArchiveSortField = "updatedAt" | "createdAt" | "title";
-type ArchiveSortDirection = "asc" | "desc";
-
-interface SavedArchiveView {
-  id: string;
-  name: string;
-  query: string;
-  store: string;
-  type: string;
-  status: WorkflowStatus | "all";
-  viewMode: ArchiveViewMode;
-  itemSize: ArchiveItemSize;
-  sortField: ArchiveSortField;
-  sortDirection: ArchiveSortDirection;
-}
-
-// Value-only lists for module-scope validation (URL/localStorage restore
-// functions below run outside the component and have no access to `t`);
-// the translated label/shortLabel pairs are built inside the component from
-// these values.
-const VIEW_MODE_VALUES: ArchiveViewMode[] = ["grid", "gallery", "compact", "list", "details", "split"];
-const ITEM_SIZE_VALUES: ArchiveItemSize[] = ["compact", "comfortable", "large"];
-const SORT_FIELD_VALUES: ArchiveSortField[] = ["updatedAt", "createdAt", "title"];
-
-function normalizeText(value: unknown) {
-  return String(value || "")
-    .normalize("NFKD")
-    .replace(/[\u064B-\u065F\u0670]/g, "")
-    .replace(/[إأآا]/g, "ا")
-    .replace(/ى/g, "ي")
-    .replace(/ة/g, "ه")
-    .toLowerCase()
-    .trim();
-}
-
-function getRecordSearchText(record: ArchiveRecord) {
-  const metadata = record.metadata && typeof record.metadata === "object"
-    ? Object.values(record.metadata).join(" ")
-    : "";
-
-  return normalizeText([
-    record.title,
-    record.description,
-    record.store,
-    record.type,
-    record.subtype,
-    (record.tags || []).join(" "),
-    metadata
-  ].join(" "));
-}
-
-// Mirrors UploadForm.tsx's suggestedType() so files dropped directly on the
-// archive page get a sane default type without a metadata step.
-function inferRecordTypeFromFile(file: File) {
-  if (file.type.startsWith("video/")) return "video";
-  if (file.type.startsWith("audio/")) return "audio";
-  if (file.type.startsWith("image/")) return "image";
-  if (file.type.includes("pdf") || file.type.startsWith("text/")) return "document";
-  return "file";
-}
-
-export function formatDate(value: string | undefined, notSpecifiedLabel: string, settings: DisplaySettings = DEFAULT_DISPLAY_SETTINGS, locale: AppLocale = "ar") {
-  return formatDisplayDate(value, settings, locale, value || notSpecifiedLabel);
-}
-
-function getRecordTime(record: ArchiveRecord, field: Exclude<ArchiveSortField, "title">) {
-  const value = field === "createdAt" ? record.createdAt : record.updatedAt;
-  const time = value ? new Date(value).getTime() : 0;
-  return Number.isFinite(time) ? time : 0;
-}
-
-function getUniqueValues(records: ArchiveRecord[], key: "store" | "type") {
-  return Array.from(new Set(records.map((record) => record[key]).filter((value): value is string => Boolean(value)))).sort((a, b) =>
-    a.localeCompare(b, "ar")
-  );
-}
-
-function getInitialViewMode(params: URLSearchParams): ArchiveViewMode {
-  const value = params.get("view");
-  if (VIEW_MODE_VALUES.includes(value as ArchiveViewMode)) {
-    return value as ArchiveViewMode;
-  }
-
-  if (matchesMediaQuery(MOBILE_VIEWPORT_QUERY)) {
-    return "list";
-  }
-
-  return "grid";
-}
-
-function getInitialItemSize(params: URLSearchParams): ArchiveItemSize {
-  const value = params.get("size");
-  return ITEM_SIZE_VALUES.includes(value as ArchiveItemSize) ? (value as ArchiveItemSize) : "compact";
-}
-
-function getInitialSortField(params: URLSearchParams): ArchiveSortField {
-  const value = params.get("sort");
-  return value === "createdAt" || value === "title" ? value : "updatedAt";
-}
-
-function getInitialStatus(params: URLSearchParams): WorkflowStatus | "all" {
-  const value = params.get("status");
-  return value && (WORKFLOW_STATES as string[]).includes(value) ? (value as WorkflowStatus) : "all";
-}
-
-function getInitialCompletion(params: URLSearchParams): boolean {
-  return params.get("completion") === "incomplete";
-}
-
-function savedFilter(search: SavedSearch, key: string) {
-  const value = search.filters?.[key];
-  return typeof value === "string" ? value : "";
-}
-
-function isSavedArchiveView(search: SavedSearch) {
-  return savedFilter(search, "viewKind") === "archive-view";
-}
-
-const ARCHIVE_VIEW_STATE_PAGE = "/archive";
-
-interface ArchivePersistedViewState {
-  sortField?: ArchiveSortField;
-  sortDirection?: ArchiveSortDirection;
-}
-
-function savedArchiveViewFromSearch(search: SavedSearch): SavedArchiveView {
-  return {
-    id: search.id,
-    name: search.name,
-    query: search.query || "",
-    store: savedFilter(search, "store") || "all",
-    type: savedFilter(search, "type") || "all",
-    status: (savedFilter(search, "status") as WorkflowStatus | "all") || "all",
-    viewMode: (savedFilter(search, "viewMode") as ArchiveViewMode) || "grid",
-    itemSize: (savedFilter(search, "itemSize") as ArchiveItemSize) || "compact",
-    sortField: (savedFilter(search, "sortField") as ArchiveSortField) || "updatedAt",
-    sortDirection: (savedFilter(search, "sortDirection") as ArchiveSortDirection) || "desc"
-  };
-}
 
 function ArchivePageContent() {
   const { locale, t } = useLocale();
