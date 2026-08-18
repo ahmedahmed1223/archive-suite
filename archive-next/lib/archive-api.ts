@@ -422,7 +422,26 @@ export interface Project {
   updatedAt: string;
 }
 export type ProjectTaskStatus = "todo" | "in_progress" | "review" | "done";
-export interface ProjectTask { id: string; projectId: string; title: string; status: ProjectTaskStatus; assignee: string | null; recordId: string | null; dueDate: string | null; createdAt: string; updatedAt: string; }
+export interface ProjectTask { id: string; projectId: string; title: string; status: ProjectTaskStatus; assignee: string | null; recordId: string | null; dueDate: string | null; targetDurationMinutes?: number | null; targetDeadlineAt?: string | null; createdAt: string; updatedAt: string; }
+
+export type ProjectTaskTemplateCategory = "archive" | "review" | "production";
+export interface ProjectTaskTemplate {
+  id: string;
+  category: ProjectTaskTemplateCategory;
+  title: string;
+  description?: string | null;
+  defaultStatus: ProjectTaskStatus;
+  targetDurationMinutes: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface TaskEscalationPolicy {
+  enabled: boolean;
+  warningBeforeMinutes: number | null;
+  repeatMinutes: number | null;
+  updatedAt?: string | null;
+}
 
 // V1-840: named time/topic segments on a record, no file copy.
 export type RecordSegment = GeneratedSchemas["RecordSegment"];
@@ -628,6 +647,25 @@ export interface CreateAutomationRulePayload {
 }
 
 export type UpdateAutomationRulePayload = Partial<CreateAutomationRulePayload>;
+
+export type AutomationRuleTemplateCategory = "archive" | "review" | "production";
+
+export interface AutomationRuleTemplate {
+  id: string;
+  category: AutomationRuleTemplateCategory;
+  name: string;
+  description?: string | null;
+  trigger: AutomationRuleTrigger;
+  query: string;
+  type: string;
+  tag: string;
+  status: string;
+  fileExtension: string;
+  departmentId: string;
+  action: AutomationRuleAction;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
 
 export type PaginationMeta = GeneratedSchemas["PaginationMeta"];
 
@@ -1277,7 +1315,10 @@ export interface ArchiveApiClient {
   unlinkProjectRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   recordProjects(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ projects: Project[] }>>;
   projectTasks(projectId?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ tasks: ProjectTask[] }>>;
-  createProjectTask(payload: Omit<ProjectTask, "id" | "createdAt" | "updatedAt">, options?: AuthRequestOptions): Promise<ApiEnvelope<{ task: ProjectTask }>>;
+  createProjectTask(payload: Omit<ProjectTask, "id" | "createdAt" | "updatedAt" | "targetDeadlineAt">, options?: AuthRequestOptions): Promise<ApiEnvelope<{ task: ProjectTask }>>;
+  projectTaskTemplates(category?: ProjectTaskTemplateCategory, options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: ProjectTaskTemplate[] }>>;
+  taskEscalationPolicy(options?: AuthRequestOptions): Promise<ApiEnvelope<{ policy: TaskEscalationPolicy }>>;
+  updateTaskEscalationPolicy(payload: Partial<Omit<TaskEscalationPolicy, "updatedAt">>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ policy: TaskEscalationPolicy }>>;
   updateProjectTask(id: string, payload: Partial<Omit<ProjectTask, "id" | "projectId" | "createdAt" | "updatedAt">>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ task: ProjectTask }>>;
   recordSegments(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segments: RecordSegment[] }>>;
   createRecordSegment(recordId: string, payload: RecordSegmentInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segment: RecordSegment }>>;
@@ -1523,6 +1564,7 @@ export interface ArchiveApiClient {
   updateAutomationRule(id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
   deleteAutomationRule(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   runAutomationRule(id: string, payload?: { dryRun?: boolean }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: AutomationRuleRun }>>;
+  automationRuleTemplates(category?: AutomationRuleTemplateCategory, options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: AutomationRuleTemplate[] }>>;
   bulkMacros(options?: AuthRequestOptions): Promise<ApiEnvelope<{ macros: BulkMacro[] }>>;
   bulkMacro(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ macro: BulkMacro }>>;
   createBulkMacro(payload: CreateBulkMacroPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ macro: BulkMacro }>>;
@@ -2052,6 +2094,10 @@ export function createArchiveApiClient({
     projectTasks: (projectId?: string, options?: AuthRequestOptions) => get<{ tasks: ProjectTask[] }>(`/project-tasks${projectId ? `?${new URLSearchParams({ projectId })}` : ""}`, options),
     createProjectTask: (payload, options?: AuthRequestOptions) => post<{ task: ProjectTask }>("/project-tasks", payload, options),
     updateProjectTask: (id, payload, options?: AuthRequestOptions) => patch<{ task: ProjectTask }>(`/project-tasks/${encodeURIComponent(id)}`, payload, options),
+    projectTaskTemplates: (category?: ProjectTaskTemplateCategory, options?: AuthRequestOptions) =>
+      get<{ templates: ProjectTaskTemplate[] }>(`/project-task-templates${category ? `?category=${encodeURIComponent(category)}` : ""}`, options),
+    taskEscalationPolicy: (options?: AuthRequestOptions) => get<{ policy: TaskEscalationPolicy }>("/task-escalation-policy", options),
+    updateTaskEscalationPolicy: (payload, options?: AuthRequestOptions) => patch<{ policy: TaskEscalationPolicy }>("/task-escalation-policy", payload, options),
     recordSegments: (recordId: string, options?: AuthRequestOptions) =>
       get<{ segments: RecordSegment[] }>(`/records/${encodeURIComponent(recordId)}/segments`, options),
     createRecordSegment: (recordId: string, payload: RecordSegmentInput, options?: AuthRequestOptions) =>
@@ -2653,6 +2699,8 @@ export function createArchiveApiClient({
       del<{ deleted: boolean }>(`/automation/rules/${encodeURIComponent(id)}`, undefined, options),
     runAutomationRule: (id: string, payload?: { dryRun?: boolean }, options?: AuthRequestOptions) =>
       post<{ run: AutomationRuleRun }>(`/automation/rules/${encodeURIComponent(id)}/run`, payload, options),
+    automationRuleTemplates: (category?: AutomationRuleTemplateCategory, options?: AuthRequestOptions) =>
+      get<{ templates: AutomationRuleTemplate[] }>(`/automation/rule-templates${category ? `?category=${encodeURIComponent(category)}` : ""}`, options),
     bulkMacros: (options?: AuthRequestOptions) => get<{ macros: BulkMacro[] }>("/bulk-macros", options),
     bulkMacro: (id: string, options?: AuthRequestOptions) =>
       get<{ macro: BulkMacro }>(`/bulk-macros/${encodeURIComponent(id)}`, options),

@@ -3998,6 +3998,83 @@
         }
       }
     },
+    "/automation/rule-templates": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "List archive/review/production automation-rule templates",
+        "operationId": "listAutomationRuleTemplates",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "category", "in": "query", "required": false, "schema": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automation rule templates",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AutomationRuleTemplatesResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Automation"],
+        "summary": "Create an automation-rule template (admin only)",
+        "operationId": "createAutomationRuleTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateAutomationRuleTemplateRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created automation rule template",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AutomationRuleTemplateResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/automation/rule-templates/{id}": {
+      "patch": {
+        "tags": ["Automation"],
+        "summary": "Update an automation-rule template (admin only)",
+        "operationId": "updateAutomationRuleTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateAutomationRuleTemplateRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated automation rule template",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AutomationRuleTemplateResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Automation"],
+        "summary": "Delete an automation-rule template (admin only)",
+        "operationId": "deleteAutomationRuleTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/media/{mediaUid}/review-links": {
       "post": {
         "tags": ["Review"],
@@ -5971,6 +6048,18 @@
     },
     "/project-tasks/{id}": {
       "patch": { "tags": ["Projects"], "summary": "Update project task", "operationId": "updateProjectTask", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskUpdateRequest" } } } }, "responses": { "200": { "description": "Updated task", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/project-task-templates": {
+      "get": { "tags": ["Projects"], "summary": "List archive/review/production project-task templates", "operationId": "listProjectTaskTemplates", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "category", "in": "query", "required": false, "schema": { "$ref": "#/components/schemas/ProjectTaskTemplateCategory" } }], "responses": { "200": { "description": "Project task templates", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskTemplatesResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } } },
+      "post": { "tags": ["Projects"], "summary": "Create a project-task template (admin only)", "operationId": "createProjectTaskTemplate", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateProjectTaskTemplateRequest" } } } }, "responses": { "201": { "description": "Created project task template", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskTemplateResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/project-task-templates/{id}": {
+      "patch": { "tags": ["Projects"], "summary": "Update a project-task template (admin only)", "operationId": "updateProjectTaskTemplate", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateProjectTaskTemplateRequest" } } } }, "responses": { "200": { "description": "Updated project task template", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskTemplateResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } },
+      "delete": { "tags": ["Projects"], "summary": "Delete a project-task template (admin only)", "operationId": "deleteProjectTaskTemplate", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "$ref": "#/components/responses/Ok" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/task-escalation-policy": {
+      "get": { "tags": ["Projects"], "summary": "Read the task escalation policy", "operationId": "getTaskEscalationPolicy", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "responses": { "200": { "description": "Task escalation policy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TaskEscalationPolicyResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } } },
+      "patch": { "tags": ["Projects"], "summary": "Update the task escalation policy (admin only)", "operationId": "updateTaskEscalationPolicy", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateTaskEscalationPolicyRequest" } } } }, "responses": { "200": { "description": "Updated task escalation policy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TaskEscalationPolicyResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
     },
     "/projects/{id}": {
       "patch": {
@@ -8871,6 +8960,88 @@
           }
         ]
       },
+      "AutomationRuleTemplateCategory": {
+        "type": "string",
+        "enum": ["archive", "review", "production"]
+      },
+      "AutomationRuleTemplate": {
+        "type": "object",
+        "required": ["id", "category", "name", "description", "trigger", "query", "type", "tag", "status", "fileExtension", "departmentId", "action", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "category": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" },
+          "name": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string" },
+          "type": { "type": "string" },
+          "tag": { "type": "string" },
+          "status": { "type": "string" },
+          "fileExtension": { "type": "string" },
+          "departmentId": { "type": "string" },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CreateAutomationRuleTemplateRequest": {
+        "type": "object",
+        "required": ["category", "name", "trigger", "action"],
+        "properties": {
+          "category": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": ["string", "null"], "maxLength": 1000 },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string", "maxLength": 500 },
+          "type": { "type": "string", "maxLength": 100 },
+          "tag": { "type": "string", "maxLength": 100 },
+          "status": { "type": "string", "maxLength": 100 },
+          "fileExtension": { "type": "string", "maxLength": 200 },
+          "departmentId": { "type": "string", "maxLength": 100 },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" }
+        }
+      },
+      "UpdateAutomationRuleTemplateRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "category": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": ["string", "null"], "maxLength": 1000 },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string", "maxLength": 500 },
+          "type": { "type": "string", "maxLength": 100 },
+          "tag": { "type": "string", "maxLength": 100 },
+          "status": { "type": "string", "maxLength": 100 },
+          "fileExtension": { "type": "string", "maxLength": 200 },
+          "departmentId": { "type": "string", "maxLength": 100 },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" }
+        }
+      },
+      "AutomationRuleTemplatesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["templates"],
+            "properties": {
+              "templates": { "type": "array", "items": { "$ref": "#/components/schemas/AutomationRuleTemplate" } }
+            }
+          }
+        ]
+      },
+      "AutomationRuleTemplateResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["template"],
+            "properties": {
+              "template": { "$ref": "#/components/schemas/AutomationRuleTemplate" }
+            }
+          }
+        ]
+      },
       "MontageProject": {
         "type": "object",
         "required": ["id", "name", "fps", "tracks", "clips", "markers", "comments", "transitions", "status"],
@@ -10685,7 +10856,7 @@
           "dailyDigest": { "type": "boolean" },
           "optional": {
             "type": "array",
-            "items": { "type": "string", "enum": ["reviewAssigned", "commentMentioned", "taskAssigned", "rightsExpiring", "mediaJobCompleted"] },
+            "items": { "type": "string", "enum": ["reviewAssigned", "commentMentioned", "taskAssigned", "rightsExpiring", "mediaJobCompleted", "taskDueSoon"] },
             "uniqueItems": true
           }
         },
@@ -11373,11 +11544,20 @@
           ,"notes": { "type": ["string", "null"], "maxLength": 5000 }
         }
       },
-      "ProjectTask": { "type": "object", "required": ["id", "projectId", "title", "status", "assignee", "recordId", "dueDate", "createdAt", "updatedAt"], "properties": { "id": { "type": "string" }, "projectId": { "type": "string" }, "title": { "type": "string" }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" } } },
-      "ProjectTaskCreateRequest": { "type": "object", "required": ["projectId", "title"], "properties": { "projectId": { "type": "string" }, "title": { "type": "string", "maxLength": 300 }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" } } },
-      "ProjectTaskUpdateRequest": { "type": "object", "minProperties": 1, "properties": { "title": { "type": "string", "maxLength": 300 }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" } } },
+      "ProjectTask": { "type": "object", "required": ["id", "projectId", "title", "status", "assignee", "recordId", "dueDate", "targetDurationMinutes", "targetDeadlineAt", "createdAt", "updatedAt"], "properties": { "id": { "type": "string" }, "projectId": { "type": "string" }, "title": { "type": "string" }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" }, "targetDurationMinutes": { "type": ["integer", "null"] }, "targetDeadlineAt": { "type": ["string", "null"], "format": "date-time" }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" } } },
+      "ProjectTaskCreateRequest": { "type": "object", "required": ["projectId", "title"], "properties": { "projectId": { "type": "string" }, "title": { "type": "string", "maxLength": 300 }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" }, "targetDurationMinutes": { "type": ["integer", "null"], "minimum": 1 } } },
+      "ProjectTaskUpdateRequest": { "type": "object", "minProperties": 1, "properties": { "title": { "type": "string", "maxLength": 300 }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" }, "targetDurationMinutes": { "type": ["integer", "null"], "minimum": 1 } } },
       "ProjectTaskResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["task"], "properties": { "task": { "$ref": "#/components/schemas/ProjectTask" } } }] },
       "ProjectTasksResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["tasks"], "properties": { "tasks": { "type": "array", "items": { "$ref": "#/components/schemas/ProjectTask" } } } }] },
+      "ProjectTaskTemplateCategory": { "type": "string", "enum": ["archive", "review", "production"] },
+      "ProjectTaskTemplate": { "type": "object", "required": ["id", "category", "title", "description", "defaultStatus", "targetDurationMinutes", "createdAt", "updatedAt"], "properties": { "id": { "type": "string" }, "category": { "$ref": "#/components/schemas/ProjectTaskTemplateCategory" }, "title": { "type": "string" }, "description": { "type": ["string", "null"] }, "defaultStatus": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "targetDurationMinutes": { "type": ["integer", "null"] }, "createdAt": { "type": ["string", "null"], "format": "date-time" }, "updatedAt": { "type": ["string", "null"], "format": "date-time" } } },
+      "CreateProjectTaskTemplateRequest": { "type": "object", "required": ["category", "title"], "properties": { "category": { "$ref": "#/components/schemas/ProjectTaskTemplateCategory" }, "title": { "type": "string", "minLength": 1, "maxLength": 300 }, "description": { "type": ["string", "null"], "maxLength": 1000 }, "defaultStatus": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "targetDurationMinutes": { "type": ["integer", "null"], "minimum": 1 } } },
+      "UpdateProjectTaskTemplateRequest": { "type": "object", "minProperties": 1, "properties": { "category": { "$ref": "#/components/schemas/ProjectTaskTemplateCategory" }, "title": { "type": "string", "minLength": 1, "maxLength": 300 }, "description": { "type": ["string", "null"], "maxLength": 1000 }, "defaultStatus": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "targetDurationMinutes": { "type": ["integer", "null"], "minimum": 1 } } },
+      "ProjectTaskTemplatesResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["templates"], "properties": { "templates": { "type": "array", "items": { "$ref": "#/components/schemas/ProjectTaskTemplate" } } } }] },
+      "ProjectTaskTemplateResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["template"], "properties": { "template": { "$ref": "#/components/schemas/ProjectTaskTemplate" } } }] },
+      "TaskEscalationPolicy": { "type": "object", "required": ["enabled", "warningBeforeMinutes", "repeatMinutes", "updatedAt"], "properties": { "enabled": { "type": "boolean" }, "warningBeforeMinutes": { "type": ["integer", "null"] }, "repeatMinutes": { "type": ["integer", "null"] }, "updatedAt": { "type": ["string", "null"], "format": "date-time" } } },
+      "UpdateTaskEscalationPolicyRequest": { "type": "object", "minProperties": 1, "properties": { "enabled": { "type": "boolean" }, "warningBeforeMinutes": { "type": ["integer", "null"], "minimum": 1 }, "repeatMinutes": { "type": ["integer", "null"], "minimum": 1 } } },
+      "TaskEscalationPolicyResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["policy"], "properties": { "policy": { "$ref": "#/components/schemas/TaskEscalationPolicy" } } }] },
       "ProjectUpdateRequest": {
         "type": "object",
         "minProperties": 1,

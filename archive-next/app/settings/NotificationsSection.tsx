@@ -14,7 +14,8 @@ const OPTIONAL_EVENTS: readonly OptionalEvent[] = [
   "commentMentioned",
   "taskAssigned",
   "rightsExpiring",
-  "mediaJobCompleted"
+  "mediaJobCompleted",
+  "taskDueSoon"
 ];
 
 type FieldState = { status: "idle" } | { status: "saving" } | { status: "error"; message: string };

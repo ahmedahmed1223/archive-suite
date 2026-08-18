@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AiAssistantController;
 use App\Http\Controllers\Api\V1\ApiKeysController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AutomationRulesController;
+use App\Http\Controllers\Api\V1\AutomationRuleTemplatesController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\BulkMacrosController;
 use App\Http\Controllers\Api\V1\CapabilitiesController;
@@ -43,6 +44,8 @@ use App\Http\Controllers\Api\V1\OnboardingProgressController;
 use App\Http\Controllers\Api\V1\PluginMarketplaceController;
 use App\Http\Controllers\Api\V1\ProjectsController;
 use App\Http\Controllers\Api\V1\ProjectTasksController;
+use App\Http\Controllers\Api\V1\ProjectTaskTemplatesController;
+use App\Http\Controllers\Api\V1\TaskEscalationPolicyController;
 use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordAiAssistController;
 use App\Http\Controllers\Api\V1\RecordAiSuggestionController;
@@ -351,6 +354,14 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/project-tasks', [ProjectTasksController::class, 'index']);
         Route::post('/project-tasks', [ProjectTasksController::class, 'store']);
         Route::patch('/project-tasks/{id}', [ProjectTasksController::class, 'update']);
+        // V3-WORK-002: archive/review/production presets for the create-task form above.
+        Route::get('/project-task-templates', [ProjectTaskTemplatesController::class, 'index']);
+        Route::post('/project-task-templates', [ProjectTaskTemplatesController::class, 'store']);
+        Route::patch('/project-task-templates/{id}', [ProjectTaskTemplatesController::class, 'update']);
+        Route::delete('/project-task-templates/{id}', [ProjectTaskTemplatesController::class, 'destroy']);
+        // V3-WORK-002: admin-configurable thresholds for the escalation sweep.
+        Route::get('/task-escalation-policy', [TaskEscalationPolicyController::class, 'show']);
+        Route::patch('/task-escalation-policy', [TaskEscalationPolicyController::class, 'update']);
         Route::post('/projects', [ProjectsController::class, 'store']);
         Route::patch('/projects/{id}', [ProjectsController::class, 'update']);
         Route::delete('/projects/{id}', [ProjectsController::class, 'destroy']);
@@ -516,6 +527,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/automation/rules', [AutomationRulesController::class, 'store']);
         Route::patch('/automation/rules/{id}', [AutomationRulesController::class, 'update']);
         Route::delete('/automation/rules/{id}', [AutomationRulesController::class, 'destroy']);
+        // V3-WORK-002: archive/review/production presets for the create-rule form above.
+        Route::get('/automation/rule-templates', [AutomationRuleTemplatesController::class, 'index']);
+        Route::post('/automation/rule-templates', [AutomationRuleTemplatesController::class, 'store']);
+        Route::patch('/automation/rule-templates/{id}', [AutomationRuleTemplatesController::class, 'update']);
+        Route::delete('/automation/rule-templates/{id}', [AutomationRuleTemplatesController::class, 'destroy']);
         Route::post('/automation/rules/{id}/run', [AutomationRulesController::class, 'run']);
 
         Route::get('/bulk-macros', [BulkMacrosController::class, 'index']);

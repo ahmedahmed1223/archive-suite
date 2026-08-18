@@ -380,7 +380,8 @@ export const settings = {
         commentMentioned: "Mentioned in a comment",
         taskAssigned: "Assigned a task",
         rightsExpiring: "Rights approaching expiry",
-        mediaJobCompleted: "Media job completed"
+        mediaJobCompleted: "Media job completed",
+        taskDueSoon: "Task approaching its target deadline"
       }
     },
     presets: {

@@ -15,6 +15,7 @@ import {
   type AutomationRule,
   type AutomationRuleAction,
   type AutomationRuleRun,
+  type AutomationRuleTemplate,
   type AutomationRuleTrigger
 } from "@/lib/archive-api";
 import { getRecordWorkflowStatus, recordMatches } from "@/lib/record-utils";
@@ -48,6 +49,8 @@ export default function AutomationPage() {
   const [error, setError] = useState("");
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [runs, setRuns] = useState<AutomationRuleRun[]>([]);
+  const [templates, setTemplates] = useState<AutomationRuleTemplate[]>([]);
+  const [templateId, setTemplateId] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
@@ -81,8 +84,27 @@ export default function AutomationPage() {
       if (response.ok) setRecords(response.records);
       else setError(response.error);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshAutomation and the inline search callback are redefined every render; api is the only stable dependency and is already listed
+    void (async () => {
+      const response = await api.automationRuleTemplates();
+      if (response.ok) setTemplates(response.templates);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshAutomation and the inline search/template callbacks are redefined every render; api is the only stable dependency and is already listed
   }, [api]);
+
+  function applyTemplate(id: string) {
+    setTemplateId(id);
+    const template = templates.find((item) => item.id === id);
+    if (!template) return;
+
+    setName(template.name);
+    setTrigger(template.trigger);
+    setQuery(template.query);
+    setType(template.type || "all");
+    setTag(template.tag || "all");
+    setStatus(template.status || "all");
+    setDepartmentId(template.departmentId);
+    setAction(template.action);
+  }
 
   const types = useMemo(() => Array.from(new Set(records.map((record) => record.type).filter(Boolean))) as string[], [records]);
   const tags = useMemo(() => Array.from(new Set(records.flatMap((record) => record.tags || []))).sort((a, b) => a.localeCompare(b, "ar")), [records]);
@@ -117,6 +139,7 @@ export default function AutomationPage() {
     setStatus("all");
     setDepartmentId("");
     setAction("notify-admin");
+    setTemplateId("");
     setStatusMessage(copy.feedback.saved);
     await refreshAutomation();
   }
@@ -180,6 +203,17 @@ export default function AutomationPage() {
       >
         {canManageAutomation ? (
           <form className="archive-toolbar-grid" onSubmit={addRule}>
+            {templates.length > 0 ? (
+              <label>
+                <span>{copy.form.templateLabel}</span>
+                <select value={templateId} onChange={(event) => applyTemplate(event.target.value)}>
+                  <option value="">{copy.form.templateNone}</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>{template.name}</option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label>
               <span>{copy.form.nameLabel}</span>
               <input className="search-input" value={name} onChange={(event) => setName(event.target.value)} />

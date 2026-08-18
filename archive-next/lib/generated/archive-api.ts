@@ -207,6 +207,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/automation/rule-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List archive/review/production automation-rule templates */
+        get: operations["listAutomationRuleTemplates"];
+        put?: never;
+        /** Create an automation-rule template (admin only) */
+        post: operations["createAutomationRuleTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/automation/rule-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an automation-rule template (admin only) */
+        delete: operations["deleteAutomationRuleTemplate"];
+        options?: never;
+        head?: never;
+        /** Update an automation-rule template (admin only) */
+        patch: operations["updateAutomationRuleTemplate"];
+        trace?: never;
+    };
     "/automation/rules": {
         parameters: {
             query?: never;
@@ -1465,6 +1501,42 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/project-task-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List archive/review/production project-task templates */
+        get: operations["listProjectTaskTemplates"];
+        put?: never;
+        /** Create a project-task template (admin only) */
+        post: operations["createProjectTaskTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-task-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a project-task template (admin only) */
+        delete: operations["deleteProjectTaskTemplate"];
+        options?: never;
+        head?: never;
+        /** Update a project-task template (admin only) */
+        patch: operations["updateProjectTaskTemplate"];
         trace?: never;
     };
     "/project-tasks": {
@@ -3367,6 +3439,24 @@ export interface paths {
         patch: operations["updateTagNode"];
         trace?: never;
     };
+    "/task-escalation-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the task escalation policy */
+        get: operations["getTaskEscalationPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the task escalation policy (admin only) */
+        patch: operations["updateTaskEscalationPolicy"];
+        trace?: never;
+    };
     "/trash": {
         parameters: {
             query?: never;
@@ -4081,6 +4171,32 @@ export interface components {
             rules: components["schemas"]["AutomationRule"][];
             runs: components["schemas"]["AutomationRuleRun"][];
         };
+        AutomationRuleTemplate: {
+            action: components["schemas"]["AutomationRuleAction"];
+            category: components["schemas"]["AutomationRuleTemplateCategory"];
+            /** Format: date-time */
+            createdAt: string | null;
+            departmentId: string;
+            description: string | null;
+            fileExtension: string;
+            id: string;
+            name: string;
+            query: string;
+            status: string;
+            tag: string;
+            trigger: components["schemas"]["AutomationRuleTrigger"];
+            type: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        /** @enum {string} */
+        AutomationRuleTemplateCategory: "archive" | "review" | "production";
+        AutomationRuleTemplateResponse: components["schemas"]["OkEnvelope"] & {
+            template: components["schemas"]["AutomationRuleTemplate"];
+        };
+        AutomationRuleTemplatesResponse: components["schemas"]["OkEnvelope"] & {
+            templates: components["schemas"]["AutomationRuleTemplate"][];
+        };
         /** @enum {string} */
         AutomationRuleTrigger: "record.created" | "record.updated" | "media.failed" | "schedule.daily";
         BackupInfo: {
@@ -4448,6 +4564,19 @@ export interface components {
             trigger: components["schemas"]["AutomationRuleTrigger"];
             type?: string;
         };
+        CreateAutomationRuleTemplateRequest: {
+            action: components["schemas"]["AutomationRuleAction"];
+            category: components["schemas"]["AutomationRuleTemplateCategory"];
+            departmentId?: string;
+            description?: string | null;
+            fileExtension?: string;
+            name: string;
+            query?: string;
+            status?: string;
+            tag?: string;
+            trigger: components["schemas"]["AutomationRuleTrigger"];
+            type?: string;
+        };
         CreateBulkMacroRequest: {
             name: string;
             steps: components["schemas"]["BulkMacroStep"][];
@@ -4462,6 +4591,14 @@ export interface components {
             name: string;
             tracks?: Record<string, never>[] | null;
             transitions?: Record<string, never>[] | null;
+        };
+        CreateProjectTaskTemplateRequest: {
+            category: components["schemas"]["ProjectTaskTemplateCategory"];
+            /** @enum {string} */
+            defaultStatus?: "todo" | "in_progress" | "review" | "done";
+            description?: string | null;
+            targetDurationMinutes?: number | null;
+            title: string;
         };
         CreateRecordRelationRequest: {
             note?: string;
@@ -5301,7 +5438,7 @@ export interface components {
         };
         NotificationsExperienceSettings: {
             dailyDigest?: boolean;
-            optional?: ("reviewAssigned" | "commentMentioned" | "taskAssigned" | "rightsExpiring" | "mediaJobCompleted")[];
+            optional?: ("reviewAssigned" | "commentMentioned" | "taskAssigned" | "rightsExpiring" | "mediaJobCompleted" | "taskDueSoon")[];
         };
         OdbcProbe: {
             driverLoaded: boolean;
@@ -5452,6 +5589,9 @@ export interface components {
             recordId: string | null;
             /** @enum {string} */
             status: "todo" | "in_progress" | "review" | "done";
+            /** Format: date-time */
+            targetDeadlineAt: string | null;
+            targetDurationMinutes: number | null;
             title: string;
             /** Format: date-time */
             updatedAt: string;
@@ -5464,6 +5604,7 @@ export interface components {
             recordId?: string | null;
             /** @enum {string} */
             status?: "todo" | "in_progress" | "review" | "done";
+            targetDurationMinutes?: number | null;
             title: string;
         };
         ProjectTaskResponse: components["schemas"]["OkEnvelope"] & {
@@ -5472,6 +5613,27 @@ export interface components {
         ProjectTasksResponse: components["schemas"]["OkEnvelope"] & {
             tasks: components["schemas"]["ProjectTask"][];
         };
+        ProjectTaskTemplate: {
+            category: components["schemas"]["ProjectTaskTemplateCategory"];
+            /** Format: date-time */
+            createdAt: string | null;
+            /** @enum {string} */
+            defaultStatus: "todo" | "in_progress" | "review" | "done";
+            description: string | null;
+            id: string;
+            targetDurationMinutes: number | null;
+            title: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        /** @enum {string} */
+        ProjectTaskTemplateCategory: "archive" | "review" | "production";
+        ProjectTaskTemplateResponse: components["schemas"]["OkEnvelope"] & {
+            template: components["schemas"]["ProjectTaskTemplate"];
+        };
+        ProjectTaskTemplatesResponse: components["schemas"]["OkEnvelope"] & {
+            templates: components["schemas"]["ProjectTaskTemplate"][];
+        };
         ProjectTaskUpdateRequest: {
             assignee?: string | null;
             /** Format: date */
@@ -5479,6 +5641,7 @@ export interface components {
             recordId?: string | null;
             /** @enum {string} */
             status?: "todo" | "in_progress" | "review" | "done";
+            targetDurationMinutes?: number | null;
             title?: string;
         };
         ProjectUpdateRequest: {
@@ -6503,6 +6666,16 @@ export interface components {
             parent?: string;
             tag?: string;
         };
+        TaskEscalationPolicy: {
+            enabled: boolean;
+            repeatMinutes: number | null;
+            /** Format: date-time */
+            updatedAt: string | null;
+            warningBeforeMinutes: number | null;
+        };
+        TaskEscalationPolicyResponse: components["schemas"]["OkEnvelope"] & {
+            policy: components["schemas"]["TaskEscalationPolicy"];
+        };
         TranscriptCue: {
             endSeconds: number;
             startSeconds: number;
@@ -6655,6 +6828,19 @@ export interface components {
             trigger?: components["schemas"]["AutomationRuleTrigger"];
             type?: string;
         };
+        UpdateAutomationRuleTemplateRequest: {
+            action?: components["schemas"]["AutomationRuleAction"];
+            category?: components["schemas"]["AutomationRuleTemplateCategory"];
+            departmentId?: string;
+            description?: string | null;
+            fileExtension?: string;
+            name?: string;
+            query?: string;
+            status?: string;
+            tag?: string;
+            trigger?: components["schemas"]["AutomationRuleTrigger"];
+            type?: string;
+        };
         UpdateBulkMacroRequest: {
             name?: string;
             steps?: components["schemas"]["BulkMacroStep"][];
@@ -6731,6 +6917,14 @@ export interface components {
             /** @enum {string} */
             status: "pending" | "completed";
         };
+        UpdateProjectTaskTemplateRequest: {
+            category?: components["schemas"]["ProjectTaskTemplateCategory"];
+            /** @enum {string} */
+            defaultStatus?: "todo" | "in_progress" | "review" | "done";
+            description?: string | null;
+            targetDurationMinutes?: number | null;
+            title?: string;
+        };
         UpdateRecordRelationRequest: {
             note?: string | null;
             type?: components["schemas"]["RelationType"];
@@ -6742,6 +6936,11 @@ export interface components {
             webhookUrlAllowlist?: string[];
             /** @enum {string} */
             whisperDevice?: "cpu" | "cuda";
+        };
+        UpdateTaskEscalationPolicyRequest: {
+            enabled?: boolean;
+            repeatMinutes?: number | null;
+            warningBeforeMinutes?: number | null;
         };
         UpdateUserRoleRequest: {
             /** @enum {string} */
@@ -7443,6 +7642,103 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             429: components["responses"]["Error"];
+        };
+    };
+    listAutomationRuleTemplates: {
+        parameters: {
+            query?: {
+                category?: components["schemas"]["AutomationRuleTemplateCategory"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Automation rule templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRuleTemplatesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createAutomationRuleTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAutomationRuleTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created automation rule template */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRuleTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteAutomationRuleTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateAutomationRuleTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAutomationRuleTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated automation rule template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRuleTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listAutomationRules: {
@@ -9969,6 +10265,103 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    listProjectTaskTemplates: {
+        parameters: {
+            query?: {
+                category?: components["schemas"]["ProjectTaskTemplateCategory"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Project task templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTaskTemplatesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createProjectTaskTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProjectTaskTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created project task template */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTaskTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteProjectTaskTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateProjectTaskTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProjectTaskTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated project task template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTaskTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };
@@ -13711,6 +14104,54 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    getTaskEscalationPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Task escalation policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskEscalationPolicyResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    updateTaskEscalationPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskEscalationPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated task escalation policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskEscalationPolicyResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };

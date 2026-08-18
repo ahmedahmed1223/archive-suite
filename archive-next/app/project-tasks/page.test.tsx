@@ -8,11 +8,15 @@ const projects = vi.fn();
 const projectTasks = vi.fn();
 const createProjectTask = vi.fn();
 const updateProjectTask = vi.fn();
+const projectTaskTemplates = vi.fn();
 
 vi.mock("@/lib/archive-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
-  return { ...actual, createArchiveApiClient: () => ({ projects, projectTasks, createProjectTask, updateProjectTask }) };
+  return { ...actual, createArchiveApiClient: () => ({ projects, projectTasks, createProjectTask, updateProjectTask, projectTaskTemplates }) };
 });
+vi.mock("@/lib/auth-session", () => ({
+  useAuthSession: () => ({ user: { id: "user-1", role: "editor" }, status: "authenticated", accessToken: "token-abc" })
+}));
 vi.mock("@/components/AppShell", () => ({ default: ({ children }: { children: ReactNode }) => <main>{children}</main> }));
 vi.mock("@/components/PageToolbar", () => ({ default: ({ title, description }: { title: string; description: string }) => <header><h1>{title}</h1><p>{description}</p></header> }));
 vi.mock("@/components/EmptyState", () => ({ default: ({ title }: { title: string }) => <p>{title}</p> }));
@@ -31,6 +35,7 @@ afterEach(cleanup);
 beforeEach(() => {
   projects.mockResolvedValue({ ok: true, projects: [{ id: "project-1", name: "وثائقي", notes: null, sortOrder: 0, createdAt: "2026-01-01", updatedAt: "2026-01-01" }] });
   projectTasks.mockResolvedValue({ ok: true, tasks: [] });
+  projectTaskTemplates.mockResolvedValue({ ok: true, templates: [] });
   createProjectTask.mockReset();
   updateProjectTask.mockReset();
 
