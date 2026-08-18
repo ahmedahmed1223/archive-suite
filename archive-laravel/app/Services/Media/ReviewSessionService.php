@@ -7,6 +7,7 @@ namespace App\Services\Media;
 use App\Exceptions\InvalidReviewTransitionException;
 use App\Models\ReviewSession;
 use App\Models\User;
+use App\Support\SelfApprovalGuard;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -44,8 +45,10 @@ final class ReviewSessionService
 
     /**
      * Decisions worth remembering "who made the call" for, beyond the
-     * generic updated_at trail. Self-approval is intentionally not blocked
-     * here -- see V3-WORK-003, which owns that policy.
+     * generic updated_at trail. Self-approval on 'approve' is blocked via
+     * SelfApprovalGuard below (V3-WORK-003); 'request_changes' is left
+     * unguarded since asking for changes on your own submission is not the
+     * risk this policy targets.
      */
     private const DECISION_ACTIONS = ['approve', 'request_changes'];
 
@@ -107,6 +110,10 @@ final class ReviewSessionService
             throw new InvalidReviewTransitionException(
                 "Cannot {$action} a review session in state \"{$session->state}\"."
             );
+        }
+
+        if ($action === 'approve') {
+            SelfApprovalGuard::assertNotSelfApproving($session->created_by, $actor?->getKey());
         }
 
         $session->state = $definition['to'];
