@@ -56,3 +56,9 @@ new version passes health checks and a representative search, upload, and media
 operation. Use Control Center for update, rollback, backup, restore, and
 uninstall so cleanup remains limited to paths recorded in the installation
 manifest. See [operations](ops/support.md) and [Whisper](whisper.md).
+
+Database migrations run automatically as part of `update`; they only add
+tables and columns and do not rewrite or drop existing data, so no manual
+data migration step is required. If a health check or representative
+operation fails after updating, restore the verified backup taken before the
+update rather than attempting to roll the schema back manually.

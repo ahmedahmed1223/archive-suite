@@ -23,7 +23,41 @@ path is the Next.js application with the Laravel API.
   should be revoked when no longer needed.
 - Coordinate through notes, comments, projects, and tasks while preserving the
   audit trail.
+- Review and refine audio or video in the [media studio](media-studio.md):
+  timeline comments, transcript editing, version comparison, and cached
+  derivatives.
+- Start a new type, metadata template, and starter tags together with a
+  vocabulary template in **Types → Templates**, instead of building each one
+  by hand.
 
 Operators configure integrations and external services through the system
 settings that apply to their organisation. Use the capabilities available to
 your role and contact an administrator when a required service is absent.
+
+## Personalize your workspace
+
+**Settings → My experience** holds your personal locale, time zone, date and
+time format, theme, density, text scale, reduced motion, and home page.
+**Settings → Presets** applies a ready-made bundle of these choices — plus
+navigation order and archive view — in one action: Archivist, Reviewer, Media
+editor, or Simple. **Settings → Navigation** and **Settings → View** let you
+fine-tune module order, visibility, and the archive list's columns and page
+size individually. All of these apply to your own account only; an
+administrator's capability settings still control which modules and features
+exist for you to show. See the [administration guide](admin-guide.md) for
+what an administrator configures.
+
+## Work inbox and approvals
+
+**Work inbox** collects your pending tasks, reviews awaiting your decision,
+rights nearing expiry, and unread notifications in one filterable list, so
+you do not have to check each area separately. A task left unresolved past
+its deadline escalates automatically on the schedule your administrator
+configures.
+
+Some bulk actions — deleting records, adding a tag, changing workflow status,
+or changing a rights holder in bulk — may require approval from another user
+before they run, depending on your organization's policy. Submit such an
+action from **Approval requests**; it waits there until enough other users
+approve it (you cannot approve your own request), then still requires an
+explicit **Execute** step before anything changes.

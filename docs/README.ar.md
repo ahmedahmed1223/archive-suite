@@ -19,12 +19,15 @@
 ## استخدم مسار
 
 - [الميزات والعمل اليومي](features-guide.ar.md)
+- [استوديو الوسائط](media-studio.ar.md)
 - [البحث والبحث الدلالي](semantic-search.ar.md)
 - [الحقوق والمشاركة وODBC](odbc-laravel-bridge.ar.md)
 
 ## شغّل مسار
 
+- [دليل الإدارة](admin-guide.ar.md)
 - [مركز التحكم](control-center.ar.md)
+- [طابور مهام الوسائط والمشتقات](media-derivatives.ar.md)
 - [الدعم وإدارة البلاغات](ops/support.ar.md)
 - [دعم المنصات](platform-parity.ar.md)
 - [المراقبة المحلية](local-observability.ar.md)
