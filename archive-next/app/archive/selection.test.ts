@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { computeDragSelectedIds, resolveGridSelectionClick, type RectLike } from "./page";
+import { computeDragSelectedIds, resolveGridSelectionClick, type RectLike } from "./selection";
 
 const VISIBLE = ["a", "b", "c", "d", "e"];
 
