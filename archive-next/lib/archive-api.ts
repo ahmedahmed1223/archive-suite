@@ -214,34 +214,11 @@ export interface ArchiveSuggestionFeedback {
   updatedAt?: string | null;
 }
 
-export type RelationTypeKey =
-  | "is_part_of"
-  | "contains"
-  | "references"
-  | "depends_on"
-  | "related_to"
-  | "alternative_of"
-  | "copy_of"
-  | "precedes"
-  | "follows";
+export type RelationTypeKey = GeneratedSchemas["RelationType"];
 
-export interface RelationTypeOption {
-  key: RelationTypeKey;
-  label: string;
-  inverse: string;
-  bidirectional: boolean;
-}
+export type RelationTypeOption = GeneratedSchemas["RelationTypeOption"];
 
-export interface RecordRelation {
-  id: string;
-  sourceId: string;
-  targetId: string;
-  type: RelationTypeKey;
-  label: string;
-  note?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
+export type RecordRelation = GeneratedSchemas["RecordRelation"];
 
 export type RelationGraphNode = GeneratedSchemas["RelationGraphNode"];
 
@@ -258,17 +235,9 @@ export interface RelationGraphPayload {
   relationTypes: RelationTypeOption[];
 }
 
-export interface CreateRelationPayload {
-  sourceId: string;
-  targetId: string;
-  type: RelationTypeKey;
-  note?: string;
-}
+export type CreateRelationPayload = GeneratedSchemas["CreateRecordRelationRequest"];
 
-export interface UpdateRelationPayload {
-  type?: RelationTypeKey;
-  note?: string | null;
-}
+export type UpdateRelationPayload = GeneratedSchemas["UpdateRecordRelationRequest"];
 
 export type RecordNoteRegion = GeneratedSchemas["RecordNoteRegion"];
 
