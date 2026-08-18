@@ -207,6 +207,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/automation/rule-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List archive/review/production automation-rule templates */
+        get: operations["listAutomationRuleTemplates"];
+        put?: never;
+        /** Create an automation-rule template (admin only) */
+        post: operations["createAutomationRuleTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/automation/rule-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an automation-rule template (admin only) */
+        delete: operations["deleteAutomationRuleTemplate"];
+        options?: never;
+        head?: never;
+        /** Update an automation-rule template (admin only) */
+        patch: operations["updateAutomationRuleTemplate"];
+        trace?: never;
+    };
     "/automation/rules": {
         parameters: {
             query?: never;
@@ -4081,6 +4117,32 @@ export interface components {
             rules: components["schemas"]["AutomationRule"][];
             runs: components["schemas"]["AutomationRuleRun"][];
         };
+        AutomationRuleTemplate: {
+            action: components["schemas"]["AutomationRuleAction"];
+            category: components["schemas"]["AutomationRuleTemplateCategory"];
+            /** Format: date-time */
+            createdAt: string | null;
+            departmentId: string;
+            description: string | null;
+            fileExtension: string;
+            id: string;
+            name: string;
+            query: string;
+            status: string;
+            tag: string;
+            trigger: components["schemas"]["AutomationRuleTrigger"];
+            type: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        /** @enum {string} */
+        AutomationRuleTemplateCategory: "archive" | "review" | "production";
+        AutomationRuleTemplateResponse: components["schemas"]["OkEnvelope"] & {
+            template: components["schemas"]["AutomationRuleTemplate"];
+        };
+        AutomationRuleTemplatesResponse: components["schemas"]["OkEnvelope"] & {
+            templates: components["schemas"]["AutomationRuleTemplate"][];
+        };
         /** @enum {string} */
         AutomationRuleTrigger: "record.created" | "record.updated" | "media.failed" | "schedule.daily";
         BackupInfo: {
@@ -4441,6 +4503,19 @@ export interface components {
             departmentId?: string;
             /** @default true */
             enabled?: boolean;
+            name: string;
+            query?: string;
+            status?: string;
+            tag?: string;
+            trigger: components["schemas"]["AutomationRuleTrigger"];
+            type?: string;
+        };
+        CreateAutomationRuleTemplateRequest: {
+            action: components["schemas"]["AutomationRuleAction"];
+            category: components["schemas"]["AutomationRuleTemplateCategory"];
+            departmentId?: string;
+            description?: string | null;
+            fileExtension?: string;
             name: string;
             query?: string;
             status?: string;
@@ -6655,6 +6730,19 @@ export interface components {
             trigger?: components["schemas"]["AutomationRuleTrigger"];
             type?: string;
         };
+        UpdateAutomationRuleTemplateRequest: {
+            action?: components["schemas"]["AutomationRuleAction"];
+            category?: components["schemas"]["AutomationRuleTemplateCategory"];
+            departmentId?: string;
+            description?: string | null;
+            fileExtension?: string;
+            name?: string;
+            query?: string;
+            status?: string;
+            tag?: string;
+            trigger?: components["schemas"]["AutomationRuleTrigger"];
+            type?: string;
+        };
         UpdateBulkMacroRequest: {
             name?: string;
             steps?: components["schemas"]["BulkMacroStep"][];
@@ -7443,6 +7531,103 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             429: components["responses"]["Error"];
+        };
+    };
+    listAutomationRuleTemplates: {
+        parameters: {
+            query?: {
+                category?: components["schemas"]["AutomationRuleTemplateCategory"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Automation rule templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRuleTemplatesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createAutomationRuleTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAutomationRuleTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created automation rule template */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRuleTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteAutomationRuleTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateAutomationRuleTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAutomationRuleTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated automation rule template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRuleTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listAutomationRules: {

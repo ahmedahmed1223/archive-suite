@@ -14,14 +14,16 @@ use stdClass;
 
 class AutomationRulesController extends Controller
 {
-    private const TRIGGERS = [
+    // V3-WORK-002: public so AutomationRuleTemplatesController can validate
+    // against the exact same trigger/action vocabulary without duplicating it.
+    public const TRIGGERS = [
         'record.created',
         'record.updated',
         'media.failed',
         'schedule.daily',
     ];
 
-    private const ACTIONS = [
+    public const ACTIONS = [
         'add-tag',
         'set-review',
         'notify-admin',

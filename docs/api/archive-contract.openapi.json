@@ -3998,6 +3998,83 @@
         }
       }
     },
+    "/automation/rule-templates": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "List archive/review/production automation-rule templates",
+        "operationId": "listAutomationRuleTemplates",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "category", "in": "query", "required": false, "schema": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automation rule templates",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AutomationRuleTemplatesResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Automation"],
+        "summary": "Create an automation-rule template (admin only)",
+        "operationId": "createAutomationRuleTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateAutomationRuleTemplateRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created automation rule template",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AutomationRuleTemplateResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/automation/rule-templates/{id}": {
+      "patch": {
+        "tags": ["Automation"],
+        "summary": "Update an automation-rule template (admin only)",
+        "operationId": "updateAutomationRuleTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateAutomationRuleTemplateRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated automation rule template",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AutomationRuleTemplateResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Automation"],
+        "summary": "Delete an automation-rule template (admin only)",
+        "operationId": "deleteAutomationRuleTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/media/{mediaUid}/review-links": {
       "post": {
         "tags": ["Review"],
@@ -8867,6 +8944,88 @@
             "required": ["run"],
             "properties": {
               "run": { "$ref": "#/components/schemas/AutomationRuleRun" }
+            }
+          }
+        ]
+      },
+      "AutomationRuleTemplateCategory": {
+        "type": "string",
+        "enum": ["archive", "review", "production"]
+      },
+      "AutomationRuleTemplate": {
+        "type": "object",
+        "required": ["id", "category", "name", "description", "trigger", "query", "type", "tag", "status", "fileExtension", "departmentId", "action", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "category": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" },
+          "name": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string" },
+          "type": { "type": "string" },
+          "tag": { "type": "string" },
+          "status": { "type": "string" },
+          "fileExtension": { "type": "string" },
+          "departmentId": { "type": "string" },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CreateAutomationRuleTemplateRequest": {
+        "type": "object",
+        "required": ["category", "name", "trigger", "action"],
+        "properties": {
+          "category": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": ["string", "null"], "maxLength": 1000 },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string", "maxLength": 500 },
+          "type": { "type": "string", "maxLength": 100 },
+          "tag": { "type": "string", "maxLength": 100 },
+          "status": { "type": "string", "maxLength": 100 },
+          "fileExtension": { "type": "string", "maxLength": 200 },
+          "departmentId": { "type": "string", "maxLength": 100 },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" }
+        }
+      },
+      "UpdateAutomationRuleTemplateRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "category": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": ["string", "null"], "maxLength": 1000 },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string", "maxLength": 500 },
+          "type": { "type": "string", "maxLength": 100 },
+          "tag": { "type": "string", "maxLength": 100 },
+          "status": { "type": "string", "maxLength": 100 },
+          "fileExtension": { "type": "string", "maxLength": 200 },
+          "departmentId": { "type": "string", "maxLength": 100 },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" }
+        }
+      },
+      "AutomationRuleTemplatesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["templates"],
+            "properties": {
+              "templates": { "type": "array", "items": { "$ref": "#/components/schemas/AutomationRuleTemplate" } }
+            }
+          }
+        ]
+      },
+      "AutomationRuleTemplateResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["template"],
+            "properties": {
+              "template": { "$ref": "#/components/schemas/AutomationRuleTemplate" }
             }
           }
         ]

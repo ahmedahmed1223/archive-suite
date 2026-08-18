@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\AiAssistantController;
 use App\Http\Controllers\Api\V1\ApiKeysController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AutomationRulesController;
+use App\Http\Controllers\Api\V1\AutomationRuleTemplatesController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\BulkMacrosController;
 use App\Http\Controllers\Api\V1\CapabilitiesController;
@@ -516,6 +517,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/automation/rules', [AutomationRulesController::class, 'store']);
         Route::patch('/automation/rules/{id}', [AutomationRulesController::class, 'update']);
         Route::delete('/automation/rules/{id}', [AutomationRulesController::class, 'destroy']);
+        // V3-WORK-002: archive/review/production presets for the create-rule form above.
+        Route::get('/automation/rule-templates', [AutomationRuleTemplatesController::class, 'index']);
+        Route::post('/automation/rule-templates', [AutomationRuleTemplatesController::class, 'store']);
+        Route::patch('/automation/rule-templates/{id}', [AutomationRuleTemplatesController::class, 'update']);
+        Route::delete('/automation/rule-templates/{id}', [AutomationRuleTemplatesController::class, 'destroy']);
         Route::post('/automation/rules/{id}/run', [AutomationRulesController::class, 'run']);
 
         Route::get('/bulk-macros', [BulkMacrosController::class, 'index']);

@@ -824,6 +824,25 @@ export interface CreateAutomationRulePayload {
 
 export type UpdateAutomationRulePayload = Partial<CreateAutomationRulePayload>;
 
+export type AutomationRuleTemplateCategory = "archive" | "review" | "production";
+
+export interface AutomationRuleTemplate {
+  id: string;
+  category: AutomationRuleTemplateCategory;
+  name: string;
+  description?: string | null;
+  trigger: AutomationRuleTrigger;
+  query: string;
+  type: string;
+  tag: string;
+  status: string;
+  fileExtension: string;
+  departmentId: string;
+  action: AutomationRuleAction;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
 export type PaginationMeta = GeneratedSchemas["PaginationMeta"];
 
 export interface RecordHistoryEntry {
@@ -1848,6 +1867,7 @@ export interface ArchiveApiClient {
   updateAutomationRule(id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
   deleteAutomationRule(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   runAutomationRule(id: string, payload?: { dryRun?: boolean }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: AutomationRuleRun }>>;
+  automationRuleTemplates(category?: AutomationRuleTemplateCategory, options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: AutomationRuleTemplate[] }>>;
   bulkMacros(options?: AuthRequestOptions): Promise<ApiEnvelope<{ macros: BulkMacro[] }>>;
   bulkMacro(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ macro: BulkMacro }>>;
   createBulkMacro(payload: CreateBulkMacroPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ macro: BulkMacro }>>;
@@ -2978,6 +2998,8 @@ export function createArchiveApiClient({
       del<{ deleted: boolean }>(`/automation/rules/${encodeURIComponent(id)}`, undefined, options),
     runAutomationRule: (id: string, payload?: { dryRun?: boolean }, options?: AuthRequestOptions) =>
       post<{ run: AutomationRuleRun }>(`/automation/rules/${encodeURIComponent(id)}/run`, payload, options),
+    automationRuleTemplates: (category?: AutomationRuleTemplateCategory, options?: AuthRequestOptions) =>
+      get<{ templates: AutomationRuleTemplate[] }>(`/automation/rule-templates${category ? `?category=${encodeURIComponent(category)}` : ""}`, options),
     bulkMacros: (options?: AuthRequestOptions) => get<{ macros: BulkMacro[] }>("/bulk-macros", options),
     bulkMacro: (id: string, options?: AuthRequestOptions) =>
       get<{ macro: BulkMacro }>(`/bulk-macros/${encodeURIComponent(id)}`, options),
