@@ -18,6 +18,7 @@ export const pageTitles = {
   projects: "المشاريع",
   automation: "الأتمتة",
   safetyPreview: "معاينة السلامة",
+  approvalRequests: "طلبات الاعتماد",
   publicCatalogue: "الكتالوج العام",
   archiveAssistant: "مساعد الأرشيف",
   archiveAssistantTours: "مسارات مساعد الأرشيف",
