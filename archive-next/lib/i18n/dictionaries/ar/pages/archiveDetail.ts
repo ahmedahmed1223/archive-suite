@@ -10,6 +10,7 @@ export const archiveDetail = {
     backToArchive: "العودة إلى الأرشيف",
     askCopilot: "اسأل المساعد عن هذا السجل",
     playMedia: "تشغيل الوسائط",
+    openStudio: "فتح في الاستوديو",
     addFavorite: "إضافة إلى المفضلة",
     removeFavorite: "إزالة من المفضلة",
     addToBasketTitle: "إضافة إلى سلة العمل",
@@ -43,6 +44,13 @@ export const archiveDetail = {
   },
   suggestions: {
     feedbackError: "تعذر حفظ تقييم الاقتراح."
+  },
+  readSurface: {
+    title: "الملخص والوصف",
+    descriptionLabel: "الوصف",
+    noDescription: "لا يوجد وصف محفوظ لهذا السجل بعد.",
+    transcriptLabel: "مقتطف من التفريغ",
+    noTranscript: "لا يوجد نص تفريغ محفوظ لهذا السجل."
   },
   recordInfo: {
     title: "معلومات السجل",
@@ -245,6 +253,7 @@ export const archiveDetail = {
     title: "المرفقات",
     description: "ملفات متعددة مرتبطة بهذا السجل الوصفي.",
     primarySuffix: " · أساسي",
+    openInStudio: "فتح في الاستوديو",
     delete: "حذف",
     empty: "لا توجد ملفات بعد؛ السجل صالح كسجل وصفي مستقل.",
     busy: "جارٍ التنفيذ…",

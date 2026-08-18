@@ -18,12 +18,26 @@ export const projectTasks = {
   assigneeLabel: "Assignee",
   recordIdLabel: "Record ID (optional)",
   dueDateLabel: "Due date",
+  templateLabel: "Start from a template",
+  templateNone: "Blank task",
+  targetDurationLabel: "Target duration (minutes)",
   addTask: "Add task",
   unassigned: "Unassigned",
   dueDatePrefix: "Due: {date}",
+  targetDeadlinePrefix: "Target: {date}",
   linkedRecord: "Linked record",
   statusAriaLabel: "Status of {title}",
   lastUpdatedPrefix: "Last updated: {date}",
   emptyTitle: "No tasks yet",
-  emptyDescription: "Add the first task to a project."
+  emptyDescription: "Add the first task to a project.",
+  escalationPanel: {
+    title: "Escalation policy (admin)",
+    description: "Controls when overdue tasks notify their assignee. The overdue notice is always sent; the due-soon notice only reaches assignees who opted in under Settings.",
+    enabledLabel: "Escalation sweep enabled",
+    warningLabel: "Due-soon notice, minutes before deadline (blank disables it)",
+    repeatLabel: "Repeat overdue notice every N minutes (blank sends once)",
+    save: "Save policy",
+    saveError: "Could not save the policy.",
+    saveSuccess: "Policy saved."
+  }
 } as const;

@@ -4,10 +4,13 @@ namespace App\Jobs;
 
 use App\Exceptions\GpuUnavailableException;
 use App\Exceptions\JobCanceledException;
+use App\Models\MediaDerivative;
 use App\Models\MediaJob;
+use App\Services\Media\MediaDerivativeService;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaQueueStatusBroadcaster;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -35,8 +38,27 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
     /** How long the uniqueId() lock is held (seconds). */
     public int $uniqueFor;
 
-    public function __construct(public readonly string $mediaJobId)
-    {
+    /** ISO-8601 timestamp this job instance was constructed (== enqueued). */
+    public readonly string $dispatchedAt;
+
+    /**
+     * requestId/dispatchedAt are optional so existing dispatch(...) call
+     * sites and direct `new ProcessMediaWorkflow($id)` construction (tests,
+     * console-triggered ingest scans) keep working unchanged. dispatchedAt
+     * defaults to construction time -- right before the job enters the
+     * queue at every call site -- so handle() can compute how long it
+     * actually waited (a readonly promoted property can't be reassigned to
+     * apply that default, hence the explicit property above).
+     */
+    public function __construct(
+        public readonly string $mediaJobId,
+        public readonly ?string $requestId = null,
+        ?string $dispatchedAt = null,
+    ) {
+        // toISOString() (not toIso8601String()) so sub-second precision
+        // survives the round trip -- a job constructed and handled within
+        // the same second must still report a non-zero queue wait.
+        $this->dispatchedAt = $dispatchedAt ?? CarbonImmutable::now()->toISOString();
         $this->timeout = (int) config('media.job_timeout_seconds', 900);
         $this->tries = (int) config('media.job_tries', 3);
         $this->uniqueFor = (int) config('media.job_unique_for_seconds', 3600);
@@ -80,6 +102,11 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
         // a second explicit argument.
         $broadcaster ??= app(MediaJobProgressBroadcaster::class);
 
+        if ($this->requestId !== null) {
+            Log::withContext(['request_id' => $this->requestId]);
+        }
+        $this->logIfSlowQueueWait();
+
         $mediaJob = MediaJob::query()->find($this->mediaJobId);
 
         if (! $mediaJob || $mediaJob->status === 'canceled') {
@@ -111,11 +138,13 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
                 'completed_at' => now(),
             ])->save();
             $broadcaster->notify($mediaJob);
+            $this->syncDerivativeOnSuccess($mediaJob, $artifacts);
         } catch (JobCanceledException) {
             // Intentional stop, not a failure: leave status as 'canceled'
             // (already set by the cancel endpoint), don't retry.
             $mediaJob->forceFill(['completed_at' => now()])->save();
             $broadcaster->notify($mediaJob);
+            $this->syncDerivativeOnFailure($mediaJob, 'Media job was canceled.');
         } catch (Throwable $error) {
             Log::error('Media job attempt failed', [
                 'mediaJobId' => $this->mediaJobId,
@@ -127,6 +156,11 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             $sanitizedError = $this->sanitizeError($error);
             $mediaJob->forceFill(['error' => $sanitizedError])->save();
             $broadcaster->notify($mediaJob);
+            // Not syncDerivativeOnFailure() here: this catch fires on every
+            // attempt, including ones Laravel will still retry. The
+            // derivative only flips to 'failed' once failed() below runs --
+            // i.e. once retries are actually exhausted -- mirroring how
+            // mediaJob.status itself only becomes 'failed' there, not here.
 
             if ($error instanceof GpuUnavailableException) {
                 app(MediaQueueStatusBroadcaster::class)->notify($sanitizedError);
@@ -134,6 +168,54 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
 
             throw $error;
         }
+    }
+
+    /**
+     * V3-MEDIA-006: a MediaJob with operation 'derivative' carries its
+     * media_derivatives row id in options.derivativeId. The processor
+     * itself (RealMediaProcessor/FakeMediaProcessor) stays unaware of that
+     * table -- it only ever returns an artifact array -- so this is the one
+     * place that closes the loop, using the first artifact's storage key as
+     * the derivative's final storage_key. No-op for every other operation.
+     *
+     * @param  array<int, array<string, mixed>>  $artifacts
+     */
+    private function syncDerivativeOnSuccess(MediaJob $mediaJob, array $artifacts): void
+    {
+        $derivative = $this->resolveDerivative($mediaJob);
+        if (! $derivative instanceof MediaDerivative) {
+            return;
+        }
+
+        $storageKey = $artifacts[0]['key'] ?? null;
+        if (! is_string($storageKey)) {
+            app(MediaDerivativeService::class)->markFailed($derivative, 'Derivative job completed without producing an output.');
+
+            return;
+        }
+
+        app(MediaDerivativeService::class)->markReady($derivative, $storageKey);
+    }
+
+    private function syncDerivativeOnFailure(MediaJob $mediaJob, string $error): void
+    {
+        $derivative = $this->resolveDerivative($mediaJob);
+        if (! $derivative instanceof MediaDerivative) {
+            return;
+        }
+
+        app(MediaDerivativeService::class)->markFailed($derivative, $error);
+    }
+
+    private function resolveDerivative(MediaJob $mediaJob): ?MediaDerivative
+    {
+        if ($mediaJob->operation !== 'derivative') {
+            return null;
+        }
+
+        $derivativeId = $mediaJob->options['derivativeId'] ?? null;
+
+        return is_string($derivativeId) ? MediaDerivative::query()->find($derivativeId) : null;
     }
 
     /**
@@ -150,12 +232,37 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             return;
         }
 
+        $sanitizedError = $this->sanitizeError($exception);
         $mediaJob->forceFill([
             'status' => 'failed',
-            'error' => $this->sanitizeError($exception),
+            'error' => $sanitizedError,
             'completed_at' => now(),
         ])->save();
         app(MediaJobProgressBroadcaster::class)->notify($mediaJob);
+        $this->syncDerivativeOnFailure($mediaJob, $sanitizedError);
+    }
+
+    /**
+     * V3-PERF-002: allowlisted metadata only, mirroring CorrelateRequest's
+     * slow_request event -- request id, timing, no mediaJobId/path/payload.
+     */
+    private function logIfSlowQueueWait(): void
+    {
+        // diffInMilliseconds returns a signed float here (dispatchedAt - now,
+        // not the unsigned int the method name implies), so round+abs it
+        // explicitly rather than trust the sign or the fractional part.
+        $queueWaitMs = (int) round(abs(CarbonImmutable::now()->diffInMilliseconds(CarbonImmutable::parse($this->dispatchedAt))));
+        $threshold = (int) config('observability.slow_queue_wait_threshold_ms', 5000);
+        if ($queueWaitMs < $threshold) {
+            return;
+        }
+
+        Log::warning('slow_queue_job', [
+            'request_id' => $this->requestId,
+            'job' => 'ProcessMediaWorkflow',
+            'queue_wait_ms' => $queueWaitMs,
+            'timestamp' => now()->toIso8601String(),
+        ]);
     }
 
     /**

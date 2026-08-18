@@ -28,6 +28,7 @@ for (const pathName of [
   "/auth/me",
   "/auth/refresh",
   "/auth/logout",
+  "/account/experience",
   "/records",
   "/records/{id}/attachments",
   "/records/{id}/attachments/{attachmentId}",
@@ -55,6 +56,13 @@ for (const pathName of [
   "/folders",
   "/media/{mediaUid}/review-links",
   "/review-links/{token}",
+  "/records/{id}/review-sessions",
+  "/review-sessions/{id}",
+  "/review-sessions/{id}/start",
+  "/review-sessions/{id}/request-changes",
+  "/review-sessions/{id}/approve",
+  "/review-sessions/{id}/resume",
+  "/review-sessions/{id}/close",
   "/collaboration/rooms/{roomKey}/presence",
   "/collaboration/rooms/{roomKey}/locks",
   "/collaboration/rooms/{roomKey}/locks/release",
@@ -75,6 +83,7 @@ for (const pathName of [
   "/users/{id}",
   "/invitations/{token}/accept",
   "/system/security-settings",
+  "/system/capabilities",
   "/system/backups",
   "/system/backups/run",
   "/system/backups/preview",
@@ -106,6 +115,13 @@ for (const pathName of [
   "/bulk-macros/{id}/preview",
   "/bulk-macros/{id}/run",
   "/bulk-macros/{id}/runs",
+  "/bulk-macros/{id}/runs/{runId}/rollback",
+  "/sensitive-operation-policies",
+  "/sensitive-operation-policies/{operationKey}",
+  "/approval-requests",
+  "/approval-requests/{id}",
+  "/approval-requests/{id}/decisions",
+  "/approval-requests/{id}/execute",
   "/system/status",
   "/system/dr-probe",
   "/system/control/{action}",
@@ -177,6 +193,13 @@ for (const schemaName of [
   "ReviewComment",
   "CreateReviewLinkResponse",
   "ReviewLinkPayloadResponse",
+  "ReviewSessionState",
+  "ReviewSession",
+  "ReviewSessionCreateRequest",
+  "ReviewSessionUpdateRequest",
+  "ReviewSessionTransitionRequest",
+  "ReviewSessionResponse",
+  "ReviewSessionsResponse",
   "CollaborationParticipant",
   "CollaborationPresenceResponse",
   "CollaborationLock",
@@ -193,6 +216,15 @@ for (const schemaName of [
   "SharePayloadResponse",
   "BulkDeleteRecordsRequest",
   "BulkDeleteRecordsResponse",
+  "BulkMacroRollbackResponse",
+  "SensitiveOperationPolicy",
+  "SensitiveOperationPoliciesResponse",
+  "ApprovalRequest",
+  "ApprovalRequestsResponse",
+  "ApprovalRequestResponse",
+  "CreateApprovalRequestRequest",
+  "DecideApprovalRequestRequest",
+  "ExecuteApprovalRequestResponse",
   "SafetyPreviewScenario",
   "SafetyPreviewOperation",
   "SafetyPreviewCounts",
@@ -205,6 +237,24 @@ for (const schemaName of [
   "InviteUserRequest",
   "AcceptInvitationRequest",
   "SecuritySettings",
+  "SettingSource",
+  "CapabilityStatus",
+  "EffectiveCapabilitySetting",
+  "Capabilities",
+  "CapabilitiesResponse",
+  "UpdateCapabilitiesRequest",
+  "ExperienceSettingValue",
+  "NavigationExperienceSettings",
+  "ArchiveViewExperienceSettings",
+  "ViewsExperienceSettings",
+  "ShortcutsExperienceSettings",
+  "NotificationsExperienceSettings",
+  "StudioLayoutExperienceSettings",
+  "EffectiveExperienceSetting",
+  "ExperienceSettings",
+  "ExperienceProfileResponse",
+  "UpdateExperienceProfileRequest",
+  "SettingLockedError",
   "BackupInfo",
   "BackupListResponse",
   "BackupPreviewResponse",
@@ -384,5 +434,41 @@ assert.deepEqual(bulkMacroSchemas.BulkMacroTargetResult.properties.reason.enum, 
 
 assert.ok(contract.components?.securitySchemes?.bearerAuth, "API contract should define bearer auth");
 assert.ok(contract.components?.securitySchemes?.cookieAuth, "API contract should define cookie auth");
+
+const capabilitiesPath = contract.paths["/system/capabilities"];
+assert.equal(capabilitiesPath.get.responses["200"].content["application/json"].schema.$ref, "#/components/schemas/CapabilitiesResponse");
+assert.equal(capabilitiesPath.patch.requestBody.content["application/json"].schema.$ref, "#/components/schemas/UpdateCapabilitiesRequest");
+assert.equal(capabilitiesPath.patch.responses["403"].$ref, "#/components/responses/SettingLocked");
+assert.equal(contract.components.schemas.UpdateCapabilitiesRequest.additionalProperties, false);
+assert.deepEqual(contract.components.schemas.EffectiveCapabilitySetting.required, ["value", "source", "editable", "status", "reason", "version"]);
+assert.ok(contract.components.schemas.UpdateCapabilitiesRequest.properties.expectedVersions, "UpdateCapabilitiesRequest should accept expectedVersions");
+assert.equal(capabilitiesPath.patch.responses["409"].$ref, "#/components/responses/Error");
+
+const experiencePath = contract.paths["/account/experience"];
+for (const operation of [experiencePath.get, experiencePath.patch, experiencePath.delete]) {
+  assert.deepEqual(operation.security, [{ bearerAuth: [] }, { cookieAuth: [] }]);
+  assert.equal(operation.responses["200"].content["application/json"].schema.$ref, "#/components/schemas/ExperienceProfileResponse");
+}
+assert.equal(experiencePath.patch.requestBody.content["application/json"].schema.$ref, "#/components/schemas/UpdateExperienceProfileRequest");
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.additionalProperties, false);
+assert.deepEqual(contract.components.schemas.EffectiveExperienceSetting.required, ["value", "source", "editable"]);
+for (const schemaName of [
+  "NavigationExperienceSettings",
+  "ArchiveViewExperienceSettings",
+  "ViewsExperienceSettings",
+  "ShortcutsExperienceSettings",
+  "NotificationsExperienceSettings",
+  "StudioLayoutExperienceSettings"
+]) {
+  assert.equal(contract.components.schemas[schemaName].additionalProperties, false, `${schemaName} should reject unknown nested keys`);
+}
+assert.equal(contract.components.schemas.StudioLayoutExperienceSettings.properties.timelineHeight.type, "integer");
+assert.equal(contract.components.schemas.StudioLayoutExperienceSettings.properties.timelineHeight.minimum, 160);
+assert.equal(contract.components.schemas.StudioLayoutExperienceSettings.properties.timelineHeight.maximum, 720);
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.properties.navigation.$ref, "#/components/schemas/NavigationExperienceSettings");
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.properties.views.$ref, "#/components/schemas/ViewsExperienceSettings");
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.properties.shortcuts.$ref, "#/components/schemas/ShortcutsExperienceSettings");
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.properties.notifications.$ref, "#/components/schemas/NotificationsExperienceSettings");
+assert.equal(contract.components.schemas.UpdateExperienceProfileRequest.properties.studioLayout.$ref, "#/components/schemas/StudioLayoutExperienceSettings");
 
 console.log("ok - api contracts");

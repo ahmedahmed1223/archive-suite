@@ -97,6 +97,8 @@ export interface MediaPlayerProps {
   initialTime?: number;
   showTimeline?: boolean;
   transcriptText?: string;
+  /** Set false when a caller renders its own transcript list (e.g. a dedicated studio panel) to avoid showing the cues twice. */
+  showTranscriptList?: boolean;
 }
 
 export default function MediaPlayer({
@@ -109,6 +111,7 @@ export default function MediaPlayer({
   initialTime,
   showTimeline = false,
   transcriptText,
+  showTranscriptList = true,
 }: MediaPlayerProps) {
   const { t } = useLocale();
   const copy = t.shared.mediaPlayer;
@@ -256,7 +259,7 @@ export default function MediaPlayer({
         </div>
       ) : null}
 
-      {cues.length > 0 ? (
+      {showTranscriptList && cues.length > 0 ? (
         <ol className="media-player__transcript">
           {cues.map((cue) => (
             <li key={`${cue.index}-${cue.start}`}>

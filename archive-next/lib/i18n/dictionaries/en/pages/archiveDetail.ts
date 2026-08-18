@@ -10,6 +10,7 @@ export const archiveDetail = {
     backToArchive: "Back to archive",
     askCopilot: "Ask the assistant about this record",
     playMedia: "Play media",
+    openStudio: "Open in studio",
     addFavorite: "Add to favorites",
     removeFavorite: "Remove from favorites",
     addToBasketTitle: "Add to work basket",
@@ -43,6 +44,13 @@ export const archiveDetail = {
   },
   suggestions: {
     feedbackError: "Could not save the suggestion feedback."
+  },
+  readSurface: {
+    title: "Summary and description",
+    descriptionLabel: "Description",
+    noDescription: "No description has been saved for this record yet.",
+    transcriptLabel: "Transcript excerpt",
+    noTranscript: "No transcript has been saved for this record."
   },
   recordInfo: {
     title: "Record information",
@@ -245,6 +253,7 @@ export const archiveDetail = {
     title: "Attachments",
     description: "Multiple files linked to this descriptive record.",
     primarySuffix: " · Primary",
+    openInStudio: "Open in studio",
     delete: "Delete",
     empty: "There are no files yet; the record remains valid as an independent descriptive record.",
     busy: "Working…",

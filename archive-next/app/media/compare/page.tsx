@@ -1,26 +1,60 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
 import MediaSourcePicker from "@/components/MediaSourcePicker";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
+import { Skeleton } from "@/components/ui/Skeleton";
 import styles from "./compare.module.css";
 import "../media.css";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+
+// V3-PERF-004: RecordVersionCompare (synced playback, clip list) only
+// renders when the page is opened with ?recordId=. The default manual
+// two-path compare mode below never touches it, so it's split into its
+// own chunk instead of shipping on every /media/compare load.
+const RecordVersionCompare = dynamic(() => import("./RecordVersionCompare"), {
+  ssr: false,
+  loading: () => (
+    <div className="panel">
+      <Skeleton variant="block" lines={4} />
+    </div>
+  )
+});
 
 type SyncMode = "off" | "on";
 
 const TIME_THRESHOLD = 0.3;
 
+/**
+ * V3-MEDIA-004: opening this page with ?recordId= switches it into
+ * record-version compare mode (real record + attachment versions, synced
+ * playback, and a non-destructive clip list). Without recordId it falls
+ * back to the original manual two-path comparison tool this route already
+ * shipped with -- unchanged, so nothing that links to a bare /media/compare
+ * regresses.
+ */
 export default function ComparePage() {
   const { t } = useLocale();
   const copy = t.pages.mediaCompare;
+  // undefined = not yet read from the URL (avoids flashing the manual-path
+  // UI before we know whether ?recordId= was actually given).
+  const [recordId, setRecordId] = useState<string | null | undefined>(undefined);
+  const [recordStore, setRecordStore] = useState("archive-items");
   const [pathA, setPathA] = useState("");
   const [pathB, setPathB] = useState("");
   const [syncMode, setSyncMode] = useState<SyncMode>("off");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("recordId")?.trim() ?? "";
+    setRecordId(id || null);
+    setRecordStore(params.get("store")?.trim() || "archive-items");
+  }, []);
 
   const playerARef = useRef<HTMLMediaElement | null>(null);
   const playerBRef = useRef<HTMLMediaElement | null>(null);
@@ -48,6 +82,23 @@ export default function ComparePage() {
   }, [syncMode]);
 
   const isValidPaths = pathA.trim() && pathB.trim();
+
+  if (recordId === undefined) {
+    return (
+      <AppShell subtitle={t.pageTitles.mediaComparison} contentClassName={styles.compareContent} tipsPage="media-compare">
+        {null}
+      </AppShell>
+    );
+  }
+
+  if (recordId) {
+    return (
+      <AppShell subtitle={t.pageTitles.mediaComparison} contentClassName={styles.compareContent} tipsPage="media-compare">
+        <PageToolbar eyebrow={<span className="badge">{copy.eyebrow}</span>} title={copy.versionCompare.title} description={copy.description} />
+        <RecordVersionCompare recordId={recordId} store={recordStore} />
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell subtitle={t.pageTitles.mediaComparison} contentClassName={styles.compareContent} tipsPage="media-compare">

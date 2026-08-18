@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\System;
 
 use App\Services\Backup\BackupService;
+use App\Services\Settings\CapabilitySettingsService;
 use App\Support\ApiError;
 use Illuminate\Support\Facades\Artisan;
 
@@ -26,11 +27,14 @@ class SystemControlService
         'run-backup' => 'Trigger an immediate backup',
     ];
 
-    public function __construct(private readonly BackupService $backups) {}
+    public function __construct(
+        private readonly BackupService $backups,
+        private readonly CapabilitySettingsService $capabilities,
+    ) {}
 
     public function isEnabled(): bool
     {
-        return (bool) config('archive.system_control_enabled', false);
+        return $this->capabilities->isEnabled('systemControl');
     }
 
     /**

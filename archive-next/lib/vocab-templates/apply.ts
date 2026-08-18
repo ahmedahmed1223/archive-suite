@@ -1,0 +1,158 @@
+import type { ArchiveApiClient, ArchiveType } from "@/lib/archive-api";
+import type { VocabTemplateBlueprint, VocabTemplateMetadataBlueprint, VocabTemplateTagBlueprint } from "./catalog";
+
+export interface ExistingVocabState {
+  typeIds: Iterable<string>;
+  templates: Iterable<{ typeId: string | null; name: string }>;
+  tags: Iterable<{ tag: string; parent: string }>;
+}
+
+export type VocabPlanStatus = "create" | "exists";
+
+export interface VocabPlanEntry<T> {
+  blueprint: T;
+  status: VocabPlanStatus;
+}
+
+export interface VocabTemplatePlan {
+  key: VocabTemplateBlueprint["key"];
+  type: VocabPlanEntry<ArchiveType>;
+  metadataTemplate: VocabPlanEntry<VocabTemplateMetadataBlueprint>;
+  tags: VocabPlanEntry<VocabTemplateTagBlueprint>[];
+}
+
+function normalize(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+const COMPOSITE_KEY_SEPARATOR = "::";
+
+function compositeKey(a: string, b: string): string {
+  return `${normalize(a)}${COMPOSITE_KEY_SEPARATOR}${normalize(b)}`;
+}
+
+/**
+ * Pure preview of what applying a template would create vs. what already
+ * exists — never touches the network. Matching is by identifying key, not
+ * object identity: type id, (typeId, name) for metadata templates, and
+ * (tag, parent) for tag nodes, all trim/case-insensitive.
+ */
+export function planVocabTemplateApply(blueprint: VocabTemplateBlueprint, existing: ExistingVocabState): VocabTemplatePlan {
+  const typeIds = new Set([...existing.typeIds].map(normalize));
+  const templateKeys = new Set([...existing.templates].map((template) => compositeKey(template.typeId ?? "", template.name)));
+  const tagKeys = new Set([...existing.tags].map((node) => compositeKey(node.tag, node.parent)));
+
+  const typeExists = typeIds.has(normalize(blueprint.type.id));
+  const templateExists = templateKeys.has(compositeKey(blueprint.metadataTemplate.typeId, blueprint.metadataTemplate.name));
+
+  return {
+    key: blueprint.key,
+    type: { blueprint: blueprint.type, status: typeExists ? "exists" : "create" },
+    metadataTemplate: { blueprint: blueprint.metadataTemplate, status: templateExists ? "exists" : "create" },
+    tags: blueprint.tags.map((tag) => ({
+      blueprint: tag,
+      status: tagKeys.has(compositeKey(tag.tag, tag.parent)) ? "exists" : "create",
+    })),
+  };
+}
+
+export type LoadExistingVocabStateResult =
+  | { ok: true; state: ExistingVocabState }
+  | { ok: false; error: string };
+
+/**
+ * Reads current /types, /metadata-templates (including disabled/unpublished
+ * ones — a previously applied-but-inert template must still count as
+ * "exists"), and /tag-nodes so planVocabTemplateApply can tell what a
+ * template apply would actually create. Read-only; makes no writes.
+ */
+export async function loadExistingVocabState(api: ArchiveApiClient): Promise<LoadExistingVocabStateResult> {
+  const typeIds: string[] = [];
+  let cursor: string | undefined;
+  do {
+    const response = await api.types({ cursor, limit: 200 });
+    if (!response.ok) return { ok: false, error: response.error };
+    typeIds.push(...response.types.map((type) => type.id));
+    cursor = response.nextCursor ?? undefined;
+  } while (cursor);
+
+  const [templatesResponse, tagsResponse] = await Promise.all([
+    api.metadataTemplates({ includeDisabled: true }),
+    api.tagNodes(),
+  ]);
+  if (!templatesResponse.ok) return { ok: false, error: templatesResponse.error };
+  if (!tagsResponse.ok) return { ok: false, error: tagsResponse.error };
+
+  return {
+    ok: true,
+    state: {
+      typeIds,
+      templates: templatesResponse.templates.map((template) => ({ typeId: template.typeId, name: template.name })),
+      tags: tagsResponse.nodes.map((node) => ({ tag: node.tag, parent: node.parent })),
+    },
+  };
+}
+
+export interface VocabApplyResult {
+  createdTypeIds: string[];
+  createdTemplateNames: string[];
+  createdTags: string[];
+  error?: string;
+}
+
+/**
+ * Applies a plan: creates only the "create" entries, in type -> tags ->
+ * metadata-template order so a template's default tags and the type it
+ * references already exist by the time it's created. Existing entries are
+ * never re-posted, so a partial plan (or a repeated run) never touches an
+ * existing type, template, or tag. Stops at the first failure and reports
+ * partial progress, matching the existing "import defaults" flow in
+ * app/types/page.tsx. New metadata templates are always created disabled —
+ * enabling/publishing stays an explicit, separate decision on the existing
+ * /metadata-templates page.
+ */
+export async function applyVocabTemplatePlan(
+  api: ArchiveApiClient,
+  plan: VocabTemplatePlan,
+  departmentId: string,
+): Promise<VocabApplyResult> {
+  const result: VocabApplyResult = { createdTypeIds: [], createdTemplateNames: [], createdTags: [] };
+
+  if (plan.type.status === "create") {
+    const response = await api.saveType(plan.type.blueprint);
+    if (!response.ok) {
+      result.error = response.error;
+      return result;
+    }
+    result.createdTypeIds.push(response.type.id);
+  }
+
+  for (const tag of plan.tags) {
+    if (tag.status !== "create") continue;
+    const response = await api.createTagNode({ tag: tag.blueprint.tag, parent: tag.blueprint.parent });
+    if (!response.ok) {
+      result.error = response.error;
+      return result;
+    }
+    result.createdTags.push(response.node.tag);
+  }
+
+  if (plan.metadataTemplate.status === "create") {
+    const blueprint = plan.metadataTemplate.blueprint;
+    const response = await api.createMetadataTemplate({
+      name: blueprint.name,
+      typeId: blueprint.typeId,
+      departmentId,
+      tags: blueprint.tags,
+      fields: {},
+      enabled: false,
+    });
+    if (!response.ok) {
+      result.error = response.error;
+      return result;
+    }
+    result.createdTemplateNames.push(response.template.name);
+  }
+
+  return result;
+}

@@ -27,6 +27,7 @@
     { "name": "Rights" },
     { "name": "Share" },
     { "name": "Review" },
+    { "name": "Transcript" },
     { "name": "Collaboration" },
     { "name": "System" },
     { "name": "Ingest" },
@@ -37,7 +38,9 @@
     { "name": "Upload Links" },
     { "name": "Saved Searches" },
     { "name": "Trash" },
-    { "name": "Types" }
+    { "name": "Types" },
+    { "name": "Bulk Macros" },
+    { "name": "Approvals" }
   ],
   "paths": {
     "/health": {
@@ -132,6 +135,40 @@
           },
           "401": { "$ref": "#/components/responses/Error" },
           "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/account/experience": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Read the current user's effective experience profile with provenance",
+        "operationId": "getAccountExperience",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Effective experience profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExperienceProfileResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Auth"],
+        "summary": "Update allowlisted values in the current user's experience profile",
+        "operationId": "updateAccountExperience",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateExperienceProfileRequest" } } } },
+        "responses": {
+          "200": { "description": "Updated effective experience profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExperienceProfileResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Auth"],
+        "summary": "Reset the current user's experience profile to effective defaults",
+        "operationId": "resetAccountExperience",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Reset effective experience profile", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExperienceProfileResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }
         }
       }
     },
@@ -274,6 +311,624 @@
         "responses": { "200": { "$ref": "#/components/responses/Ok" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
       }
     },
+    "/records/{id}/review-sessions": {
+      "get": {
+        "tags": ["Review Sessions"],
+        "summary": "List review sessions for a record",
+        "operationId": "listReviewSessions",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "attachmentId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review sessions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Open a review session for a record version",
+        "operationId": "createReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created review session",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}": {
+      "get": {
+        "tags": ["Review Sessions"],
+        "summary": "Read a review session",
+        "operationId": "getReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review session",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Review Sessions"],
+        "summary": "Update review session notes",
+        "operationId": "updateReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated review session",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Review Sessions"],
+        "summary": "Delete a review session",
+        "operationId": "deleteReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}/start": {
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Move a review session from draft to in_review",
+        "operationId": "startReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionTransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review session moved to in_review",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}/request-changes": {
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Request changes on a review session that is in_review",
+        "operationId": "requestReviewSessionChanges",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionTransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review session moved to changes_requested",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}/approve": {
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Approve a review session that is in_review",
+        "operationId": "approveReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionTransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review session approved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}/resume": {
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Resume review after changes were requested",
+        "operationId": "resumeReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionTransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review session moved back to in_review",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-sessions/{id}/close": {
+      "post": {
+        "tags": ["Review Sessions"],
+        "summary": "Close a review session",
+        "operationId": "closeReviewSession",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewSessionTransitionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review session closed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSessionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/clips": {
+      "get": {
+        "tags": ["Media Clips"],
+        "summary": "List non-destructive clips for a record version",
+        "operationId": "listMediaClips",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "attachmentId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media clips",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaClipsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Media Clips"],
+        "summary": "Create a non-destructive clip pinned to a record version",
+        "operationId": "createMediaClip",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaClipCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created clip",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaClipResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/clips/export": {
+      "get": {
+        "tags": ["Media Clips"],
+        "summary": "Export a record's clip list as JSON or CSV",
+        "description": "Every exported clip carries its record/attachment identity, pinned version token, and frame rate, so the list is unambiguous when replayed against the source later.",
+        "operationId": "exportMediaClips",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "attachmentId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "format", "in": "query", "required": false, "schema": { "type": "string", "enum": ["json", "csv"], "default": "json" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Clip list export",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/MediaClipsExportResponse" } },
+              "text/csv": { "schema": { "type": "string" } }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/clips/{id}": {
+      "get": {
+        "tags": ["Media Clips"],
+        "summary": "Read a clip",
+        "operationId": "getMediaClip",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media clip",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaClipResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Media Clips"],
+        "summary": "Update a clip's title, notes, in/out range, or frame rate",
+        "operationId": "updateMediaClip",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaClipUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated clip",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaClipResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Media Clips"],
+        "summary": "Delete a clip",
+        "operationId": "deleteMediaClip",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/media-review-comments": {
+      "get": {
+        "tags": ["Media Review Comments"],
+        "summary": "List studio timeline comments for a record",
+        "operationId": "listMediaReviewComments",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "attachmentId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "reviewSessionId", "in": "query", "required": false, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media review comments, ordered by startSeconds",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Media Review Comments"],
+        "summary": "Create a studio timeline marker/comment",
+        "operationId": "createMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaReviewCommentCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created media review comment",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media-review-comments/{id}": {
+      "get": {
+        "tags": ["Media Review Comments"],
+        "summary": "Read a studio timeline comment",
+        "operationId": "getMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media review comment",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["Media Review Comments"],
+        "summary": "Edit a studio timeline comment's body, type, or timestamps",
+        "operationId": "updateMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaReviewCommentUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated media review comment",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Media Review Comments"],
+        "summary": "Delete a studio timeline comment",
+        "operationId": "deleteMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media-review-comments/{id}/resolve": {
+      "post": {
+        "tags": ["Media Review Comments"],
+        "summary": "Resolve an open studio timeline comment",
+        "operationId": "resolveMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment marked resolved",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media-review-comments/{id}/reopen": {
+      "post": {
+        "tags": ["Media Review Comments"],
+        "summary": "Reopen a resolved studio timeline comment",
+        "operationId": "reopenMediaReviewComment",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comment moved back to open",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaReviewCommentResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/records/{id}/transcript": {
       "patch": {
         "tags": ["Records"],
@@ -343,6 +998,155 @@
         "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubtitleContentUpdateRequest" } } } },
         "responses": { "200": { "description": "Updated record", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/records/{id}/transcript/versions": {
+      "get": {
+        "tags": ["Transcript"],
+        "summary": "Read the current transcript and its version history",
+        "operationId": "listTranscriptVersions",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current transcript state and version history",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TranscriptVersionsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Transcript"],
+        "summary": "Save an edited cue list as a new transcript version",
+        "operationId": "createTranscriptVersion",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TranscriptVersionStoreRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created transcript version",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TranscriptVersionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/transcript/lock": {
+      "post": {
+        "tags": ["Transcript"],
+        "summary": "Certify the current transcript version so it can no longer be silently overwritten",
+        "operationId": "lockTranscriptVersion",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "store": { "type": "string" } },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Locked transcript version",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TranscriptVersionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/transcript/versions/{versionId}/restore": {
+      "post": {
+        "tags": ["Transcript"],
+        "summary": "Restore an earlier transcript version as a new current version",
+        "operationId": "restoreTranscriptVersion",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "versionId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TranscriptVersionRestoreRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The restored transcript, saved as a new version",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TranscriptVersionResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/records/{id}/transcript/export/{format}": {
+      "get": {
+        "tags": ["Transcript"],
+        "summary": "Download the current transcript as SRT or WebVTT",
+        "operationId": "exportTranscript",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "format", "in": "path", "required": true, "schema": { "type": "string", "enum": ["srt", "vtt"] } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subtitle file",
+            "content": {
+              "text/plain": { "schema": { "type": "string" } }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
       }
     },
     "/records/{id}/notes": {
@@ -1764,6 +2568,95 @@
         }
       }
     },
+    "/records/{id}/media-derivatives": {
+      "get": {
+        "tags": ["Media Derivatives"],
+        "summary": "List cached derivatives for a record",
+        "operationId": "listMediaDerivatives",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "store", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "attachmentId", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "type", "in": "query", "required": false, "schema": { "$ref": "#/components/schemas/MediaDerivativeType" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media derivatives",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaDerivativesResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media-derivatives": {
+      "post": {
+        "tags": ["Media Derivatives"],
+        "summary": "Request a thumbnail, waveform, or proxy derivative",
+        "description": "Keyed on the source's checksum-derived version plus a hash of the generation settings: a matching ready or in-flight derivative is returned unchanged (200, cached=true) instead of dispatching duplicate work; otherwise a MediaJob is queued through the existing media processing pipeline (202, cached=false).",
+        "operationId": "requestMediaDerivative",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MediaDerivativeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing cached or in-flight derivative",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaDerivativeResponse" }
+              }
+            }
+          },
+          "202": {
+            "description": "Derivative generation queued",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaDerivativeResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media-derivatives/{id}": {
+      "get": {
+        "tags": ["Media Derivatives"],
+        "summary": "Read a derivative's status and storage key",
+        "operationId": "getMediaDerivative",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media derivative",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MediaDerivativeResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/uploads": {
       "post": {
         "tags": ["Uploads"],
@@ -2613,6 +3506,30 @@
         }
       }
     },
+    "/work-inbox": {
+      "get": {
+        "tags": ["WorkInbox"],
+        "summary": "List the current user's aggregated work inbox (pending tasks, review sessions, expiring rights, notifications)",
+        "operationId": "listWorkInbox",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1 } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 100 } },
+          { "name": "types[]", "in": "query", "required": false, "schema": { "type": "array", "items": { "$ref": "#/components/schemas/WorkInboxItemType" } }, "description": "Restrict the feed to one or more source types; defaults to all four." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated work inbox items",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WorkInboxResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/vocabulary": {
       "get": {
         "tags": ["Vocabulary"],
@@ -2940,6 +3857,97 @@
         }
       }
     },
+    "/bulk-macros/{id}/runs/{runId}/rollback": {
+      "post": {
+        "tags": ["Bulk Macros"],
+        "summary": "Best-effort rollback of a persisted run's reversible steps",
+        "operationId": "rollbackBulkMacroRun",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "runId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Per-target, per-step rollback outcomes", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroRollbackResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/BulkMacroNotFound" }
+        }
+      }
+    },
+    "/sensitive-operation-policies": {
+      "get": {
+        "tags": ["Approvals"], "summary": "List the sensitive-operation policy catalog", "operationId": "listSensitiveOperationPolicies",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": { "200": { "description": "Sensitive operation policies", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SensitiveOperationPoliciesResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/sensitive-operation-policies/{operationKey}": {
+      "patch": {
+        "tags": ["Approvals"], "summary": "Admin-only: toggle whether a bulk-macro step type requires dual approval", "operationId": "updateSensitiveOperationPolicy",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "operationKey", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateSensitiveOperationPolicyRequest" } } } },
+        "responses": {
+          "200": { "description": "Updated policy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SensitiveOperationPolicyResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/approval-requests": {
+      "get": {
+        "tags": ["Approvals"], "summary": "List dual-approval requests", "operationId": "listApprovalRequests",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": { "200": { "description": "Approval requests", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" } }
+      },
+      "post": {
+        "tags": ["Approvals"], "summary": "Submit a sensitive bulk-macro operation for dual approval", "operationId": "createApprovalRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateApprovalRequestRequest" } } } },
+        "responses": {
+          "201": { "description": "Created approval request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" },
+          "422": { "description": "The referenced macro has no sensitive step under current policy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestError" } } } }
+        }
+      }
+    },
+    "/approval-requests/{id}": {
+      "get": {
+        "tags": ["Approvals"], "summary": "Read one approval request", "operationId": "getApprovalRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Approval request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/approval-requests/{id}/decisions": {
+      "post": {
+        "tags": ["Approvals"],
+        "summary": "Record an approve/reject decision. The original submitter is structurally refused (self_approval), never merely uncounted.",
+        "operationId": "decideApprovalRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DecideApprovalRequestRequest" } } } },
+        "responses": {
+          "200": { "description": "Updated approval request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "description": "Forbidden, including self-approval", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestError" } } } },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "description": "Not pending, or already decided by this approver", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestError" } } } }
+        }
+      }
+    },
+    "/approval-requests/{id}/execute": {
+      "post": {
+        "tags": ["Approvals"], "summary": "Execute an approved request's underlying bulk-macro run", "operationId": "executeApprovalRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "201": { "description": "Persisted bulk macro run with per-item outcomes", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExecuteApprovalRequestResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" },
+          "409": { "description": "Not approved, or the macro changed since approval", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestError" } } } }
+        }
+      }
+    },
     "/automation/rules": {
       "get": {
         "tags": ["Automation"],
@@ -3083,6 +4091,83 @@
         }
       }
     },
+    "/automation/rule-templates": {
+      "get": {
+        "tags": ["Automation"],
+        "summary": "List archive/review/production automation-rule templates",
+        "operationId": "listAutomationRuleTemplates",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "category", "in": "query", "required": false, "schema": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Automation rule templates",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AutomationRuleTemplatesResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Automation"],
+        "summary": "Create an automation-rule template (admin only)",
+        "operationId": "createAutomationRuleTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateAutomationRuleTemplateRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Created automation rule template",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AutomationRuleTemplateResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/automation/rule-templates/{id}": {
+      "patch": {
+        "tags": ["Automation"],
+        "summary": "Update an automation-rule template (admin only)",
+        "operationId": "updateAutomationRuleTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateAutomationRuleTemplateRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated automation rule template",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AutomationRuleTemplateResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Automation"],
+        "summary": "Delete an automation-rule template (admin only)",
+        "operationId": "deleteAutomationRuleTemplate",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/media/{mediaUid}/review-links": {
       "post": {
         "tags": ["Review"],
@@ -3141,6 +4226,100 @@
               }
             }
           },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-links/{token}/media": {
+      "get": {
+        "tags": ["Review"],
+        "summary": "Stream the reviewed media for a public review link (derivative-preferred)",
+        "operationId": "getReviewLinkMedia",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean" },
+            "description": "Requests an attachment disposition; only honored when the link's allowDownload is true."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media bytes (derivative when available and current, otherwise the source)",
+            "content": { "*/*": { "schema": { "type": "string", "format": "binary" } } }
+          },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-links/{token}/decisions": {
+      "post": {
+        "tags": ["Review"],
+        "summary": "Record an external reviewer's approve / request-changes decision",
+        "operationId": "decideReviewLink",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewLinkDecisionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Decision recorded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewLinkDecisionResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/review-links/{token}/report": {
+      "get": {
+        "tags": ["Review"],
+        "summary": "Internal audit report proving version + reviewers + decision for a review link",
+        "operationId": "getReviewLinkReport",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review link audit report",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewLinkReportResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
           "404": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -4377,6 +5556,32 @@
         }
       }
     },
+    "/system/capabilities": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Read actual deployment capabilities with status and provenance",
+        "operationId": "getSystemCapabilities",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Effective capability settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CapabilitiesResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "patch": {
+        "tags": ["System"],
+        "summary": "Update the administrator-editable subset of deployment capabilities",
+        "operationId": "updateSystemCapabilities",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCapabilitiesRequest" } } } },
+        "responses": {
+          "200": { "description": "Updated effective capability settings", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CapabilitiesResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/SettingLocked" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/system/security-settings": {
       "get": {
         "tags": ["System"],
@@ -4936,6 +6141,18 @@
     },
     "/project-tasks/{id}": {
       "patch": { "tags": ["Projects"], "summary": "Update project task", "operationId": "updateProjectTask", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskUpdateRequest" } } } }, "responses": { "200": { "description": "Updated task", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/project-task-templates": {
+      "get": { "tags": ["Projects"], "summary": "List archive/review/production project-task templates", "operationId": "listProjectTaskTemplates", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "category", "in": "query", "required": false, "schema": { "$ref": "#/components/schemas/ProjectTaskTemplateCategory" } }], "responses": { "200": { "description": "Project task templates", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskTemplatesResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } } },
+      "post": { "tags": ["Projects"], "summary": "Create a project-task template (admin only)", "operationId": "createProjectTaskTemplate", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateProjectTaskTemplateRequest" } } } }, "responses": { "201": { "description": "Created project task template", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskTemplateResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/project-task-templates/{id}": {
+      "patch": { "tags": ["Projects"], "summary": "Update a project-task template (admin only)", "operationId": "updateProjectTaskTemplate", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateProjectTaskTemplateRequest" } } } }, "responses": { "200": { "description": "Updated project task template", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectTaskTemplateResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } },
+      "delete": { "tags": ["Projects"], "summary": "Delete a project-task template (admin only)", "operationId": "deleteProjectTaskTemplate", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "$ref": "#/components/responses/Ok" }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/task-escalation-policy": {
+      "get": { "tags": ["Projects"], "summary": "Read the task escalation policy", "operationId": "getTaskEscalationPolicy", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "responses": { "200": { "description": "Task escalation policy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TaskEscalationPolicyResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } } },
+      "patch": { "tags": ["Projects"], "summary": "Update the task escalation policy (admin only)", "operationId": "updateTaskEscalationPolicy", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateTaskEscalationPolicyRequest" } } } }, "responses": { "200": { "description": "Updated task escalation policy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TaskEscalationPolicyResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
     },
     "/projects/{id}": {
       "patch": {
@@ -5525,6 +6742,14 @@
           }
         }
       },
+      "SettingLocked": {
+        "description": "A deployment or release lock prevents the requested override",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/SettingLockedError" }
+          }
+        }
+      },
     "BulkMacroNotFound": {
       "description": "Bulk macro not found or not owned by the current user",
       "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroNotFoundError" } } }
@@ -5721,8 +6946,8 @@
         "additionalProperties": false
       },
       "RecordAttachment": {
-        "type": "object", "required": ["id", "recordStore", "recordUid", "originalName", "sizeBytes", "checksumSha256", "isPrimary", "processingStatus"],
-        "properties": { "id": { "type": "string", "format": "uuid" }, "recordStore": { "type": "string" }, "recordUid": { "type": "string" }, "originalName": { "type": "string" }, "mimeType": { "type": ["string", "null"] }, "sizeBytes": { "type": "integer", "minimum": 0 }, "checksumSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "isPrimary": { "type": "boolean" }, "processingStatus": { "type": "string" }, "createdAt": { "type": ["string", "null"], "format": "date-time" } }
+        "type": "object", "required": ["id", "recordStore", "recordUid", "disk", "path", "originalName", "sizeBytes", "checksumSha256", "isPrimary", "processingStatus"],
+        "properties": { "id": { "type": "string", "format": "uuid" }, "recordStore": { "type": "string" }, "recordUid": { "type": "string" }, "disk": { "type": "string" }, "path": { "type": "string" }, "originalName": { "type": "string" }, "mimeType": { "type": ["string", "null"] }, "sizeBytes": { "type": "integer", "minimum": 0 }, "checksumSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "isPrimary": { "type": "boolean" }, "processingStatus": { "type": "string" }, "createdAt": { "type": ["string", "null"], "format": "date-time" } }
       },
       "RecordAttachmentsResponse": {
         "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["attachments"], "properties": { "attachments": { "type": "array", "items": { "$ref": "#/components/schemas/RecordAttachment" } } } }]
@@ -7419,6 +8644,52 @@
           }
         ]
       },
+      "WorkInboxItemType": {
+        "type": "string",
+        "enum": ["task", "review", "rights", "notification"]
+      },
+      "WorkInboxItem": {
+        "type": "object",
+        "required": ["id", "type", "title", "status", "dueAt", "createdAt", "href"],
+        "description": "A single row in the unified work inbox (V3-WORK-001) — always a reference into an existing source record (project task, review session, rights record, or notification), never a copy of one.",
+        "properties": {
+          "id": { "type": "string", "description": "Composite id of the form \"{type}:{sourceId}\"." },
+          "type": { "$ref": "#/components/schemas/WorkInboxItemType" },
+          "title": { "type": "string" },
+          "status": { "type": "string", "description": "Source-specific status label (task status, review state, \"expiring\", or notification type)." },
+          "dueAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "href": { "type": "string", "description": "App-relative path back to the source record." },
+          "meta": { "type": "object", "description": "Source-specific extra fields (projectId, recordUid, rightsHolder, notificationId, ...)." }
+        }
+      },
+      "WorkInboxCounts": {
+        "type": "object",
+        "required": ["task", "review", "rights", "notification"],
+        "properties": {
+          "task": { "type": "integer" },
+          "review": { "type": "integer" },
+          "rights": { "type": "integer" },
+          "notification": { "type": "integer" }
+        }
+      },
+      "WorkInboxResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["items", "pagination", "counts"],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/WorkInboxItem" }
+              },
+              "pagination": { "$ref": "#/components/schemas/PaginationMeta" },
+              "counts": { "$ref": "#/components/schemas/WorkInboxCounts" }
+            }
+          }
+        ]
+      },
       "VocabularyTerm": {
         "type": "object",
         "required": ["id", "term", "kind", "aliases", "note", "createdAt", "updatedAt"],
@@ -7669,6 +8940,67 @@
       "BulkMacroNotFoundError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "const": "not_found" } } }] },
       "BulkMacroPreviewError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "type": "string", "enum": ["invalid_preview", "expired_preview", "stale_preview"] } } }] },
       "BulkMacroValidationError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "const": "validation_failed" } } }] },
+      "BulkMacroRollbackStep": {
+        "type": "object", "required": ["type", "status"], "properties": {
+          "type": { "type": ["string", "null"] }, "status": { "type": "string", "enum": ["rolled_back", "failed", "not_rollback_capable"] },
+          "reason": { "type": "string" }, "restoredTo": {}
+        }
+      },
+      "BulkMacroRollbackResult": {
+        "type": "object", "required": ["store", "id", "status", "steps"], "properties": {
+          "store": { "type": ["string", "null"] }, "id": { "type": ["string", "null"] },
+          "status": { "type": "string", "enum": ["rolled_back", "not_rollback_capable", "nothing_to_rollback"] },
+          "steps": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroRollbackStep" } }
+        }
+      },
+      "BulkMacroRollbackResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["rollback"], "properties": { "rollback": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroRollbackResult" } } } }] },
+      "SensitiveOperationPolicy": {
+        "type": "object", "required": ["operationKey", "sensitive", "requiredApprovals"], "properties": {
+          "operationKey": { "type": "string" }, "sensitive": { "type": "boolean" }, "requiredApprovals": { "type": "integer", "minimum": 1 }, "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "SensitiveOperationPoliciesResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["policies"], "properties": { "policies": { "type": "array", "items": { "$ref": "#/components/schemas/SensitiveOperationPolicy" } } } }] },
+      "SensitiveOperationPolicyResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["policy"], "properties": { "policy": { "$ref": "#/components/schemas/SensitiveOperationPolicy" } } }] },
+      "UpdateSensitiveOperationPolicyRequest": {
+        "type": "object", "minProperties": 1, "properties": { "sensitive": { "type": "boolean" }, "requiredApprovals": { "type": "integer", "minimum": 1, "maximum": 10 } }
+      },
+      "ApprovalDecisionRecord": {
+        "type": "object", "required": ["id", "approverId", "decision", "decidedAt"], "properties": {
+          "id": { "type": "string", "format": "uuid" }, "approverId": { "type": "integer" }, "decision": { "type": "string", "enum": ["approve", "reject"] },
+          "notes": { "type": ["string", "null"] }, "decidedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "ApprovalRequest": {
+        "type": "object", "required": ["id", "operationKey", "targetType", "targetId", "requestedBy", "status", "requiredApprovals", "payload", "decisions", "createdAt", "updatedAt"], "properties": {
+          "id": { "type": "string", "format": "uuid" }, "operationKey": { "type": "string" }, "targetType": { "type": "string", "enum": ["bulk-macro"] }, "targetId": { "type": "string" },
+          "requestedBy": { "type": "integer" }, "status": { "type": "string", "enum": ["pending", "approved", "rejected", "executed"] }, "requiredApprovals": { "type": "integer", "minimum": 1 },
+          "payload": { "type": "object" }, "executedRunId": { "type": ["string", "null"], "format": "uuid" }, "executedAt": { "type": ["string", "null"], "format": "date-time" },
+          "decisions": { "type": "array", "items": { "$ref": "#/components/schemas/ApprovalDecisionRecord" } },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }, "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "ApprovalRequestsResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["requests"], "properties": { "requests": { "type": "array", "items": { "$ref": "#/components/schemas/ApprovalRequest" } } } }] },
+      "ApprovalRequestResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["request"], "properties": { "request": { "$ref": "#/components/schemas/ApprovalRequest" } } }] },
+      "CreateApprovalRequestRequest": {
+        "type": "object", "required": ["targetType", "targetId", "targets"], "properties": {
+          "targetType": { "type": "string", "enum": ["bulk-macro"] }, "targetId": { "type": "string" },
+          "targets": { "type": "array", "minItems": 1, "maxItems": 1000, "items": { "$ref": "#/components/schemas/BulkMacroTarget" } }
+        }
+      },
+      "DecideApprovalRequestRequest": {
+        "type": "object", "required": ["decision"], "properties": { "decision": { "type": "string", "enum": ["approve", "reject"] }, "notes": { "type": "string", "maxLength": 2000 } }
+      },
+      "ExecuteApprovalRequestResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["request", "run"], "properties": {
+          "request": { "$ref": "#/components/schemas/ApprovalRequest" },
+          "run": { "type": "object", "required": ["id", "macroId", "targetCount", "completedCount", "failedCount", "results"], "properties": {
+            "id": { "type": "string", "format": "uuid" }, "macroId": { "type": "string", "format": "uuid" }, "targetCount": { "type": "integer" }, "completedCount": { "type": "integer" }, "failedCount": { "type": "integer" },
+            "results": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroTargetResult" } }
+          } }
+        } }]
+      },
+      "ApprovalRequestErrorCode": { "type": "string", "enum": ["operation_not_sensitive", "not_pending", "already_decided", "self_approval", "not_approved", "unsupported_target", "macro_not_found", "stale_approval"] },
+      "ApprovalRequestError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "$ref": "#/components/schemas/ApprovalRequestErrorCode" } } }] },
       "AutomationRuleTrigger": {
         "type": "string",
         "enum": ["record.created", "record.updated", "media.failed", "schedule.daily"]
@@ -7782,6 +9114,88 @@
           }
         ]
       },
+      "AutomationRuleTemplateCategory": {
+        "type": "string",
+        "enum": ["archive", "review", "production"]
+      },
+      "AutomationRuleTemplate": {
+        "type": "object",
+        "required": ["id", "category", "name", "description", "trigger", "query", "type", "tag", "status", "fileExtension", "departmentId", "action", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "category": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" },
+          "name": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string" },
+          "type": { "type": "string" },
+          "tag": { "type": "string" },
+          "status": { "type": "string" },
+          "fileExtension": { "type": "string" },
+          "departmentId": { "type": "string" },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "CreateAutomationRuleTemplateRequest": {
+        "type": "object",
+        "required": ["category", "name", "trigger", "action"],
+        "properties": {
+          "category": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": ["string", "null"], "maxLength": 1000 },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string", "maxLength": 500 },
+          "type": { "type": "string", "maxLength": 100 },
+          "tag": { "type": "string", "maxLength": 100 },
+          "status": { "type": "string", "maxLength": 100 },
+          "fileExtension": { "type": "string", "maxLength": 200 },
+          "departmentId": { "type": "string", "maxLength": 100 },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" }
+        }
+      },
+      "UpdateAutomationRuleTemplateRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "category": { "$ref": "#/components/schemas/AutomationRuleTemplateCategory" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": { "type": ["string", "null"], "maxLength": 1000 },
+          "trigger": { "$ref": "#/components/schemas/AutomationRuleTrigger" },
+          "query": { "type": "string", "maxLength": 500 },
+          "type": { "type": "string", "maxLength": 100 },
+          "tag": { "type": "string", "maxLength": 100 },
+          "status": { "type": "string", "maxLength": 100 },
+          "fileExtension": { "type": "string", "maxLength": 200 },
+          "departmentId": { "type": "string", "maxLength": 100 },
+          "action": { "$ref": "#/components/schemas/AutomationRuleAction" }
+        }
+      },
+      "AutomationRuleTemplatesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["templates"],
+            "properties": {
+              "templates": { "type": "array", "items": { "$ref": "#/components/schemas/AutomationRuleTemplate" } }
+            }
+          }
+        ]
+      },
+      "AutomationRuleTemplateResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["template"],
+            "properties": {
+              "template": { "$ref": "#/components/schemas/AutomationRuleTemplate" }
+            }
+          }
+        ]
+      },
       "MontageProject": {
         "type": "object",
         "required": ["id", "name", "fps", "tracks", "clips", "markers", "comments", "transitions", "status"],
@@ -7887,7 +9301,21 @@
         "type": "object",
         "properties": {
           "permission": { "type": "string", "enum": ["view", "comment"], "default": "view" },
-          "expiresAt": { "type": ["string", "null"], "format": "date-time" }
+          "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+          "durationHours": {
+            "type": ["number", "null"],
+            "description": "V3-MEDIA-007: configurable link lifetime. Neither this nor expiresAt given still yields a time-bounded link (defaults to 7 days server-side)."
+          },
+          "store": { "type": ["string", "null"] },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "sourcePath": {
+            "type": ["string", "null"],
+            "description": "Server-validated relative path, trusted only from the authenticated internal creator. Fallback when no derivative is attached or ready."
+          },
+          "derivativeId": { "type": ["string", "null"], "format": "uuid" },
+          "allowDownload": { "type": ["boolean", "null"], "default": false },
+          "watermarkPolicy": { "type": ["string", "null"], "enum": ["none", "visible"], "default": "none" },
+          "requiredApprovals": { "type": ["integer", "null"], "enum": [1, 2], "default": 1 }
         }
       },
       "CreateReviewLinkResponse": {
@@ -7902,7 +9330,10 @@
               "path": { "type": "string" },
               "mediaUid": { "type": "string" },
               "permission": { "type": "string", "enum": ["view", "comment"] },
-              "expiresAt": { "type": ["string", "null"], "format": "date-time" }
+              "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+              "allowDownload": { "type": "boolean" },
+              "watermarkPolicy": { "type": "string", "enum": ["none", "visible"] },
+              "requiredApprovals": { "type": "integer" }
             }
           }
         ]
@@ -7922,12 +9353,654 @@
                   "permission": { "type": "string", "enum": ["view", "comment"] },
                   "expiresAt": { "type": ["string", "null"], "format": "date-time" },
                   "createdAt": { "type": ["string", "null"], "format": "date-time" },
-                  "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+                  "updatedAt": { "type": ["string", "null"], "format": "date-time" },
+                  "allowDownload": { "type": "boolean" },
+                  "watermarkPolicy": { "type": "string", "enum": ["none", "visible"] },
+                  "requiredApprovals": { "type": "integer" },
+                  "versionToken": { "type": ["string", "null"] },
+                  "isCurrentVersion": { "type": ["boolean", "null"] },
+                  "derivative": {
+                    "type": ["object", "null"],
+                    "properties": {
+                      "id": { "type": "string", "format": "uuid" },
+                      "derivativeType": { "$ref": "#/components/schemas/MediaDerivativeType" },
+                      "status": { "type": "string" }
+                    }
+                  }
                 }
               },
               "comments": {
                 "type": "array",
                 "items": { "$ref": "#/components/schemas/ReviewComment" }
+              }
+            }
+          }
+        ]
+      },
+      "ReviewLinkDecisionRequest": {
+        "type": "object",
+        "required": ["reviewerName", "decision"],
+        "properties": {
+          "reviewerName": { "type": "string", "minLength": 1, "maxLength": 255 },
+          "reviewerEmail": { "type": ["string", "null"], "format": "email" },
+          "decision": { "type": "string", "enum": ["approve", "request_changes"] },
+          "notes": { "type": ["string", "null"], "maxLength": 4000 }
+        },
+        "additionalProperties": false
+      },
+      "ReviewLinkDecisionResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["decision", "session", "approvals"],
+            "properties": {
+              "decision": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "reviewerName": { "type": "string" },
+                  "decision": { "type": "string", "enum": ["approve", "request_changes"] },
+                  "decidedAt": { "type": ["string", "null"], "format": "date-time" }
+                }
+              },
+              "session": {
+                "type": ["object", "null"],
+                "properties": { "state": { "$ref": "#/components/schemas/ReviewSessionState" } }
+              },
+              "approvals": {
+                "type": "object",
+                "properties": {
+                  "required": { "type": "integer" },
+                  "received": { "type": "integer" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ReviewLinkReportResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["report"],
+            "properties": {
+              "report": {
+                "type": "object",
+                "description": "Audit-proof: which version was reviewed, who the reviewers were, and what the decision was.",
+                "properties": {
+                  "token": { "type": "string" },
+                  "mediaUid": { "type": "string" },
+                  "recordStore": { "type": ["string", "null"] },
+                  "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+                  "versionToken": { "type": ["string", "null"] },
+                  "isCurrentVersion": { "type": ["boolean", "null"] },
+                  "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+                  "isExpired": { "type": "boolean" },
+                  "allowDownload": { "type": "boolean" },
+                  "watermarkPolicy": { "type": "string", "enum": ["none", "visible"] },
+                  "requiredApprovals": { "type": "integer" },
+                  "session": {
+                    "type": ["object", "null"],
+                    "properties": {
+                      "id": { "type": "string", "format": "uuid" },
+                      "state": { "$ref": "#/components/schemas/ReviewSessionState" },
+                      "decidedBy": { "type": ["integer", "null"] },
+                      "decidedAt": { "type": ["string", "null"], "format": "date-time" }
+                    }
+                  },
+                  "reviewers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string", "format": "uuid" },
+                        "reviewerName": { "type": "string" },
+                        "reviewerEmail": { "type": ["string", "null"] },
+                        "decision": { "type": "string", "enum": ["approve", "request_changes"] },
+                        "notes": { "type": ["string", "null"] },
+                        "decidedAt": { "type": ["string", "null"], "format": "date-time" }
+                      }
+                    }
+                  },
+                  "approvals": {
+                    "type": "object",
+                    "properties": {
+                      "required": { "type": "integer" },
+                      "received": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ReviewSessionState": {
+        "type": "string",
+        "enum": ["draft", "in_review", "changes_requested", "approved", "closed"]
+      },
+      "ReviewSession": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "attachmentId",
+          "versionToken",
+          "isCurrentVersion",
+          "state",
+          "notes",
+          "createdBy",
+          "decidedBy",
+          "decidedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "recordStore": { "type": "string" },
+          "recordUid": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "versionToken": { "type": "string" },
+          "isCurrentVersion": {
+            "type": "boolean",
+            "description": "False once the record source or attachment has been replaced after this session captured its version token; the session's decision stays pinned to the version it was granted on."
+          },
+          "state": { "$ref": "#/components/schemas/ReviewSessionState" },
+          "notes": { "type": ["string", "null"] },
+          "createdBy": { "type": ["integer", "null"] },
+          "decidedBy": { "type": ["integer", "null"] },
+          "decidedAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "ReviewSessionCreateRequest": {
+        "type": "object",
+        "properties": {
+          "store": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "notes": { "type": ["string", "null"], "maxLength": 4000 }
+        },
+        "additionalProperties": false
+      },
+      "ReviewSessionUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "notes": { "type": ["string", "null"], "maxLength": 4000 }
+        },
+        "required": ["notes"],
+        "additionalProperties": false
+      },
+      "ReviewSessionTransitionRequest": {
+        "type": "object",
+        "properties": {
+          "notes": { "type": ["string", "null"], "maxLength": 4000 }
+        },
+        "additionalProperties": false
+      },
+      "ReviewSessionResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["session"],
+            "properties": {
+              "session": { "$ref": "#/components/schemas/ReviewSession" }
+            }
+          }
+        ]
+      },
+      "ReviewSessionsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["sessions"],
+            "properties": {
+              "sessions": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/ReviewSession" }
+              }
+            }
+          }
+        ]
+      },
+      "MediaClip": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "attachmentId",
+          "versionToken",
+          "isCurrentVersion",
+          "title",
+          "notes",
+          "inSeconds",
+          "outSeconds",
+          "fps",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "recordStore": { "type": "string" },
+          "recordUid": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "versionToken": {
+            "type": "string",
+            "description": "Same checksum-derived identity as ReviewSession.versionToken -- pinned once at creation so the clip's in/out times stay unambiguous even after the source is replaced."
+          },
+          "isCurrentVersion": {
+            "type": "boolean",
+            "description": "False once the record source or attachment has been replaced after this clip's timecodes were captured."
+          },
+          "title": { "type": "string" },
+          "notes": { "type": ["string", "null"] },
+          "inSeconds": { "type": "number", "minimum": 0 },
+          "outSeconds": { "type": "number", "minimum": 0 },
+          "fps": { "type": "integer", "minimum": 1, "maximum": 120 },
+          "createdBy": { "type": ["integer", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "MediaClipCreateRequest": {
+        "type": "object",
+        "required": ["title", "inSeconds", "outSeconds"],
+        "properties": {
+          "store": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "title": { "type": "string", "maxLength": 255 },
+          "notes": { "type": ["string", "null"], "maxLength": 4000 },
+          "inSeconds": { "type": "number", "minimum": 0 },
+          "outSeconds": { "type": "number", "minimum": 0 },
+          "fps": { "type": "integer", "minimum": 1, "maximum": 120 }
+        },
+        "additionalProperties": false
+      },
+      "MediaClipUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "maxLength": 255 },
+          "notes": { "type": ["string", "null"], "maxLength": 4000 },
+          "inSeconds": { "type": "number", "minimum": 0 },
+          "outSeconds": { "type": "number", "minimum": 0 },
+          "fps": { "type": "integer", "minimum": 1, "maximum": 120 }
+        },
+        "additionalProperties": false
+      },
+      "MediaClipResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["clip"],
+            "properties": {
+              "clip": { "$ref": "#/components/schemas/MediaClip" }
+            }
+          }
+        ]
+      },
+      "MediaClipsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["clips"],
+            "properties": {
+              "clips": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MediaClip" }
+              }
+            }
+          }
+        ]
+      },
+      "MediaClipsExportResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["recordStore", "recordUid", "clips"],
+            "properties": {
+              "recordStore": { "type": "string" },
+              "recordUid": { "type": "string" },
+              "clips": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MediaClip" }
+              }
+            }
+          }
+        ]
+      },
+      "MediaDerivativeType": {
+        "type": "string",
+        "enum": ["thumbnail", "waveform", "proxy"]
+      },
+      "MediaDerivativeStatus": {
+        "type": "string",
+        "enum": ["pending", "processing", "ready", "failed"]
+      },
+      "MediaDerivativeSettings": {
+        "type": "object",
+        "description": "Generation settings, specific to the derivative type. Hashed (order-independent) into the cache key alongside the source version, so regenerating with different settings never collides with a derivative cached under different ones.",
+        "properties": {
+          "atSec": { "type": "number", "minimum": 0, "description": "thumbnail: frame position." },
+          "width": { "type": "integer", "minimum": 16, "maximum": 4096, "description": "thumbnail/waveform width in pixels." },
+          "height": { "type": "integer", "minimum": 16, "maximum": 2048, "description": "waveform height in pixels." },
+          "color": { "type": "string", "maxLength": 6, "description": "waveform: 6-digit hex color, no leading #." },
+          "maxWidth": { "type": "integer", "minimum": 64, "maximum": 4096, "description": "proxy: maximum output width." },
+          "videoBitrateKbps": { "type": "integer", "minimum": 64, "maximum": 8000, "description": "proxy: target video bitrate." },
+          "accelerate": {
+            "type": "boolean",
+            "description": "proxy: request GPU (h264_nvenc) encoding. Only ever honored when the worker's NVIDIA runtime is verified healthy -- otherwise the job fails rather than silently falling back to CPU and misreporting the encoder used."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaDerivative": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "attachmentId",
+          "derivativeType",
+          "versionToken",
+          "isCurrentVersion",
+          "settings",
+          "status",
+          "storageKey",
+          "mediaJobId",
+          "error",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "recordStore": { "type": "string" },
+          "recordUid": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"] },
+          "derivativeType": { "$ref": "#/components/schemas/MediaDerivativeType" },
+          "versionToken": {
+            "type": "string",
+            "description": "Same checksum-derived identity as ReviewSession.versionToken / MediaClip.versionToken -- pinned when this derivative was generated."
+          },
+          "isCurrentVersion": {
+            "type": "boolean",
+            "description": "False once the record source or attachment has been replaced since this derivative was generated -- it is still returned, but must not be treated as matching the current source."
+          },
+          "settings": { "$ref": "#/components/schemas/MediaDerivativeSettings" },
+          "status": { "$ref": "#/components/schemas/MediaDerivativeStatus" },
+          "storageKey": { "type": ["string", "null"], "description": "Set once status is ready." },
+          "mediaJobId": { "type": ["string", "null"] },
+          "error": { "type": ["string", "null"] },
+          "createdBy": { "type": ["integer", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "MediaDerivativeRequest": {
+        "type": "object",
+        "required": ["recordId", "type", "sourcePath"],
+        "properties": {
+          "recordId": { "type": "string" },
+          "store": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"] },
+          "type": { "$ref": "#/components/schemas/MediaDerivativeType" },
+          "sourcePath": { "type": "string", "maxLength": 2048 },
+          "settings": { "$ref": "#/components/schemas/MediaDerivativeSettings" }
+        },
+        "additionalProperties": false
+      },
+      "MediaDerivativeResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["derivative"],
+            "properties": {
+              "derivative": { "$ref": "#/components/schemas/MediaDerivative" },
+              "cached": {
+                "type": "boolean",
+                "description": "True when an existing ready or in-flight derivative was returned instead of dispatching new work."
+              }
+            }
+          }
+        ]
+      },
+      "MediaDerivativesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["derivatives"],
+            "properties": {
+              "derivatives": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MediaDerivative" }
+              }
+            }
+          }
+        ]
+      },
+      "TranscriptCue": {
+        "type": "object",
+        "required": ["startSeconds", "endSeconds", "text"],
+        "properties": {
+          "startSeconds": { "type": "number", "minimum": 0 },
+          "endSeconds": { "type": "number", "minimum": 0 },
+          "text": { "type": "string", "maxLength": 10000 }
+        },
+        "additionalProperties": false
+      },
+      "TranscriptVersion": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "format",
+          "cues",
+          "locked",
+          "lockedBy",
+          "lockedAt",
+          "restoredFromVersionId",
+          "createdBy",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "recordStore": { "type": "string" },
+          "recordUid": { "type": "string" },
+          "format": { "type": "string", "enum": ["srt", "vtt"] },
+          "cues": { "type": "array", "items": { "$ref": "#/components/schemas/TranscriptCue" } },
+          "locked": {
+            "type": "boolean",
+            "description": "True once this version has been explicitly certified/approved. A locked version can only be replaced by a save or restore that passes unlock=true -- this is what keeps an approved transcript from being silently overwritten."
+          },
+          "lockedBy": { "type": ["integer", "null"] },
+          "lockedAt": { "type": ["string", "null"], "format": "date-time" },
+          "restoredFromVersionId": { "type": ["string", "null"], "format": "uuid" },
+          "createdBy": { "type": ["integer", "null"] },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "TranscriptCurrentState": {
+        "type": "object",
+        "required": ["versionId", "cues", "format", "locked", "srt", "vtt"],
+        "properties": {
+          "versionId": { "type": ["string", "null"], "format": "uuid" },
+          "cues": { "type": "array", "items": { "$ref": "#/components/schemas/TranscriptCue" } },
+          "format": { "type": "string", "enum": ["srt", "vtt"] },
+          "locked": { "type": "boolean" },
+          "srt": { "type": "string", "description": "The current cues serialized as SRT." },
+          "vtt": { "type": "string", "description": "The current cues serialized as WebVTT." }
+        }
+      },
+      "TranscriptVersionStoreRequest": {
+        "type": "object",
+        "required": ["format", "cues"],
+        "properties": {
+          "store": { "type": "string" },
+          "format": { "type": "string", "enum": ["srt", "vtt"] },
+          "unlock": {
+            "type": "boolean",
+            "description": "Required (true) to save over a locked transcript. This explicit flag is the visible action that authorizes overwriting an approved transcript."
+          },
+          "cues": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/components/schemas/TranscriptCue" }
+          }
+        },
+        "additionalProperties": false
+      },
+      "TranscriptVersionRestoreRequest": {
+        "type": "object",
+        "properties": {
+          "store": { "type": "string" },
+          "unlock": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "TranscriptVersionResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["version"],
+            "properties": {
+              "version": { "$ref": "#/components/schemas/TranscriptVersion" }
+            }
+          }
+        ]
+      },
+      "TranscriptVersionsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["current", "versions"],
+            "properties": {
+              "current": { "$ref": "#/components/schemas/TranscriptCurrentState" },
+              "versions": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/TranscriptVersion" }
+              }
+            }
+          }
+        ]
+      },
+      "MediaReviewCommentType": {
+        "type": "string",
+        "enum": ["issue", "suggestion", "highlight", "chapter"]
+      },
+      "MediaReviewCommentState": {
+        "type": "string",
+        "enum": ["open", "resolved"]
+      },
+      "MediaReviewComment": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "attachmentId",
+          "reviewSessionId",
+          "type",
+          "startSeconds",
+          "endSeconds",
+          "body",
+          "state",
+          "createdBy",
+          "resolvedBy",
+          "resolvedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "recordStore": { "type": "string" },
+          "recordUid": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "reviewSessionId": { "type": ["string", "null"], "format": "uuid" },
+          "type": { "$ref": "#/components/schemas/MediaReviewCommentType" },
+          "startSeconds": { "type": "number", "minimum": 0 },
+          "endSeconds": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "description": "Null for a point-in-time marker; set for a time-range marker."
+          },
+          "body": { "type": "string" },
+          "state": { "$ref": "#/components/schemas/MediaReviewCommentState" },
+          "createdBy": { "type": ["integer", "null"] },
+          "resolvedBy": { "type": ["integer", "null"] },
+          "resolvedAt": { "type": ["string", "null"], "format": "date-time" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "MediaReviewCommentCreateRequest": {
+        "type": "object",
+        "required": ["type", "startSeconds", "body"],
+        "properties": {
+          "store": { "type": "string" },
+          "attachmentId": { "type": ["string", "null"], "format": "uuid" },
+          "reviewSessionId": { "type": ["string", "null"], "format": "uuid" },
+          "type": { "$ref": "#/components/schemas/MediaReviewCommentType" },
+          "startSeconds": { "type": "number", "minimum": 0 },
+          "endSeconds": { "type": ["number", "null"], "minimum": 0 },
+          "body": { "type": "string", "maxLength": 4000 },
+          "clientDurationSeconds": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "description": "Real media duration measured by the caller, used to seed/validate the server-cached known duration."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaReviewCommentUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "type": { "$ref": "#/components/schemas/MediaReviewCommentType" },
+          "startSeconds": { "type": "number", "minimum": 0 },
+          "endSeconds": { "type": ["number", "null"], "minimum": 0 },
+          "body": { "type": "string", "maxLength": 4000 },
+          "clientDurationSeconds": { "type": ["number", "null"], "minimum": 0 }
+        },
+        "additionalProperties": false
+      },
+      "MediaReviewCommentResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["comment"],
+            "properties": {
+              "comment": { "$ref": "#/components/schemas/MediaReviewComment" }
+            }
+          }
+        ]
+      },
+      "MediaReviewCommentsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["comments"],
+            "properties": {
+              "comments": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MediaReviewComment" }
               }
             }
           }
@@ -8803,6 +10876,269 @@
       "StorageOperationPreviewRequest": { "type": "object", "required": ["action", "sourceProviderId", "items"], "properties": { "action": { "type": "string" }, "sourceProviderId": { "type": "string" }, "destinationProviderId": { "type": "string" }, "items": { "type": "array", "minItems": 1, "items": { "type": "object" } } } },
       "StorageOperationPreviewResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["preview"], "properties": { "preview": { "type": "object" } } }] },
       "StorageOperationResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["operation"], "properties": { "operation": { "type": "object" } } }] },
+      "SettingSource": {
+        "type": "string",
+        "enum": ["release", "deployment", "system", "default", "user"]
+      },
+      "CapabilityStatus": {
+        "type": "string",
+        "enum": ["enabled", "disabled", "needs_configuration", "unavailable"]
+      },
+      "EffectiveCapabilitySetting": {
+        "type": "object",
+        "required": ["value", "source", "editable", "status", "reason", "version"],
+        "properties": {
+          "value": { "type": "boolean" },
+          "source": { "$ref": "#/components/schemas/SettingSource" },
+          "editable": { "type": "boolean" },
+          "status": { "$ref": "#/components/schemas/CapabilityStatus" },
+          "reason": { "type": ["string", "null"] },
+          "version": { "type": "integer", "minimum": 0, "description": "Optimistic-concurrency token for this capability's admin override; send back in expectedVersions on PATCH to detect a stale write." }
+        },
+        "additionalProperties": false
+      },
+      "Capabilities": {
+        "type": "object",
+        "required": ["systemControl", "backups", "trash", "odbc", "broadcastMetadata", "semanticSearch", "mediaProcessing", "ocr", "mcp"],
+        "properties": {
+          "systemControl": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "backups": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "trash": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "odbc": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "broadcastMetadata": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "semanticSearch": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "mediaProcessing": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "ocr": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" },
+          "mcp": { "$ref": "#/components/schemas/EffectiveCapabilitySetting" }
+        },
+        "additionalProperties": false
+      },
+      "CapabilitiesResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["schemaVersion", "capabilities"],
+            "properties": {
+              "schemaVersion": { "type": "integer", "minimum": 1 },
+              "capabilities": { "$ref": "#/components/schemas/Capabilities" }
+            }
+          }
+        ]
+      },
+      "UpdateCapabilitiesRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "systemControl": { "type": "boolean" },
+          "backups": { "type": "boolean" },
+          "trash": { "type": "boolean" },
+          "odbc": { "type": "boolean" },
+          "broadcastMetadata": { "type": "boolean" },
+          "semanticSearch": { "type": "boolean" },
+          "mediaProcessing": { "type": "boolean" },
+          "ocr": { "type": "boolean" },
+          "mcp": { "type": "boolean" },
+          "expectedVersions": {
+            "type": "object",
+            "description": "Optional per-key optimistic-concurrency check; omit a key to skip the check for it.",
+            "properties": {
+              "systemControl": { "type": "integer", "minimum": 0 },
+              "backups": { "type": "integer", "minimum": 0 },
+              "trash": { "type": "integer", "minimum": 0 },
+              "odbc": { "type": "integer", "minimum": 0 },
+              "broadcastMetadata": { "type": "integer", "minimum": 0 },
+              "semanticSearch": { "type": "integer", "minimum": 0 },
+              "mediaProcessing": { "type": "integer", "minimum": 0 },
+              "ocr": { "type": "integer", "minimum": 0 },
+              "mcp": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExperienceSettingValue": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "boolean" },
+          { "type": "integer" },
+          { "type": "array", "items": {} },
+          { "type": "object", "additionalProperties": true },
+          { "type": "null" }
+        ]
+      },
+      "NavigationExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "order": { "type": "array", "items": { "type": "string", "maxLength": 100 }, "uniqueItems": true },
+          "hiddenModules": { "type": "array", "items": { "type": "string", "maxLength": 100 }, "uniqueItems": true }
+        },
+        "additionalProperties": false
+      },
+      "ArchiveViewExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "mode": { "type": "string", "enum": ["table", "grid"] },
+          "pageSize": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "columns": { "type": "array", "items": { "type": "string", "maxLength": 100 }, "uniqueItems": true },
+          "defaultSavedSearchId": { "type": ["string", "null"], "maxLength": 255 }
+        },
+        "additionalProperties": false
+      },
+      "ViewsExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "archive": { "$ref": "#/components/schemas/ArchiveViewExperienceSettings" }
+        },
+        "additionalProperties": false
+      },
+      "ShortcutsExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "playPause": { "type": "string", "maxLength": 64 },
+          "seekForward": { "type": "string", "maxLength": 64 },
+          "seekBackward": { "type": "string", "maxLength": 64 },
+          "nextComment": { "type": "string", "maxLength": 64 },
+          "previousComment": { "type": "string", "maxLength": 64 }
+        },
+        "additionalProperties": false
+      },
+      "NotificationsExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "dailyDigest": { "type": "boolean" },
+          "optional": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["reviewAssigned", "commentMentioned", "taskAssigned", "rightsExpiring", "mediaJobCompleted", "taskDueSoon"] },
+            "uniqueItems": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "StudioLayoutExperienceSettings": {
+        "type": "object",
+        "properties": {
+          "comments": { "type": "string", "enum": ["left", "right", "hidden"] },
+          "transcript": { "type": "string", "enum": ["left", "right", "hidden"] },
+          "timelineHeight": { "type": "integer", "minimum": 160, "maximum": 720 },
+          "panels": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["comments", "transcript", "timeline", "metadata"] },
+            "uniqueItems": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EffectiveExperienceSetting": {
+        "type": "object",
+        "required": ["value", "source", "editable"],
+        "properties": {
+          "value": { "$ref": "#/components/schemas/ExperienceSettingValue" },
+          "source": { "$ref": "#/components/schemas/SettingSource" },
+          "editable": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "EffectiveNavigationExperienceSetting": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          { "type": "object", "properties": { "value": { "$ref": "#/components/schemas/NavigationExperienceSettings" } } }
+        ]
+      },
+      "EffectiveViewsExperienceSetting": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          { "type": "object", "properties": { "value": { "$ref": "#/components/schemas/ViewsExperienceSettings" } } }
+        ]
+      },
+      "EffectiveShortcutsExperienceSetting": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          { "type": "object", "properties": { "value": { "$ref": "#/components/schemas/ShortcutsExperienceSettings" } } }
+        ]
+      },
+      "EffectiveNotificationsExperienceSetting": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          { "type": "object", "properties": { "value": { "$ref": "#/components/schemas/NotificationsExperienceSettings" } } }
+        ]
+      },
+      "EffectiveStudioLayoutExperienceSetting": {
+        "allOf": [
+          { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          { "type": "object", "properties": { "value": { "$ref": "#/components/schemas/StudioLayoutExperienceSettings" } } }
+        ]
+      },
+      "ExperienceSettings": {
+        "type": "object",
+        "required": ["locale", "timeZone", "dateFormat", "timeFormat", "theme", "density", "textScale", "reducedMotion", "homePage", "navigation", "views", "shortcuts", "notifications", "studioLayout"],
+        "properties": {
+          "locale": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "timeZone": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "dateFormat": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "timeFormat": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "theme": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "density": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "textScale": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "reducedMotion": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "homePage": { "$ref": "#/components/schemas/EffectiveExperienceSetting" },
+          "navigation": { "$ref": "#/components/schemas/EffectiveNavigationExperienceSetting" },
+          "views": { "$ref": "#/components/schemas/EffectiveViewsExperienceSetting" },
+          "shortcuts": { "$ref": "#/components/schemas/EffectiveShortcutsExperienceSetting" },
+          "notifications": { "$ref": "#/components/schemas/EffectiveNotificationsExperienceSetting" },
+          "studioLayout": { "$ref": "#/components/schemas/EffectiveStudioLayoutExperienceSetting" }
+        },
+        "additionalProperties": false
+      },
+      "ExperienceProfileResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["schemaVersion", "profileVersion", "experience"],
+            "properties": {
+              "schemaVersion": { "type": "integer", "minimum": 1 },
+              "profileVersion": { "type": "integer", "minimum": 0 },
+              "experience": { "$ref": "#/components/schemas/ExperienceSettings" }
+            }
+          }
+        ]
+      },
+      "UpdateExperienceProfileRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "locale": { "type": "string", "enum": ["ar", "en"] },
+          "timeZone": { "type": "string", "format": "timezone" },
+          "dateFormat": { "type": "string", "enum": ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"] },
+          "timeFormat": { "type": "string", "enum": ["24h", "12h"] },
+          "theme": { "type": "string", "enum": ["cinematic-dark", "luxury-dark", "ocean-dark", "neutral-light", "high-contrast"] },
+          "density": { "type": "string", "enum": ["comfortable", "compact"] },
+          "textScale": { "type": "string", "enum": ["small", "medium", "large"] },
+          "reducedMotion": { "type": "boolean" },
+          "homePage": { "type": "string", "maxLength": 255, "pattern": "^/" },
+          "navigation": { "$ref": "#/components/schemas/NavigationExperienceSettings" },
+          "views": { "$ref": "#/components/schemas/ViewsExperienceSettings" },
+          "shortcuts": { "$ref": "#/components/schemas/ShortcutsExperienceSettings" },
+          "notifications": { "$ref": "#/components/schemas/NotificationsExperienceSettings" },
+          "studioLayout": { "$ref": "#/components/schemas/StudioLayoutExperienceSettings" }
+        },
+        "additionalProperties": false
+      },
+      "SettingLockedError": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ErrorEnvelope" },
+          {
+            "type": "object",
+            "required": ["code", "source"],
+            "properties": {
+              "code": { "const": "SETTING_LOCKED" },
+              "source": { "type": "string", "enum": ["release", "deployment"] }
+            }
+          }
+        ]
+      },
       "SecuritySettings": {
         "type": "object",
         "required": [
@@ -9362,11 +11698,20 @@
           ,"notes": { "type": ["string", "null"], "maxLength": 5000 }
         }
       },
-      "ProjectTask": { "type": "object", "required": ["id", "projectId", "title", "status", "assignee", "recordId", "dueDate", "createdAt", "updatedAt"], "properties": { "id": { "type": "string" }, "projectId": { "type": "string" }, "title": { "type": "string" }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" } } },
-      "ProjectTaskCreateRequest": { "type": "object", "required": ["projectId", "title"], "properties": { "projectId": { "type": "string" }, "title": { "type": "string", "maxLength": 300 }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" } } },
-      "ProjectTaskUpdateRequest": { "type": "object", "minProperties": 1, "properties": { "title": { "type": "string", "maxLength": 300 }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" } } },
+      "ProjectTask": { "type": "object", "required": ["id", "projectId", "title", "status", "assignee", "recordId", "dueDate", "targetDurationMinutes", "targetDeadlineAt", "createdAt", "updatedAt"], "properties": { "id": { "type": "string" }, "projectId": { "type": "string" }, "title": { "type": "string" }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" }, "targetDurationMinutes": { "type": ["integer", "null"] }, "targetDeadlineAt": { "type": ["string", "null"], "format": "date-time" }, "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" } } },
+      "ProjectTaskCreateRequest": { "type": "object", "required": ["projectId", "title"], "properties": { "projectId": { "type": "string" }, "title": { "type": "string", "maxLength": 300 }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" }, "targetDurationMinutes": { "type": ["integer", "null"], "minimum": 1 } } },
+      "ProjectTaskUpdateRequest": { "type": "object", "minProperties": 1, "properties": { "title": { "type": "string", "maxLength": 300 }, "status": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "assignee": { "type": ["string", "null"] }, "recordId": { "type": ["string", "null"] }, "dueDate": { "type": ["string", "null"], "format": "date" }, "targetDurationMinutes": { "type": ["integer", "null"], "minimum": 1 } } },
       "ProjectTaskResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["task"], "properties": { "task": { "$ref": "#/components/schemas/ProjectTask" } } }] },
       "ProjectTasksResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["tasks"], "properties": { "tasks": { "type": "array", "items": { "$ref": "#/components/schemas/ProjectTask" } } } }] },
+      "ProjectTaskTemplateCategory": { "type": "string", "enum": ["archive", "review", "production"] },
+      "ProjectTaskTemplate": { "type": "object", "required": ["id", "category", "title", "description", "defaultStatus", "targetDurationMinutes", "createdAt", "updatedAt"], "properties": { "id": { "type": "string" }, "category": { "$ref": "#/components/schemas/ProjectTaskTemplateCategory" }, "title": { "type": "string" }, "description": { "type": ["string", "null"] }, "defaultStatus": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "targetDurationMinutes": { "type": ["integer", "null"] }, "createdAt": { "type": ["string", "null"], "format": "date-time" }, "updatedAt": { "type": ["string", "null"], "format": "date-time" } } },
+      "CreateProjectTaskTemplateRequest": { "type": "object", "required": ["category", "title"], "properties": { "category": { "$ref": "#/components/schemas/ProjectTaskTemplateCategory" }, "title": { "type": "string", "minLength": 1, "maxLength": 300 }, "description": { "type": ["string", "null"], "maxLength": 1000 }, "defaultStatus": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "targetDurationMinutes": { "type": ["integer", "null"], "minimum": 1 } } },
+      "UpdateProjectTaskTemplateRequest": { "type": "object", "minProperties": 1, "properties": { "category": { "$ref": "#/components/schemas/ProjectTaskTemplateCategory" }, "title": { "type": "string", "minLength": 1, "maxLength": 300 }, "description": { "type": ["string", "null"], "maxLength": 1000 }, "defaultStatus": { "type": "string", "enum": ["todo", "in_progress", "review", "done"] }, "targetDurationMinutes": { "type": ["integer", "null"], "minimum": 1 } } },
+      "ProjectTaskTemplatesResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["templates"], "properties": { "templates": { "type": "array", "items": { "$ref": "#/components/schemas/ProjectTaskTemplate" } } } }] },
+      "ProjectTaskTemplateResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["template"], "properties": { "template": { "$ref": "#/components/schemas/ProjectTaskTemplate" } } }] },
+      "TaskEscalationPolicy": { "type": "object", "required": ["enabled", "warningBeforeMinutes", "repeatMinutes", "updatedAt"], "properties": { "enabled": { "type": "boolean" }, "warningBeforeMinutes": { "type": ["integer", "null"] }, "repeatMinutes": { "type": ["integer", "null"] }, "updatedAt": { "type": ["string", "null"], "format": "date-time" } } },
+      "UpdateTaskEscalationPolicyRequest": { "type": "object", "minProperties": 1, "properties": { "enabled": { "type": "boolean" }, "warningBeforeMinutes": { "type": ["integer", "null"], "minimum": 1 }, "repeatMinutes": { "type": ["integer", "null"], "minimum": 1 } } },
+      "TaskEscalationPolicyResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["policy"], "properties": { "policy": { "$ref": "#/components/schemas/TaskEscalationPolicy" } } }] },
       "ProjectUpdateRequest": {
         "type": "object",
         "minProperties": 1,

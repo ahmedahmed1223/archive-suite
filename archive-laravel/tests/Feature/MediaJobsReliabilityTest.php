@@ -14,8 +14,10 @@ use App\Services\Media\OcrClient;
 use App\Services\Media\ProcessRunner;
 use App\Services\Media\RealMediaProcessor;
 use App\Services\Media\WhisperTranscriber;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use RuntimeException;
 use Tests\TestCase;
@@ -185,6 +187,52 @@ class MediaJobsReliabilityTest extends TestCase
         $this->assertSame('canceled', $mediaJob->refresh()->status);
     }
 
+    /**
+     * V3-PERF-005: cancellation must actually stop a running ffmpeg
+     * subprocess, not just take effect at the next checkpoint. Distinct from
+     * test_processor_refuses_to_run_a_canceled_job above -- that one is
+     * canceled before process() ever starts (the entry guard catches it).
+     * Here the job is still 'processing' when process() starts (the entry
+     * guard passes) and only flips to canceled once the ffmpeg subprocess is
+     * "running" -- SymfonyProcessRunner's poll loop (via the fake runner) is
+     * what has to notice it.
+     */
+    public function test_thumbnail_processing_stops_when_canceled_during_the_ffmpeg_subprocess(): void
+    {
+        $mediaJob = MediaJob::query()->create([
+            'id' => 'canceled-during-thumbnail-subprocess',
+            'record_id' => 'record-thumb-cancel',
+            'operation' => 'thumbnail',
+            'status' => 'processing',
+            'source_path' => 'archive/source.mov',
+            'options' => [],
+            'queued_at' => now(),
+        ]);
+
+        // Simulates cancel() landing exactly while ffmpeg is running: flips
+        // the DB row right before the runner checks isCanceled(), so it's
+        // the runner-level check -- not the entry guard -- that catches it.
+        $runner = new class extends FakeProcessRunner
+        {
+            public function run(array $command, ?callable $onProgress = null, ?callable $isCanceled = null): array
+            {
+                MediaJob::query()->where('id', 'canceled-during-thumbnail-subprocess')->update(['status' => 'canceled']);
+
+                return parent::run($command, $onProgress, $isCanceled);
+            }
+        };
+
+        $processor = $this->realProcessor($runner);
+
+        $this->expectException(JobCanceledException::class);
+
+        try {
+            $processor->process($mediaJob);
+        } finally {
+            $this->assertSame('canceled', $mediaJob->refresh()->status);
+        }
+    }
+
     public function test_cancel_exception_leaves_job_canceled_without_marking_it_failed(): void
     {
         $mediaJob = MediaJob::query()->create([
@@ -275,6 +323,63 @@ class MediaJobsReliabilityTest extends TestCase
         $job->failed(new RuntimeException('should not matter'));
 
         $this->assertSame('canceled', $mediaJob->refresh()->status);
+    }
+
+    // -- V3-PERF-002: request-id + queue-wait tracing ---------------------
+
+    public function test_dispatched_at_defaults_to_construction_time_when_not_supplied(): void
+    {
+        $before = CarbonImmutable::now();
+        $job = new ProcessMediaWorkflow('trace-default-dispatched-at');
+        $after = CarbonImmutable::now();
+
+        $dispatchedAt = CarbonImmutable::parse($job->dispatchedAt);
+        $this->assertTrue($dispatchedAt->betweenIncluded($before, $after));
+    }
+
+    public function test_a_queue_wait_at_or_over_the_threshold_logs_a_sanitized_slow_queue_job_event(): void
+    {
+        config(['observability.slow_queue_wait_threshold_ms' => 0]);
+        Log::spy();
+
+        $job = $this->app->make(ProcessMediaWorkflow::class, [
+            'mediaJobId' => 'no-such-media-job',
+            'requestId' => 'trace-queue-wait-1',
+            'dispatchedAt' => CarbonImmutable::now()->subSeconds(30)->toIso8601String(),
+        ]);
+        $job->handle($this->app->make(MediaJobExecutor::class));
+
+        $captured = null;
+        Log::shouldHaveReceived('warning')->once()->withArgs(function (string $message, array $context) use (&$captured): bool {
+            $captured = [$message, $context];
+
+            return true;
+        });
+
+        [$message, $context] = $captured;
+        $this->assertSame('slow_queue_job', $message);
+        $this->assertSame(['request_id', 'job', 'queue_wait_ms', 'timestamp'], array_keys($context));
+        $this->assertSame('trace-queue-wait-1', $context['request_id']);
+        $this->assertSame('ProcessMediaWorkflow', $context['job']);
+        $this->assertGreaterThanOrEqual(30_000, $context['queue_wait_ms']);
+
+        // Sanitized: no media job id, source path, or other payload details.
+        $serialized = json_encode($context, JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('no-such-media-job', $serialized);
+    }
+
+    public function test_a_queue_wait_under_the_threshold_is_not_logged_as_slow(): void
+    {
+        config(['observability.slow_queue_wait_threshold_ms' => 60_000]);
+        Log::spy();
+
+        $job = $this->app->make(ProcessMediaWorkflow::class, [
+            'mediaJobId' => 'no-such-media-job-2',
+            'requestId' => 'trace-queue-wait-2',
+        ]);
+        $job->handle($this->app->make(MediaJobExecutor::class));
+
+        Log::shouldNotHaveReceived('warning', ['slow_queue_job', \Mockery::type('array')]);
     }
 
     // -- helpers ----------------------------------------------------------

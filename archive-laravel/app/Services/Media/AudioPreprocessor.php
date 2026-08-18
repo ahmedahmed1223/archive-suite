@@ -28,6 +28,7 @@ class AudioPreprocessor
 
         $command = [
             $this->ffmpegPath,
+            '-y', // V3-PERF-005: idempotent overwrite so a retried attempt doesn't fail on a leftover partial file.
             '-i', $sourcePath,
             '-vn',
             '-acodec', 'pcm_s16le',
@@ -87,6 +88,7 @@ class AudioPreprocessor
 
         $command = [
             $this->ffmpegPath,
+            '-y', // V3-PERF-005: idempotent overwrite, see extractAudio().
             '-i', $audioPath,
             '-ss', (string) $startSec,
             '-t', (string) $duration,

@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import MobilePrimaryNav from "./MobilePrimaryNav";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+import { DEFAULT_CAPABILITIES, DEFAULT_EXPERIENCE } from "@/lib/experience-profile";
 
 const { openCommandPalette } = vi.hoisted(() => ({ openCommandPalette: vi.fn() }));
 
@@ -12,6 +13,11 @@ vi.mock("next/link", () => ({
 vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 vi.mock("@/lib/auth-session", () => ({
   useAuthSession: () => ({ status: "authenticated", user: { role: "viewer" } })
+}));
+// V3-SET-006: the daily bar is now filtered through the experience profile's
+// navigation setting + deployment capabilities (see navigation.test.ts).
+vi.mock("@/lib/experience-profile-context", () => ({
+  useExperienceProfile: () => ({ experience: DEFAULT_EXPERIENCE, capabilities: DEFAULT_CAPABILITIES })
 }));
 vi.mock("@/components/CommandPalette", () => ({ openCommandPalette }));
 

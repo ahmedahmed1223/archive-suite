@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateAccountPreferencesRequest;
 use App\Models\ApiSession;
 use App\Models\User;
+use App\Services\Settings\ExperienceProfileService;
 use App\Support\ApiError;
 use App\Support\ApiToken;
 use Illuminate\Http\JsonResponse;
@@ -49,7 +50,7 @@ class AuthController extends Controller
         return response()->json(['ok' => true, 'user' => $this->formatUser($user)]);
     }
 
-    public function preferences(UpdateAccountPreferencesRequest $request): JsonResponse
+    public function preferences(UpdateAccountPreferencesRequest $request, ExperienceProfileService $profiles): JsonResponse
     {
         $user = $request->attributes->get('archive_user');
 
@@ -57,8 +58,10 @@ class AuthController extends Controller
             return response()->json(ApiError::envelope('Unauthorized.', 401), 401);
         }
 
-        $user->locale = $request->validated('locale');
-        $user->save();
+        // V3-SET-003: route through the experience registry instead of writing
+        // users.locale directly, so this legacy endpoint can't drift out of
+        // sync with a locale already stored in user_experience_profiles.
+        $profiles->update($user, ['locale' => $request->validated('locale')]);
 
         return response()->json([
             'ok' => true,

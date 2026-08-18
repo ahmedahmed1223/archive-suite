@@ -6,11 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 
 class SearchSuggestionsController extends Controller
 {
+    // V3-PERF-005: backpressure -- every keystroke used to trigger an
+    // unbounded `SELECT *` over the whole table. Bounded pool + short-TTL
+    // cache under one fixed key (not per-query -- the source rows are the
+    // same regardless of what the user typed) turns N full scans per typing
+    // burst into at most one per TTL window.
+    private const POOL_LIMIT = 500;
+
+    private const POOL_CACHE_TTL_SECONDS = 15;
+
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -19,8 +29,11 @@ class SearchSuggestionsController extends Controller
         ]);
         $needle = mb_strtolower(trim($validated['q']));
         $limit = (int) ($validated['limit'] ?? 8);
-        $records = DB::table('storage_rows')->orderBy('uid')->get()
-            ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
+        $records = Cache::remember('search-suggestions:pool', self::POOL_CACHE_TTL_SECONDS, fn () => DB::table('storage_rows')
+            ->orderBy('uid')
+            ->limit(self::POOL_LIMIT)
+            ->get()
+            ->map(fn (stdClass $row): array => StorageRowPayload::format($row)));
         $suggestions = [];
 
         foreach ($records as $record) {

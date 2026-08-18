@@ -1,5 +1,24 @@
 // Generated from docs/api/archive-contract.openapi.json by pnpm api:generate. Do not edit.
 export interface paths {
+    "/account/experience": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the current user's effective experience profile with provenance */
+        get: operations["getAccountExperience"];
+        put?: never;
+        post?: never;
+        /** Reset the current user's experience profile to effective defaults */
+        delete: operations["resetAccountExperience"];
+        options?: never;
+        head?: never;
+        /** Update allowlisted values in the current user's experience profile */
+        patch: operations["updateAccountExperience"];
+        trace?: never;
+    };
     "/account/export": {
         parameters: {
             query?: never;
@@ -81,6 +100,75 @@ export interface paths {
         post?: never;
         /** Revoke an API key (admin only) */
         delete: operations["deleteApiKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List dual-approval requests */
+        get: operations["listApprovalRequests"];
+        put?: never;
+        /** Submit a sensitive bulk-macro operation for dual approval */
+        post: operations["createApprovalRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one approval request */
+        get: operations["getApprovalRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-requests/{id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record an approve/reject decision. The original submitter is structurally refused (self_approval), never merely uncounted. */
+        post: operations["decideApprovalRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-requests/{id}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Execute an approved request's underlying bulk-macro run */
+        post: operations["executeApprovalRequest"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -186,6 +274,42 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/automation/rule-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List archive/review/production automation-rule templates */
+        get: operations["listAutomationRuleTemplates"];
+        put?: never;
+        /** Create an automation-rule template (admin only) */
+        post: operations["createAutomationRuleTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/automation/rule-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an automation-rule template (admin only) */
+        delete: operations["deleteAutomationRuleTemplate"];
+        options?: never;
+        head?: never;
+        /** Update an automation-rule template (admin only) */
+        patch: operations["updateAutomationRuleTemplate"];
         trace?: never;
     };
     "/automation/rules": {
@@ -344,6 +468,42 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/bulk-macros/{id}/runs/{runId}/rollback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Best-effort rollback of a persisted run's reversible steps */
+        post: operations["rollbackBulkMacroRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/clips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a clip */
+        get: operations["getMediaClip"];
+        put?: never;
+        post?: never;
+        /** Delete a clip */
+        delete: operations["deleteMediaClip"];
+        options?: never;
+        head?: never;
+        /** Update a clip's title, notes, in/out range, or frame rate */
+        patch: operations["updateMediaClip"];
         trace?: never;
     };
     "/collaboration/rooms/{roomKey}/documents/{resourceId}": {
@@ -1077,6 +1237,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/media-derivatives": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a thumbnail, waveform, or proxy derivative
+         * @description Keyed on the source's checksum-derived version plus a hash of the generation settings: a matching ready or in-flight derivative is returned unchanged (200, cached=true) instead of dispatching duplicate work; otherwise a MediaJob is queued through the existing media processing pipeline (202, cached=false).
+         */
+        post: operations["requestMediaDerivative"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media-derivatives/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a derivative's status and storage key */
+        get: operations["getMediaDerivative"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media-review-comments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a studio timeline comment */
+        get: operations["getMediaReviewComment"];
+        put?: never;
+        post?: never;
+        /** Delete a studio timeline comment */
+        delete: operations["deleteMediaReviewComment"];
+        options?: never;
+        head?: never;
+        /** Edit a studio timeline comment's body, type, or timestamps */
+        patch: operations["updateMediaReviewComment"];
+        trace?: never;
+    };
+    "/media-review-comments/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen a resolved studio timeline comment */
+        post: operations["reopenMediaReviewComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media-review-comments/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve an open studio timeline comment */
+        post: operations["resolveMediaReviewComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media/{mediaUid}/review-links": {
         parameters: {
             query?: never;
@@ -1337,6 +1587,42 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/project-task-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List archive/review/production project-task templates */
+        get: operations["listProjectTaskTemplates"];
+        put?: never;
+        /** Create a project-task template (admin only) */
+        post: operations["createProjectTaskTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-task-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a project-task template (admin only) */
+        delete: operations["deleteProjectTaskTemplate"];
+        options?: never;
+        head?: never;
+        /** Update a project-task template (admin only) */
+        patch: operations["updateProjectTaskTemplate"];
         trace?: never;
     };
     "/project-tasks": {
@@ -1654,6 +1940,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/clips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List non-destructive clips for a record version */
+        get: operations["listMediaClips"];
+        put?: never;
+        /** Create a non-destructive clip pinned to a record version */
+        post: operations["createMediaClip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/clips/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export a record's clip list as JSON or CSV
+         * @description Every exported clip carries its record/attachment identity, pinned version token, and frame rate, so the list is unambiguous when replayed against the source later.
+         */
+        get: operations["exportMediaClips"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/comments": {
         parameters: {
             query?: never;
@@ -1779,6 +2103,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/media-derivatives": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List cached derivatives for a record */
+        get: operations["listMediaDerivatives"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/media-review-comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List studio timeline comments for a record */
+        get: operations["listMediaReviewComments"];
+        put?: never;
+        /** Create a studio timeline marker/comment */
+        post: operations["createMediaReviewComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/merge": {
         parameters: {
             query?: never;
@@ -1842,6 +2201,24 @@ export interface paths {
         get: operations["listRecordProjects"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/review-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List review sessions for a record */
+        get: operations["listReviewSessions"];
+        put?: never;
+        /** Open a review session for a record version */
+        post: operations["createReviewSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1985,6 +2362,40 @@ export interface paths {
         patch: operations["updateRecordTranscript"];
         trace?: never;
     };
+    "/records/{id}/transcript/export/{format}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download the current transcript as SRT or WebVTT */
+        get: operations["exportTranscript"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/transcript/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Certify the current transcript version so it can no longer be silently overwritten */
+        post: operations["lockTranscriptVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/transcript/subtitles": {
         parameters: {
             query?: never;
@@ -1997,6 +2408,41 @@ export interface paths {
         put: operations["saveRecordSubtitles"];
         /** Import an SRT or WebVTT file into a record transcript */
         post: operations["importRecordSubtitles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/transcript/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the current transcript and its version history */
+        get: operations["listTranscriptVersions"];
+        put?: never;
+        /** Save an edited cue list as a new transcript version */
+        post: operations["createTranscriptVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/records/{id}/transcript/versions/{versionId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore an earlier transcript version as a new current version */
+        post: operations["restoreTranscriptVersion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2196,6 +2642,161 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/review-links/{token}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record an external reviewer's approve / request-changes decision */
+        post: operations["decideReviewLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-links/{token}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream the reviewed media for a public review link (derivative-preferred) */
+        get: operations["getReviewLinkMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-links/{token}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Internal audit report proving version + reviewers + decision for a review link */
+        get: operations["getReviewLinkReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a review session */
+        get: operations["getReviewSession"];
+        put?: never;
+        post?: never;
+        /** Delete a review session */
+        delete: operations["deleteReviewSession"];
+        options?: never;
+        head?: never;
+        /** Update review session notes */
+        patch: operations["updateReviewSession"];
+        trace?: never;
+    };
+    "/review-sessions/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a review session that is in_review */
+        post: operations["approveReviewSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-sessions/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a review session */
+        post: operations["closeReviewSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-sessions/{id}/request-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request changes on a review session that is in_review */
+        post: operations["requestReviewSessionChanges"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-sessions/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume review after changes were requested */
+        post: operations["resumeReviewSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review-sessions/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a review session from draft to in_review */
+        post: operations["startReviewSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rights": {
         parameters: {
             query?: never;
@@ -2388,6 +2989,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sensitive-operation-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the sensitive-operation policy catalog */
+        get: operations["listSensitiveOperationPolicies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sensitive-operation-policies/{operationKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Admin-only: toggle whether a bulk-macro step type requires dual approval */
+        patch: operations["updateSensitiveOperationPolicy"];
+        trace?: never;
+    };
     "/share": {
         parameters: {
             query?: never;
@@ -2540,6 +3175,24 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/system/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read actual deployment capabilities with status and provenance */
+        get: operations["getSystemCapabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the administrator-editable subset of deployment capabilities */
+        patch: operations["updateSystemCapabilities"];
         trace?: never;
     };
     "/system/control/{action}": {
@@ -2904,6 +3557,24 @@ export interface paths {
         head?: never;
         /** Update a tag hierarchy node */
         patch: operations["updateTagNode"];
+        trace?: never;
+    };
+    "/task-escalation-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the task escalation policy */
+        get: operations["getTaskEscalationPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the task escalation policy (admin only) */
+        patch: operations["updateTaskEscalationPolicy"];
         trace?: never;
     };
     "/trash": {
@@ -3420,6 +4091,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/work-inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's aggregated work inbox (pending tasks, review sessions, expiring rights, notifications) */
+        get: operations["listWorkInbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3498,6 +4186,49 @@ export interface components {
         ApiKeysResponse: components["schemas"]["OkEnvelope"] & {
             apiKeys: components["schemas"]["ApiKey"][];
         };
+        ApprovalDecisionRecord: {
+            approverId: number;
+            /** Format: date-time */
+            decidedAt: string | null;
+            /** @enum {string} */
+            decision: "approve" | "reject";
+            /** Format: uuid */
+            id: string;
+            notes?: string | null;
+        };
+        ApprovalRequest: {
+            /** Format: date-time */
+            createdAt: string | null;
+            decisions: components["schemas"]["ApprovalDecisionRecord"][];
+            /** Format: date-time */
+            executedAt?: string | null;
+            /** Format: uuid */
+            executedRunId?: string | null;
+            /** Format: uuid */
+            id: string;
+            operationKey: string;
+            payload: Record<string, never>;
+            requestedBy: number;
+            requiredApprovals: number;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected" | "executed";
+            targetId: string;
+            /** @enum {string} */
+            targetType: "bulk-macro";
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        ApprovalRequestError: components["schemas"]["ErrorEnvelope"] & {
+            code: components["schemas"]["ApprovalRequestErrorCode"];
+        };
+        /** @enum {string} */
+        ApprovalRequestErrorCode: "operation_not_sensitive" | "not_pending" | "already_decided" | "self_approval" | "not_approved" | "unsupported_target" | "macro_not_found" | "stale_approval";
+        ApprovalRequestResponse: components["schemas"]["OkEnvelope"] & {
+            request: components["schemas"]["ApprovalRequest"];
+        };
+        ApprovalRequestsResponse: components["schemas"]["OkEnvelope"] & {
+            requests: components["schemas"]["ApprovalRequest"][];
+        };
         ArchiveRecord: {
             attachmentCount?: number;
             /** Format: date-time */
@@ -3547,6 +4278,13 @@ export interface components {
             severity: "high" | "medium" | "low";
             title: string;
         };
+        ArchiveViewExperienceSettings: {
+            columns?: string[];
+            defaultSavedSearchId?: string | null;
+            /** @enum {string} */
+            mode?: "table" | "grid";
+            pageSize?: number;
+        };
         AuthResponse: components["schemas"]["OkEnvelope"] & {
             token?: string;
             user: components["schemas"]["User"];
@@ -3595,6 +4333,32 @@ export interface components {
             pagination?: components["schemas"]["PaginationMeta"];
             rules: components["schemas"]["AutomationRule"][];
             runs: components["schemas"]["AutomationRuleRun"][];
+        };
+        AutomationRuleTemplate: {
+            action: components["schemas"]["AutomationRuleAction"];
+            category: components["schemas"]["AutomationRuleTemplateCategory"];
+            /** Format: date-time */
+            createdAt: string | null;
+            departmentId: string;
+            description: string | null;
+            fileExtension: string;
+            id: string;
+            name: string;
+            query: string;
+            status: string;
+            tag: string;
+            trigger: components["schemas"]["AutomationRuleTrigger"];
+            type: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        /** @enum {string} */
+        AutomationRuleTemplateCategory: "archive" | "review" | "production";
+        AutomationRuleTemplateResponse: components["schemas"]["OkEnvelope"] & {
+            template: components["schemas"]["AutomationRuleTemplate"];
+        };
+        AutomationRuleTemplatesResponse: components["schemas"]["OkEnvelope"] & {
+            templates: components["schemas"]["AutomationRuleTemplate"][];
         };
         /** @enum {string} */
         AutomationRuleTrigger: "record.created" | "record.updated" | "media.failed" | "schedule.daily";
@@ -3713,6 +4477,23 @@ export interface components {
         BulkMacroResponse: components["schemas"]["OkEnvelope"] & {
             macro: components["schemas"]["BulkMacro"];
         };
+        BulkMacroRollbackResponse: components["schemas"]["OkEnvelope"] & {
+            rollback: components["schemas"]["BulkMacroRollbackResult"][];
+        };
+        BulkMacroRollbackResult: {
+            id: string | null;
+            /** @enum {string} */
+            status: "rolled_back" | "not_rollback_capable" | "nothing_to_rollback";
+            steps: components["schemas"]["BulkMacroRollbackStep"][];
+            store: string | null;
+        };
+        BulkMacroRollbackStep: {
+            reason?: string;
+            restoredTo?: unknown;
+            /** @enum {string} */
+            status: "rolled_back" | "failed" | "not_rollback_capable";
+            type: string | null;
+        };
         BulkMacroRun: {
             completedCount: number;
             /** Format: date-time */
@@ -3794,6 +4575,23 @@ export interface components {
             records: components["schemas"]["ArchiveRecord"][];
             store: string;
         };
+        Capabilities: {
+            backups: components["schemas"]["EffectiveCapabilitySetting"];
+            broadcastMetadata: components["schemas"]["EffectiveCapabilitySetting"];
+            mcp: components["schemas"]["EffectiveCapabilitySetting"];
+            mediaProcessing: components["schemas"]["EffectiveCapabilitySetting"];
+            ocr: components["schemas"]["EffectiveCapabilitySetting"];
+            odbc: components["schemas"]["EffectiveCapabilitySetting"];
+            semanticSearch: components["schemas"]["EffectiveCapabilitySetting"];
+            systemControl: components["schemas"]["EffectiveCapabilitySetting"];
+            trash: components["schemas"]["EffectiveCapabilitySetting"];
+        };
+        CapabilitiesResponse: components["schemas"]["OkEnvelope"] & {
+            capabilities: components["schemas"]["Capabilities"];
+            schemaVersion: number;
+        };
+        /** @enum {string} */
+        CapabilityStatus: "enabled" | "disabled" | "needs_configuration" | "unavailable";
         CollaborationDocument: {
             content: string;
             resourceId: string;
@@ -3934,11 +4732,30 @@ export interface components {
             };
             total: number;
         };
+        CreateApprovalRequestRequest: {
+            targetId: string;
+            targets: components["schemas"]["BulkMacroTarget"][];
+            /** @enum {string} */
+            targetType: "bulk-macro";
+        };
         CreateAutomationRuleRequest: {
             action: components["schemas"]["AutomationRuleAction"];
             departmentId?: string;
             /** @default true */
             enabled?: boolean;
+            name: string;
+            query?: string;
+            status?: string;
+            tag?: string;
+            trigger: components["schemas"]["AutomationRuleTrigger"];
+            type?: string;
+        };
+        CreateAutomationRuleTemplateRequest: {
+            action: components["schemas"]["AutomationRuleAction"];
+            category: components["schemas"]["AutomationRuleTemplateCategory"];
+            departmentId?: string;
+            description?: string | null;
+            fileExtension?: string;
             name: string;
             query?: string;
             status?: string;
@@ -3961,6 +4778,14 @@ export interface components {
             tracks?: Record<string, never>[] | null;
             transitions?: Record<string, never>[] | null;
         };
+        CreateProjectTaskTemplateRequest: {
+            category: components["schemas"]["ProjectTaskTemplateCategory"];
+            /** @enum {string} */
+            defaultStatus?: "todo" | "in_progress" | "review" | "done";
+            description?: string | null;
+            targetDurationMinutes?: number | null;
+            title: string;
+        };
         CreateRecordRelationRequest: {
             note?: string;
             sourceId: string;
@@ -3968,6 +4793,14 @@ export interface components {
             type: components["schemas"]["RelationType"];
         };
         CreateReviewLinkRequest: {
+            /** @default false */
+            allowDownload?: boolean | null;
+            /** Format: uuid */
+            attachmentId?: string | null;
+            /** Format: uuid */
+            derivativeId?: string | null;
+            /** @description V3-MEDIA-007: configurable link lifetime. Neither this nor expiresAt given still yields a time-bounded link (defaults to 7 days server-side). */
+            durationHours?: number | null;
             /** Format: date-time */
             expiresAt?: string | null;
             /**
@@ -3975,16 +4808,33 @@ export interface components {
              * @enum {string}
              */
             permission?: "view" | "comment";
+            /**
+             * @default 1
+             * @enum {integer|null}
+             */
+            requiredApprovals?: 1 | 2 | null;
+            /** @description Server-validated relative path, trusted only from the authenticated internal creator. Fallback when no derivative is attached or ready. */
+            sourcePath?: string | null;
+            store?: string | null;
+            /**
+             * @default none
+             * @enum {string|null}
+             */
+            watermarkPolicy?: "none" | "visible" | null;
         };
         CreateReviewLinkResponse: components["schemas"]["OkEnvelope"] & {
+            allowDownload?: boolean;
             /** Format: date-time */
             expiresAt?: string | null;
             mediaUid: string;
             path: string;
             /** @enum {string} */
             permission: "view" | "comment";
+            requiredApprovals?: number;
             token: string;
             url: string;
+            /** @enum {string} */
+            watermarkPolicy?: "none" | "visible";
         };
         CreateScheduledUploadRequest: {
             idempotencyKey: string;
@@ -4025,6 +4875,11 @@ export interface components {
             fileName: string;
             folder?: string;
             totalSize: number;
+        };
+        DecideApprovalRequestRequest: {
+            /** @enum {string} */
+            decision: "approve" | "reject";
+            notes?: string;
         };
         DepartmentFieldOwner: {
             departmentId: string;
@@ -4193,6 +5048,35 @@ export interface components {
         DrProbeResponse: components["schemas"]["OkEnvelope"] & {
             dr: components["schemas"]["DrProbe"];
         };
+        EffectiveCapabilitySetting: {
+            editable: boolean;
+            reason: string | null;
+            source: components["schemas"]["SettingSource"];
+            status: components["schemas"]["CapabilityStatus"];
+            value: boolean;
+            /** @description Optimistic-concurrency token for this capability's admin override; send back in expectedVersions on PATCH to detect a stale write. */
+            version: number;
+        };
+        EffectiveExperienceSetting: {
+            editable: boolean;
+            source: components["schemas"]["SettingSource"];
+            value: components["schemas"]["ExperienceSettingValue"];
+        };
+        EffectiveNavigationExperienceSetting: components["schemas"]["EffectiveExperienceSetting"] & {
+            value?: components["schemas"]["NavigationExperienceSettings"];
+        };
+        EffectiveNotificationsExperienceSetting: components["schemas"]["EffectiveExperienceSetting"] & {
+            value?: components["schemas"]["NotificationsExperienceSettings"];
+        };
+        EffectiveShortcutsExperienceSetting: components["schemas"]["EffectiveExperienceSetting"] & {
+            value?: components["schemas"]["ShortcutsExperienceSettings"];
+        };
+        EffectiveStudioLayoutExperienceSetting: components["schemas"]["EffectiveExperienceSetting"] & {
+            value?: components["schemas"]["StudioLayoutExperienceSettings"];
+        };
+        EffectiveViewsExperienceSetting: components["schemas"]["EffectiveExperienceSetting"] & {
+            value?: components["schemas"]["ViewsExperienceSettings"];
+        };
         EntityRef: {
             id: string;
             type: string;
@@ -4204,6 +5088,43 @@ export interface components {
             /** @constant */
             ok: false;
         };
+        ExecuteApprovalRequestResponse: components["schemas"]["OkEnvelope"] & {
+            request: components["schemas"]["ApprovalRequest"];
+            run: {
+                completedCount: number;
+                failedCount: number;
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                macroId: string;
+                results: components["schemas"]["BulkMacroTargetResult"][];
+                targetCount: number;
+            };
+        };
+        ExperienceProfileResponse: components["schemas"]["OkEnvelope"] & {
+            experience: components["schemas"]["ExperienceSettings"];
+            profileVersion: number;
+            schemaVersion: number;
+        };
+        ExperienceSettings: {
+            dateFormat: components["schemas"]["EffectiveExperienceSetting"];
+            density: components["schemas"]["EffectiveExperienceSetting"];
+            homePage: components["schemas"]["EffectiveExperienceSetting"];
+            locale: components["schemas"]["EffectiveExperienceSetting"];
+            navigation: components["schemas"]["EffectiveNavigationExperienceSetting"];
+            notifications: components["schemas"]["EffectiveNotificationsExperienceSetting"];
+            reducedMotion: components["schemas"]["EffectiveExperienceSetting"];
+            shortcuts: components["schemas"]["EffectiveShortcutsExperienceSetting"];
+            studioLayout: components["schemas"]["EffectiveStudioLayoutExperienceSetting"];
+            textScale: components["schemas"]["EffectiveExperienceSetting"];
+            theme: components["schemas"]["EffectiveExperienceSetting"];
+            timeFormat: components["schemas"]["EffectiveExperienceSetting"];
+            timeZone: components["schemas"]["EffectiveExperienceSetting"];
+            views: components["schemas"]["EffectiveViewsExperienceSetting"];
+        };
+        ExperienceSettingValue: string | boolean | number | unknown[] | {
+            [key: string]: unknown;
+        } | null;
         FavoriteCreateRequest: {
             recordId: string;
             /** @default archive-items */
@@ -4402,6 +5323,116 @@ export interface components {
             rememberMe?: boolean;
             totp?: string;
         };
+        MediaClip: {
+            /** Format: uuid */
+            attachmentId: string | null;
+            /** Format: date-time */
+            createdAt: string | null;
+            createdBy: number | null;
+            fps: number;
+            /** Format: uuid */
+            id: string;
+            inSeconds: number;
+            /** @description False once the record source or attachment has been replaced after this clip's timecodes were captured. */
+            isCurrentVersion: boolean;
+            notes: string | null;
+            outSeconds: number;
+            recordStore: string;
+            recordUid: string;
+            title: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+            /** @description Same checksum-derived identity as ReviewSession.versionToken -- pinned once at creation so the clip's in/out times stay unambiguous even after the source is replaced. */
+            versionToken: string;
+        };
+        MediaClipCreateRequest: {
+            /** Format: uuid */
+            attachmentId?: string | null;
+            fps?: number;
+            inSeconds: number;
+            notes?: string | null;
+            outSeconds: number;
+            store?: string;
+            title: string;
+        };
+        MediaClipResponse: components["schemas"]["OkEnvelope"] & {
+            clip: components["schemas"]["MediaClip"];
+        };
+        MediaClipsExportResponse: components["schemas"]["OkEnvelope"] & {
+            clips: components["schemas"]["MediaClip"][];
+            recordStore: string;
+            recordUid: string;
+        };
+        MediaClipsResponse: components["schemas"]["OkEnvelope"] & {
+            clips: components["schemas"]["MediaClip"][];
+        };
+        MediaClipUpdateRequest: {
+            fps?: number;
+            inSeconds?: number;
+            notes?: string | null;
+            outSeconds?: number;
+            title?: string;
+        };
+        MediaDerivative: {
+            attachmentId: string | null;
+            /** Format: date-time */
+            createdAt: string | null;
+            createdBy: number | null;
+            derivativeType: components["schemas"]["MediaDerivativeType"];
+            error: string | null;
+            /** Format: uuid */
+            id: string;
+            /** @description False once the record source or attachment has been replaced since this derivative was generated -- it is still returned, but must not be treated as matching the current source. */
+            isCurrentVersion: boolean;
+            mediaJobId: string | null;
+            recordStore: string;
+            recordUid: string;
+            settings: components["schemas"]["MediaDerivativeSettings"];
+            status: components["schemas"]["MediaDerivativeStatus"];
+            /** @description Set once status is ready. */
+            storageKey: string | null;
+            /** Format: date-time */
+            updatedAt: string | null;
+            /** @description Same checksum-derived identity as ReviewSession.versionToken / MediaClip.versionToken -- pinned when this derivative was generated. */
+            versionToken: string;
+        };
+        MediaDerivativeRequest: {
+            attachmentId?: string | null;
+            recordId: string;
+            settings?: components["schemas"]["MediaDerivativeSettings"];
+            sourcePath: string;
+            store?: string;
+            type: components["schemas"]["MediaDerivativeType"];
+        };
+        MediaDerivativeResponse: components["schemas"]["OkEnvelope"] & {
+            /** @description True when an existing ready or in-flight derivative was returned instead of dispatching new work. */
+            cached?: boolean;
+            derivative: components["schemas"]["MediaDerivative"];
+        };
+        /** @description Generation settings, specific to the derivative type. Hashed (order-independent) into the cache key alongside the source version, so regenerating with different settings never collides with a derivative cached under different ones. */
+        MediaDerivativeSettings: {
+            /** @description proxy: request GPU (h264_nvenc) encoding. Only ever honored when the worker's NVIDIA runtime is verified healthy -- otherwise the job fails rather than silently falling back to CPU and misreporting the encoder used. */
+            accelerate?: boolean;
+            /** @description thumbnail: frame position. */
+            atSec?: number;
+            /** @description waveform: 6-digit hex color, no leading #. */
+            color?: string;
+            /** @description waveform height in pixels. */
+            height?: number;
+            /** @description proxy: maximum output width. */
+            maxWidth?: number;
+            /** @description proxy: target video bitrate. */
+            videoBitrateKbps?: number;
+            /** @description thumbnail/waveform width in pixels. */
+            width?: number;
+        };
+        MediaDerivativesResponse: components["schemas"]["OkEnvelope"] & {
+            derivatives: components["schemas"]["MediaDerivative"][];
+        };
+        /** @enum {string} */
+        MediaDerivativeStatus: "pending" | "processing" | "ready" | "failed";
+        /** @enum {string} */
+        MediaDerivativeType: "thumbnail" | "waveform" | "proxy";
         MediaJob: {
             /** Format: date-time */
             completedAt?: string | null;
@@ -4440,6 +5471,60 @@ export interface components {
         };
         /** @enum {string} */
         MediaOperation: "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
+        MediaReviewComment: {
+            /** Format: uuid */
+            attachmentId: string | null;
+            body: string;
+            /** Format: date-time */
+            createdAt: string | null;
+            createdBy: number | null;
+            /** @description Null for a point-in-time marker; set for a time-range marker. */
+            endSeconds: number | null;
+            /** Format: uuid */
+            id: string;
+            recordStore: string;
+            recordUid: string;
+            /** Format: date-time */
+            resolvedAt: string | null;
+            resolvedBy: number | null;
+            /** Format: uuid */
+            reviewSessionId: string | null;
+            startSeconds: number;
+            state: components["schemas"]["MediaReviewCommentState"];
+            type: components["schemas"]["MediaReviewCommentType"];
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        MediaReviewCommentCreateRequest: {
+            /** Format: uuid */
+            attachmentId?: string | null;
+            body: string;
+            /** @description Real media duration measured by the caller, used to seed/validate the server-cached known duration. */
+            clientDurationSeconds?: number | null;
+            endSeconds?: number | null;
+            /** Format: uuid */
+            reviewSessionId?: string | null;
+            startSeconds: number;
+            store?: string;
+            type: components["schemas"]["MediaReviewCommentType"];
+        };
+        MediaReviewCommentResponse: components["schemas"]["OkEnvelope"] & {
+            comment: components["schemas"]["MediaReviewComment"];
+        };
+        MediaReviewCommentsResponse: components["schemas"]["OkEnvelope"] & {
+            comments: components["schemas"]["MediaReviewComment"][];
+        };
+        /** @enum {string} */
+        MediaReviewCommentState: "open" | "resolved";
+        /** @enum {string} */
+        MediaReviewCommentType: "issue" | "suggestion" | "highlight" | "chapter";
+        MediaReviewCommentUpdateRequest: {
+            body?: string;
+            clientDurationSeconds?: number | null;
+            endSeconds?: number | null;
+            startSeconds?: number;
+            type?: components["schemas"]["MediaReviewCommentType"];
+        };
         MentionableUser: {
             id: string;
             name: string;
@@ -4550,6 +5635,14 @@ export interface components {
         };
         NamingRuleUpsertRequest: {
             prefix: string;
+        };
+        NavigationExperienceSettings: {
+            hiddenModules?: string[];
+            order?: string[];
+        };
+        NotificationsExperienceSettings: {
+            dailyDigest?: boolean;
+            optional?: ("reviewAssigned" | "commentMentioned" | "taskAssigned" | "rightsExpiring" | "mediaJobCompleted" | "taskDueSoon")[];
         };
         OdbcProbe: {
             driverLoaded: boolean;
@@ -4700,6 +5793,9 @@ export interface components {
             recordId: string | null;
             /** @enum {string} */
             status: "todo" | "in_progress" | "review" | "done";
+            /** Format: date-time */
+            targetDeadlineAt: string | null;
+            targetDurationMinutes: number | null;
             title: string;
             /** Format: date-time */
             updatedAt: string;
@@ -4712,6 +5808,7 @@ export interface components {
             recordId?: string | null;
             /** @enum {string} */
             status?: "todo" | "in_progress" | "review" | "done";
+            targetDurationMinutes?: number | null;
             title: string;
         };
         ProjectTaskResponse: components["schemas"]["OkEnvelope"] & {
@@ -4720,6 +5817,27 @@ export interface components {
         ProjectTasksResponse: components["schemas"]["OkEnvelope"] & {
             tasks: components["schemas"]["ProjectTask"][];
         };
+        ProjectTaskTemplate: {
+            category: components["schemas"]["ProjectTaskTemplateCategory"];
+            /** Format: date-time */
+            createdAt: string | null;
+            /** @enum {string} */
+            defaultStatus: "todo" | "in_progress" | "review" | "done";
+            description: string | null;
+            id: string;
+            targetDurationMinutes: number | null;
+            title: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        /** @enum {string} */
+        ProjectTaskTemplateCategory: "archive" | "review" | "production";
+        ProjectTaskTemplateResponse: components["schemas"]["OkEnvelope"] & {
+            template: components["schemas"]["ProjectTaskTemplate"];
+        };
+        ProjectTaskTemplatesResponse: components["schemas"]["OkEnvelope"] & {
+            templates: components["schemas"]["ProjectTaskTemplate"][];
+        };
         ProjectTaskUpdateRequest: {
             assignee?: string | null;
             /** Format: date */
@@ -4727,6 +5845,7 @@ export interface components {
             recordId?: string | null;
             /** @enum {string} */
             status?: "todo" | "in_progress" | "review" | "done";
+            targetDurationMinutes?: number | null;
             title?: string;
         };
         ProjectUpdateRequest: {
@@ -4772,11 +5891,13 @@ export interface components {
             checksumSha256: string;
             /** Format: date-time */
             createdAt?: string | null;
+            disk: string;
             /** Format: uuid */
             id: string;
             isPrimary: boolean;
             mimeType?: string | null;
             originalName: string;
+            path: string;
             processingStatus: string;
             recordStore: string;
             recordUid: string;
@@ -5168,18 +6289,98 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string | null;
         };
+        ReviewLinkDecisionRequest: {
+            /** @enum {string} */
+            decision: "approve" | "request_changes";
+            notes?: string | null;
+            /** Format: email */
+            reviewerEmail?: string | null;
+            reviewerName: string;
+        };
+        ReviewLinkDecisionResponse: components["schemas"]["OkEnvelope"] & {
+            approvals: {
+                received?: number;
+                required?: number;
+            };
+            decision: {
+                /** Format: date-time */
+                decidedAt?: string | null;
+                /** @enum {string} */
+                decision?: "approve" | "request_changes";
+                /** Format: uuid */
+                id?: string;
+                reviewerName?: string;
+            };
+            session: {
+                state?: components["schemas"]["ReviewSessionState"];
+            } | null;
+        };
         ReviewLinkPayloadResponse: components["schemas"]["OkEnvelope"] & {
             comments: components["schemas"]["ReviewComment"][];
             mediaUid: string;
             review: {
+                allowDownload?: boolean;
                 /** Format: date-time */
                 createdAt?: string | null;
+                derivative?: {
+                    derivativeType?: components["schemas"]["MediaDerivativeType"];
+                    /** Format: uuid */
+                    id?: string;
+                    status?: string;
+                } | null;
                 /** Format: date-time */
                 expiresAt?: string | null;
+                isCurrentVersion?: boolean | null;
                 /** @enum {string} */
                 permission: "view" | "comment";
+                requiredApprovals?: number;
                 /** Format: date-time */
                 updatedAt?: string | null;
+                versionToken?: string | null;
+                /** @enum {string} */
+                watermarkPolicy?: "none" | "visible";
+            };
+        };
+        ReviewLinkReportResponse: components["schemas"]["OkEnvelope"] & {
+            /** @description Audit-proof: which version was reviewed, who the reviewers were, and what the decision was. */
+            report: {
+                allowDownload?: boolean;
+                approvals?: {
+                    received?: number;
+                    required?: number;
+                };
+                /** Format: uuid */
+                attachmentId?: string | null;
+                /** Format: date-time */
+                expiresAt?: string | null;
+                isCurrentVersion?: boolean | null;
+                isExpired?: boolean;
+                mediaUid?: string;
+                recordStore?: string | null;
+                requiredApprovals?: number;
+                reviewers?: {
+                    /** Format: date-time */
+                    decidedAt?: string | null;
+                    /** @enum {string} */
+                    decision?: "approve" | "request_changes";
+                    /** Format: uuid */
+                    id?: string;
+                    notes?: string | null;
+                    reviewerEmail?: string | null;
+                    reviewerName?: string;
+                }[];
+                session?: {
+                    /** Format: date-time */
+                    decidedAt?: string | null;
+                    decidedBy?: number | null;
+                    /** Format: uuid */
+                    id?: string;
+                    state?: components["schemas"]["ReviewSessionState"];
+                } | null;
+                token?: string;
+                versionToken?: string | null;
+                /** @enum {string} */
+                watermarkPolicy?: "none" | "visible";
             };
         };
         ReviewRect: {
@@ -5187,6 +6388,47 @@ export interface components {
             w: number;
             x: number;
             y: number;
+        };
+        ReviewSession: {
+            /** Format: uuid */
+            attachmentId: string | null;
+            /** Format: date-time */
+            createdAt: string | null;
+            createdBy: number | null;
+            /** Format: date-time */
+            decidedAt: string | null;
+            decidedBy: number | null;
+            /** Format: uuid */
+            id: string;
+            /** @description False once the record source or attachment has been replaced after this session captured its version token; the session's decision stays pinned to the version it was granted on. */
+            isCurrentVersion: boolean;
+            notes: string | null;
+            recordStore: string;
+            recordUid: string;
+            state: components["schemas"]["ReviewSessionState"];
+            /** Format: date-time */
+            updatedAt: string | null;
+            versionToken: string;
+        };
+        ReviewSessionCreateRequest: {
+            /** Format: uuid */
+            attachmentId?: string | null;
+            notes?: string | null;
+            store?: string;
+        };
+        ReviewSessionResponse: components["schemas"]["OkEnvelope"] & {
+            session: components["schemas"]["ReviewSession"];
+        };
+        ReviewSessionsResponse: components["schemas"]["OkEnvelope"] & {
+            sessions: components["schemas"]["ReviewSession"][];
+        };
+        /** @enum {string} */
+        ReviewSessionState: "draft" | "in_review" | "changes_requested" | "approved" | "closed";
+        ReviewSessionTransitionRequest: {
+            notes?: string | null;
+        };
+        ReviewSessionUpdateRequest: {
+            notes: string | null;
         };
         RightsEnforcementResponse: components["schemas"]["OkEnvelope"] & ({
             allowed: boolean;
@@ -5428,6 +6670,27 @@ export interface components {
         SecuritySettingsResponse: components["schemas"]["OkEnvelope"] & {
             settings: components["schemas"]["SecuritySettings"];
         };
+        SensitiveOperationPoliciesResponse: components["schemas"]["OkEnvelope"] & {
+            policies: components["schemas"]["SensitiveOperationPolicy"][];
+        };
+        SensitiveOperationPolicy: {
+            operationKey: string;
+            requiredApprovals: number;
+            sensitive: boolean;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        SensitiveOperationPolicyResponse: components["schemas"]["OkEnvelope"] & {
+            policy: components["schemas"]["SensitiveOperationPolicy"];
+        };
+        SettingLockedError: components["schemas"]["ErrorEnvelope"] & {
+            /** @constant */
+            code: "SETTING_LOCKED";
+            /** @enum {string} */
+            source: "release" | "deployment";
+        };
+        /** @enum {string} */
+        SettingSource: "release" | "deployment" | "system" | "default" | "user";
         SharePayloadResponse: components["schemas"]["OkEnvelope"] & {
             comments?: {
                 [key: string]: unknown;
@@ -5437,6 +6700,13 @@ export interface components {
             scope: {
                 [key: string]: unknown;
             };
+        };
+        ShortcutsExperienceSettings: {
+            nextComment?: string;
+            playPause?: string;
+            previousComment?: string;
+            seekBackward?: string;
+            seekForward?: string;
         };
         SmbPullRequest: {
             domain?: string;
@@ -5488,6 +6758,14 @@ export interface components {
             at: string;
             totalBytes: number;
             usedBytes: number;
+        };
+        StudioLayoutExperienceSettings: {
+            /** @enum {string} */
+            comments?: "left" | "right" | "hidden";
+            panels?: ("comments" | "transcript" | "timeline" | "metadata")[];
+            timelineHeight?: number;
+            /** @enum {string} */
+            transcript?: "left" | "right" | "hidden";
         };
         SubtitleContentUpdateRequest: {
             content: string;
@@ -5605,6 +6883,73 @@ export interface components {
             parent?: string;
             tag?: string;
         };
+        TaskEscalationPolicy: {
+            enabled: boolean;
+            repeatMinutes: number | null;
+            /** Format: date-time */
+            updatedAt: string | null;
+            warningBeforeMinutes: number | null;
+        };
+        TaskEscalationPolicyResponse: components["schemas"]["OkEnvelope"] & {
+            policy: components["schemas"]["TaskEscalationPolicy"];
+        };
+        TranscriptCue: {
+            endSeconds: number;
+            startSeconds: number;
+            text: string;
+        };
+        TranscriptCurrentState: {
+            cues: components["schemas"]["TranscriptCue"][];
+            /** @enum {string} */
+            format: "srt" | "vtt";
+            locked: boolean;
+            /** @description The current cues serialized as SRT. */
+            srt: string;
+            /** Format: uuid */
+            versionId: string | null;
+            /** @description The current cues serialized as WebVTT. */
+            vtt: string;
+        };
+        TranscriptVersion: {
+            /** Format: date-time */
+            createdAt: string | null;
+            createdBy: number | null;
+            cues: components["schemas"]["TranscriptCue"][];
+            /** @enum {string} */
+            format: "srt" | "vtt";
+            /** Format: uuid */
+            id: string;
+            /** @description True once this version has been explicitly certified/approved. A locked version can only be replaced by a save or restore that passes unlock=true -- this is what keeps an approved transcript from being silently overwritten. */
+            locked: boolean;
+            /** Format: date-time */
+            lockedAt: string | null;
+            lockedBy: number | null;
+            recordStore: string;
+            recordUid: string;
+            /** Format: uuid */
+            restoredFromVersionId: string | null;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        TranscriptVersionResponse: components["schemas"]["OkEnvelope"] & {
+            version: components["schemas"]["TranscriptVersion"];
+        };
+        TranscriptVersionRestoreRequest: {
+            store?: string;
+            unlock?: boolean;
+        };
+        TranscriptVersionsResponse: components["schemas"]["OkEnvelope"] & {
+            current: components["schemas"]["TranscriptCurrentState"];
+            versions: components["schemas"]["TranscriptVersion"][];
+        };
+        TranscriptVersionStoreRequest: {
+            cues: components["schemas"]["TranscriptCue"][];
+            /** @enum {string} */
+            format: "srt" | "vtt";
+            store?: string;
+            /** @description Required (true) to save over a locked transcript. This explicit flag is the visible action that authorizes overwriting an approved transcript. */
+            unlock?: boolean;
+        };
         TrashEntry: {
             /** Format: date-time */
             deletedAt: string;
@@ -5700,9 +7045,45 @@ export interface components {
             trigger?: components["schemas"]["AutomationRuleTrigger"];
             type?: string;
         };
+        UpdateAutomationRuleTemplateRequest: {
+            action?: components["schemas"]["AutomationRuleAction"];
+            category?: components["schemas"]["AutomationRuleTemplateCategory"];
+            departmentId?: string;
+            description?: string | null;
+            fileExtension?: string;
+            name?: string;
+            query?: string;
+            status?: string;
+            tag?: string;
+            trigger?: components["schemas"]["AutomationRuleTrigger"];
+            type?: string;
+        };
         UpdateBulkMacroRequest: {
             name?: string;
             steps?: components["schemas"]["BulkMacroStep"][];
+        };
+        UpdateCapabilitiesRequest: {
+            backups?: boolean;
+            broadcastMetadata?: boolean;
+            /** @description Optional per-key optimistic-concurrency check; omit a key to skip the check for it. */
+            expectedVersions?: {
+                backups?: number;
+                broadcastMetadata?: number;
+                mcp?: number;
+                mediaProcessing?: number;
+                ocr?: number;
+                odbc?: number;
+                semanticSearch?: number;
+                systemControl?: number;
+                trash?: number;
+            };
+            mcp?: boolean;
+            mediaProcessing?: boolean;
+            ocr?: boolean;
+            odbc?: boolean;
+            semanticSearch?: boolean;
+            systemControl?: boolean;
+            trash?: boolean;
         };
         UpdateDisplaySettingsRequest: {
             /** @enum {string} */
@@ -5712,6 +7093,29 @@ export interface components {
             timeFormat?: "24h" | "12h";
             /** Format: timezone */
             timeZone?: string;
+        };
+        UpdateExperienceProfileRequest: {
+            /** @enum {string} */
+            dateFormat?: "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
+            /** @enum {string} */
+            density?: "comfortable" | "compact";
+            homePage?: string;
+            /** @enum {string} */
+            locale?: "ar" | "en";
+            navigation?: components["schemas"]["NavigationExperienceSettings"];
+            notifications?: components["schemas"]["NotificationsExperienceSettings"];
+            reducedMotion?: boolean;
+            shortcuts?: components["schemas"]["ShortcutsExperienceSettings"];
+            studioLayout?: components["schemas"]["StudioLayoutExperienceSettings"];
+            /** @enum {string} */
+            textScale?: "small" | "medium" | "large";
+            /** @enum {string} */
+            theme?: "cinematic-dark" | "luxury-dark" | "ocean-dark" | "neutral-light" | "high-contrast";
+            /** @enum {string} */
+            timeFormat?: "24h" | "12h";
+            /** Format: timezone */
+            timeZone?: string;
+            views?: components["schemas"]["ViewsExperienceSettings"];
         };
         /** @description Fields sent as null are ignored (not cleared); unknown extra fields are ignored by the server. */
         UpdateMontageProjectRequest: {
@@ -5730,6 +7134,14 @@ export interface components {
             /** @enum {string} */
             status: "pending" | "completed";
         };
+        UpdateProjectTaskTemplateRequest: {
+            category?: components["schemas"]["ProjectTaskTemplateCategory"];
+            /** @enum {string} */
+            defaultStatus?: "todo" | "in_progress" | "review" | "done";
+            description?: string | null;
+            targetDurationMinutes?: number | null;
+            title?: string;
+        };
         UpdateRecordRelationRequest: {
             note?: string | null;
             type?: components["schemas"]["RelationType"];
@@ -5741,6 +7153,15 @@ export interface components {
             webhookUrlAllowlist?: string[];
             /** @enum {string} */
             whisperDevice?: "cpu" | "cuda";
+        };
+        UpdateSensitiveOperationPolicyRequest: {
+            requiredApprovals?: number;
+            sensitive?: boolean;
+        };
+        UpdateTaskEscalationPolicyRequest: {
+            enabled?: boolean;
+            repeatMinutes?: number | null;
+            warningBeforeMinutes?: number | null;
         };
         UpdateUserRoleRequest: {
             /** @enum {string} */
@@ -5850,6 +7271,9 @@ export interface components {
         UsersListResponse: components["schemas"]["OkEnvelope"] & {
             invitations: components["schemas"]["UserInvitation"][];
             users: components["schemas"]["UserAccount"][];
+        };
+        ViewsExperienceSettings: {
+            archive?: components["schemas"]["ArchiveViewExperienceSettings"];
         };
         VocabularyImportResponse: components["schemas"]["OkEnvelope"] & {
             created: number;
@@ -5997,6 +7421,36 @@ export interface components {
         WebhooksResponse: components["schemas"]["OkEnvelope"] & {
             webhooks: components["schemas"]["Webhook"][];
         };
+        WorkInboxCounts: {
+            notification: number;
+            review: number;
+            rights: number;
+            task: number;
+        };
+        /** @description A single row in the unified work inbox (V3-WORK-001) — always a reference into an existing source record (project task, review session, rights record, or notification), never a copy of one. */
+        WorkInboxItem: {
+            /** Format: date-time */
+            createdAt: string | null;
+            /** Format: date-time */
+            dueAt: string | null;
+            /** @description App-relative path back to the source record. */
+            href: string;
+            /** @description Composite id of the form "{type}:{sourceId}". */
+            id: string;
+            /** @description Source-specific extra fields (projectId, recordUid, rightsHolder, notificationId, ...). */
+            meta?: Record<string, never>;
+            /** @description Source-specific status label (task status, review state, "expiring", or notification type). */
+            status: string;
+            title: string;
+            type: components["schemas"]["WorkInboxItemType"];
+        };
+        /** @enum {string} */
+        WorkInboxItemType: "task" | "review" | "rights" | "notification";
+        WorkInboxResponse: components["schemas"]["OkEnvelope"] & {
+            counts: components["schemas"]["WorkInboxCounts"];
+            items: components["schemas"]["WorkInboxItem"][];
+            pagination: components["schemas"]["PaginationMeta"];
+        };
     };
     responses: {
         /** @description Authenticated session */
@@ -6064,6 +7518,15 @@ export interface components {
                 "application/json": components["schemas"]["SafetyPreviewError"];
             };
         };
+        /** @description A deployment or release lock prevents the requested override */
+        SettingLocked: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SettingLockedError"];
+            };
+        };
     };
     parameters: {
         FileKey: string;
@@ -6074,6 +7537,74 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getAccountExperience: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Effective experience profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperienceProfileResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    resetAccountExperience: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reset effective experience profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperienceProfileResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    updateAccountExperience: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateExperienceProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated effective experience profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperienceProfileResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
     exportAccountData: {
         parameters: {
             query?: never;
@@ -6217,6 +7748,169 @@ export interface operations {
             404: components["responses"]["Error"];
         };
     };
+    listApprovalRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Approval requests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+        };
+    };
+    createApprovalRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateApprovalRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description Created approval request */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            /** @description The referenced macro has no sensitive step under current policy */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestError"];
+                };
+            };
+        };
+    };
+    getApprovalRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Approval request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    decideApprovalRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideApprovalRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated approval request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            /** @description Forbidden, including self-approval */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestError"];
+                };
+            };
+            404: components["responses"]["Error"];
+            /** @description Not pending, or already decided by this approver */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestError"];
+                };
+            };
+        };
+    };
+    executeApprovalRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Persisted bulk macro run with per-item outcomes */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecuteApprovalRequestResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            /** @description Not approved, or the macro changed since approval */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestError"];
+                };
+            };
+        };
+    };
     listFileHealthChecks: {
         parameters: {
             query?: never;
@@ -6332,6 +8026,103 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             429: components["responses"]["Error"];
+        };
+    };
+    listAutomationRuleTemplates: {
+        parameters: {
+            query?: {
+                category?: components["schemas"]["AutomationRuleTemplateCategory"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Automation rule templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRuleTemplatesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createAutomationRuleTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAutomationRuleTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created automation rule template */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRuleTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteAutomationRuleTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateAutomationRuleTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAutomationRuleTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated automation rule template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutomationRuleTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listAutomationRules: {
@@ -6700,6 +8491,103 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             404: components["responses"]["BulkMacroNotFound"];
+        };
+    };
+    rollbackBulkMacroRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                runId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-target, per-step rollback outcomes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacroRollbackResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["BulkMacroNotFound"];
+        };
+    };
+    getMediaClip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media clip */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClipResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    deleteMediaClip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateMediaClip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaClipUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated clip */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClipResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     getCollaborationDocument: {
@@ -8065,6 +9953,191 @@ export interface operations {
             401: components["responses"]["Error"];
         };
     };
+    requestMediaDerivative: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaDerivativeRequest"];
+            };
+        };
+        responses: {
+            /** @description Existing cached or in-flight derivative */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDerivativeResponse"];
+                };
+            };
+            /** @description Derivative generation queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDerivativeResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+            429: components["responses"]["Error"];
+        };
+    };
+    getMediaDerivative: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media derivative */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDerivativeResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    getMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media review comment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    deleteMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaReviewCommentUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated media review comment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    reopenMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comment moved back to open */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    resolveMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comment marked resolved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
     createReviewLink: {
         parameters: {
             query?: never;
@@ -8602,6 +10675,103 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    listProjectTaskTemplates: {
+        parameters: {
+            query?: {
+                category?: components["schemas"]["ProjectTaskTemplateCategory"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Project task templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTaskTemplatesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createProjectTaskTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProjectTaskTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created project task template */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTaskTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteProjectTaskTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateProjectTaskTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProjectTaskTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated project task template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTaskTemplateResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };
@@ -9267,6 +11437,93 @@ export interface operations {
             };
         };
     };
+    listMediaClips: {
+        parameters: {
+            query?: {
+                attachmentId?: string;
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media clips */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClipsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    createMediaClip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaClipCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created clip */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClipResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    exportMediaClips: {
+        parameters: {
+            query?: {
+                attachmentId?: string;
+                format?: "json" | "csv";
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Clip list export */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClipsExportResponse"];
+                    "text/csv": string;
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
     listRecordComments: {
         parameters: {
             query?: never;
@@ -9577,6 +11834,92 @@ export interface operations {
             404: components["responses"]["Error"];
         };
     };
+    listMediaDerivatives: {
+        parameters: {
+            query?: {
+                attachmentId?: string;
+                store?: string;
+                type?: components["schemas"]["MediaDerivativeType"];
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media derivatives */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaDerivativesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    listMediaReviewComments: {
+        parameters: {
+            query?: {
+                attachmentId?: string;
+                reviewSessionId?: string;
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media review comments, ordered by startSeconds */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    createMediaReviewComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaReviewCommentCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created media review comment */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaReviewCommentResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
     mergeRecords: {
         parameters: {
             query?: never;
@@ -9709,6 +12052,63 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+        };
+    };
+    listReviewSessions: {
+        parameters: {
+            query?: {
+                attachmentId?: string;
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Review sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    createReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created review session */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listRecordSegments: {
@@ -9952,6 +12352,64 @@ export interface operations {
             422: components["responses"]["Error"];
         };
     };
+    exportTranscript: {
+        parameters: {
+            query?: {
+                store?: string;
+            };
+            header?: never;
+            path: {
+                format: "srt" | "vtt";
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subtitle file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    lockTranscriptVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    store?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Locked transcript version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptVersionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
     saveRecordSubtitles: {
         parameters: {
             query?: never;
@@ -10017,6 +12475,94 @@ export interface operations {
             403: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listTranscriptVersions: {
+        parameters: {
+            query?: {
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current transcript state and version history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptVersionsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    createTranscriptVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranscriptVersionStoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Created transcript version */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptVersionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    restoreTranscriptVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                versionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TranscriptVersionRestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description The restored transcript, saved as a new version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptVersionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
         };
     };
     getRecordTriageFlag: {
@@ -10375,6 +12921,307 @@ export interface operations {
             404: components["responses"]["Error"];
         };
     };
+    decideReviewLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewLinkDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Decision recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewLinkDecisionResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+            429: components["responses"]["Error"];
+        };
+    };
+    getReviewLinkMedia: {
+        parameters: {
+            query?: {
+                /** @description Requests an attachment disposition; only honored when the link's allowDownload is true. */
+                download?: boolean;
+            };
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media bytes (derivative when available and current, otherwise the source) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+            404: components["responses"]["Error"];
+        };
+    };
+    getReviewLinkReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Review link audit report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewLinkReportResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    getReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Review session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    deleteReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated review session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    approveReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Review session approved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    closeReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Review session closed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    requestReviewSessionChanges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Review session moved to changes_requested */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    resumeReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Review session moved back to in_review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    startReviewSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReviewSessionTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Review session moved to in_review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewSessionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
     getRightsByItem: {
         parameters: {
             query: {
@@ -10703,6 +13550,57 @@ export interface operations {
             422: components["responses"]["Error"];
         };
     };
+    listSensitiveOperationPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sensitive operation policies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitiveOperationPoliciesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    updateSensitiveOperationPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operationKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSensitiveOperationPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitiveOperationPolicyResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
     createShare: {
         parameters: {
             query?: never;
@@ -10950,6 +13848,55 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             500: components["responses"]["Error"];
+        };
+    };
+    getSystemCapabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Effective capability settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilitiesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    updateSystemCapabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCapabilitiesRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated effective capability settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapabilitiesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["SettingLocked"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     runSystemControlAction: {
@@ -11618,6 +14565,54 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    getTaskEscalationPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Task escalation policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskEscalationPolicyResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    updateTaskEscalationPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTaskEscalationPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated task escalation policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskEscalationPolicyResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };
@@ -12669,6 +15664,32 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    listWorkInbox: {
+        parameters: {
+            query?: {
+                limit?: number;
+                page?: number;
+                /** @description Restrict the feed to one or more source types; defaults to all four. */
+                "types[]"?: components["schemas"]["WorkInboxItemType"][];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated work inbox items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkInboxResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
         };
     };
 }

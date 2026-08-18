@@ -11,6 +11,7 @@ import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { getDefaultArchiveTypes, selectMissingDefaults } from "@/lib/default-taxonomy";
 import TypesList from "./_components/TypesList";
 import TypesEditor from "./_components/TypesEditor";
+import TemplateCatalogDialog from "./_components/TemplateCatalogDialog";
 import "./types.css";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -31,6 +32,7 @@ export default function TypesPage() {
   const [deletingTypeId, setDeletingTypeId] = useState<string | null>(null);
   const [editorError, setEditorError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [templateCatalogOpen, setTemplateCatalogOpen] = useState(false);
 
   const loadTypes = useCallback(async () => {
     setState((current) => ({ status: "loading", types: current.types }));
@@ -166,6 +168,7 @@ export default function TypesPage() {
         actions={(
           <>
             <Button type="button" variant="secondary" disabled={isSaving} onClick={() => void importDefaults()}>{copy.importDefaults}</Button>
+            <Button type="button" variant="secondary" onClick={() => setTemplateCatalogOpen(true)}>{t.pages.vocabTemplates.trigger}</Button>
             <Button type="button" variant="primary" onClick={startCreate}>{copy.newType}</Button>
           </>
         )}
@@ -238,6 +241,12 @@ export default function TypesPage() {
           {isEditorOpen ? <TypesEditor initialType={editorType ?? null} isSaving={isSaving} requestError={editorError} onSave={handleSaveType} onCancel={closeEditor} /> : <aside className="schema-editor schema-editor--placeholder"><p>{copy.editorPlaceholder}</p></aside>}
         </div>
       ) : null}
+
+      <TemplateCatalogDialog
+        open={templateCatalogOpen}
+        onOpenChange={setTemplateCatalogOpen}
+        onApplied={() => void loadTypes()}
+      />
     </AppShell>
   );
 }

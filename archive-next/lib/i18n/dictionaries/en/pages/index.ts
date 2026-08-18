@@ -1,4 +1,5 @@
 import { activity } from "./activity";
+import { approvalRequests } from "./approvalRequests";
 import { archiveDetail } from "./archiveDetail";
 import { archiveList } from "./archiveList";
 import { archiveRecordCard } from "./archiveRecordCard";
@@ -37,6 +38,7 @@ import { mediaJobsPage } from "./mediaJobsPage";
 import { mediaJobLookup } from "./mediaJobLookup";
 import { mediaReview } from "./mediaReview";
 import { mediaPlay } from "./mediaPlay";
+import { mediaStudio } from "./mediaStudio";
 import { metadataTemplates } from "./metadataTemplates";
 import { notifications } from "./notifications";
 import { notificationsPanel } from "./notificationsPanel";
@@ -71,6 +73,7 @@ import { types } from "./types";
 import { trash } from "./trash";
 import { tags } from "./tags";
 import { vocabulary } from "./vocabulary";
+import { vocabTemplates } from "./vocabTemplates";
 import { files } from "./files";
 import { collections } from "./collections";
 import { copilot } from "./copilot";
@@ -79,9 +82,11 @@ import { uploadForm } from "./uploadForm";
 import { uploadLinksPanel } from "./uploadLinksPanel";
 import { uploads } from "./uploads";
 import { whatsNewDialog } from "./whatsNewDialog";
+import { workInbox } from "./workInbox";
 
 export const pages = {
   activity,
+  approvalRequests,
   archiveDetail,
   archiveList,
   archiveRecordCard,
@@ -120,6 +125,7 @@ export const pages = {
   mediaJobLookup,
   mediaReview,
   mediaPlay,
+  mediaStudio,
   metadataTemplates,
   notifications,
   notificationsPanel,
@@ -154,6 +160,7 @@ export const pages = {
   trash,
   tags,
   vocabulary,
+  vocabTemplates,
   files,
   collections,
   copilot,
@@ -162,4 +169,5 @@ export const pages = {
   uploadLinksPanel,
   uploads,
   whatsNewDialog,
+  workInbox,
 } as const;

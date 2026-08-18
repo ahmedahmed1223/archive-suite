@@ -4,6 +4,7 @@ namespace App\Services\Records;
 
 use App\Jobs\ProcessMediaWorkflow;
 use App\Services\Uploads\UploadFileValidator;
+use App\Support\RequestCorrelation;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -58,6 +59,6 @@ final class RecordSourceReplacementService
         $jobId = (string) Str::uuid();
         $now = now();
         DB::table('media_jobs')->insert(['id' => $jobId, 'record_id' => $recordId, 'operation' => 'thumbnail', 'status' => 'queued', 'source_path' => $path, 'options' => json_encode([]), 'queued_at' => $now, 'created_at' => $now, 'updated_at' => $now]);
-        ProcessMediaWorkflow::dispatch($jobId);
+        ProcessMediaWorkflow::dispatch($jobId, RequestCorrelation::id());
     }
 }

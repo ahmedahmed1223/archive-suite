@@ -1,0 +1,86 @@
+export const mediaStudio = {
+  eyebrow: "استوديو موحّد",
+  title: "استوديو الوسائط",
+  description: "المشغّل والتفريغ والتعليقات والإصدارات وسياق المهام لمادة سجل واحد، في مساحة عمل واحدة.",
+  missingRecordTitle: "لم يتم تحديد سجل",
+  missingRecordDescription: "افتح الاستوديو من صفحة تفاصيل سجل حتى يتوفر له سجل حقيقي ليحمّله.",
+  loadingRecord: "جارٍ تحميل السجل…",
+  loadErrorTitle: "تعذر تحميل هذا السجل",
+  attachmentNotFoundTitle: "المرفق غير موجود",
+  attachmentNotFoundDescription: "لم يعد هذا المرفق مدرجًا في السجل. ربما تمت إزالته.",
+  noSourceTitle: "لا يوجد ملف وسائط قابل للتشغيل",
+  noSourceDescription: "لا يحتوي هذا السجل على مسار ملف في بياناته الوصفية، فلا يوجد ما يمكن بثّه.",
+  recordLabel: "السجل",
+  attachmentLabel: "المرفق",
+  shortcutsHint: "مسافة للتشغيل أو الإيقاف المؤقت · سهم يسار/يمين للتقديم أو التأخير 5 ثوانٍ — معطّل أثناء الكتابة.",
+  mobileNotice: "عرض مبسّط: المشغّل والتفريغ والتعليقات. افتح الصفحة على شاشة أوسع للوصول إلى الإصدارات والمهام.",
+  techSpec: {
+    title: "المواصفات التقنية",
+    dimensionsLabel: "الأبعاد",
+    aspectRatioLabel: "نسبة العرض إلى الارتفاع",
+    durationLabel: "المدة",
+    bitrateLabel: "معدل البت",
+    estimatedBadge: "تقديري",
+    unavailable: "شغّل الملف لقياس مواصفاته التقنية."
+  },
+  transcript: {
+    title: "التفريغ الزمني",
+    empty: "لا يوجد تفريغ محفوظ لهذا السجل بعد.",
+    ariaLabel: "تفريغ متزامن"
+  },
+  comments: {
+    title: "التعليقات",
+    description: "ملاحظات مرئية لفريق العمل على هذا السجل.",
+    countLabel: "تعليق",
+    newCommentLabel: "تعليق جديد",
+    bodyPlaceholder: "اكتب تعليقًا…",
+    postButton: "نشر التعليق",
+    postingButton: "جارٍ النشر…",
+    postError: "تعذر نشر التعليق.",
+    loadError: "تعذر تحميل التعليقات.",
+    loadingLabel: "جارٍ تحميل التعليقات…",
+    empty: "لا توجد تعليقات بعد.",
+    anonymousAuthor: "غير معروف",
+    deleteAriaLabel: "حذف التعليق",
+    deleteConfirm: "حذف هذا التعليق؟"
+  },
+  versions: {
+    title: "الإصدارات والمشتقات"
+  },
+  timeline: {
+    title: "الخط الزمني",
+    description: "علامات لحظية أو لمدى زمني، مرئية لفريق العمل على هذه المادة.",
+    liveLabel: "مباشر",
+    pollingLabel: "تحديث دوري",
+    loadingLabel: "جارٍ تحميل علامات الخط الزمني…",
+    loadError: "تعذر تحميل علامات الخط الزمني.",
+    durationUnavailable: "شغّل الملف مرة واحدة لتفعيل شريط العلامات.",
+    typeLabel: "النوع",
+    types: {
+      issue: "مشكلة",
+      suggestion: "اقتراح",
+      highlight: "تمييز",
+      chapter: "فصل"
+    },
+    markRangeButton: "تحديد بداية المدى",
+    clearRangeButton: "إلغاء المدى",
+    bodyLabel: "علامة جديدة",
+    bodyPlaceholder: "صف ما يحدث عند هذه النقطة…",
+    postButton: "إضافة علامة",
+    postingButton: "جارٍ الإضافة…",
+    postError: "تعذر إضافة العلامة.",
+    empty: "لا توجد علامات على الخط الزمني بعد.",
+    jumpAriaLabel: "الانتقال إلى توقيت هذه العلامة",
+    resolvedLabel: "تم الحل",
+    resolveButton: "حلّ",
+    reopenButton: "إعادة الفتح",
+    deleteAriaLabel: "حذف العلامة",
+    deleteConfirm: "حذف هذه العلامة؟",
+    stripAriaLabel: "شريط علامات الخط الزمني"
+  },
+  tasks: {
+    title: "المهام",
+    comingSoonTitle: "ربط المهام غير متاح بعد",
+    comingSoonDescription: "سيتوفر ربط مهام العمل في تحديث لاحق."
+  }
+} as const;

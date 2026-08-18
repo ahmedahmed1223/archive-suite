@@ -1,16 +1,27 @@
 <section>
   <h2>Outcome</h2>
-  <p>Organize related material in a collection or project and coordinate work without losing the context of each change.</p>
+  <p>Organize related material in a project, coordinate the work of assigning and completing tasks, and keep every pending decision visible in one queue.</p>
   <h2>Before you begin</h2>
-  <p>Define the collection or project goal, its participants, and the records included in the work.</p>
+  <p>Define the project's goal, its participants, and the records included in the work.</p>
+  <h2>Work inbox</h2>
+  <p>Open the <a href="/work-inbox">work inbox</a> to see your pending tasks, reviews awaiting your decision, rights nearing expiry, and unread notifications together, filterable by type. It is a read-only summary: opening an item takes you to the page where you actually act on it.</p>
+  <h2>Automation and task templates</h2>
+  <p>From <a href="/automation">Automation</a>, a rule watches for a trigger — a record created or updated, media processing that failed, or a daily schedule — against a query, type, tag, or status, and then runs an action such as adding a tag, setting a review flag, notifying an administrator, or filing an inbox item. Always dry-run a new rule to see how many records it would match before enabling a live run, and check its run history for what it actually changed. A task template on <a href="/project-tasks">Project tasks</a> fills in a task's title and target duration in one click instead of typing them each time.</p>
+  <h2>Target durations and escalation</h2>
+  <p>A task can carry a target duration in minutes, which the platform turns into a deadline once the task starts. A task left open past that deadline escalates automatically on the schedule an administrator sets under the escalation policy — how long before the deadline to warn, and how often to repeat the warning while the task stays open.</p>
+  <h2>Sensitive operations and approvals</h2>
+  <p>Some operations are marked sensitive by policy and require one or more approvals from someone other than the person who requested them before they run. Submit a sensitive bulk change from <a href="/approval-requests">Approval requests</a>, naming the macro and its targets; anyone else with permission can approve or reject it, and the page tracks how many approvals have arrived against how many are required. Approving never applies the change by itself — use Execute once enough approvals are in.</p>
+  <h2>Bulk macros and reversing a change</h2>
+  <p>A bulk macro previews its effect on the selected targets before it runs, and its run history records, step by step, whether each change was reversible and what the value was before and after. A deleted record moves to Trash and can be recovered from there; other steps, such as an added tag or a workflow status change, can be set back to their earlier value using that same before/after record.</p>
   <h2>Procedure</h2>
   <ol>
-    <li>Open <a href="/projects">Projects</a> and create a project named for the result you need.</li>
-    <li>Add records and tasks, then assign an owner and due date to each step.</li>
+    <li>Open <a href="/project-groups">Projects</a> and create a project named for the result you need.</li>
+    <li>Link records to it, then add tasks under <a href="/project-tasks">Project tasks</a> with an owner, a due date, and a target duration where it matters.</li>
     <li>Use comments and collaboration tools to record decisions and update the work status.</li>
+    <li>Check the <a href="/work-inbox">work inbox</a> regularly so nothing assigned to you goes unnoticed.</li>
   </ol>
   <h2>Verify</h2>
-  <p>Confirm that the right participants can see the material and tasks and that the latest update and its author are recorded.</p>
+  <p>Confirm that the right participants can see the material and tasks, that the latest update and its author are recorded, and that a sensitive change only ran after its required approvals were in place.</p>
   <h2>Safety</h2>
-  <p>Do not add a person or item to a project before reviewing access scope and rights.</p>
+  <p>Do not add a person or item to a project before reviewing access scope and rights, and do not approve a bulk change you have not previewed.</p>
 </section>

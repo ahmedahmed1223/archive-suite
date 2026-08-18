@@ -12,20 +12,50 @@
   },
   "dataset": {
     "manifest": "tests/fixtures/benchmark/recipe.json",
+    "generator": "php artisan archive:generate-benchmark-dataset",
+    "seed": 42,
+    "store": "benchmark-synthetic",
     "records": 100000,
     "files": 10000,
     "sampleBytes": 1073741824
   },
   "budgets": {
-    "frontend": { "lcpP75Ms": 2500, "clsP75": 0.1, "inpP75Ms": 200 },
-    "api": { "searchP95Ms": 1500, "recordOpenP95Ms": 1000, "uploadSessionStartP95Ms": 2000 }
+    "frontend": {
+      "lcpP75Ms": 2500,
+      "clsP75": 0.1,
+      "inpP75Ms": 200,
+      "javascriptBytesP75": 1500000
+    },
+    "api": {
+      "searchP95Ms": 1500,
+      "recordOpenP95Ms": 1000,
+      "uploadSessionStartP95Ms": 2000,
+      "studioOpenP95Ms": 1500
+    },
+    "workflow": {
+      "previewStartupP95Ms": 2000,
+      "queueLatencyP95Ms": 1000
+    }
   },
-  "requiredRoutes": ["/", "/archive", "/archive/:id", "/search", "/uploads"],
-  "requiredApiOperations": ["search", "record-open", "upload-session-start"],
+  "requiredRoutes": ["/", "/archive", "/archive/:id", "/search", "/uploads", "/types"],
+  "requiredApiOperations": ["search", "record-open", "upload-session-start", "studio-open", "preview-startup", "queue-latency"],
   "measurement": {
     "minimumSamples": 20,
     "frontendCollector": "web-vitals JSON emitted by Playwright trace harness",
     "apiCollector": "HTTP timing JSON emitted by deterministic load harness",
+    "datasetEvidence": "dataset-manifest.json emitted by the deterministic dataset generator",
+    "requiredMetrics": {
+      "lcpP75Ms": { "percentile": 75, "source": "browser" },
+      "clsP75": { "percentile": 75, "source": "browser" },
+      "inpP75Ms": { "percentile": 75, "source": "browser" },
+      "javascriptBytesP75": { "percentile": 75, "source": "browser" },
+      "searchP95Ms": { "percentile": 95, "source": "api" },
+      "recordOpenP95Ms": { "percentile": 95, "source": "api" },
+      "uploadSessionStartP95Ms": { "percentile": 95, "source": "api" },
+      "studioOpenP95Ms": { "percentile": 95, "source": "api" },
+      "previewStartupP95Ms": { "percentile": 95, "source": "workflow" },
+      "queueLatencyP95Ms": { "percentile": 95, "source": "queue" }
+    },
     "environments": ["docker", "native"]
   }
 }

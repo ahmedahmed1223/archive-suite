@@ -18,6 +18,7 @@ export const pageTitles = {
   projects: "Projects",
   automation: "Automation",
   safetyPreview: "Safety preview",
+  approvalRequests: "Approval requests",
   publicCatalogue: "Public catalogue",
   archiveAssistant: "Archive assistant",
   archiveAssistantTours: "Archive assistant tours",
@@ -29,6 +30,7 @@ export const pageTitles = {
   rights: "Rights",
   usersAndRoles: "Users and roles",
   inbox: "Inbox",
+  workInbox: "Work inbox",
   tags: "Tags",
   shareLinks: "Share links",
   shares: "Shares",
@@ -67,5 +69,6 @@ export const pageTitles = {
   visualReview: "Visual review",
   transcription: "Transcription",
   mediaPlayer: "Media player",
+  mediaStudio: "Media studio",
   timeline: "Timeline",
 } as const;

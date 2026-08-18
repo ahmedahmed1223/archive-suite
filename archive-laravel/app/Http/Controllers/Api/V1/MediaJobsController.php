@@ -10,7 +10,9 @@ use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaJobQueueRouter;
 use App\Services\Media\MediaPathGuard;
+use App\Services\Media\MediaQueueStatusBroadcaster;
 use App\Support\ApiError;
+use App\Support\RequestCorrelation;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,6 +43,19 @@ class MediaJobsController extends Controller
         $executor = app(MediaJobExecutor::class);
         $queue = app(MediaJobQueueRouter::class)->queueFor($validated['operation']);
 
+        // V3-PERF-005: backpressure. Reject a new dispatch once this queue
+        // already has max_queued_jobs_per_queue rows queued+processing,
+        // rather than letting an unbounded backlog build up behind it.
+        $maxQueued = (int) config('media.max_queued_jobs_per_queue', 50);
+        $currentDepth = app(MediaQueueStatusBroadcaster::class)->counts()[$queue] ?? 0;
+        if ($currentDepth >= $maxQueued) {
+            return response()->json(
+                ApiError::envelope('Media processing queue is at capacity. Try again shortly.', 429),
+                429,
+                ['Retry-After' => '30'],
+            );
+        }
+
         $mediaJob = MediaJob::query()->create([
             'id' => (string) Str::uuid(),
             'record_id' => $validated['recordId'],
@@ -55,7 +70,7 @@ class MediaJobsController extends Controller
             'queued_at' => now(),
         ]);
 
-        ProcessMediaWorkflow::dispatch($mediaJob->id)->onQueue($queue);
+        ProcessMediaWorkflow::dispatch($mediaJob->id, RequestCorrelation::id())->onQueue($queue);
         app(MediaJobProgressBroadcaster::class)->notify($mediaJob);
 
         return response()->json([
@@ -100,6 +115,17 @@ class MediaJobsController extends Controller
                 'hasMore' => $paginated->hasMorePages(),
             ],
         ]);
+    }
+
+    /**
+     * V3-PERF-005: poll fallback for the queue-status panel. RT-802's
+     * MediaQueueStatusUpdated is push-only (broadcast on every job
+     * transition); this GET returns the same snapshot so a client without a
+     * live Reverb connection isn't left with a permanently blank panel.
+     */
+    public function queueStatus(MediaQueueStatusBroadcaster $broadcaster): JsonResponse
+    {
+        return response()->json(['ok' => true, 'status' => $broadcaster->status()]);
     }
 
     public function show(Request $request, string $id): JsonResponse

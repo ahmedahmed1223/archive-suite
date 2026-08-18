@@ -27,4 +27,14 @@ describe("advanced search workbench", () => {
     expect(source).toContain('<div className="search-workbench-actions">');
     expect(source.indexOf('<form className="search-workbench-form"')).toBeLessThan(source.indexOf('<div className="search-workbench-actions">'));
   });
+
+  // V3-PERF-005: an out-of-order network response from an earlier search()
+  // call must never overwrite the state a newer call already applied.
+  it("guards state updates behind a monotonic request id so a stale response can't overwrite a newer one", () => {
+    const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+
+    expect(pageSource).toContain("const searchRequestIdRef = useRef(0);");
+    expect(pageSource).toContain("const requestId = ++searchRequestIdRef.current;");
+    expect(pageSource).toMatch(/if \(searchRequestIdRef\.current !== requestId\) return;/);
+  });
 });

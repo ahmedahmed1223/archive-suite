@@ -75,6 +75,35 @@ class AuditArchiveApiRequest
             ['DELETE', 'api/v1/record-notes/{id}'] => ['record_notes.delete', 'record_note'],
             ['POST', 'api/v1/records/{id}/comments'] => ['record_comments.create', 'record_comment'],
             ['DELETE', 'api/v1/record-comments/{id}'] => ['record_comments.delete', 'record_comment'],
+            ['POST', 'api/v1/records/{id}/transcript/versions'] => ['transcript_versions.create', 'transcript_version'],
+            ['POST', 'api/v1/records/{id}/transcript/lock'] => ['transcript_versions.lock', 'transcript_version'],
+            ['POST', 'api/v1/records/{id}/transcript/versions/{versionId}/restore'] => ['transcript_versions.restore', 'transcript_version'],
+            ['POST', 'api/v1/records/{id}/review-sessions'] => ['review_sessions.create', 'review_session'],
+            ['PATCH', 'api/v1/review-sessions/{id}'] => ['review_sessions.update', 'review_session'],
+            ['DELETE', 'api/v1/review-sessions/{id}'] => ['review_sessions.delete', 'review_session'],
+            ['POST', 'api/v1/review-sessions/{id}/start'] => ['review_sessions.start', 'review_session'],
+            ['POST', 'api/v1/review-sessions/{id}/request-changes'] => ['review_sessions.request_changes', 'review_session'],
+            ['POST', 'api/v1/review-sessions/{id}/approve'] => ['review_sessions.approve', 'review_session'],
+            ['POST', 'api/v1/review-sessions/{id}/resume'] => ['review_sessions.resume', 'review_session'],
+            ['POST', 'api/v1/review-sessions/{id}/close'] => ['review_sessions.close', 'review_session'],
+            ['POST', 'api/v1/bulk-macros/{id}/runs/{runId}/rollback'] => ['bulk_macros.rollback', 'bulk_macro_run'],
+            ['PATCH', 'api/v1/sensitive-operation-policies/{operationKey}'] => ['sensitive_operation_policies.update', 'sensitive_operation_policy'],
+            ['POST', 'api/v1/approval-requests'] => ['approval_requests.create', 'approval_request'],
+            ['POST', 'api/v1/approval-requests/{id}/decisions'] => ['approval_requests.decide', 'approval_request'],
+            ['POST', 'api/v1/approval-requests/{id}/execute'] => ['approval_requests.execute', 'approval_request'],
+            // V3-MEDIA-007: resourceId intentionally left unset below (falls
+            // through to null) -- mirrors share.create, since the response
+            // carries the newly minted bearer token and that must not be
+            // persisted into the permanent audit trail either.
+            ['POST', 'api/v1/media/{mediaUid}/review-links'] => ['review_links.create', 'review_link'],
+            ['POST', 'api/v1/records/{id}/clips'] => ['media_clips.create', 'media_clip'],
+            ['PATCH', 'api/v1/clips/{id}'] => ['media_clips.update', 'media_clip'],
+            ['DELETE', 'api/v1/clips/{id}'] => ['media_clips.delete', 'media_clip'],
+            ['POST', 'api/v1/records/{id}/media-review-comments'] => ['media_review_comments.create', 'media_review_comment'],
+            ['PATCH', 'api/v1/media-review-comments/{id}'] => ['media_review_comments.update', 'media_review_comment'],
+            ['DELETE', 'api/v1/media-review-comments/{id}'] => ['media_review_comments.delete', 'media_review_comment'],
+            ['POST', 'api/v1/media-review-comments/{id}/resolve'] => ['media_review_comments.resolve', 'media_review_comment'],
+            ['POST', 'api/v1/media-review-comments/{id}/reopen'] => ['media_review_comments.reopen', 'media_review_comment'],
             ['POST', 'api/v1/rights'] => ['rights.upsert', 'rights_record'],
             ['POST', 'api/v1/relations'] => ['relations.create', 'record_relation'],
             ['DELETE', 'api/v1/relations/{id}'] => ['relations.delete', 'record_relation'],
@@ -159,10 +188,36 @@ class AuditArchiveApiRequest
         }
 
         if (in_array($route, [
+            'api/v1/records/{id}/transcript/versions',
+            'api/v1/records/{id}/transcript/lock',
+            'api/v1/records/{id}/transcript/versions/{versionId}/restore',
+        ], true)) {
+            $resourceId = $request->route('id');
+        }
+
+        if (in_array($route, [
             'api/v1/records/{id}/notes',
             'api/v1/record-notes/{id}',
             'api/v1/records/{id}/comments',
             'api/v1/record-comments/{id}',
+            'api/v1/records/{id}/review-sessions',
+            'api/v1/review-sessions/{id}',
+            'api/v1/review-sessions/{id}/start',
+            'api/v1/review-sessions/{id}/request-changes',
+            'api/v1/review-sessions/{id}/approve',
+            'api/v1/review-sessions/{id}/resume',
+            'api/v1/review-sessions/{id}/close',
+            'api/v1/records/{id}/clips',
+            'api/v1/clips/{id}',
+        ], true)) {
+            $resourceId = $request->route('id');
+        }
+
+        if (in_array($route, [
+            'api/v1/records/{id}/media-review-comments',
+            'api/v1/media-review-comments/{id}',
+            'api/v1/media-review-comments/{id}/resolve',
+            'api/v1/media-review-comments/{id}/reopen',
         ], true)) {
             $resourceId = $request->route('id');
         }
@@ -177,6 +232,22 @@ class AuditArchiveApiRequest
 
         if ($route === 'api/v1/system/control/{action}') {
             $resourceId = $request->route('action');
+        }
+
+        if ($route === 'api/v1/bulk-macros/{id}/runs/{runId}/rollback') {
+            $resourceId = $request->route('runId');
+        }
+
+        if ($route === 'api/v1/sensitive-operation-policies/{operationKey}') {
+            $resourceId = $request->route('operationKey');
+        }
+
+        if (in_array($route, ['api/v1/approval-requests/{id}/decisions', 'api/v1/approval-requests/{id}/execute'], true)) {
+            $resourceId = $request->route('id');
+        }
+
+        if ($route === 'api/v1/approval-requests' && $response->isSuccessful()) {
+            $resourceId = data_get($this->responseData($response), 'request.id');
         }
 
         if (in_array($route, [

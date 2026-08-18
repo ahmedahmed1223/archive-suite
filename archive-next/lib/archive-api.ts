@@ -1,6 +1,50 @@
 import contract from "../../docs/api/archive-contract.openapi.json";
 import type { components as GeneratedApiComponents } from "./generated/archive-api";
 import type { AppLocale } from "./i18n/types";
+import { createMediaReviewClient } from "./archive-api/media-review";
+import type {
+  MediaClip,
+  MediaClipCreatePayload,
+  MediaClipUpdatePayload,
+  MediaQueueStatus,
+  MediaReviewComment,
+  MediaReviewCommentCreatePayload,
+  MediaReviewCommentState,
+  MediaReviewCommentType,
+  MediaReviewCommentUpdatePayload,
+  ReviewSession,
+  ReviewSessionCreatePayload,
+  ReviewSessionState,
+  ReviewSessionTransitionPayload,
+  TranscriptCue,
+  TranscriptCurrentState,
+  TranscriptVersion,
+  TranscriptVersionRestorePayload,
+  TranscriptVersionStorePayload
+} from "./archive-api/media-review";
+
+// Re-exported so existing `import { type MediaClip } from "@/lib/archive-api"`
+// call sites keep working now that these types live in ./archive-api/media-review.
+export type {
+  MediaClip,
+  MediaClipCreatePayload,
+  MediaClipUpdatePayload,
+  MediaQueueStatus,
+  MediaReviewComment,
+  MediaReviewCommentCreatePayload,
+  MediaReviewCommentState,
+  MediaReviewCommentType,
+  MediaReviewCommentUpdatePayload,
+  ReviewSession,
+  ReviewSessionCreatePayload,
+  ReviewSessionState,
+  ReviewSessionTransitionPayload,
+  TranscriptCue,
+  TranscriptCurrentState,
+  TranscriptVersion,
+  TranscriptVersionRestorePayload,
+  TranscriptVersionStorePayload
+};
 
 export const ARCHIVE_UNAUTHORIZED_EVENT = "archive-next:unauthorized";
 
@@ -27,11 +71,7 @@ export interface ArchiveUser {
   totpEnabled?: boolean;
 }
 
-export interface LoginRequest {
-  email: string;
-  password: string;
-  rememberMe?: boolean;
-}
+export type LoginRequest = GeneratedSchemas["LoginRequest"];
 
 export interface AuthSession {
   user: ArchiveUser;
@@ -52,6 +92,19 @@ export type ArchiveRecord = GeneratedSchemas["ArchiveRecord"];
 export type RecordAttachment = GeneratedSchemas["RecordAttachment"];
 export type CreateRecordPayload = Omit<GeneratedSchemas["RecordCreateRequest"], "store"> & { store?: string };
 
+// ReviewSession*/MediaClip*/TranscriptVersion*/MediaReviewComment* types live in
+// ./archive-api/media-review.ts (re-exported above) alongside the client
+// methods that use them.
+
+export type WorkInboxItemType = GeneratedSchemas["WorkInboxItemType"];
+export type WorkInboxItem = GeneratedSchemas["WorkInboxItem"];
+export type WorkInboxCounts = GeneratedSchemas["WorkInboxCounts"];
+
+export type MediaDerivative = GeneratedSchemas["MediaDerivative"];
+export type MediaDerivativeType = GeneratedSchemas["MediaDerivativeType"];
+export type MediaDerivativeSettings = GeneratedSchemas["MediaDerivativeSettings"];
+export type MediaDerivativeRequestPayload = GeneratedSchemas["MediaDerivativeRequest"];
+
 export type ScheduledUploadStatus = GeneratedSchemas["ScheduledUploadStatus"];
 export type ScheduledUpload = GeneratedSchemas["ScheduledUpload"];
 export type ScheduledUploadStaged = GeneratedSchemas["ScheduledUploadStaged"];
@@ -69,6 +122,14 @@ export type CreateBulkMacroPayload = GeneratedSchemas["CreateBulkMacroRequest"];
 export type UpdateBulkMacroPayload = GeneratedSchemas["UpdateBulkMacroRequest"];
 export type BulkMacroTargetsPayload = GeneratedSchemas["BulkMacroTargetsRequest"];
 export type RunBulkMacroPayload = GeneratedSchemas["RunBulkMacroRequest"];
+export type BulkMacroTargetResult = GeneratedSchemas["BulkMacroTargetResult"];
+export type BulkMacroRollbackResult = GeneratedSchemas["BulkMacroRollbackResult"];
+export type SensitiveOperationPolicy = GeneratedSchemas["SensitiveOperationPolicy"];
+export type UpdateSensitiveOperationPolicyPayload = GeneratedSchemas["UpdateSensitiveOperationPolicyRequest"];
+export type ApprovalRequest = GeneratedSchemas["ApprovalRequest"];
+export type ApprovalDecisionRecord = GeneratedSchemas["ApprovalDecisionRecord"];
+export type CreateApprovalRequestPayload = GeneratedSchemas["CreateApprovalRequestRequest"];
+export type DecideApprovalRequestPayload = GeneratedSchemas["DecideApprovalRequestRequest"];
 export type DisplaySettings = GeneratedSchemas["DisplaySettings"];
 export type UpdateDisplaySettingsPayload = GeneratedSchemas["UpdateDisplaySettingsRequest"];
 
@@ -80,11 +141,7 @@ export interface CreateScheduledUploadPayload {
   record: Pick<ArchiveRecord, "title" | "type" | "subtype" | "tags" | "metadata">;
 }
 
-export interface RescheduleUploadRequest {
-  scheduledAt: string;
-  timeZone: string;
-  version: number;
-}
+export type RescheduleUploadRequest = GeneratedSchemas["RescheduleUploadRequest"];
 
 export interface SearchSuggestion {
   kind: "record" | "tag" | "type" | "recent";
@@ -93,62 +150,21 @@ export interface SearchSuggestion {
   recordId?: string;
 }
 
-export interface PublicCatalogRecord {
-  id: string;
-  uid: string;
-  title: string;
-  description?: string | null;
-  type?: string | null;
-  subtype?: string | null;
-  tags: string[];
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
+export type PublicCatalogRecord = GeneratedSchemas["PublicCatalogRecord"];
 
 export type PluginPermissionRisk = "low" | "medium" | "high" | string;
 export type PluginStatus = "reviewed" | "draft" | "blocked" | string;
 export type PluginCategory = "metadata" | "workflow" | "ai" | "integration" | string;
 
-export interface PluginRuntimePolicy {
-  mode: string;
-  allowsRemoteInstall: boolean;
-  allowsCodeExecution: boolean;
-  requiresAdminReview: boolean;
-  description: string;
-}
+export type PluginRuntimePolicy = GeneratedSchemas["PluginRuntimePolicy"];
 
-export interface PluginPermission {
-  scope: string;
-  risk: PluginPermissionRisk;
-  reason: string;
-}
+export type PluginPermission = GeneratedSchemas["PluginPermission"];
 
-export interface PluginSecurityReview {
-  networkAccess: boolean;
-  fileSystemAccess: boolean;
-  executesCode: boolean;
-  dataLeavesTenant: boolean;
-  adminApprovalRequired: boolean;
-}
+export type PluginSecurityReview = GeneratedSchemas["PluginSecurityReview"];
 
-export interface PluginCatalogItem {
-  id: string;
-  name: string;
-  vendor: string;
-  version: string;
-  category: PluginCategory;
-  summary: string;
-  status: PluginStatus;
-  trustLevel: string;
-  permissions: PluginPermission[];
-  securityReview: PluginSecurityReview;
-}
+export type PluginCatalogItem = GeneratedSchemas["PluginCatalogItem"];
 
-export interface PluginPermissionScopeSummary {
-  scope: string;
-  risk: PluginPermissionRisk;
-  pluginCount: number;
-}
+export type PluginPermissionScopeSummary = GeneratedSchemas["PluginPermissionScopeSummary"];
 
 export interface RecordListPayload {
   records: ArchiveRecord[];
@@ -184,25 +200,12 @@ export function deriveRecordSourcePath(record: ArchiveRecord): { sourcePath: str
 
 export type DiscoverSectionKey = "explore" | "trending" | "random" | "active" | "forgotten" | "needsMetadata";
 
-export interface DiscoverSection {
-  key: DiscoverSectionKey;
-  label: string;
-  description: string;
-  count: number;
-  records: ArchiveRecord[];
-}
+export type DiscoverSection = GeneratedSchemas["DiscoverSection"];
 
 export type SuggestionContext = "discover" | "search" | "detail";
 export type SuggestionFeedbackValue = "useful" | "not-useful" | "dismissed";
 
-export interface ArchiveSuggestion {
-  key: string;
-  title: string;
-  detail: string;
-  severity: "high" | "medium" | "low" | string;
-  count: number;
-  actionHref: string;
-}
+export type ArchiveSuggestion = GeneratedSchemas["ArchiveSuggestion"];
 
 export interface ArchiveSuggestionFeedback {
   key: string;
@@ -211,69 +214,19 @@ export interface ArchiveSuggestionFeedback {
   updatedAt?: string | null;
 }
 
-export type RelationTypeKey =
-  | "is_part_of"
-  | "contains"
-  | "references"
-  | "depends_on"
-  | "related_to"
-  | "alternative_of"
-  | "copy_of"
-  | "precedes"
-  | "follows";
+export type RelationTypeKey = GeneratedSchemas["RelationType"];
 
-export interface RelationTypeOption {
-  key: RelationTypeKey;
-  label: string;
-  inverse: string;
-  bidirectional: boolean;
-}
+export type RelationTypeOption = GeneratedSchemas["RelationTypeOption"];
 
-export interface RecordRelation {
-  id: string;
-  sourceId: string;
-  targetId: string;
-  type: RelationTypeKey;
-  label: string;
-  note?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
+export type RecordRelation = GeneratedSchemas["RecordRelation"];
 
-export interface RelationGraphNode {
-  id: string;
-  uid?: string;
-  label: string;
-  kind: "item";
-  type: string;
-  tags: string[];
-  degree: number;
-  record?: ArchiveRecord;
-}
+export type RelationGraphNode = GeneratedSchemas["RelationGraphNode"];
 
 export type RelationGraphEdgeKind = "manual" | "shared-tag" | "same-type";
 
-export interface RelationGraphEdge {
-  id: string;
-  relationId?: string;
-  source: string;
-  target: string;
-  kind: RelationGraphEdgeKind;
-  type: string;
-  label: string;
-  weight: number;
-  note?: string | null;
-  sharedTags?: string[];
-  sharedType?: string;
-}
+export type RelationGraphEdge = GeneratedSchemas["RelationGraphEdge"];
 
-export interface RelationGraphStats {
-  nodeCount: number;
-  edgeCount: number;
-  manualEdgeCount: number;
-  inferredEdgeCount: number;
-  focusId?: string | null;
-}
+export type RelationGraphStats = GeneratedSchemas["RelationGraphStats"];
 
 export interface RelationGraphPayload {
   nodes: RelationGraphNode[];
@@ -282,36 +235,13 @@ export interface RelationGraphPayload {
   relationTypes: RelationTypeOption[];
 }
 
-export interface CreateRelationPayload {
-  sourceId: string;
-  targetId: string;
-  type: RelationTypeKey;
-  note?: string;
-}
+export type CreateRelationPayload = GeneratedSchemas["CreateRecordRelationRequest"];
 
-export interface UpdateRelationPayload {
-  type?: RelationTypeKey;
-  note?: string | null;
-}
+export type UpdateRelationPayload = GeneratedSchemas["UpdateRecordRelationRequest"];
 
-export interface RecordNoteRegion {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+export type RecordNoteRegion = GeneratedSchemas["RecordNoteRegion"];
 
-export interface RecordNote {
-  id: string;
-  itemId: string;
-  body: string;
-  timestampSeconds: number | null;
-  region: RecordNoteRegion | null;
-  authorId: string | null;
-  authorName: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
+export type RecordNote = GeneratedSchemas["RecordNote"];
 
 export interface CreateRecordNotePayload {
   body: string;
@@ -321,15 +251,7 @@ export interface CreateRecordNotePayload {
 
 export type UpdateRecordNotePayload = Partial<CreateRecordNotePayload>;
 
-export interface RecordComment {
-  id: string;
-  itemId: string;
-  body: string;
-  authorId: string | null;
-  authorName: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
+export type RecordComment = GeneratedSchemas["RecordComment"];
 
 // V1-872: field-scoped missing-info request — assignee/due date/resolution, no new task platform.
 export interface RecordFieldRequest {
@@ -365,34 +287,18 @@ export interface RecordAiAssist {
   changesApplied: [];
 }
 
-export interface DepartmentFieldOwner { id: string; departmentId: string; field: string; owner: string; }
-export interface DepartmentTemplateMetrics { departmentId: string; templateCount: number; publishedTemplateCount: number; qualityRuleCount: number; recordCount: number; missingFieldCounts: Record<string, number>; }
+export type DepartmentFieldOwner = GeneratedSchemas["DepartmentFieldOwner"];
+export type DepartmentTemplateMetrics = GeneratedSchemas["DepartmentTemplateMetrics"];
 export interface DepartmentHandoff { id: string; recordId: string; fromDepartmentId: string; toDepartmentId: string; sentBy: string; receivedBy: string | null; summary: { openFieldRequests: number; hasRights: boolean; openComments: number }; }
 
 // V1-868: last recorded source per metadata field, opt-in via bulkRecords' fieldSources.
-export interface RecordFieldSource {
-  field: string;
-  source: "manual" | "template" | "csv" | "bulk";
-  updatedAt: string;
-}
+export type RecordFieldSource = GeneratedSchemas["RecordFieldSource"];
 
 // V1-860: on-demand checksum verification history per attachment.
-export interface FileHealthCheck {
-  id: string;
-  attachmentId: string;
-  status: "match" | "mismatch" | "missing" | "error";
-  checksumSha256: string | null;
-  checkedAt: string;
-}
+export type FileHealthCheck = GeneratedSchemas["FileHealthCheck"];
 
 // V1-853: files with no record_attachments reference — read-only review candidates.
-export interface UnusedFile {
-  key: string;
-  name: string;
-  size: number | null;
-  modifiedAt: string;
-  reason: string;
-}
+export type UnusedFile = GeneratedSchemas["UnusedFile"];
 
 // V1-850: preview + relink records affected by a deleted/changed vocabulary term.
 export interface VocabularyRelinkPreview {
@@ -402,20 +308,10 @@ export interface VocabularyRelinkPreview {
 }
 
 // V1-866: enforced at the API level in RecordsController::bulk — admins can override.
-export interface RecordFreeze {
-  recordId: string;
-  reason: string;
-  frozenBy: string | null;
-  createdAt: string;
-}
+export type RecordFreeze = GeneratedSchemas["RecordFreeze"];
 
 // V1-848: short-lived, informational-only edit presence marker.
-export interface RecordEditClaim {
-  recordId: string;
-  claimedBy: string | null;
-  claimedByName: string;
-  expiresAt: string;
-}
+export type RecordEditClaim = GeneratedSchemas["RecordEditClaim"];
 
 // V1-839: merges duplicate records into a chosen primary. Duplicates are
 // soft-deleted (restorable via /trash/restore), their own files untouched.
@@ -433,37 +329,15 @@ export interface RecordMergeResult {
 }
 
 // V1-834: prior metadata snapshots, captured on every record write.
-export interface RecordSnapshot {
-  id: string;
-  recordId: string;
-  changedBy: string | null;
-  createdAt: string;
-}
+export type RecordSnapshot = GeneratedSchemas["RecordSnapshot"];
 
-export interface RecordSnapshotFieldDiff {
-  field: string;
-  previous: unknown;
-  current: unknown;
-  changed: boolean;
-}
+export type RecordSnapshotFieldDiff = GeneratedSchemas["RecordSnapshotFieldDiff"];
 
 // V1-837: quick-triage "needs info" flag, one per record, team-visible.
-export interface RecordTriageFlag {
-  recordId: string;
-  reason: string;
-  flaggedBy: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type RecordTriageFlag = GeneratedSchemas["RecordTriageFlag"];
 
 // V1-841: read-only scan for record relations pointing at a record that no longer exists.
-export interface BrokenLink {
-  relationId: string;
-  sourceRecordId: string;
-  targetRecordId: string;
-  missingSource: boolean;
-  missingTarget: boolean;
-}
+export type BrokenLink = GeneratedSchemas["BrokenLink"];
 
 // V1-827: per-type metadata templates; applying one to a draft is client-side only.
 export interface MetadataTemplate {
@@ -509,15 +383,11 @@ export interface MetadataTemplateVersion {
   createdAt: string;
 }
 
-export interface DepartmentQualityRule { id: string; departmentId: string; typeId: string | null; requiredFields: string[]; enabled: boolean; }
+export type DepartmentQualityRule = GeneratedSchemas["DepartmentQualityRule"];
 export interface DepartmentQualityPreview { ready: boolean; missingFields: string[]; ruleId: string | null; }
 
 // ponytail: shared DB-backed filename prefix rules (V1-858) — key is a project or type id.
-export interface NamingRule {
-  key: string;
-  prefix: string;
-  updatedAt: string;
-}
+export type NamingRule = GeneratedSchemas["NamingRule"];
 
 // V1-861: lightweight grouping of records, never moves them out of type/folder.
 export interface Project {
@@ -529,20 +399,29 @@ export interface Project {
   updatedAt: string;
 }
 export type ProjectTaskStatus = "todo" | "in_progress" | "review" | "done";
-export interface ProjectTask { id: string; projectId: string; title: string; status: ProjectTaskStatus; assignee: string | null; recordId: string | null; dueDate: string | null; createdAt: string; updatedAt: string; }
+export interface ProjectTask { id: string; projectId: string; title: string; status: ProjectTaskStatus; assignee: string | null; recordId: string | null; dueDate: string | null; targetDurationMinutes?: number | null; targetDeadlineAt?: string | null; createdAt: string; updatedAt: string; }
+
+export type ProjectTaskTemplateCategory = "archive" | "review" | "production";
+export interface ProjectTaskTemplate {
+  id: string;
+  category: ProjectTaskTemplateCategory;
+  title: string;
+  description?: string | null;
+  defaultStatus: ProjectTaskStatus;
+  targetDurationMinutes: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface TaskEscalationPolicy {
+  enabled: boolean;
+  warningBeforeMinutes: number | null;
+  repeatMinutes: number | null;
+  updatedAt?: string | null;
+}
 
 // V1-840: named time/topic segments on a record, no file copy.
-export interface RecordSegment {
-  id: string;
-  recordId: string;
-  title: string;
-  description: string;
-  tags: string[];
-  startSeconds: number | null;
-  endSeconds: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
+export type RecordSegment = GeneratedSchemas["RecordSegment"];
 
 export interface RecordSegmentInput {
   title?: string;
@@ -552,9 +431,7 @@ export interface RecordSegmentInput {
   endSeconds?: number | null;
 }
 
-export interface CreateRecordCommentPayload {
-  body: string;
-}
+export type CreateRecordCommentPayload = GeneratedSchemas["RecordCommentCreateRequest"];
 
 export interface IntakeTemplate {
   id: string;
@@ -574,24 +451,9 @@ export interface CreateIntakeTemplatePayload {
 
 export type ImportSuggestedType = "video" | "image" | "audio" | "document" | "file";
 
-export interface ImportPreview {
-  url: string;
-  contentType: string;
-  contentLength: number | null;
-  suggestedType: ImportSuggestedType;
-  suggestedTitle: string;
-}
+export type ImportPreview = GeneratedSchemas["ImportPreview"];
 
-export interface UploadLink {
-  id: string;
-  token?: string;
-  label: string | null;
-  folder: string | null;
-  expiresAt: string;
-  revoked: boolean;
-  uploadCount: number;
-  createdAt: string | null;
-}
+export type UploadLink = GeneratedSchemas["UploadLink"];
 
 export interface CreateUploadLinkPayload {
   label?: string;
@@ -621,16 +483,7 @@ export interface CreateSavedSearchPayload {
   departmentId?: string;
 }
 
-export interface Collection {
-  id: string;
-  name: string;
-  query: string | null;
-  type: string;
-  tag: string;
-  icon?: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-}
+export type Collection = GeneratedSchemas["Collection"];
 
 export interface CreateCollectionPayload {
   name: string;
@@ -668,12 +521,7 @@ export interface UpdateInboxItemPayload {
   status?: InboxStatus;
 }
 
-export interface DepartmentRoutingPreview {
-  blocked: boolean;
-  reason: string | null;
-  fromDepartmentId: string | null;
-  toDepartmentId: string;
-}
+export type DepartmentRoutingPreview = GeneratedSchemas["DepartmentRoutingPreview"];
 
 export type VocabularyKind = "type" | "tag" | "person" | "place" | "event" | "custom" | (string & {});
 
@@ -777,12 +625,26 @@ export interface CreateAutomationRulePayload {
 
 export type UpdateAutomationRulePayload = Partial<CreateAutomationRulePayload>;
 
-export interface PaginationMeta {
-  total: number;
-  page: number;
-  limit: number;
-  hasMore: boolean;
+export type AutomationRuleTemplateCategory = "archive" | "review" | "production";
+
+export interface AutomationRuleTemplate {
+  id: string;
+  category: AutomationRuleTemplateCategory;
+  name: string;
+  description?: string | null;
+  trigger: AutomationRuleTrigger;
+  query: string;
+  type: string;
+  tag: string;
+  status: string;
+  fileExtension: string;
+  departmentId: string;
+  action: AutomationRuleAction;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
+
+export type PaginationMeta = GeneratedSchemas["PaginationMeta"];
 
 export interface RecordHistoryEntry {
   id: number | string;
@@ -815,39 +677,13 @@ export interface ComplianceReportFilters {
   limit?: number;
 }
 
-export interface ComplianceReportEntry {
-  id: number | string;
-  event: string;
-  resourceType: string | null;
-  resourceId: string | null;
-  actorId: string | null;
-  outcome: "success" | "rejected" | "failed";
-  statusCode: number;
-  action: string;
-  createdAt: string | null;
-}
+export type ComplianceReportEntry = GeneratedSchemas["ComplianceReportEntry"];
 
-export interface ComplianceReportSummary {
-  total: number;
-  outcomes: Record<"success" | "rejected" | "failed", number>;
-  events: Record<string, number>;
-  resourceTypes: Record<string, number>;
-}
+export type ComplianceReportSummary = GeneratedSchemas["ComplianceReportSummary"];
 
-export interface SyncLogEntry {
-  uid: string;
-  store: string;
-  status: "synced" | "conflict";
-  syncVersion: number | null;
-  lastModifiedBy: Record<string, unknown> | null;
-  updatedAt: string | null;
-}
+export type SyncLogEntry = GeneratedSchemas["SyncLogEntry"];
 
-export interface SyncSummary {
-  total: number;
-  synced: number;
-  conflicts: number;
-}
+export type SyncSummary = GeneratedSchemas["SyncSummary"];
 
 export interface ArchiveFile {
   key: string;
@@ -931,12 +767,7 @@ export interface DrDrillStatus {
   passed: boolean | null;
 }
 
-export interface DrProbe {
-  lastBackupAt: string | null;
-  lastBackupName: string | null;
-  lastRestoreTestAt: string | null;
-  lastRestoreTestOk: boolean | null;
-}
+export type DrProbe = GeneratedSchemas["DrProbe"];
 
 /**
  * V1-760: raw per-queue counters as the API reports them. Structurally a
@@ -956,11 +787,7 @@ export interface QueueMetrics {
  * that lib/storage-forecast.ts fits a trend to; `totalBytes` supplies the
  * capacity the exhaustion date is measured against.
  */
-export interface StorageSample {
-  at: string;
-  usedBytes: number;
-  totalBytes: number;
-}
+export type StorageSample = GeneratedSchemas["StorageSample"];
 
 export interface SystemMetrics {
   cpuLoad: number[];
@@ -978,15 +805,7 @@ export interface SystemControlResult {
   detail: Record<string, unknown>;
 }
 
-export interface AccountExport {
-  user: Record<string, unknown>;
-  savedSearches: Record<string, unknown>[];
-  recordNotes: Record<string, unknown>[];
-  recordComments: Record<string, unknown>[];
-  uploadLinks: Record<string, unknown>[];
-  intakeTemplates: Record<string, unknown>[];
-  exportedAt: string;
-}
+export type AccountExport = GeneratedSchemas["AccountExport"];
 
 export interface BulkDeleteResultItem {
   uid: string;
@@ -1057,13 +876,7 @@ export interface SmbPullPayload {
   localPath?: string;
 }
 
-export interface SavedFavorite {
-  recordId: string;
-  store: string;
-  title: string | null;
-  type: string | null;
-  addedAt: string | null;
-}
+export type SavedFavorite = GeneratedSchemas["SavedFavorite"];
 
 export interface WatchedIngestEntry {
   id: string;
@@ -1074,16 +887,17 @@ export interface WatchedIngestEntry {
   routing: { ruleId?: string; metadataTemplateId?: string | null; tags?: string[]; stagingDirectory?: string } | null;
 }
 
-export interface WatchedIngestRuleInput { matchType: "path_prefix" | "filename_pattern"; pattern: string; metadataTemplateId?: string | null; tags?: string[]; stagingDirectory: string; enabled?: boolean; }
-export interface WatchedIngestRule extends WatchedIngestRuleInput { id: string; }
+export type WatchedIngestRuleInput = GeneratedSchemas["WatchedIngestRuleInput"];
+export type WatchedIngestRule = GeneratedSchemas["WatchedIngestRule"];
 
-export interface WatchedIngestBatch {
-  id: string;
-  status: "pending" | "completed";
-  entries: WatchedIngestEntry[];
-}
+export type WatchedIngestBatch = GeneratedSchemas["WatchedIngestBatch"];
 
-export type MediaOperation = "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
+export type MediaOperation = GeneratedSchemas["MediaOperation"];
+// ponytail: the generated MediaJob.status enum only has queued/processing/
+// completed/failed -- the contract hasn't caught up to cancelMediaJob's
+// "canceled" outcome or the progressStage/progressPercent fields below.
+// Aliasing MediaJobStatus/MediaJob to the generated schema would silently
+// drop both; leave them hand-written until the contract is updated to match.
 export type MediaJobStatus = "queued" | "processing" | "completed" | "failed" | "canceled";
 
 export interface MediaJob {
@@ -1129,29 +943,10 @@ export interface BroadcastMetadataPayload {
   raw?: Record<string, unknown>;
 }
 
-export interface UploadedRecord {
-  id: string;
-  uid?: string;
-  title: string;
-  fileName: string;
-  filePath: string;
-  checksum: string;
-  source: "upload";
-  createdAt?: string;
-  updatedAt?: string;
-}
+export type UploadedRecord = GeneratedSchemas["UploadedRecord"];
 
 /** V1-711: resumable chunked upload session state. */
-export interface UploadSession {
-  id: string;
-  fileName: string;
-  totalSize: number;
-  chunkSize: number;
-  totalChunks: number;
-  receivedChunks: number[];
-  status: "pending" | "completed" | "aborted";
-  expiresAt: string;
-}
+export type UploadSession = GeneratedSchemas["UploadSession"];
 
 export type ManagedUserRole = "admin" | "editor" | "viewer";
 
@@ -1163,10 +958,7 @@ export interface ManagedUser {
   createdAt?: string;
 }
 
-export interface MentionableUser {
-  id: string;
-  name: string;
-}
+export type MentionableUser = GeneratedSchemas["MentionableUser"];
 
 export interface DelegatedAccessParty {
   id: number;
@@ -1231,15 +1023,9 @@ export interface ArchiveTypeFieldCondition {
 
 export type OnboardingStageId = "organization" | "storage" | "invitation" | "first_record" | "first_search";
 
-export interface OnboardingStage {
-  id: OnboardingStageId;
-  status: "pending" | "completed";
-  completedAt: string | null;
-}
+export type OnboardingStage = GeneratedSchemas["OnboardingStage"];
 
-export interface OnboardingProgress {
-  stages: OnboardingStage[];
-}
+export type OnboardingProgress = GeneratedSchemas["OnboardingProgress"];
 
 export interface ArchiveTypeField {
   name: string;
@@ -1261,27 +1047,11 @@ export interface ArchiveType {
   updatedAt?: string;
 }
 
-export interface SecuritySettings {
-  accessTokenTtlMinutes: number;
-  perUserRateLimit: number;
-  webhookUrlAllowlist: string[];
-  legacyPasswordUpgrade: boolean;
-  whisperDevice: "cpu" | "cuda";
-  cspPolicy: string;
-  corsOrigins: string[];
-}
+export type SecuritySettings = GeneratedSchemas["SecuritySettings"];
 
 export type OdbcProbeStatus = "disabled" | "missing-dsn" | "driver-unavailable" | "connected" | "failed";
 
-export interface OdbcProbe {
-  enabled: boolean;
-  driverLoaded: boolean;
-  dsn: string;
-  status: OdbcProbeStatus;
-  message?: string;
-  error?: string;
-  tables: string[];
-}
+export type OdbcProbe = GeneratedSchemas["OdbcProbe"];
 
 export interface OdbcTablePreview {
   table: string;
@@ -1298,11 +1068,7 @@ export interface StorageConnectionResult {
   testedAt: string;
 }
 
-export interface DropboxConnection {
-  status: "disabled" | "disconnected" | "connected";
-  configured: boolean;
-  folderPath: string | null;
-}
+export type DropboxConnection = GeneratedSchemas["DropboxConnection"];
 
 export type StorageWorkspaceCapability = "browse" | "download" | "upload" | "create_folder" | "rename" | "copy" | "move" | "delete" | "restore" | "checksum";
 export interface StorageWorkspaceProvider { id: string; type: string; label: string; capabilities: StorageWorkspaceCapability[]; status: "available" | "not_configured"; }
@@ -1325,12 +1091,7 @@ export interface OdbcWriteResult {
   affected: number;
 }
 
-export interface ReviewRect {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+export type ReviewRect = GeneratedSchemas["ReviewRect"];
 
 export interface ReviewComment {
   id: string;
@@ -1345,12 +1106,20 @@ export interface ReviewComment {
 }
 
 export type ReviewLinkPermission = "view" | "comment";
+export type ReviewLinkWatermarkPolicy = "none" | "visible";
+export type ReviewLinkDecisionValue = "approve" | "request_changes";
 
 export interface ReviewLinkMetadata {
   permission: ReviewLinkPermission;
   expiresAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  allowDownload?: boolean;
+  watermarkPolicy?: ReviewLinkWatermarkPolicy;
+  requiredApprovals?: number;
+  versionToken?: string | null;
+  isCurrentVersion?: boolean | null;
+  derivative?: { id: string; derivativeType: MediaDerivativeType; status: string } | null;
 }
 
 export interface ReviewLinkDetails {
@@ -1359,18 +1128,72 @@ export interface ReviewLinkDetails {
   comments: ReviewComment[];
 }
 
+export interface CreateReviewLinkPayload {
+  mediaUid: string;
+  permission?: ReviewLinkPermission;
+  expiresAt?: string;
+  durationHours?: number;
+  store?: string;
+  attachmentId?: string;
+  sourcePath?: string;
+  derivativeId?: string;
+  allowDownload?: boolean;
+  watermarkPolicy?: ReviewLinkWatermarkPolicy;
+  requiredApprovals?: 1 | 2;
+}
+
+export interface CreateReviewLinkResult {
+  token: string;
+  url?: string;
+  path?: string;
+  mediaUid: string;
+  permission: ReviewLinkPermission;
+  expiresAt?: string | null;
+  allowDownload?: boolean;
+  watermarkPolicy?: ReviewLinkWatermarkPolicy;
+  requiredApprovals?: number;
+}
+
+export interface ReviewLinkDecisionPayload {
+  reviewerName: string;
+  reviewerEmail?: string;
+  decision: ReviewLinkDecisionValue;
+  notes?: string;
+}
+
+export interface ReviewLinkDecisionResult {
+  decision: { id: string; reviewerName: string; decision: ReviewLinkDecisionValue; decidedAt?: string | null };
+  session: { state: string } | null;
+  approvals: { required: number; received: number };
+}
+
+export interface ReviewLinkReport {
+  token: string;
+  mediaUid: string;
+  recordStore: string | null;
+  attachmentId: string | null;
+  versionToken: string | null;
+  isCurrentVersion: boolean | null;
+  expiresAt: string | null;
+  isExpired: boolean;
+  allowDownload: boolean;
+  watermarkPolicy: ReviewLinkWatermarkPolicy;
+  requiredApprovals: number;
+  session: { id: string; state: string; decidedBy: number | null; decidedAt: string | null } | null;
+  reviewers: Array<{
+    id: string;
+    reviewerName: string;
+    reviewerEmail: string | null;
+    decision: ReviewLinkDecisionValue;
+    notes: string | null;
+    decidedAt: string | null;
+  }>;
+  approvals: { required: number; received: number };
+}
+
 export type CollaborationStatus = "active" | "viewing" | "reviewing" | "editing" | "idle";
 
-export interface CollaborationParticipant {
-  id: string;
-  roomKey: string;
-  userId: string;
-  displayName: string;
-  status: CollaborationStatus;
-  resourceId?: string | null;
-  cursor?: Record<string, unknown> | null;
-  lastSeenAt?: string | null;
-}
+export type CollaborationParticipant = GeneratedSchemas["CollaborationParticipant"];
 
 export interface CollaborationPresencePayload {
   roomKey: string;
@@ -1378,29 +1201,14 @@ export interface CollaborationPresencePayload {
   participants: CollaborationParticipant[];
 }
 
-export interface CollaborationLock {
-  id: string;
-  roomKey: string;
-  resourceId: string;
-  userId: string;
-  displayName: string;
-  expiresAt?: string | null;
-  updatedAt?: string | null;
-}
+export type CollaborationLock = GeneratedSchemas["CollaborationLock"];
 
 export interface CollaborationLocksPayload {
   roomKey: string;
   locks: CollaborationLock[];
 }
 
-export interface CollaborationDocument {
-  roomKey: string;
-  resourceId: string;
-  content: string;
-  version: number;
-  updatedByDisplayName?: string | null;
-  updatedAt?: string | null;
-}
+export type CollaborationDocument = GeneratedSchemas["CollaborationDocument"];
 
 export interface ArchiveApiClient {
   health(): Promise<ApiEnvelope<{ backend: string; engine: string; uptimeSec: number }>>;
@@ -1484,7 +1292,10 @@ export interface ArchiveApiClient {
   unlinkProjectRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   recordProjects(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ projects: Project[] }>>;
   projectTasks(projectId?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ tasks: ProjectTask[] }>>;
-  createProjectTask(payload: Omit<ProjectTask, "id" | "createdAt" | "updatedAt">, options?: AuthRequestOptions): Promise<ApiEnvelope<{ task: ProjectTask }>>;
+  createProjectTask(payload: Omit<ProjectTask, "id" | "createdAt" | "updatedAt" | "targetDeadlineAt">, options?: AuthRequestOptions): Promise<ApiEnvelope<{ task: ProjectTask }>>;
+  projectTaskTemplates(category?: ProjectTaskTemplateCategory, options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: ProjectTaskTemplate[] }>>;
+  taskEscalationPolicy(options?: AuthRequestOptions): Promise<ApiEnvelope<{ policy: TaskEscalationPolicy }>>;
+  updateTaskEscalationPolicy(payload: Partial<Omit<TaskEscalationPolicy, "updatedAt">>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ policy: TaskEscalationPolicy }>>;
   updateProjectTask(id: string, payload: Partial<Omit<ProjectTask, "id" | "projectId" | "createdAt" | "updatedAt">>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ task: ProjectTask }>>;
   recordSegments(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segments: RecordSegment[] }>>;
   createRecordSegment(recordId: string, payload: RecordSegmentInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segment: RecordSegment }>>;
@@ -1552,6 +1363,7 @@ export interface ArchiveApiClient {
   mediaJobs(params?: { status?: MediaJobStatus; recordId?: string; limit?: number; page?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ jobs: MediaJob[]; pagination?: PaginationMeta }>>;
   createMediaJob(payload: CreateMediaJobPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   cancelMediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
+  mediaJobQueueStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ status: MediaQueueStatus }>>;
   broadcastMetadata(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   updateBroadcastMetadata(recordId: string, payload: BroadcastMetadataPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   ingestScan(payload?: { subdir?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
@@ -1612,8 +1424,57 @@ export interface ArchiveApiClient {
   reviewComments(mediaUid: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comments: ReviewComment[] }>>;
   createReviewComment(mediaUid: string, payload: { body: string; timecodeSeconds: number; annotation?: ReviewRect[] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
   updateReviewComment(id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: ReviewComment }>>;
+  reviewSessions(recordId: string, params?: { store?: string; attachmentId?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ sessions: ReviewSession[] }>>;
+  createReviewSession(recordId: string, payload?: ReviewSessionCreatePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ session: ReviewSession }>>;
+  transitionReviewSession(
+    id: string,
+    action: "start" | "request-changes" | "approve" | "resume" | "close",
+    payload?: ReviewSessionTransitionPayload,
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ session: ReviewSession }>>;
+  mediaClips(recordId: string, params?: { store?: string; attachmentId?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ clips: MediaClip[] }>>;
+  createMediaClip(recordId: string, payload: MediaClipCreatePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ clip: MediaClip }>>;
+  updateMediaClip(id: string, payload: MediaClipUpdatePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ clip: MediaClip }>>;
+  deleteMediaClip(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  downloadMediaClipsExport(
+    recordId: string,
+    format: "json" | "csv",
+    params?: { store?: string; attachmentId?: string },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ blob: Blob; filename: string }>>;
+  mediaDerivatives(
+    recordId: string,
+    params?: { store?: string; attachmentId?: string; type?: MediaDerivativeType },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ derivatives: MediaDerivative[] }>>;
+  requestMediaDerivative(
+    payload: MediaDerivativeRequestPayload,
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ derivative: MediaDerivative; cached?: boolean }>>;
+  getMediaDerivative(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ derivative: MediaDerivative }>>;
+  transcriptVersions(recordId: string, params?: { store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ current: TranscriptCurrentState; versions: TranscriptVersion[] }>>;
+  saveTranscriptVersion(recordId: string, payload: TranscriptVersionStorePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
+  lockTranscriptVersion(recordId: string, payload?: { store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
+  restoreTranscriptVersion(recordId: string, versionId: string, payload?: TranscriptVersionRestorePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
+  mediaReviewComments(
+    recordId: string,
+    params?: { store?: string; attachmentId?: string; reviewSessionId?: string },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ comments: MediaReviewComment[] }>>;
+  createMediaReviewComment(
+    recordId: string,
+    payload: MediaReviewCommentCreatePayload,
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ comment: MediaReviewComment }>>;
+  updateMediaReviewComment(id: string, payload: MediaReviewCommentUpdatePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: MediaReviewComment }>>;
+  deleteMediaReviewComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  resolveMediaReviewComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: MediaReviewComment }>>;
+  reopenMediaReviewComment(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ comment: MediaReviewComment }>>;
   reviewLink(token: string): Promise<ApiEnvelope<ReviewLinkDetails>>;
-  createReviewLink(payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>>;
+  createReviewLink(payload: CreateReviewLinkPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<CreateReviewLinkResult>>;
+  reviewLinkMediaUrl(token: string): string;
+  decideReviewLink(token: string, payload: ReviewLinkDecisionPayload): Promise<ApiEnvelope<ReviewLinkDecisionResult>>;
+  reviewLinkReport(token: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ report: ReviewLinkReport }>>;
   collaborationPresence(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
   sendCollaborationHeartbeat(roomKey: string, payload?: { status?: CollaborationStatus; resourceId?: string; cursor?: Record<string, unknown> }, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationPresencePayload>>;
   collaborationLocks(roomKey: string, options?: AuthRequestOptions): Promise<ApiEnvelope<CollaborationLocksPayload>>;
@@ -1652,6 +1513,10 @@ export interface ArchiveApiClient {
   collectionRecords(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[] }>>;
   addCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   removeCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
+  workInbox(
+    params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ items: WorkInboxItem[]; pagination: PaginationMeta; counts: WorkInboxCounts }>>;
   inboxItems(options?: AuthRequestOptions): Promise<ApiEnvelope<{ items: InboxItem[] }>>;
   createInboxItem(payload: CreateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
   updateInboxItem(id: string, payload: UpdateInboxItemPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ item: InboxItem }>>;
@@ -1676,6 +1541,7 @@ export interface ArchiveApiClient {
   updateAutomationRule(id: string, payload: UpdateAutomationRulePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rule: AutomationRule }>>;
   deleteAutomationRule(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   runAutomationRule(id: string, payload?: { dryRun?: boolean }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: AutomationRuleRun }>>;
+  automationRuleTemplates(category?: AutomationRuleTemplateCategory, options?: AuthRequestOptions): Promise<ApiEnvelope<{ templates: AutomationRuleTemplate[] }>>;
   bulkMacros(options?: AuthRequestOptions): Promise<ApiEnvelope<{ macros: BulkMacro[] }>>;
   bulkMacro(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ macro: BulkMacro }>>;
   createBulkMacro(payload: CreateBulkMacroPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ macro: BulkMacro }>>;
@@ -1685,6 +1551,14 @@ export interface ArchiveApiClient {
   runBulkMacro(id: string, payload: RunBulkMacroPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: BulkMacroRun }>>;
   bulkMacroRuns(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ runs: BulkMacroRun[] }>>;
   retryBulkMacroFailedTargets(id: string, runId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: BulkMacroRun }>>;
+  rollbackBulkMacroRun(id: string, runId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rollback: BulkMacroRollbackResult[] }>>;
+  sensitiveOperationPolicies(options?: AuthRequestOptions): Promise<ApiEnvelope<{ policies: SensitiveOperationPolicy[] }>>;
+  updateSensitiveOperationPolicy(operationKey: string, payload: UpdateSensitiveOperationPolicyPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ policy: SensitiveOperationPolicy }>>;
+  approvalRequests(options?: AuthRequestOptions): Promise<ApiEnvelope<{ requests: ApprovalRequest[] }>>;
+  approvalRequest(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest }>>;
+  createApprovalRequest(payload: CreateApprovalRequestPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest }>>;
+  decideApprovalRequest(id: string, payload: DecideApprovalRequestPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest }>>;
+  executeApprovalRequest(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest; run: { id: string; macroId: string; targetCount: number; completedCount: number; failedCount: number; results: BulkMacroTargetResult[] } }>>;
 }
 
 export interface AuthRequestOptions {
@@ -1992,6 +1866,18 @@ export function createArchiveApiClient({
   const postSafetyPreview = async <T extends object>(path: string, body: unknown, options?: AuthRequestOptions): Promise<SafetyPreviewEnvelope<T>> =>
     asSafetyPreviewEnvelope(await post<T>(path, body, options));
 
+  const mediaReviewClient = createMediaReviewClient({
+    get,
+    post,
+    patch,
+    del,
+    fetchImpl,
+    baseUrl,
+    currentLocale,
+    getAccessToken: (options?: AuthRequestOptions) => options?.accessToken ?? cachedAccessToken,
+    clientUploadError
+  });
+
   return {
     health: () => get("/health"),
     favorites: (options?: AuthRequestOptions) => get<{ favorites: SavedFavorite[] }>("/favorites", options),
@@ -2193,6 +2079,10 @@ export function createArchiveApiClient({
     projectTasks: (projectId?: string, options?: AuthRequestOptions) => get<{ tasks: ProjectTask[] }>(`/project-tasks${projectId ? `?${new URLSearchParams({ projectId })}` : ""}`, options),
     createProjectTask: (payload, options?: AuthRequestOptions) => post<{ task: ProjectTask }>("/project-tasks", payload, options),
     updateProjectTask: (id, payload, options?: AuthRequestOptions) => patch<{ task: ProjectTask }>(`/project-tasks/${encodeURIComponent(id)}`, payload, options),
+    projectTaskTemplates: (category?: ProjectTaskTemplateCategory, options?: AuthRequestOptions) =>
+      get<{ templates: ProjectTaskTemplate[] }>(`/project-task-templates${category ? `?category=${encodeURIComponent(category)}` : ""}`, options),
+    taskEscalationPolicy: (options?: AuthRequestOptions) => get<{ policy: TaskEscalationPolicy }>("/task-escalation-policy", options),
+    updateTaskEscalationPolicy: (payload, options?: AuthRequestOptions) => patch<{ policy: TaskEscalationPolicy }>("/task-escalation-policy", payload, options),
     recordSegments: (recordId: string, options?: AuthRequestOptions) =>
       get<{ segments: RecordSegment[] }>(`/records/${encodeURIComponent(recordId)}/segments`, options),
     createRecordSegment: (recordId: string, payload: RecordSegmentInput, options?: AuthRequestOptions) =>
@@ -2590,14 +2480,53 @@ export function createArchiveApiClient({
       post<{ comment: ReviewComment }>(`/media/${encodeURIComponent(mediaUid)}/review-comments`, payload, options),
     updateReviewComment: (id: string, payload: Partial<{ body: string; resolved: boolean }>, options?: AuthRequestOptions) =>
       patch<{ comment: ReviewComment }>(`/review-comments/${encodeURIComponent(id)}`, payload, options),
+    ...mediaReviewClient,
+    mediaDerivatives: (
+      recordId: string,
+      params?: { store?: string; attachmentId?: string; type?: MediaDerivativeType },
+      options?: AuthRequestOptions
+    ) => {
+      const queryParams = new URLSearchParams();
+      if (params?.store) queryParams.set("store", params.store);
+      if (params?.attachmentId) queryParams.set("attachmentId", params.attachmentId);
+      if (params?.type) queryParams.set("type", params.type);
+      const query = queryParams.toString();
+      return get<{ derivatives: MediaDerivative[] }>(
+        `/records/${encodeURIComponent(recordId)}/media-derivatives${query ? `?${query}` : ""}`,
+        options
+      );
+    },
+    requestMediaDerivative: (payload: MediaDerivativeRequestPayload, options?: AuthRequestOptions) =>
+      post<{ derivative: MediaDerivative; cached?: boolean }>("/media-derivatives", payload, options),
+    getMediaDerivative: (id: string, options?: AuthRequestOptions) =>
+      get<{ derivative: MediaDerivative }>(`/media-derivatives/${encodeURIComponent(id)}`, options),
     reviewLink: (token: string) =>
       get<ReviewLinkDetails>(`/review-links/${encodeURIComponent(token)}`),
-    createReviewLink: (payload: { mediaUid: string; permission?: ReviewLinkPermission; expiresAt?: string }, options?: AuthRequestOptions) =>
-      post<{ token: string; url?: string; path?: string; mediaUid: string; permission: ReviewLinkPermission; expiresAt?: string | null }>(
+    createReviewLink: (payload: CreateReviewLinkPayload, options?: AuthRequestOptions) =>
+      post<CreateReviewLinkResult>(
         `/media/${encodeURIComponent(payload.mediaUid)}/review-links`,
-        { permission: payload.permission, expiresAt: payload.expiresAt },
+        {
+          permission: payload.permission,
+          expiresAt: payload.expiresAt,
+          durationHours: payload.durationHours,
+          store: payload.store,
+          attachmentId: payload.attachmentId,
+          sourcePath: payload.sourcePath,
+          derivativeId: payload.derivativeId,
+          allowDownload: payload.allowDownload,
+          watermarkPolicy: payload.watermarkPolicy,
+          requiredApprovals: payload.requiredApprovals
+        },
         options
       ),
+    // Not a fetch call: the token is embedded directly in a <video>/<audio>/
+    // <img> src so the browser streams (and range-requests) it natively,
+    // same pattern the rest of the app uses for direct media URLs.
+    reviewLinkMediaUrl: (token: string) => `${baseUrl}/review-links/${encodeURIComponent(token)}/media`,
+    decideReviewLink: (token: string, payload: ReviewLinkDecisionPayload) =>
+      post<ReviewLinkDecisionResult>(`/review-links/${encodeURIComponent(token)}/decisions`, payload),
+    reviewLinkReport: (token: string, options?: AuthRequestOptions) =>
+      get<{ report: ReviewLinkReport }>(`/review-links/${encodeURIComponent(token)}/report`, options),
     listUsers: (options?: AuthRequestOptions) =>
       get<{ users: ManagedUser[]; invitations: PendingInvitation[] }>("/users", options),
     mentionableUsers: (options?: AuthRequestOptions) =>
@@ -2696,6 +2625,14 @@ export function createArchiveApiClient({
       post<Record<string, never>>(`/collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     removeCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) =>
       del<Record<string, never>>(`/collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
+    workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.set("page", String(params.page));
+      if (params?.limit) queryParams.set("limit", String(params.limit));
+      for (const type of params?.types ?? []) queryParams.append("types[]", type);
+      const query = queryParams.toString();
+      return get<{ items: WorkInboxItem[]; pagination: PaginationMeta; counts: WorkInboxCounts }>(`/work-inbox${query ? `?${query}` : ""}`, options);
+    },
     inboxItems: (options?: AuthRequestOptions) => get<{ items: InboxItem[] }>("/inbox", options),
     createInboxItem: (payload: CreateInboxItemPayload, options?: AuthRequestOptions) =>
       post<{ item: InboxItem }>("/inbox", payload, options),
@@ -2747,6 +2684,8 @@ export function createArchiveApiClient({
       del<{ deleted: boolean }>(`/automation/rules/${encodeURIComponent(id)}`, undefined, options),
     runAutomationRule: (id: string, payload?: { dryRun?: boolean }, options?: AuthRequestOptions) =>
       post<{ run: AutomationRuleRun }>(`/automation/rules/${encodeURIComponent(id)}/run`, payload, options),
+    automationRuleTemplates: (category?: AutomationRuleTemplateCategory, options?: AuthRequestOptions) =>
+      get<{ templates: AutomationRuleTemplate[] }>(`/automation/rule-templates${category ? `?category=${encodeURIComponent(category)}` : ""}`, options),
     bulkMacros: (options?: AuthRequestOptions) => get<{ macros: BulkMacro[] }>("/bulk-macros", options),
     bulkMacro: (id: string, options?: AuthRequestOptions) =>
       get<{ macro: BulkMacro }>(`/bulk-macros/${encodeURIComponent(id)}`, options),
@@ -2763,6 +2702,21 @@ export function createArchiveApiClient({
     bulkMacroRuns: (id: string, options?: AuthRequestOptions) =>
       get<{ runs: BulkMacroRun[] }>(`/bulk-macros/${encodeURIComponent(id)}/runs`, options),
     retryBulkMacroFailedTargets: (id: string, runId: string, options?: AuthRequestOptions) =>
-      post<{ run: BulkMacroRun }>(`/bulk-macros/${encodeURIComponent(id)}/runs/${encodeURIComponent(runId)}/retry-failed`, undefined, options)
+      post<{ run: BulkMacroRun }>(`/bulk-macros/${encodeURIComponent(id)}/runs/${encodeURIComponent(runId)}/retry-failed`, undefined, options),
+    rollbackBulkMacroRun: (id: string, runId: string, options?: AuthRequestOptions) =>
+      post<{ rollback: BulkMacroRollbackResult[] }>(`/bulk-macros/${encodeURIComponent(id)}/runs/${encodeURIComponent(runId)}/rollback`, undefined, options),
+    sensitiveOperationPolicies: (options?: AuthRequestOptions) =>
+      get<{ policies: SensitiveOperationPolicy[] }>("/sensitive-operation-policies", options),
+    updateSensitiveOperationPolicy: (operationKey: string, payload: UpdateSensitiveOperationPolicyPayload, options?: AuthRequestOptions) =>
+      patch<{ policy: SensitiveOperationPolicy }>(`/sensitive-operation-policies/${encodeURIComponent(operationKey)}`, payload, options),
+    approvalRequests: (options?: AuthRequestOptions) => get<{ requests: ApprovalRequest[] }>("/approval-requests", options),
+    approvalRequest: (id: string, options?: AuthRequestOptions) =>
+      get<{ request: ApprovalRequest }>(`/approval-requests/${encodeURIComponent(id)}`, options),
+    createApprovalRequest: (payload: CreateApprovalRequestPayload, options?: AuthRequestOptions) =>
+      post<{ request: ApprovalRequest }>("/approval-requests", payload, options),
+    decideApprovalRequest: (id: string, payload: DecideApprovalRequestPayload, options?: AuthRequestOptions) =>
+      post<{ request: ApprovalRequest }>(`/approval-requests/${encodeURIComponent(id)}/decisions`, payload, options),
+    executeApprovalRequest: (id: string, options?: AuthRequestOptions) =>
+      post<{ request: ApprovalRequest; run: { id: string; macroId: string; targetCount: number; completedCount: number; failedCount: number; results: BulkMacroTargetResult[] } }>(`/approval-requests/${encodeURIComponent(id)}/execute`, undefined, options)
   };
 }

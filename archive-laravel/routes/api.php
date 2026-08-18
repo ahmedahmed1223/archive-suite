@@ -5,10 +5,14 @@ use App\Http\Controllers\Api\V1\AccountExportController;
 use App\Http\Controllers\Api\V1\ActivityController;
 use App\Http\Controllers\Api\V1\AiAssistantController;
 use App\Http\Controllers\Api\V1\ApiKeysController;
+use App\Http\Controllers\Api\V1\ApprovalRequestsController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AutomationRulesController;
+use App\Http\Controllers\Api\V1\AutomationRuleTemplatesController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\BulkMacrosController;
+use App\Http\Controllers\Api\V1\CapabilitiesController;
+use App\Http\Controllers\Api\V1\ClipsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
 use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\ComplianceReportsController;
@@ -21,6 +25,7 @@ use App\Http\Controllers\Api\V1\DepartmentTemplateMetricsController;
 use App\Http\Controllers\Api\V1\DiscoverController;
 use App\Http\Controllers\Api\V1\DropboxController;
 use App\Http\Controllers\Api\V1\DropboxWebhookController;
+use App\Http\Controllers\Api\V1\ExperienceController;
 use App\Http\Controllers\Api\V1\FavoritesController;
 use App\Http\Controllers\Api\V1\FileHealthController;
 use App\Http\Controllers\Api\V1\FilesController;
@@ -30,6 +35,7 @@ use App\Http\Controllers\Api\V1\IngestController;
 use App\Http\Controllers\Api\V1\IntakeTemplatesController;
 use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\LinkAuditController;
+use App\Http\Controllers\Api\V1\MediaDerivativesController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\MetadataTemplatesController;
 use App\Http\Controllers\Api\V1\MontageProjectsController;
@@ -39,6 +45,8 @@ use App\Http\Controllers\Api\V1\OnboardingProgressController;
 use App\Http\Controllers\Api\V1\PluginMarketplaceController;
 use App\Http\Controllers\Api\V1\ProjectsController;
 use App\Http\Controllers\Api\V1\ProjectTasksController;
+use App\Http\Controllers\Api\V1\ProjectTaskTemplatesController;
+use App\Http\Controllers\Api\V1\TaskEscalationPolicyController;
 use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordAiAssistController;
 use App\Http\Controllers\Api\V1\RecordAiSuggestionController;
@@ -63,12 +71,15 @@ use App\Http\Controllers\Api\V1\RecordTriageFlagController;
 use App\Http\Controllers\Api\V1\RelationsController;
 use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
+use App\Http\Controllers\Api\V1\MediaReviewCommentsController;
+use App\Http\Controllers\Api\V1\ReviewSessionsController;
 use App\Http\Controllers\Api\V1\RightsController;
 use App\Http\Controllers\Api\V1\SafetyPreviewController;
 use App\Http\Controllers\Api\V1\SavedSearchesController;
 use App\Http\Controllers\Api\V1\ScheduledUploadsController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SearchSuggestionsController;
+use App\Http\Controllers\Api\V1\SensitiveOperationPoliciesController;
 use App\Http\Controllers\Api\V1\ShareController;
 use App\Http\Controllers\Api\V1\StorageWorkspaceController;
 use App\Http\Controllers\Api\V1\SuggestionsController;
@@ -77,6 +88,7 @@ use App\Http\Controllers\Api\V1\SystemControlController;
 use App\Http\Controllers\Api\V1\SystemController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
 use App\Http\Controllers\Api\V1\TagNodesController;
+use App\Http\Controllers\Api\V1\TranscriptVersionsController;
 use App\Http\Controllers\Api\V1\TrashController;
 use App\Http\Controllers\Api\V1\TypesController;
 use App\Http\Controllers\Api\V1\UnusedFilesController;
@@ -88,6 +100,7 @@ use App\Http\Controllers\Api\V1\VocabularyController;
 use App\Http\Controllers\Api\V1\VocabularyRelinkController;
 use App\Http\Controllers\Api\V1\WatchedIngestRulesController;
 use App\Http\Controllers\Api\V1\WebhooksController;
+use App\Http\Controllers\Api\V1\WorkInboxController;
 use App\Models\ScheduledUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
@@ -212,6 +225,14 @@ Route::prefix('v1')->group(function (): void {
     // and unrelated traffic on one route silently exhausts another's budget.
     Route::get('/share/{token}', [ShareController::class, 'show'])->middleware('throttle:30,1,share-view');
     Route::get('/review-links/{token}', [ReviewLinksController::class, 'show'])->middleware('throttle:30,1,review-link-view');
+    // V3-MEDIA-007: media stream needs a roomier budget than the metadata
+    // read above (video seeking issues many ranged GETs per playback), and
+    // the decision endpoint is throttled on its own prefix since it is a
+    // distinct, lower-frequency, higher-value action (approve/request
+    // changes) that a token-guessing sweep would otherwise share a budget
+    // with the read endpoints for.
+    Route::get('/review-links/{token}/media', [ReviewLinksController::class, 'media'])->middleware('throttle:60,1,review-link-media');
+    Route::post('/review-links/{token}/decisions', [ReviewLinksController::class, 'decide'])->middleware('throttle:20,1,review-link-decide');
     Route::post('/invitations/{token}/accept', [InvitationsController::class, 'accept'])->middleware('throttle:30,1,invitation-accept');
     // Public validation for external upload-link recipients (no archive session).
     Route::get('/upload-links/{token}', [UploadLinksController::class, 'show'])->middleware('throttle:30,1,upload-link-view');
@@ -244,6 +265,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::patch('/account/preferences', [AuthController::class, 'preferences']);
+        Route::get('/account/experience', [ExperienceController::class, 'show']);
+        Route::patch('/account/experience', [ExperienceController::class, 'update']);
+        Route::delete('/account/experience', [ExperienceController::class, 'destroy']);
 
         Route::get('/records', [RecordsController::class, 'index']);
         // V1-714: bulk record export/import via CSV. Kept off RecordsController
@@ -267,10 +291,28 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/{id}/transcript/subtitles', [RecordTranscriptController::class, 'importSrt']);
         Route::put('/records/{id}/transcript/subtitles', [RecordTranscriptController::class, 'updateSubtitles']);
         Route::patch('/records/{id}/transcript', [RecordTranscriptController::class, 'update']);
+        // V3-MEDIA-005: cue-level transcript editor -- versioned, lockable,
+        // exportable. Separate from the legacy raw-text routes above.
+        Route::get('/records/{id}/transcript/versions', [TranscriptVersionsController::class, 'index']);
+        Route::post('/records/{id}/transcript/versions', [TranscriptVersionsController::class, 'store']);
+        Route::post('/records/{id}/transcript/lock', [TranscriptVersionsController::class, 'lock']);
+        Route::post('/records/{id}/transcript/versions/{versionId}/restore', [TranscriptVersionsController::class, 'restore']);
+        Route::get('/records/{id}/transcript/export/{format}', [TranscriptVersionsController::class, 'export']);
         Route::get('/records/{id}/notes', [RecordNotesController::class, 'index']);
         Route::post('/records/{id}/notes', [RecordNotesController::class, 'store']);
         Route::get('/records/{id}/comments', [RecordCommentsController::class, 'index']);
         Route::post('/records/{id}/comments', [RecordCommentsController::class, 'store']);
+        Route::get('/records/{id}/review-sessions', [ReviewSessionsController::class, 'index']);
+        Route::post('/records/{id}/review-sessions', [ReviewSessionsController::class, 'store']);
+        // V3-MEDIA-004: non-destructive clip lists for the version-compare studio.
+        // export is registered before the bare /records/{id}/clips route would
+        // ever matter -- there is no /records/{id}/clips/{clipId} route to
+        // shadow, but keeping it grouped with index/store here for readability.
+        Route::get('/records/{id}/clips', [ClipsController::class, 'index']);
+        Route::post('/records/{id}/clips', [ClipsController::class, 'store']);
+        Route::get('/records/{id}/clips/export', [ClipsController::class, 'export']);
+        Route::get('/records/{id}/media-review-comments', [MediaReviewCommentsController::class, 'index']);
+        Route::post('/records/{id}/media-review-comments', [MediaReviewCommentsController::class, 'store']);
         Route::get('/records/{id}/history', [RecordHistoryController::class, 'index']);
         // V1-001: niche broadcast (MOS/MXF) integration — experimental, flagged.
         Route::middleware('archive.feature:broadcast_metadata')->group(function (): void {
@@ -314,6 +356,14 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/project-tasks', [ProjectTasksController::class, 'index']);
         Route::post('/project-tasks', [ProjectTasksController::class, 'store']);
         Route::patch('/project-tasks/{id}', [ProjectTasksController::class, 'update']);
+        // V3-WORK-002: archive/review/production presets for the create-task form above.
+        Route::get('/project-task-templates', [ProjectTaskTemplatesController::class, 'index']);
+        Route::post('/project-task-templates', [ProjectTaskTemplatesController::class, 'store']);
+        Route::patch('/project-task-templates/{id}', [ProjectTaskTemplatesController::class, 'update']);
+        Route::delete('/project-task-templates/{id}', [ProjectTaskTemplatesController::class, 'destroy']);
+        // V3-WORK-002: admin-configurable thresholds for the escalation sweep.
+        Route::get('/task-escalation-policy', [TaskEscalationPolicyController::class, 'show']);
+        Route::patch('/task-escalation-policy', [TaskEscalationPolicyController::class, 'update']);
         Route::post('/projects', [ProjectsController::class, 'store']);
         Route::patch('/projects/{id}', [ProjectsController::class, 'update']);
         Route::delete('/projects/{id}', [ProjectsController::class, 'destroy']);
@@ -374,8 +424,18 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/files/browser', [FilesController::class, 'browser']);
         Route::get('/media/jobs', [MediaJobsController::class, 'index']);
         Route::post('/media/jobs', [MediaJobsController::class, 'store']);
+        // Must precede the {id} route below, or "queue-status" is swallowed as an id.
+        Route::get('/media/jobs/queue-status', [MediaJobsController::class, 'queueStatus']);
         Route::get('/media/jobs/{id}', [MediaJobsController::class, 'show']);
         Route::post('/media/jobs/{id}/cancel', [MediaJobsController::class, 'cancel']);
+
+        // V3-MEDIA-006: cached, version-pinned thumbnail/waveform/proxy
+        // derivatives. /records/{id}/media-derivatives lists derivatives for
+        // a record; /media-derivatives is the request+read endpoint keyed
+        // by the derivative's own id.
+        Route::get('/records/{id}/media-derivatives', [MediaDerivativesController::class, 'index']);
+        Route::post('/media-derivatives', [MediaDerivativesController::class, 'store']);
+        Route::get('/media-derivatives/{id}', [MediaDerivativesController::class, 'show']);
 
         Route::get('/montage-projects', [MontageProjectsController::class, 'index']);
         Route::post('/montage-projects', [MontageProjectsController::class, 'store']);
@@ -469,6 +529,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/automation/rules', [AutomationRulesController::class, 'store']);
         Route::patch('/automation/rules/{id}', [AutomationRulesController::class, 'update']);
         Route::delete('/automation/rules/{id}', [AutomationRulesController::class, 'destroy']);
+        // V3-WORK-002: archive/review/production presets for the create-rule form above.
+        Route::get('/automation/rule-templates', [AutomationRuleTemplatesController::class, 'index']);
+        Route::post('/automation/rule-templates', [AutomationRuleTemplatesController::class, 'store']);
+        Route::patch('/automation/rule-templates/{id}', [AutomationRuleTemplatesController::class, 'update']);
+        Route::delete('/automation/rule-templates/{id}', [AutomationRuleTemplatesController::class, 'destroy']);
         Route::post('/automation/rules/{id}/run', [AutomationRulesController::class, 'run']);
 
         Route::get('/bulk-macros', [BulkMacrosController::class, 'index']);
@@ -480,6 +545,17 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/bulk-macros/{id}/run', [BulkMacrosController::class, 'run']);
         Route::get('/bulk-macros/{id}/runs', [BulkMacrosController::class, 'runs']);
         Route::post('/bulk-macros/{id}/runs/{runId}/retry-failed', [BulkMacrosController::class, 'retryFailed']);
+        Route::post('/bulk-macros/{id}/runs/{runId}/rollback', [BulkMacrosController::class, 'rollback']);
+
+        // V3-WORK-003: admin-configurable catalog of which bulk-macro step
+        // types require dual approval, plus the approval-request flow itself.
+        Route::get('/sensitive-operation-policies', [SensitiveOperationPoliciesController::class, 'index']);
+        Route::patch('/sensitive-operation-policies/{operationKey}', [SensitiveOperationPoliciesController::class, 'update']);
+        Route::get('/approval-requests', [ApprovalRequestsController::class, 'index']);
+        Route::get('/approval-requests/{id}', [ApprovalRequestsController::class, 'show']);
+        Route::post('/approval-requests', [ApprovalRequestsController::class, 'store']);
+        Route::post('/approval-requests/{id}/decisions', [ApprovalRequestsController::class, 'decide']);
+        Route::post('/approval-requests/{id}/execute', [ApprovalRequestsController::class, 'execute']);
 
         // V1-721: registered before /users so the literal path isn't shadowed.
         Route::get('/users/mentionable', [UsersController::class, 'mentionable']);
@@ -513,7 +589,29 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'index']);
         Route::post('/media/{mediaUid}/review-comments', [ReviewCommentsController::class, 'store']);
         Route::post('/media/{mediaUid}/review-links', [ReviewLinksController::class, 'store']);
+        // Internal-only audit report (version + reviewers + decision) --
+        // kept off the public token surface, see ReviewLinksController::
+        // report() docblock.
+        Route::get('/review-links/{token}/report', [ReviewLinksController::class, 'report']);
         Route::patch('/review-comments/{id}', [ReviewCommentsController::class, 'update']);
+
+        Route::get('/review-sessions/{id}', [ReviewSessionsController::class, 'show']);
+        Route::patch('/review-sessions/{id}', [ReviewSessionsController::class, 'update']);
+        Route::delete('/review-sessions/{id}', [ReviewSessionsController::class, 'destroy']);
+        Route::post('/review-sessions/{id}/start', [ReviewSessionsController::class, 'start']);
+        Route::post('/review-sessions/{id}/request-changes', [ReviewSessionsController::class, 'requestChanges']);
+        Route::post('/review-sessions/{id}/approve', [ReviewSessionsController::class, 'approve']);
+        Route::post('/review-sessions/{id}/resume', [ReviewSessionsController::class, 'resume']);
+        Route::post('/review-sessions/{id}/close', [ReviewSessionsController::class, 'close']);
+
+        Route::get('/clips/{id}', [ClipsController::class, 'show']);
+        Route::patch('/clips/{id}', [ClipsController::class, 'update']);
+        Route::delete('/clips/{id}', [ClipsController::class, 'destroy']);
+        Route::get('/media-review-comments/{id}', [MediaReviewCommentsController::class, 'show']);
+        Route::patch('/media-review-comments/{id}', [MediaReviewCommentsController::class, 'update']);
+        Route::delete('/media-review-comments/{id}', [MediaReviewCommentsController::class, 'destroy']);
+        Route::post('/media-review-comments/{id}/resolve', [MediaReviewCommentsController::class, 'resolve']);
+        Route::post('/media-review-comments/{id}/reopen', [MediaReviewCommentsController::class, 'reopen']);
 
         // V1-001: generic external-database (ODBC) proxy — experimental, flagged.
         Route::middleware('archive.feature:odbc')->group(function (): void {
@@ -525,6 +623,7 @@ Route::prefix('v1')->group(function (): void {
         });
         Route::get('/system/display-settings', [SystemController::class, 'getDisplaySettings']);
         Route::get('/system/security-settings', [SystemController::class, 'getSecuritySettings']);
+        Route::get('/system/capabilities', [CapabilitiesController::class, 'index']);
         Route::get('/system/dropbox', [DropboxController::class, 'show']);
         Route::post('/system/dropbox/authorize', [DropboxController::class, 'authorize']);
         Route::post('/system/dropbox/callback', [DropboxController::class, 'callback']);
@@ -535,6 +634,7 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/system/dropbox', [DropboxController::class, 'disconnect']);
         Route::patch('/system/display-settings', [SystemController::class, 'updateDisplaySettings']);
         Route::patch('/system/security-settings', [SystemController::class, 'updateSecuritySettings']);
+        Route::patch('/system/capabilities', [CapabilitiesController::class, 'update']);
         Route::post('/system/test-storage', [SystemController::class, 'testStorageConnection']);
         Route::post('/system/test-database', [SystemController::class, 'testDatabaseConnection']);
         Route::get('/system/storages', [StorageWorkspaceController::class, 'index']);
@@ -565,5 +665,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/notifications/{id}/unread', [NotificationsController::class, 'markUnread']);
         Route::post('/notifications/mark-all-read', [NotificationsController::class, 'markAllRead']);
         Route::delete('/notifications/{id}', [NotificationsController::class, 'destroy']);
+
+        // V3-WORK-001: unified work inbox — read/aggregation surface over the
+        // routes above (project tasks, review sessions, rights, notifications).
+        Route::get('/work-inbox', [WorkInboxController::class, 'index']);
     });
 });

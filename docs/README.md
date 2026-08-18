@@ -19,12 +19,15 @@ Laravel + Next.js product and its current operating paths.
 ## Use Archive Suite
 
 - [Features and everyday work](features-guide.md)
+- [Media studio](media-studio.md)
 - [Search and semantic search](semantic-search.md)
 - [Rights, sharing, and ODBC](odbc-laravel-bridge.md)
 
 ## Operate Archive Suite
 
+- [Administration guide](admin-guide.md)
 - [Control Center](control-center.md)
+- [Media job queue and derivatives](media-derivatives.md)
 - [Support and incident handling](ops/support.md)
 - [Platform support](platform-parity.md)
 - [Local observability](local-observability.md)

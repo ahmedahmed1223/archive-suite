@@ -46,6 +46,147 @@ class MediaJobsApiTest extends TestCase
         Queue::assertPushed(ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $jobId);
     }
 
+    /**
+     * V3-PERF-002: the whole point of request tracing is that a caller's
+     * X-Request-Id survives past the HTTP boundary into the queued job that
+     * request triggered, not just into the HTTP response header.
+     */
+    public function test_the_callers_request_id_propagates_onto_the_queued_job(): void
+    {
+        Queue::fake();
+
+        $headers = [...$this->authHeaders(), 'X-Request-Id' => 'trace-e2e-4711'];
+
+        $response = $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-trace',
+            'operation' => 'thumbnail',
+            'sourcePath' => 'archive/media-record-trace.mov',
+        ], $headers)->assertAccepted();
+
+        $this->assertSame('trace-e2e-4711', $response->headers->get('X-Request-Id'));
+
+        Queue::assertPushed(
+            ProcessMediaWorkflow::class,
+            fn (ProcessMediaWorkflow $job): bool => $job->requestId === 'trace-e2e-4711'
+        );
+    }
+
+    public function test_a_missing_request_id_is_generated_and_still_propagates_onto_the_job(): void
+    {
+        Queue::fake();
+
+        $response = $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-generated-trace',
+            'operation' => 'thumbnail',
+            'sourcePath' => 'archive/media-record-generated-trace.mov',
+        ], $this->authHeaders())->assertAccepted();
+
+        $generatedId = $response->headers->get('X-Request-Id');
+        $this->assertNotEmpty($generatedId);
+
+        Queue::assertPushed(
+            ProcessMediaWorkflow::class,
+            fn (ProcessMediaWorkflow $job): bool => $job->requestId === $generatedId
+        );
+    }
+
+    /**
+     * V3-PERF-005: backpressure. Once a queue already has
+     * max_queued_jobs_per_queue rows queued+processing, a new dispatch is
+     * rejected (429) instead of growing the backlog further.
+     */
+    public function test_store_rejects_a_new_job_once_the_queue_is_at_capacity(): void
+    {
+        Queue::fake();
+        config(['media.max_queued_jobs_per_queue' => 2]);
+
+        for ($i = 0; $i < 2; $i++) {
+            MediaJob::query()->create([
+                'id' => "media-job-capacity-{$i}",
+                'record_id' => "media-record-capacity-{$i}",
+                'operation' => 'thumbnail',
+                'status' => 'queued',
+                'queue' => 'default',
+                'queued_at' => now(),
+            ]);
+        }
+
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-capacity-overflow',
+            'operation' => 'thumbnail',
+        ], $this->authHeaders())
+            ->assertStatus(429)
+            ->assertJsonPath('ok', false);
+
+        $this->assertDatabaseMissing('media_jobs', ['record_id' => 'media-record-capacity-overflow']);
+        Queue::assertNotPushed(ProcessMediaWorkflow::class);
+    }
+
+    public function test_store_still_accepts_a_job_below_capacity(): void
+    {
+        Queue::fake();
+        config(['media.max_queued_jobs_per_queue' => 2]);
+
+        MediaJob::query()->create([
+            'id' => 'media-job-capacity-below',
+            'record_id' => 'media-record-capacity-below',
+            'operation' => 'thumbnail',
+            'status' => 'queued',
+            'queue' => 'default',
+            'queued_at' => now(),
+        ]);
+
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-capacity-fits',
+            'operation' => 'thumbnail',
+        ], $this->authHeaders())->assertAccepted();
+    }
+
+    /**
+     * The gpu and default queues have independent capacity -- a full default
+     * queue must not block a gpu-routed dispatch.
+     */
+    public function test_capacity_is_tracked_independently_per_queue(): void
+    {
+        Queue::fake();
+        config(['media.max_queued_jobs_per_queue' => 1]);
+
+        MediaJob::query()->create([
+            'id' => 'media-job-default-full',
+            'record_id' => 'media-record-default-full',
+            'operation' => 'thumbnail',
+            'status' => 'queued',
+            'queue' => 'default',
+            'queued_at' => now(),
+        ]);
+
+        app(SecuritySettingsService::class)->updateWhisperDevice('cuda');
+
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-gpu-still-fits',
+            'operation' => 'transcription',
+        ], $this->authHeaders())->assertAccepted();
+    }
+
+    public function test_it_reads_queue_status(): void
+    {
+        MediaJob::query()->create([
+            'id' => 'media-job-queue-status-1',
+            'record_id' => 'media-record-queue-status-1',
+            'operation' => 'thumbnail',
+            'status' => 'queued',
+            'queue' => 'default',
+            'queued_at' => now(),
+        ]);
+
+        $this->getJson('/api/v1/media/jobs/queue-status', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('status.default', 1)
+            ->assertJsonPath('status.gpu', 0)
+            ->assertJsonPath('status.resourceFailure', null);
+    }
+
     public function test_cpu_transcriptions_stay_on_the_default_queue(): void
     {
         Queue::fake();

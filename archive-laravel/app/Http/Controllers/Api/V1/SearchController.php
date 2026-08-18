@@ -10,6 +10,7 @@ use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use stdClass;
@@ -17,6 +18,11 @@ use stdClass;
 class SearchController extends Controller
 {
     private const MAX_ADVANCED_QUERY_TOKENS = 128;
+
+    // V3-PERF-005: short TTL — long enough to dedupe the burst of requests a
+    // faceted search UI produces (filter toggles, pagination) without
+    // serving noticeably stale results.
+    private const POOL_CACHE_TTL_SECONDS = 15;
 
     public function __construct(
         private readonly EmbeddingService $embeddings,
@@ -71,41 +77,54 @@ class SearchController extends Controller
         $useFullTextSearch = $mode !== 'transcript' && $queryText !== '' && ! $isAdvancedQuery
             && DB::getDriverName() === 'pgsql';
 
-        if ($useFullTextSearch) {
-            $poolSize = max($limit * 5, 100);
-            $records = $this->storageRows
-                ->fullTextSearch($validated['store'] ?? null, $queryText, $poolSize)
-                ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
-        } else {
-            $query = $this->storageRows->query()
-                ->orderBy('uid');
+        // V3-PERF-005: cache the built-and-filtered pool (everything except
+        // the cursor page slice below) under a key derived from every
+        // discriminating param. Two requests that only differ by `cursor`
+        // (paging through the same query) hit the same entry instead of
+        // rebuilding/refiltering the pool per page; a genuinely different
+        // query never collides because every filter that affects the pool is
+        // part of the key.
+        $records = Cache::remember(
+            $this->searchPoolCacheKey($validated, $mode, $isAdvancedQuery, $useFullTextSearch),
+            self::POOL_CACHE_TTL_SECONDS,
+            function () use ($useFullTextSearch, $validated, $queryText, $limit, $mode, $isAdvancedQuery, $advancedQuery): Collection {
+                if ($useFullTextSearch) {
+                    $poolSize = max($limit * 5, 100);
+                    $records = $this->storageRows
+                        ->fullTextSearch($validated['store'] ?? null, $queryText, $poolSize)
+                        ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
+                } else {
+                    $query = $this->storageRows->query()
+                        ->orderBy('uid');
 
-            if (isset($validated['store'])) {
-                $query->where('store', $validated['store']);
-            }
+                    if (isset($validated['store'])) {
+                        $query->where('store', $validated['store']);
+                    }
 
-            $records = $query
-                ->get()
-                ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
-        }
+                    $records = $query
+                        ->get()
+                        ->map(fn (stdClass $row): array => StorageRowPayload::format($row));
+                }
 
-        if ($mode === 'transcript') {
-            $records = $records
-                ->map(function (array $record) use ($queryText): ?array {
-                    $match = $this->transcripts->find((string) ($record['transcript'] ?? ''), $queryText);
+                if ($mode === 'transcript') {
+                    $records = $records
+                        ->map(function (array $record) use ($queryText): ?array {
+                            $match = $this->transcripts->find((string) ($record['transcript'] ?? ''), $queryText);
 
-                    return $match === [] ? null : [...$record, 'match' => ['kind' => 'transcript', ...$match]];
-                })
-                ->filter(fn (?array $record): bool => $record !== null);
-        } else {
-            $records = $records
-                ->filter(fn (array $record): bool => $useFullTextSearch || $queryText === '' || $isAdvancedQuery || $this->matchesKeyword($record, $queryText))
-                ->filter(fn (array $record): bool => $advancedQuery === null || $this->matchesAdvancedQuery($record, $advancedQuery));
-        }
+                            return $match === [] ? null : [...$record, 'match' => ['kind' => 'transcript', ...$match]];
+                        })
+                        ->filter(fn (?array $record): bool => $record !== null);
+                } else {
+                    $records = $records
+                        ->filter(fn (array $record): bool => $useFullTextSearch || $queryText === '' || $isAdvancedQuery || $this->matchesKeyword($record, $queryText))
+                        ->filter(fn (array $record): bool => $advancedQuery === null || $this->matchesAdvancedQuery($record, $advancedQuery));
+                }
 
-        $records = $records
-            ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
-            ->values();
+                return $records
+                    ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
+                    ->values();
+            },
+        );
 
         $facets = $this->buildFacets($records, $validated, $mode === 'transcript' ? 'transcript' : ($isAdvancedQuery ? 'advanced' : ($wantsSemantic ? 'keyword-fallback' : 'keyword')));
 
@@ -141,20 +160,37 @@ class SearchController extends Controller
     private function semanticSearch(string $queryText, ?string $store, int $limit, array $validated): ?array
     {
         $poolSize = max($limit * 5, 100);
-        $orderedKeys = $this->embeddings->search($queryText, $store, $poolSize);
 
-        if ($orderedKeys === null) {
+        // V3-PERF-005: caches the embeddings call itself (the expensive
+        // part) plus row hydration/filtering, keyed on everything but the
+        // cursor. A callback returning null is never actually "cached" --
+        // Cache::get() can't tell a stored null from a miss, so
+        // Cache::remember() harmlessly recomputes it every time, which is
+        // exactly what we want for a transient embeddings-unavailable state.
+        $records = Cache::remember(
+            $this->semanticPoolCacheKey($validated, $queryText, $store, $poolSize),
+            self::POOL_CACHE_TTL_SECONDS,
+            function () use ($queryText, $store, $poolSize, $validated): ?Collection {
+                $orderedKeys = $this->embeddings->search($queryText, $store, $poolSize);
+
+                if ($orderedKeys === null) {
+                    return null;
+                }
+
+                $rowsByKey = $this->storageRows->findManyByKeys($orderedKeys);
+
+                return collect($orderedKeys)
+                    ->map(fn (array $key): mixed => $rowsByKey->get($this->storageRows->key($key['store'], $key['uid'])))
+                    ->filter(fn (mixed $row): bool => $row instanceof stdClass)
+                    ->map(fn (stdClass $row): array => StorageRowPayload::format($row))
+                    ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
+                    ->values();
+            },
+        );
+
+        if ($records === null) {
             return null;
         }
-
-        $rowsByKey = $this->storageRows->findManyByKeys($orderedKeys);
-
-        $records = collect($orderedKeys)
-            ->map(fn (array $key): mixed => $rowsByKey->get($this->storageRows->key($key['store'], $key['uid'])))
-            ->filter(fn (mixed $row): bool => $row instanceof stdClass)
-            ->map(fn (stdClass $row): array => StorageRowPayload::format($row))
-            ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
-            ->values();
 
         $facets = $this->buildFacets($records, $validated, 'semantic');
 
@@ -173,6 +209,39 @@ class SearchController extends Controller
             'facets' => $facets,
             'nextCursor' => $hasMore ? StorageRowPayload::encodeCursor((string) ($offset + $limit)) : null,
         ];
+    }
+
+    /**
+     * Stable, collision-free cache key for the pool-building step: every
+     * validated param except `cursor` (paging must hit the same entry) is
+     * ksorted then hashed, so key order never matters and two different
+     * queries can never produce the same key by coincidence of param order.
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function searchPoolCacheKey(array $validated, string $mode, bool $isAdvancedQuery, bool $useFullTextSearch): string
+    {
+        $keyParams = $validated;
+        unset($keyParams['cursor'], $keyParams['limit'], $keyParams['semantic']);
+        $keyParams['mode'] = $mode;
+        $keyParams['isAdvancedQuery'] = $isAdvancedQuery;
+        $keyParams['useFullTextSearch'] = $useFullTextSearch;
+        ksort($keyParams);
+
+        return 'search-pool:'.hash('sha256', (string) json_encode($keyParams, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    /** @param array<string, mixed> $validated */
+    private function semanticPoolCacheKey(array $validated, string $queryText, ?string $store, int $poolSize): string
+    {
+        $keyParams = $validated;
+        unset($keyParams['cursor'], $keyParams['limit'], $keyParams['semantic']);
+        $keyParams['q'] = $queryText;
+        $keyParams['store'] = $store;
+        $keyParams['poolSize'] = $poolSize;
+        ksort($keyParams);
+
+        return 'search-pool-semantic:'.hash('sha256', (string) json_encode($keyParams, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 
     /** @param array<string, mixed> $record */

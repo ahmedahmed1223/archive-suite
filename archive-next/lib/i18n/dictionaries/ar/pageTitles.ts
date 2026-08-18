@@ -18,6 +18,7 @@ export const pageTitles = {
   projects: "المشاريع",
   automation: "الأتمتة",
   safetyPreview: "معاينة السلامة",
+  approvalRequests: "طلبات الاعتماد",
   publicCatalogue: "الكتالوج العام",
   archiveAssistant: "مساعد الأرشيف",
   archiveAssistantTours: "مسارات مساعد الأرشيف",
@@ -29,6 +30,7 @@ export const pageTitles = {
   rights: "الحقوق",
   usersAndRoles: "المستخدمون والأدوار",
   inbox: "صندوق الوارد",
+  workInbox: "صندوق العمل",
   tags: "الوسوم",
   shareLinks: "روابط المشاركة",
   shares: "المشاركات",
@@ -67,5 +69,6 @@ export const pageTitles = {
   visualReview: "المراجعة المرئية",
   transcription: "التفريغ الصوتي",
   mediaPlayer: "مشغل الوسائط",
+  mediaStudio: "استوديو الوسائط",
   timeline: "الخط الزمني",
 } as const;

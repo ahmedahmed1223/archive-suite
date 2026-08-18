@@ -2,15 +2,18 @@
 
 import { Archive, Clock3, FileType2, Layers, Search, Tags, UploadCloud } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
+import HomeActivitySummary from "@/components/HomeActivitySummary";
 import MetricStrip, { type MetricStripItem } from "@/components/MetricStrip";
 import { useAuthSession } from "@/lib/auth-session";
+import { useExperienceProfile } from "@/lib/experience-profile-context";
 import { createArchiveApiClient, type ArchiveRecord, type SearchFacets } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
-import { getLocalizedNavigation } from "@/lib/navigation";
+import { getLocalizedNavigation, primaryNav } from "@/lib/navigation";
 
 type LoadState =
   | { status: "loading" }
@@ -37,7 +40,21 @@ export default function HomeDashboard() {
   const copy = t.pages.home;
   const api = useMemo(() => createArchiveApiClient(), []);
   const auth = useAuthSession();
+  const router = useRouter();
+  const profile = useExperienceProfile();
   const [state, setState] = useState<LoadState>({ status: "loading" });
+
+  // V3-SET-006: "home page selection" -- once the user's own experience
+  // profile is confirmed loaded, send them to their configured landing page
+  // instead of the default dashboard. Guarded to a known nav href so a
+  // stale/removed route saved earlier never strands the user on a 404.
+  useEffect(() => {
+    if (profile.status !== "ready") return;
+    const target = profile.experience.homePage.value;
+    if (typeof target !== "string" || target === "/") return;
+    if (!primaryNav.some((item) => item.href === target)) return;
+    router.replace(target);
+  }, [profile.status, profile.experience.homePage.value, router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -160,6 +177,8 @@ export default function HomeDashboard() {
                 </ul>
               )}
             </section>
+
+            <HomeActivitySummary api={api} accessToken={auth.accessToken} totalRecords={state.facets?.total} typeFacets={state.facets?.types} />
           </div>
         </>
       ) : null}

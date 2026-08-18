@@ -22,6 +22,34 @@ class ProjectTasksApiTest extends TestCase
         $this->getJson('/api/v1/project-tasks?projectId='.$project['id'], $this->authHeaders())->assertOk()->assertJsonCount(1, 'tasks');
     }
 
+    public function test_target_duration_computes_a_deadline_and_resets_on_update(): void
+    {
+        $project = $this->postJson('/api/v1/projects', ['name' => 'مشروع الموعد المستهدف'], $this->authHeaders())->json('project');
+
+        $task = $this->postJson('/api/v1/project-tasks', [
+            'projectId' => $project['id'],
+            'title' => 'مهمة بموعد مستهدف',
+            'targetDurationMinutes' => 120,
+        ], $this->authHeaders())->assertCreated()->json('task');
+
+        $this->assertSame(120, $task['targetDurationMinutes']);
+        $this->assertNotNull($task['targetDeadlineAt']);
+
+        $updated = $this->patchJson('/api/v1/project-tasks/'.$task['id'], [
+            'targetDurationMinutes' => 30,
+        ], $this->authHeaders())->assertOk()->json('task');
+
+        $this->assertSame(30, $updated['targetDurationMinutes']);
+        $this->assertNotSame($task['targetDeadlineAt'], $updated['targetDeadlineAt']);
+
+        $cleared = $this->patchJson('/api/v1/project-tasks/'.$task['id'], [
+            'targetDurationMinutes' => null,
+        ], $this->authHeaders())->assertOk()->json('task');
+
+        $this->assertNull($cleared['targetDurationMinutes']);
+        $this->assertNull($cleared['targetDeadlineAt']);
+    }
+
     public function test_a_viewer_cannot_create_or_update_project_tasks(): void
     {
         $project = $this->postJson('/api/v1/projects', ['name' => 'مشروع محمي'], $this->authHeaders())->json('project');

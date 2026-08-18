@@ -1,4 +1,9 @@
 export const settings = {
+  legacyTools: {
+    ariaLabel: "أدوات تشغيلية متقدمة",
+    heading: "أدوات تشغيلية متقدمة",
+    description: "تشخيص الأمان وODBC ومعالجة Whisper واختبارات الاتصال، لا تزال خارج نطاق مركز الإعدادات الموحّد أعلاه."
+  },
   toolbar: {
     eyebrow: "مركز الإعدادات",
     title: "إعدادات {brand}",
@@ -254,5 +259,166 @@ export const settings = {
     statusTitle: "حالة النظام",
     statusDescription: "مراقبة اتصال الخادم والأداء.",
     statusLink: "عرض الحالة"
+  },
+  hub: {
+    ariaLabel: "مركز الإعدادات الموحّد",
+    heading: "مركز الإعدادات الموحّد",
+    description: "أربعة أقسام تعكس ما هو مفعّل فعلاً على هذا النشر، وتشرح سبب أي قيمة مقفلة بدل إخفائها.",
+    loading: "جارٍ تحميل ملفك الشخصي...",
+    fallbackTitle: "تعذر تحميل الإعدادات من الخادم",
+    fallbackDescription: "تُعرض القيم الافتراضية الآمنة مؤقتاً. أعد المحاولة للاتصال بالخادم.",
+    retry: "إعادة المحاولة",
+    writeConflictTitle: "تغيّرت هذه القيمة في مكان آخر",
+    dismiss: "إغلاق",
+    administration: {
+      heading: "الإدارة",
+      description: "ضوابط على مستوى النظام، متاحة للمدير فقط. القيمة الفعلية هنا تعكس ترتيب النشر ثم سياسة المدير ثم الافتراضي.",
+      notEditableNote: "هذه القيمة ثابتة على هذا النشر ولا يمكن تعديلها من هنا.",
+      statusLabels: {
+        enabled: "مفعّلة",
+        disabled: "معطّلة",
+        needs_configuration: "يتطلب إعداداً إضافياً",
+        unavailable: "غير متاحة في هذا النشر"
+      },
+      sourceLabels: {
+        release: "افتراضي الإصدار",
+        deployment: "إعداد النشر",
+        system: "سياسة المدير",
+        default: "القيمة الافتراضية",
+        user: "تفضيل شخصي"
+      },
+      capabilities: {
+        systemControl: { label: "التحكم بالنظام", description: "الوصول إلى أدوات تشغيل الخادم وإدارته من الواجهة." },
+        backups: { label: "النسخ الاحتياطي", description: "تفعيل مهام النسخ الاحتياطي المجدولة والفورية." },
+        trash: { label: "سلة المهملات", description: "الاحتفاظ بالعناصر المحذوفة مؤقتاً قبل الحذف النهائي." },
+        odbc: { label: "جسر ODBC", description: "ربط الأنظمة القديمة عبر ODBC للقراءة والكتابة المقيدة." },
+        broadcastMetadata: { label: "بيانات البث الوصفية", description: "استخراج وعرض البيانات الوصفية الخاصة بالبث." },
+        semanticSearch: { label: "البحث الدلالي", description: "بحث قائم على المعنى بدلاً من مطابقة النص الحرفي فقط." },
+        mediaProcessing: { label: "معالجة الوسائط الفعلية", description: "معالجة حقيقية للفيديو والصوت بدل المحاكاة." },
+        ocr: { label: "التعرف الضوئي على النصوص", description: "استخراج نص من الصور والمستندات الممسوحة ضوئياً." },
+        mcp: { label: "بروتوكول MCP", description: "اتصال أدوات خارجية بالأرشيف عبر بروتوكول سياق النموذج." }
+      }
+    },
+    myExperience: {
+      heading: "تجربتي",
+      description: "تفضيلات شخصية قابلة للتعديل دائماً؛ تُحفظ لحسابك فقط ولا تؤثر في المستخدمين الآخرين. هذه القيم تجاوز إعداد التاريخ والوقت المركزي أدناه بالنسبة إليك وحدك.",
+      save: "حفظ",
+      saving: "جارٍ الحفظ...",
+      saveSuccess: "تم الحفظ.",
+      saveError: "تعذر الحفظ.",
+      reset: "استعادة الإعداد الافتراضي",
+      resetSuccess: "تمت الاستعادة إلى الإعداد الافتراضي.",
+      resetError: "تعذر الاستعادة إلى الإعداد الافتراضي.",
+      fields: {
+        locale: { label: "لغة الواجهة (تجربتي)", options: { ar: "العربية", en: "الإنجليزية" } },
+        timeZone: { label: "المنطقة الزمنية الشخصية", hint: "اسم منطقة زمنية بصيغة IANA، مثل Europe/Istanbul." },
+        dateFormat: {
+          label: "تنسيق التاريخ الشخصي",
+          options: { dayFirst: "يوم/شهر/سنة", monthFirst: "شهر/يوم/سنة", yearFirst: "سنة-شهر-يوم" }
+        },
+        timeFormat: { label: "تنسيق الوقت الشخصي", options: { h24: "24 ساعة", h12: "12 ساعة" } },
+        theme: {
+          label: "النسق المرئي",
+          options: {
+            cinematicDark: "سينمائي داكن",
+            luxuryDark: "فاخر داكن",
+            oceanDark: "محيطي داكن",
+            neutralLight: "فاتح محايد",
+            highContrast: "تباين عالٍ"
+          }
+        },
+        density: { label: "كثافة العرض", options: { comfortable: "مريحة", compact: "مدمجة" } },
+        textScale: { label: "حجم النص", options: { small: "صغير", medium: "متوسط", large: "كبير" } },
+        reducedMotion: { label: "تقليل الحركة والانتقالات" },
+        homePage: { label: "الصفحة الرئيسية عند الدخول", hint: "مسار داخلي يبدأ بـ /، مثل /discover." },
+        navigation: {
+          label: "ترتيب عناصر التنقل",
+          hiddenModulesTemplate: "الوحدات المخفية: {count}",
+          customOrderYes: "ترتيب مخصص مطبّق",
+          customOrderNo: "الترتيب الافتراضي"
+        }
+      }
+    },
+    media: {
+      heading: "الوسائط",
+      description: "تنسيق استوديو المراجعة، اختصارات التشغيل، وطريقة عرض قوائم الأرشيف. حالة معالجة الوسائط أدناه للاطلاع فقط.",
+      capabilitiesHeading: "حالة معالجة الوسائط على هذا النشر",
+      studioLayout: {
+        heading: "تنسيق استوديو المراجعة",
+        comments: { label: "موضع التعليقات", options: { left: "يسار", right: "يمين", hidden: "مخفي" } },
+        transcript: { label: "موضع النص المفرّغ", options: { left: "يسار", right: "يمين", hidden: "مخفي" } },
+        timelineHeight: { label: "ارتفاع الخط الزمني (بكسل)", hint: "من 160 إلى 720." },
+        panels: {
+          label: "اللوحات الظاهرة",
+          options: { comments: "التعليقات", transcript: "النص المفرّغ", timeline: "الخط الزمني", metadata: "البيانات الوصفية" }
+        }
+      },
+      shortcuts: {
+        heading: "اختصارات التشغيل",
+        playPause: "تشغيل/إيقاف مؤقت",
+        seekForward: "تقديم",
+        seekBackward: "ترجيع",
+        nextComment: "التعليق التالي",
+        previousComment: "التعليق السابق"
+      },
+      views: {
+        heading: "طريقة عرض الأرشيف",
+        mode: { label: "نمط العرض", options: { table: "جدول", grid: "شبكة" } },
+        pageSize: { label: "عدد العناصر في الصفحة", hint: "من 1 إلى 200." },
+        columnsSummaryTemplate: "أعمدة مخصصة: {count}",
+        savedSearchSummary: "بحث محفوظ افتراضي: {value}",
+        savedSearchNone: "بلا"
+      }
+    },
+    notifications: {
+      heading: "الإشعارات",
+      description: "اختر الملخص اليومي والأحداث التي تريد إشعاراً بها.",
+      dailyDigestLabel: "الملخص اليومي بالبريد الإلكتروني",
+      optionalHeading: "إشعارات إضافية",
+      events: {
+        reviewAssigned: "تم تكليفك بمراجعة",
+        commentMentioned: "إشارة إليك في تعليق",
+        taskAssigned: "تم تكليفك بمهمة",
+        rightsExpiring: "اقتراب انتهاء حقوق",
+        mediaJobCompleted: "اكتملت مهمة وسائط",
+        taskDueSoon: "اقتراب موعد مهمة من موعدها المستهدف"
+      }
+    },
+    presets: {
+      heading: "ملفات تعريف جاهزة",
+      description: "تطبيق ملف تعريف ينسخ قيمه إلى تجربتك الشخصية فوراً — تعديل الملف لاحقاً لا يغيّر ما طبّقته من قبل، ولا يُخفي تنبيهاً أمنياً إلزامياً أو وحدة معطّلة على هذا النشر.",
+      apply: "تطبيق",
+      applying: "جارٍ التطبيق...",
+      applySuccess: "تم تطبيق الملف. يمكنك تعديل أي قيمة يدوياً بعد ذلك.",
+      applyError: "تعذر تطبيق الملف.",
+      items: {
+        archivist: { name: "أمين أرشيف", description: "الأرشيف كصفحة رئيسية، عرض جدولي بأعمدة تفصيلية، وأولوية للإدخال والتنظيم في التنقل." },
+        reviewer: { name: "مراجع", description: "القائمة اليومية كصفحة رئيسية، وأولوية للمشاركة والمراجعة، مع إخفاء أدوات الاستيراد الثقيلة." },
+        "media-editor": { name: "محرر وسائط", description: "مهام الوسائط كصفحة رئيسية، عرض شبكي بصري، وإخفاء أدوات إدارة النظام من التنقل." },
+        simple: { name: "عرض مبسط", description: "أقل عدد من عناصر التنقل وأعمدة أرشيف، للاستخدام السريع بلا تعقيد." }
+      }
+    },
+    navigationCustomization: {
+      heading: "تخصيص التنقل",
+      description: "غيّر ترتيب مجموعات التنقل وأخفِ ما لا تحتاجه. الإعدادات والأمان لا يمكن إخفاؤها، والوحدات المعطّلة على هذا النشر لا تظهر مهما اخترت.",
+      orderHeading: "ترتيب المجموعات",
+      moveUp: "نقل لأعلى",
+      moveDown: "نقل لأسفل",
+      visibilityHeading: "إظهار عناصر التنقل",
+      lockedMandatory: "عنصر إلزامي، لا يمكن إخفاؤه",
+      lockedByCapability: "معطّل على هذا النشر",
+      saveError: "تعذر حفظ إعداد التنقل."
+    },
+    viewCustomization: {
+      heading: "أعمدة الأرشيف والبحث الافتراضي",
+      description: "اختر الأعمدة الظاهرة في عرض جدول الأرشيف، وابحثاً محفوظاً يُستخدم افتراضياً.",
+      columnsHeading: "الأعمدة",
+      columns: { title: "العنوان", store: "المخزن", type: "النوع", updated: "آخر تحديث" },
+      titleColumnLockedNote: "عمود العنوان يبقى ظاهراً دائماً.",
+      filtersHeading: "البحث المحفوظ الافتراضي",
+      filtersNone: "بلا",
+      filtersHint: "يُطبَّق عند فتح الأرشيف من جديد.",
+      saveError: "تعذر حفظ إعداد العرض."
+    }
   }
 } as const;
