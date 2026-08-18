@@ -18,12 +18,26 @@ export const projectTasks = {
   assigneeLabel: "المكلّف",
   recordIdLabel: "معرّف المادة (اختياري)",
   dueDateLabel: "تاريخ الاستحقاق",
+  templateLabel: "البدء من نموذج جاهز",
+  templateNone: "مهمة فارغة",
+  targetDurationLabel: "المدة المستهدفة (بالدقائق)",
   addTask: "إضافة مهمة",
   unassigned: "غير مسند",
   dueDatePrefix: "الاستحقاق: {date}",
+  targetDeadlinePrefix: "الموعد المستهدف: {date}",
   linkedRecord: "المادة المرتبطة",
   statusAriaLabel: "حالة {title}",
   lastUpdatedPrefix: "آخر تحديث: {date}",
   emptyTitle: "لا توجد مهام بعد",
-  emptyDescription: "أضف أول مهمة إلى مشروع عمل."
+  emptyDescription: "أضف أول مهمة إلى مشروع عمل.",
+  escalationPanel: {
+    title: "سياسة التصعيد (المدير)",
+    description: "تتحكم في توقيت تنبيه المكلّف بالمهام المتأخرة. تنبيه التجاوز يُرسل دائمًا؛ أما تنبيه اقتراب الموعد فيصل فقط للمكلّفين الذين فعّلوه من الإعدادات.",
+    enabledLabel: "تفعيل جولة التصعيد",
+    warningLabel: "تنبيه اقتراب الموعد، بالدقائق قبل الموعد المستهدف (اتركه فارغًا للتعطيل)",
+    repeatLabel: "تكرار تنبيه التجاوز كل N دقيقة (اتركه فارغًا لإرساله مرة واحدة)",
+    save: "حفظ السياسة",
+    saveError: "تعذر حفظ السياسة.",
+    saveSuccess: "تم حفظ السياسة."
+  }
 } as const;

@@ -26,6 +26,12 @@ Schedule::command('trash:prune')->daily();
 Schedule::command('metrics:capture')->hourly();
 Schedule::command('metrics:prune')->daily();
 
+// V3-WORK-002: due-soon/overdue escalation sweep for project_tasks with a
+// target_deadline_at. 15 minutes is finer than the hourly metrics sampler
+// because an SLA warning that fires an hour late defeats the point of a
+// deadline warning.
+Schedule::command('tasks:check-escalations')->everyFifteenMinutes()->withoutOverlapping();
+
 // V1-712 Task 4: durable scheduled uploads -- dispatch claims due rows every
 // minute, recover releases claims whose lease expired without the worker
 // finishing, cleanup prunes terminal rows past their retention window.

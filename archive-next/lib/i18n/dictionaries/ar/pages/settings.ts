@@ -380,7 +380,8 @@ export const settings = {
         commentMentioned: "إشارة إليك في تعليق",
         taskAssigned: "تم تكليفك بمهمة",
         rightsExpiring: "اقتراب انتهاء حقوق",
-        mediaJobCompleted: "اكتملت مهمة وسائط"
+        mediaJobCompleted: "اكتملت مهمة وسائط",
+        taskDueSoon: "اقتراب موعد مهمة من موعدها المستهدف"
       }
     },
     presets: {

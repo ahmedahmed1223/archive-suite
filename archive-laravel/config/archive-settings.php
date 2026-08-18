@@ -161,7 +161,7 @@ $settings = [
             'nestedValidation' => [
                 'notifications.dailyDigest' => ['sometimes', 'boolean'],
                 'notifications.optional' => ['sometimes', 'array'],
-                'notifications.optional.*' => ['string', 'in:reviewAssigned,commentMentioned,taskAssigned,rightsExpiring,mediaJobCompleted', 'distinct'],
+                'notifications.optional.*' => ['string', 'in:reviewAssigned,commentMentioned,taskAssigned,rightsExpiring,mediaJobCompleted,taskDueSoon', 'distinct'],
             ],
         ],
         'studioLayout' => [
