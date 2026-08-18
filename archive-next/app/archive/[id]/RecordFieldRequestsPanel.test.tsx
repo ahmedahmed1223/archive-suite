@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
-import { RecordFieldRequestsPanel } from "./page";
+import { RecordFieldRequestsPanel } from "./RecordFieldRequestsPanel";
 
 afterEach(cleanup);
 
