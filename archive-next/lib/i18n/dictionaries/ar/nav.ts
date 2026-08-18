@@ -34,6 +34,7 @@ export const nav = {
     "/copilot": "مساعد الأرشيف",
     "/rights": "الحقوق",
     "/safety-preview": "معاينة السلامة",
+    "/approval-requests": "طلبات الاعتماد",
     "/activity": "النشاط",
     "/analytics": "التحليلات",
     "/reports": "التقارير",

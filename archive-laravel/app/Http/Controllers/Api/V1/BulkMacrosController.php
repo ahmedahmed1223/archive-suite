@@ -148,6 +148,25 @@ class BulkMacrosController extends Controller
         return response()->json(['ok' => true, 'run' => $this->runResource($retryRun)], 201);
     }
 
+    // V3-WORK-003: best-effort rollback of a persisted run. Not all steps are
+    // reversible -- see BulkMacroService::rollback() for exactly which are.
+    public function rollback(Request $request, string $id, string $runId): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+        $macro = $this->owned($request, $id);
+        if (! $macro) {
+            return $this->notFound();
+        }
+        $run = $macro->runs()->where('id', $runId)->first();
+        if (! $run) {
+            return $this->notFound();
+        }
+
+        return response()->json(['ok' => true, 'rollback' => $this->service->rollback($run)]);
+    }
+
     /** @return array<string, mixed> */
     private function validateMacro(Request $request, bool $creating): array
     {

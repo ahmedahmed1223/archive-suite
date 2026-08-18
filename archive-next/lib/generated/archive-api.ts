@@ -105,6 +105,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/approval-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List dual-approval requests */
+        get: operations["listApprovalRequests"];
+        put?: never;
+        /** Submit a sensitive bulk-macro operation for dual approval */
+        post: operations["createApprovalRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one approval request */
+        get: operations["getApprovalRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-requests/{id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record an approve/reject decision. The original submitter is structurally refused (self_approval), never merely uncounted. */
+        post: operations["decideApprovalRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/approval-requests/{id}/execute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Execute an approved request's underlying bulk-macro run */
+        post: operations["executeApprovalRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/attachments/{attachmentId}/health": {
         parameters: {
             query?: never;
@@ -395,6 +464,23 @@ export interface paths {
         put?: never;
         /** Retry only the failed/partial targets of a prior run, re-checking permissions and current state */
         post: operations["retryBulkMacroFailedTargets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bulk-macros/{id}/runs/{runId}/rollback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Best-effort rollback of a persisted run's reversible steps */
+        post: operations["rollbackBulkMacroRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2903,6 +2989,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sensitive-operation-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the sensitive-operation policy catalog */
+        get: operations["listSensitiveOperationPolicies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sensitive-operation-policies/{operationKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Admin-only: toggle whether a bulk-macro step type requires dual approval */
+        patch: operations["updateSensitiveOperationPolicy"];
+        trace?: never;
+    };
     "/share": {
         parameters: {
             query?: never;
@@ -4066,6 +4186,49 @@ export interface components {
         ApiKeysResponse: components["schemas"]["OkEnvelope"] & {
             apiKeys: components["schemas"]["ApiKey"][];
         };
+        ApprovalDecisionRecord: {
+            approverId: number;
+            /** Format: date-time */
+            decidedAt: string | null;
+            /** @enum {string} */
+            decision: "approve" | "reject";
+            /** Format: uuid */
+            id: string;
+            notes?: string | null;
+        };
+        ApprovalRequest: {
+            /** Format: date-time */
+            createdAt: string | null;
+            decisions: components["schemas"]["ApprovalDecisionRecord"][];
+            /** Format: date-time */
+            executedAt?: string | null;
+            /** Format: uuid */
+            executedRunId?: string | null;
+            /** Format: uuid */
+            id: string;
+            operationKey: string;
+            payload: Record<string, never>;
+            requestedBy: number;
+            requiredApprovals: number;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected" | "executed";
+            targetId: string;
+            /** @enum {string} */
+            targetType: "bulk-macro";
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        ApprovalRequestError: components["schemas"]["ErrorEnvelope"] & {
+            code: components["schemas"]["ApprovalRequestErrorCode"];
+        };
+        /** @enum {string} */
+        ApprovalRequestErrorCode: "operation_not_sensitive" | "not_pending" | "already_decided" | "self_approval" | "not_approved" | "unsupported_target" | "macro_not_found" | "stale_approval";
+        ApprovalRequestResponse: components["schemas"]["OkEnvelope"] & {
+            request: components["schemas"]["ApprovalRequest"];
+        };
+        ApprovalRequestsResponse: components["schemas"]["OkEnvelope"] & {
+            requests: components["schemas"]["ApprovalRequest"][];
+        };
         ArchiveRecord: {
             attachmentCount?: number;
             /** Format: date-time */
@@ -4314,6 +4477,23 @@ export interface components {
         BulkMacroResponse: components["schemas"]["OkEnvelope"] & {
             macro: components["schemas"]["BulkMacro"];
         };
+        BulkMacroRollbackResponse: components["schemas"]["OkEnvelope"] & {
+            rollback: components["schemas"]["BulkMacroRollbackResult"][];
+        };
+        BulkMacroRollbackResult: {
+            id: string | null;
+            /** @enum {string} */
+            status: "rolled_back" | "not_rollback_capable" | "nothing_to_rollback";
+            steps: components["schemas"]["BulkMacroRollbackStep"][];
+            store: string | null;
+        };
+        BulkMacroRollbackStep: {
+            reason?: string;
+            restoredTo?: unknown;
+            /** @enum {string} */
+            status: "rolled_back" | "failed" | "not_rollback_capable";
+            type: string | null;
+        };
         BulkMacroRun: {
             completedCount: number;
             /** Format: date-time */
@@ -4552,6 +4732,12 @@ export interface components {
             };
             total: number;
         };
+        CreateApprovalRequestRequest: {
+            targetId: string;
+            targets: components["schemas"]["BulkMacroTarget"][];
+            /** @enum {string} */
+            targetType: "bulk-macro";
+        };
         CreateAutomationRuleRequest: {
             action: components["schemas"]["AutomationRuleAction"];
             departmentId?: string;
@@ -4689,6 +4875,11 @@ export interface components {
             fileName: string;
             folder?: string;
             totalSize: number;
+        };
+        DecideApprovalRequestRequest: {
+            /** @enum {string} */
+            decision: "approve" | "reject";
+            notes?: string;
         };
         DepartmentFieldOwner: {
             departmentId: string;
@@ -4896,6 +5087,19 @@ export interface components {
             error: string;
             /** @constant */
             ok: false;
+        };
+        ExecuteApprovalRequestResponse: components["schemas"]["OkEnvelope"] & {
+            request: components["schemas"]["ApprovalRequest"];
+            run: {
+                completedCount: number;
+                failedCount: number;
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                macroId: string;
+                results: components["schemas"]["BulkMacroTargetResult"][];
+                targetCount: number;
+            };
         };
         ExperienceProfileResponse: components["schemas"]["OkEnvelope"] & {
             experience: components["schemas"]["ExperienceSettings"];
@@ -6466,6 +6670,19 @@ export interface components {
         SecuritySettingsResponse: components["schemas"]["OkEnvelope"] & {
             settings: components["schemas"]["SecuritySettings"];
         };
+        SensitiveOperationPoliciesResponse: components["schemas"]["OkEnvelope"] & {
+            policies: components["schemas"]["SensitiveOperationPolicy"][];
+        };
+        SensitiveOperationPolicy: {
+            operationKey: string;
+            requiredApprovals: number;
+            sensitive: boolean;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        SensitiveOperationPolicyResponse: components["schemas"]["OkEnvelope"] & {
+            policy: components["schemas"]["SensitiveOperationPolicy"];
+        };
         SettingLockedError: components["schemas"]["ErrorEnvelope"] & {
             /** @constant */
             code: "SETTING_LOCKED";
@@ -6936,6 +7153,10 @@ export interface components {
             webhookUrlAllowlist?: string[];
             /** @enum {string} */
             whisperDevice?: "cpu" | "cuda";
+        };
+        UpdateSensitiveOperationPolicyRequest: {
+            requiredApprovals?: number;
+            sensitive?: boolean;
         };
         UpdateTaskEscalationPolicyRequest: {
             enabled?: boolean;
@@ -7527,6 +7748,169 @@ export interface operations {
             404: components["responses"]["Error"];
         };
     };
+    listApprovalRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Approval requests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+        };
+    };
+    createApprovalRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateApprovalRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description Created approval request */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            /** @description The referenced macro has no sensitive step under current policy */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestError"];
+                };
+            };
+        };
+    };
+    getApprovalRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Approval request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    decideApprovalRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideApprovalRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated approval request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            /** @description Forbidden, including self-approval */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestError"];
+                };
+            };
+            404: components["responses"]["Error"];
+            /** @description Not pending, or already decided by this approver */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestError"];
+                };
+            };
+        };
+    };
+    executeApprovalRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Persisted bulk macro run with per-item outcomes */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecuteApprovalRequestResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            /** @description Not approved, or the macro changed since approval */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalRequestError"];
+                };
+            };
+        };
+    };
     listFileHealthChecks: {
         parameters: {
             query?: never;
@@ -8102,6 +8486,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkMacroRunResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["BulkMacroNotFound"];
+        };
+    };
+    rollbackBulkMacroRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                runId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-target, per-step rollback outcomes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkMacroRollbackResponse"];
                 };
             };
             401: components["responses"]["Error"];
@@ -13137,6 +13547,57 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    listSensitiveOperationPolicies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sensitive operation policies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitiveOperationPoliciesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    updateSensitiveOperationPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operationKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSensitiveOperationPolicyRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensitiveOperationPolicyResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };

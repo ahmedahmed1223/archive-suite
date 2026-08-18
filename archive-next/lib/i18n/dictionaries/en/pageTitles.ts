@@ -18,6 +18,7 @@ export const pageTitles = {
   projects: "Projects",
   automation: "Automation",
   safetyPreview: "Safety preview",
+  approvalRequests: "Approval requests",
   publicCatalogue: "Public catalogue",
   archiveAssistant: "Archive assistant",
   archiveAssistantTours: "Archive assistant tours",

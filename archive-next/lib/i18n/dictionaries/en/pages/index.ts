@@ -1,4 +1,5 @@
 import { activity } from "./activity";
+import { approvalRequests } from "./approvalRequests";
 import { archiveDetail } from "./archiveDetail";
 import { archiveList } from "./archiveList";
 import { archiveRecordCard } from "./archiveRecordCard";
@@ -85,6 +86,7 @@ import { workInbox } from "./workInbox";
 
 export const pages = {
   activity,
+  approvalRequests,
   archiveDetail,
   archiveList,
   archiveRecordCard,

@@ -43,6 +43,7 @@ const navItemMeta = [
   { href: "/copilot", section: "collaborate", icon: "BotMessageSquare" },
   { href: "/rights", section: "collaborate", icon: "ShieldCheck" },
   { href: "/safety-preview", section: "collaborate", icon: "ShieldCheck" },
+  { href: "/approval-requests", section: "collaborate", icon: "UserCheck" },
   // ── المؤشرات والمراقبة ──
   { href: "/activity", section: "insights", icon: "Activity" },
   { href: "/analytics", section: "insights", icon: "BarChart3" },

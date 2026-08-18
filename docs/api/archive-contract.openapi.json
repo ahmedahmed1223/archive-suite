@@ -38,7 +38,9 @@
     { "name": "Upload Links" },
     { "name": "Saved Searches" },
     { "name": "Trash" },
-    { "name": "Types" }
+    { "name": "Types" },
+    { "name": "Bulk Macros" },
+    { "name": "Approvals" }
   ],
   "paths": {
     "/health": {
@@ -3852,6 +3854,97 @@
           "401": { "$ref": "#/components/responses/Error" },
           "403": { "$ref": "#/components/responses/Error" },
           "404": { "$ref": "#/components/responses/BulkMacroNotFound" }
+        }
+      }
+    },
+    "/bulk-macros/{id}/runs/{runId}/rollback": {
+      "post": {
+        "tags": ["Bulk Macros"],
+        "summary": "Best-effort rollback of a persisted run's reversible steps",
+        "operationId": "rollbackBulkMacroRun",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "runId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Per-target, per-step rollback outcomes", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BulkMacroRollbackResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/BulkMacroNotFound" }
+        }
+      }
+    },
+    "/sensitive-operation-policies": {
+      "get": {
+        "tags": ["Approvals"], "summary": "List the sensitive-operation policy catalog", "operationId": "listSensitiveOperationPolicies",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": { "200": { "description": "Sensitive operation policies", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SensitiveOperationPoliciesResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/sensitive-operation-policies/{operationKey}": {
+      "patch": {
+        "tags": ["Approvals"], "summary": "Admin-only: toggle whether a bulk-macro step type requires dual approval", "operationId": "updateSensitiveOperationPolicy",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "operationKey", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateSensitiveOperationPolicyRequest" } } } },
+        "responses": {
+          "200": { "description": "Updated policy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SensitiveOperationPolicyResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/approval-requests": {
+      "get": {
+        "tags": ["Approvals"], "summary": "List dual-approval requests", "operationId": "listApprovalRequests",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": { "200": { "description": "Approval requests", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" } }
+      },
+      "post": {
+        "tags": ["Approvals"], "summary": "Submit a sensitive bulk-macro operation for dual approval", "operationId": "createApprovalRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateApprovalRequestRequest" } } } },
+        "responses": {
+          "201": { "description": "Created approval request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" },
+          "422": { "description": "The referenced macro has no sensitive step under current policy", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestError" } } } }
+        }
+      }
+    },
+    "/approval-requests/{id}": {
+      "get": {
+        "tags": ["Approvals"], "summary": "Read one approval request", "operationId": "getApprovalRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "200": { "description": "Approval request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } }
+      }
+    },
+    "/approval-requests/{id}/decisions": {
+      "post": {
+        "tags": ["Approvals"],
+        "summary": "Record an approve/reject decision. The original submitter is structurally refused (self_approval), never merely uncounted.",
+        "operationId": "decideApprovalRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DecideApprovalRequestRequest" } } } },
+        "responses": {
+          "200": { "description": "Updated approval request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "description": "Forbidden, including self-approval", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestError" } } } },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "description": "Not pending, or already decided by this approver", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestError" } } } }
+        }
+      }
+    },
+    "/approval-requests/{id}/execute": {
+      "post": {
+        "tags": ["Approvals"], "summary": "Execute an approved request's underlying bulk-macro run", "operationId": "executeApprovalRequest",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "201": { "description": "Persisted bulk macro run with per-item outcomes", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExecuteApprovalRequestResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" },
+          "409": { "description": "Not approved, or the macro changed since approval", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApprovalRequestError" } } } }
         }
       }
     },
@@ -8847,6 +8940,67 @@
       "BulkMacroNotFoundError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "const": "not_found" } } }] },
       "BulkMacroPreviewError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "type": "string", "enum": ["invalid_preview", "expired_preview", "stale_preview"] } } }] },
       "BulkMacroValidationError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "const": "validation_failed" } } }] },
+      "BulkMacroRollbackStep": {
+        "type": "object", "required": ["type", "status"], "properties": {
+          "type": { "type": ["string", "null"] }, "status": { "type": "string", "enum": ["rolled_back", "failed", "not_rollback_capable"] },
+          "reason": { "type": "string" }, "restoredTo": {}
+        }
+      },
+      "BulkMacroRollbackResult": {
+        "type": "object", "required": ["store", "id", "status", "steps"], "properties": {
+          "store": { "type": ["string", "null"] }, "id": { "type": ["string", "null"] },
+          "status": { "type": "string", "enum": ["rolled_back", "not_rollback_capable", "nothing_to_rollback"] },
+          "steps": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroRollbackStep" } }
+        }
+      },
+      "BulkMacroRollbackResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["rollback"], "properties": { "rollback": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroRollbackResult" } } } }] },
+      "SensitiveOperationPolicy": {
+        "type": "object", "required": ["operationKey", "sensitive", "requiredApprovals"], "properties": {
+          "operationKey": { "type": "string" }, "sensitive": { "type": "boolean" }, "requiredApprovals": { "type": "integer", "minimum": 1 }, "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "SensitiveOperationPoliciesResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["policies"], "properties": { "policies": { "type": "array", "items": { "$ref": "#/components/schemas/SensitiveOperationPolicy" } } } }] },
+      "SensitiveOperationPolicyResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["policy"], "properties": { "policy": { "$ref": "#/components/schemas/SensitiveOperationPolicy" } } }] },
+      "UpdateSensitiveOperationPolicyRequest": {
+        "type": "object", "minProperties": 1, "properties": { "sensitive": { "type": "boolean" }, "requiredApprovals": { "type": "integer", "minimum": 1, "maximum": 10 } }
+      },
+      "ApprovalDecisionRecord": {
+        "type": "object", "required": ["id", "approverId", "decision", "decidedAt"], "properties": {
+          "id": { "type": "string", "format": "uuid" }, "approverId": { "type": "integer" }, "decision": { "type": "string", "enum": ["approve", "reject"] },
+          "notes": { "type": ["string", "null"] }, "decidedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "ApprovalRequest": {
+        "type": "object", "required": ["id", "operationKey", "targetType", "targetId", "requestedBy", "status", "requiredApprovals", "payload", "decisions", "createdAt", "updatedAt"], "properties": {
+          "id": { "type": "string", "format": "uuid" }, "operationKey": { "type": "string" }, "targetType": { "type": "string", "enum": ["bulk-macro"] }, "targetId": { "type": "string" },
+          "requestedBy": { "type": "integer" }, "status": { "type": "string", "enum": ["pending", "approved", "rejected", "executed"] }, "requiredApprovals": { "type": "integer", "minimum": 1 },
+          "payload": { "type": "object" }, "executedRunId": { "type": ["string", "null"], "format": "uuid" }, "executedAt": { "type": ["string", "null"], "format": "date-time" },
+          "decisions": { "type": "array", "items": { "$ref": "#/components/schemas/ApprovalDecisionRecord" } },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" }, "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "ApprovalRequestsResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["requests"], "properties": { "requests": { "type": "array", "items": { "$ref": "#/components/schemas/ApprovalRequest" } } } }] },
+      "ApprovalRequestResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["request"], "properties": { "request": { "$ref": "#/components/schemas/ApprovalRequest" } } }] },
+      "CreateApprovalRequestRequest": {
+        "type": "object", "required": ["targetType", "targetId", "targets"], "properties": {
+          "targetType": { "type": "string", "enum": ["bulk-macro"] }, "targetId": { "type": "string" },
+          "targets": { "type": "array", "minItems": 1, "maxItems": 1000, "items": { "$ref": "#/components/schemas/BulkMacroTarget" } }
+        }
+      },
+      "DecideApprovalRequestRequest": {
+        "type": "object", "required": ["decision"], "properties": { "decision": { "type": "string", "enum": ["approve", "reject"] }, "notes": { "type": "string", "maxLength": 2000 } }
+      },
+      "ExecuteApprovalRequestResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["request", "run"], "properties": {
+          "request": { "$ref": "#/components/schemas/ApprovalRequest" },
+          "run": { "type": "object", "required": ["id", "macroId", "targetCount", "completedCount", "failedCount", "results"], "properties": {
+            "id": { "type": "string", "format": "uuid" }, "macroId": { "type": "string", "format": "uuid" }, "targetCount": { "type": "integer" }, "completedCount": { "type": "integer" }, "failedCount": { "type": "integer" },
+            "results": { "type": "array", "items": { "$ref": "#/components/schemas/BulkMacroTargetResult" } }
+          } }
+        } }]
+      },
+      "ApprovalRequestErrorCode": { "type": "string", "enum": ["operation_not_sensitive", "not_pending", "already_decided", "self_approval", "not_approved", "unsupported_target", "macro_not_found", "stale_approval"] },
+      "ApprovalRequestError": { "allOf": [{ "$ref": "#/components/schemas/ErrorEnvelope" }, { "type": "object", "required": ["code"], "properties": { "code": { "$ref": "#/components/schemas/ApprovalRequestErrorCode" } } }] },
       "AutomationRuleTrigger": {
         "type": "string",
         "enum": ["record.created", "record.updated", "media.failed", "schedule.daily"]

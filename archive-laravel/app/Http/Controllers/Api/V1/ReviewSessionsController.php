@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Exceptions\InvalidReviewTransitionException;
+use App\Exceptions\SelfApprovalException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReviewSessionCreateRequest;
 use App\Http\Requests\ReviewSessionTransitionRequest;
@@ -148,6 +149,8 @@ class ReviewSessionsController extends Controller
 
         try {
             $session = $this->sessions->transition($session, $action, $this->actor($request), $request->validated()['notes'] ?? null);
+        } catch (SelfApprovalException $exception) {
+            return response()->json(ApiError::envelope($exception->getMessage(), 403, 'self_approval'), 403);
         } catch (InvalidReviewTransitionException $exception) {
             return response()->json(ApiError::envelope($exception->getMessage(), 409, ApiError::CONFLICT), 409);
         }

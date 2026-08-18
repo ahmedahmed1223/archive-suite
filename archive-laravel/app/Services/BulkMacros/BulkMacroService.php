@@ -106,6 +106,93 @@ class BulkMacroService
         ]);
     }
 
+    /**
+     * V3-WORK-003: best-effort, honest rollback of one persisted run.
+     * Reversibility is per-step, not per-run:
+     *  - 'delete' steps that completed are undone via the same trash-restore
+     *    path a manual restore uses (TrashController::restoreEntry) --
+     *    rollback fails with the same 'conflict'/'not_found' reasons a
+     *    manual restore would if the slot was reused or already restored.
+     *  - 'add-tag' / 'set-workflow-status' steps that completed captured a
+     *    'before' value in the run's stored results, so rollback writes that
+     *    value back.
+     *  - 'set-rights-holder' captures no 'before' value (see
+     *    applyRightsHolderStep()) and is reported honestly as
+     *    not_rollback_capable rather than silently doing nothing.
+     * Steps that never reached 'completed' (skipped/failed/would_apply) are
+     * left out of the rollback entirely -- there is nothing to undo.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function rollback(BulkMacroRun $run): array
+    {
+        return array_map(function (array $targetResult): array {
+            $completedSteps = array_values(array_filter(
+                (array) ($targetResult['steps'] ?? []),
+                fn (array $step): bool => ($step['status'] ?? null) === 'completed',
+            ));
+
+            $stepResults = array_map(
+                fn (array $step): array => $this->rollbackStep($targetResult, $step),
+                array_reverse($completedSteps),
+            );
+
+            $status = match (true) {
+                $stepResults === [] => 'nothing_to_rollback',
+                in_array('rolled_back', array_column($stepResults, 'status'), true) => 'rolled_back',
+                default => 'not_rollback_capable',
+            };
+
+            return ['store' => $targetResult['store'] ?? null, 'id' => $targetResult['id'] ?? null, 'status' => $status, 'steps' => $stepResults];
+        }, $run->results);
+    }
+
+    /** @param array<string, mixed> $targetResult @param array<string, mixed> $step @return array<string, mixed> */
+    private function rollbackStep(array $targetResult, array $step): array
+    {
+        $type = $step['type'] ?? null;
+
+        if ($type === 'delete') {
+            $outcome = TrashController::restoreEntry((string) $targetResult['store'], (string) $targetResult['id']);
+
+            return ['type' => 'delete', 'status' => $outcome === 'restored' ? 'rolled_back' : 'failed', 'reason' => $outcome === 'restored' ? null : $outcome];
+        }
+
+        if (($type === 'add-tag' || $type === 'set-workflow-status') && array_key_exists('before', $step)) {
+            return $this->rollbackFieldStep($targetResult, $type, $step['before']);
+        }
+
+        return ['type' => $type, 'status' => 'not_rollback_capable', 'reason' => 'no_before_state_captured'];
+    }
+
+    /** @param array<string, mixed> $targetResult @return array<string, mixed> */
+    private function rollbackFieldStep(array $targetResult, string $type, mixed $before): array
+    {
+        $row = $this->findRow(['store' => (string) $targetResult['store'], 'id' => (string) $targetResult['id']]);
+        if (! $row instanceof stdClass) {
+            return ['type' => $type, 'status' => 'failed', 'reason' => 'target_missing'];
+        }
+
+        $record = $this->decode($row->data);
+        $record[$type === 'add-tag' ? 'tags' : 'workflowStatus'] = $before;
+
+        try {
+            DB::transaction(function () use ($row, $record): void {
+                $affected = DB::table('storage_rows')->where('store', $row->store)->where('uid', $row->uid)->update([
+                    'data' => json_encode($record, JSON_THROW_ON_ERROR),
+                    'updated_at' => now(),
+                ]);
+                if ($affected !== 1) {
+                    throw new RuntimeException('Bulk macro rollback did not affect exactly one row.');
+                }
+            });
+
+            return ['type' => $type, 'status' => 'rolled_back', 'restoredTo' => $before];
+        } catch (Throwable) {
+            return ['type' => $type, 'status' => 'failed', 'reason' => 'mutation_failed'];
+        }
+    }
+
     /** @param array<int, array<string, mixed>> $targets @return array<int, array{store: string, id: string}> */
     public function normalizeTargets(array $targets): array
     {

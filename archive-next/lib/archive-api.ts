@@ -122,6 +122,14 @@ export type CreateBulkMacroPayload = GeneratedSchemas["CreateBulkMacroRequest"];
 export type UpdateBulkMacroPayload = GeneratedSchemas["UpdateBulkMacroRequest"];
 export type BulkMacroTargetsPayload = GeneratedSchemas["BulkMacroTargetsRequest"];
 export type RunBulkMacroPayload = GeneratedSchemas["RunBulkMacroRequest"];
+export type BulkMacroTargetResult = GeneratedSchemas["BulkMacroTargetResult"];
+export type BulkMacroRollbackResult = GeneratedSchemas["BulkMacroRollbackResult"];
+export type SensitiveOperationPolicy = GeneratedSchemas["SensitiveOperationPolicy"];
+export type UpdateSensitiveOperationPolicyPayload = GeneratedSchemas["UpdateSensitiveOperationPolicyRequest"];
+export type ApprovalRequest = GeneratedSchemas["ApprovalRequest"];
+export type ApprovalDecisionRecord = GeneratedSchemas["ApprovalDecisionRecord"];
+export type CreateApprovalRequestPayload = GeneratedSchemas["CreateApprovalRequestRequest"];
+export type DecideApprovalRequestPayload = GeneratedSchemas["DecideApprovalRequestRequest"];
 export type DisplaySettings = GeneratedSchemas["DisplaySettings"];
 export type UpdateDisplaySettingsPayload = GeneratedSchemas["UpdateDisplaySettingsRequest"];
 
@@ -1574,6 +1582,14 @@ export interface ArchiveApiClient {
   runBulkMacro(id: string, payload: RunBulkMacroPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: BulkMacroRun }>>;
   bulkMacroRuns(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ runs: BulkMacroRun[] }>>;
   retryBulkMacroFailedTargets(id: string, runId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ run: BulkMacroRun }>>;
+  rollbackBulkMacroRun(id: string, runId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ rollback: BulkMacroRollbackResult[] }>>;
+  sensitiveOperationPolicies(options?: AuthRequestOptions): Promise<ApiEnvelope<{ policies: SensitiveOperationPolicy[] }>>;
+  updateSensitiveOperationPolicy(operationKey: string, payload: UpdateSensitiveOperationPolicyPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ policy: SensitiveOperationPolicy }>>;
+  approvalRequests(options?: AuthRequestOptions): Promise<ApiEnvelope<{ requests: ApprovalRequest[] }>>;
+  approvalRequest(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest }>>;
+  createApprovalRequest(payload: CreateApprovalRequestPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest }>>;
+  decideApprovalRequest(id: string, payload: DecideApprovalRequestPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest }>>;
+  executeApprovalRequest(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest; run: { id: string; macroId: string; targetCount: number; completedCount: number; failedCount: number; results: BulkMacroTargetResult[] } }>>;
 }
 
 export interface AuthRequestOptions {
@@ -2717,6 +2733,21 @@ export function createArchiveApiClient({
     bulkMacroRuns: (id: string, options?: AuthRequestOptions) =>
       get<{ runs: BulkMacroRun[] }>(`/bulk-macros/${encodeURIComponent(id)}/runs`, options),
     retryBulkMacroFailedTargets: (id: string, runId: string, options?: AuthRequestOptions) =>
-      post<{ run: BulkMacroRun }>(`/bulk-macros/${encodeURIComponent(id)}/runs/${encodeURIComponent(runId)}/retry-failed`, undefined, options)
+      post<{ run: BulkMacroRun }>(`/bulk-macros/${encodeURIComponent(id)}/runs/${encodeURIComponent(runId)}/retry-failed`, undefined, options),
+    rollbackBulkMacroRun: (id: string, runId: string, options?: AuthRequestOptions) =>
+      post<{ rollback: BulkMacroRollbackResult[] }>(`/bulk-macros/${encodeURIComponent(id)}/runs/${encodeURIComponent(runId)}/rollback`, undefined, options),
+    sensitiveOperationPolicies: (options?: AuthRequestOptions) =>
+      get<{ policies: SensitiveOperationPolicy[] }>("/sensitive-operation-policies", options),
+    updateSensitiveOperationPolicy: (operationKey: string, payload: UpdateSensitiveOperationPolicyPayload, options?: AuthRequestOptions) =>
+      patch<{ policy: SensitiveOperationPolicy }>(`/sensitive-operation-policies/${encodeURIComponent(operationKey)}`, payload, options),
+    approvalRequests: (options?: AuthRequestOptions) => get<{ requests: ApprovalRequest[] }>("/approval-requests", options),
+    approvalRequest: (id: string, options?: AuthRequestOptions) =>
+      get<{ request: ApprovalRequest }>(`/approval-requests/${encodeURIComponent(id)}`, options),
+    createApprovalRequest: (payload: CreateApprovalRequestPayload, options?: AuthRequestOptions) =>
+      post<{ request: ApprovalRequest }>("/approval-requests", payload, options),
+    decideApprovalRequest: (id: string, payload: DecideApprovalRequestPayload, options?: AuthRequestOptions) =>
+      post<{ request: ApprovalRequest }>(`/approval-requests/${encodeURIComponent(id)}/decisions`, payload, options),
+    executeApprovalRequest: (id: string, options?: AuthRequestOptions) =>
+      post<{ request: ApprovalRequest; run: { id: string; macroId: string; targetCount: number; completedCount: number; failedCount: number; results: BulkMacroTargetResult[] } }>(`/approval-requests/${encodeURIComponent(id)}/execute`, undefined, options)
   };
 }

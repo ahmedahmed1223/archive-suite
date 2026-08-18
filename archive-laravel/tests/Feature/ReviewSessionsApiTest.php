@@ -34,7 +34,10 @@ class ReviewSessionsApiTest extends TestCase
         $this->postJson("/api/v1/review-sessions/{$id}/start", [], $this->authHeaders())
             ->assertOk()->assertJsonPath('session.state', 'in_review');
 
-        $approved = $this->postJson("/api/v1/review-sessions/{$id}/approve", [], $this->authHeaders())
+        // Approval comes from a different editor than the one who created
+        // the session -- self-approval is refused (see
+        // test_the_creator_of_a_review_session_cannot_approve_their_own_submission).
+        $approved = $this->postJson("/api/v1/review-sessions/{$id}/approve", [], $this->secondEditorHeaders())
             ->assertOk()->assertJsonPath('session.state', 'approved');
         $this->assertNotNull($approved->json('session.decidedBy'));
         $this->assertNotNull($approved->json('session.decidedAt'));
@@ -57,7 +60,7 @@ class ReviewSessionsApiTest extends TestCase
         $this->postJson("/api/v1/review-sessions/{$id}/resume", [], $this->authHeaders())
             ->assertOk()->assertJsonPath('session.state', 'in_review');
 
-        $this->postJson("/api/v1/review-sessions/{$id}/approve", [], $this->authHeaders())
+        $this->postJson("/api/v1/review-sessions/{$id}/approve", [], $this->secondEditorHeaders())
             ->assertOk()->assertJsonPath('session.state', 'approved');
     }
 
@@ -95,7 +98,7 @@ class ReviewSessionsApiTest extends TestCase
 
         $id = $this->createSession('record-4');
         $this->postJson("/api/v1/review-sessions/{$id}/start", [], $this->authHeaders())->assertOk();
-        $approved = $this->postJson("/api/v1/review-sessions/{$id}/approve", [], $this->authHeaders())
+        $approved = $this->postJson("/api/v1/review-sessions/{$id}/approve", [], $this->secondEditorHeaders())
             ->assertOk()->assertJsonPath('session.state', 'approved')->assertJsonPath('session.isCurrentVersion', true);
         $originalToken = $approved->json('session.versionToken');
 
@@ -233,7 +236,7 @@ class ReviewSessionsApiTest extends TestCase
         ]);
 
         $this->postJson("/api/v1/review-sessions/{$id}/start", [], $this->authHeaders())->assertOk();
-        $this->postJson("/api/v1/review-sessions/{$id}/approve", [], $this->authHeaders())->assertOk();
+        $this->postJson("/api/v1/review-sessions/{$id}/approve", [], $this->secondEditorHeaders())->assertOk();
 
         $this->assertDatabaseHas('audit_logs', [
             'event' => 'review_sessions.approve',
@@ -241,6 +244,28 @@ class ReviewSessionsApiTest extends TestCase
             'resource_id' => $id,
             'outcome' => 'success',
         ]);
+    }
+
+    public function test_the_creator_of_a_review_session_cannot_approve_their_own_submission(): void
+    {
+        // V3-WORK-003: deferred here from V3-MEDIA-002. The creator starts
+        // and then tries to approve their own session -- must be refused
+        // server-side, and the session must stay unchanged (still in_review).
+        $this->seedRecord('record-11', 'checksum-11');
+        $id = $this->createSession('record-11');
+        $this->postJson("/api/v1/review-sessions/{$id}/start", [], $this->authHeaders())->assertOk();
+
+        $this->postJson("/api/v1/review-sessions/{$id}/approve", [], $this->authHeaders())
+            ->assertStatus(403)
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('code', 'self_approval');
+
+        $this->assertSame('in_review', DB::table('review_sessions')->where('id', $id)->value('state'));
+        $this->assertNull(DB::table('review_sessions')->where('id', $id)->value('decided_by'));
+
+        // A different editor can approve the same session without issue.
+        $this->postJson("/api/v1/review-sessions/{$id}/approve", [], $this->secondEditorHeaders())
+            ->assertOk()->assertJsonPath('session.state', 'approved');
     }
 
     public function test_review_sessions_are_isolated_to_their_record_store(): void
@@ -288,6 +313,24 @@ class ReviewSessionsApiTest extends TestCase
         $this->assertIsString($id);
 
         return $id;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function secondEditorHeaders(): array
+    {
+        $editor = User::query()->firstOrCreate(
+            ['email' => 'second-review-editor@example.test'],
+            ['name' => 'Second Editor', 'password' => Hash::make('secret-password'), 'role' => 'editor'],
+        );
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => $editor->email,
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        return ['Authorization' => 'Bearer '.$login->json('accessToken')];
     }
 
     /**

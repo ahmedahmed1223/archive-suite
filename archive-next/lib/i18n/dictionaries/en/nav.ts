@@ -34,6 +34,7 @@ export const nav = {
     "/copilot": "Archive assistant",
     "/rights": "Rights",
     "/safety-preview": "Safety preview",
+    "/approval-requests": "Approval requests",
     "/activity": "Activity",
     "/analytics": "Analytics",
     "/reports": "Reports",
