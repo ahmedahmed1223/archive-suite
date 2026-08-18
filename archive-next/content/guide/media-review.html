@@ -1,21 +1,31 @@
 <section>
   <h2>Outcome</h2>
-  <p>Track audio or video processing, review the output, and keep it attached to the correct record.</p>
+  <p>Track audio or video processing, review a record's media from one place, correct its transcript, compare versions, and send it out for approval.</p>
   <h2>Before you begin</h2>
-  <p>Confirm that the file plays and that the record accurately identifies the material, source, and language.</p>
+  <p>Confirm that the file plays and that the record accurately identifies the material, source, and language before you request processing or share it for review.</p>
   <h2>Whisper processor</h2>
   <p>Administrators can choose the processor for new transcription jobs in <a href="/settings">Settings</a>. CPU is the default. Select the accelerated processor only when the Whisper environment is prepared for it.</p>
-  <h2>Studio and derivatives</h2>
-  <p>Open the media studio to review a whole record in one place: the player and transcript, comments placed on the timeline, and cached thumbnail or waveform copies (derivatives) that refresh automatically when the source changes. Use the transcript editor to correct cue text and timing, and version compare to play two versions of the media side by side.</p>
+  <h2>Studio: player, transcript, and comments</h2>
+  <p>Open the media studio at <code>/media/studio</code> with the record's ID (and, for a specific file, its attachment ID) to see the player, a synced transcript list, and a comments panel together. Click any transcript line to jump the player to that point. Space plays or pauses, and the left and right arrow keys seek five seconds; these shortcuts stay out of the way of text fields and buttons. The comments panel is a simple threaded discussion tied to the whole record, separate from timeline comments below.</p>
+  <h2>Timeline comments and markers</h2>
+  <p>Below the player, the timeline panel plots comments as markers along the record's duration. Post a comment at the current playback position, or capture a start point first and post it as a range; choose a type — issue, suggestion, highlight, or chapter — so it is colored and grouped accordingly. Click a marker or its timestamp to jump straight to that point, and resolve or reopen a comment as it gets addressed. The panel updates live while connected and falls back to periodic refresh if the realtime connection drops, so a missed update is never left stale for long.</p>
+  <h2>Transcript and subtitles</h2>
+  <p>Open the transcript editor at <a href="/transcriber">Transcription</a> to correct a saved transcript line by line: adjust each cue's start and end time and its text, add or remove cues, and save a new version. If someone else's edit locked the transcript, saving offers to unlock it first rather than silently overwriting their work. Lock a transcript yourself to protect it from conflicting edits, and restore an earlier version from its history when a correction goes wrong. The same page can also open a standalone SRT or WebVTT file, adjust its font size, color, and alignment, preview it, and copy, download, or save it to a record.</p>
+  <h2>Version compare and clip lists</h2>
+  <p>Open <a href="/media/compare">Media comparison</a> with a record's ID to play two of its versions side by side, optionally synced so a seek or a play/pause in one carries over to the other. Alongside the players, build a non-destructive clip list scoped to either version: mark in and out points from the current playback position, name and annotate each clip, and export the list as JSON or CSV. A clip is flagged as stale if the version it was marked against is no longer the current one.</p>
+  <h2>Derivatives</h2>
+  <p>The derivatives panel on a record lists every processing job run against its source — thumbnails, waveforms, proxies, transcriptions, OCR text, and montage exports — as a tree grouped by job, each with its status and the files it produced. It refreshes on its own as jobs complete, so a job that starts out queued updates in place without reloading the page.</p>
+  <h2>External review and approvals</h2>
+  <p>A review link scopes access to a single record, attachment, or generated derivative for someone without an account. It enforces its own expiry and download permission, and shows a watermark notice over the media when the link's watermark policy is set to visible. When the link asks for a decision, the reviewer records their name and approves or requests changes; if more than one approval is required, the page shows how many decisions have arrived against how many are needed before the material counts as approved.</p>
   <h2>Procedure</h2>
   <ol>
     <li>Open <a href="/media/jobs">Media jobs</a> and locate the job for the record.</li>
     <li>Monitor its status, then open the preview or generated transcript when processing completes.</li>
     <li>Review start and end points and audio or image quality, then save any permitted correction.</li>
-    <li>Open the <a href="/media/studio">studio</a> to add timeline comments or edit the transcript when needed.</li>
+    <li>Open the studio to add timeline comments, check the derivatives tree, or compare versions when needed.</li>
   </ol>
   <h2>Verify</h2>
-  <p>Play at least two positions in the material and confirm that the output matches both the file and record.</p>
+  <p>Play at least two positions in the material and confirm that the output matches both the file and the record. If the transcript was edited, confirm the saved version reflects the change and that it is locked if it should not be edited further.</p>
   <h2>Safety</h2>
-  <p>Do not approve automated output without review, and never replace the original source with a processed copy.</p>
+  <p>Do not approve automated output without review, and never replace the original source with a processed copy. Do not send a review link with a broader permission or a longer expiry than the reviewer actually needs.</p>
 </section>
