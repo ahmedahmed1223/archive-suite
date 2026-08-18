@@ -44,6 +44,26 @@ constraint and, where relevant, the path to lifting it.
   No upgrade is scheduled; bump either group only after checking upstream
   breaking-change notes for the new major/minor line.
 
+## Media and workflow
+
+- **External review link watermarking** displays a visible label over the
+  media in the public viewer; it does not burn a mark into the video or
+  image pixel data. A downloaded or re-recorded copy will not carry it.
+- **Derivative generation** (thumbnails, waveforms, proxies) always runs on
+  the same CPU queue as other media operations. Only transcription can route
+  to the GPU queue, and only when the system Whisper device is set to
+  `cuda`.
+- **Work inbox** has no true per-department isolation: every source it
+  aggregates is scoped to the current user except rights nearing expiry,
+  which has no per-user or per-department owner anywhere in the schema and
+  is gated behind the same content-management permission that already
+  governs it elsewhere. A department membership model would be required to
+  narrow this further.
+- **Vocabulary term relink** (Types → Relink) scans every archive record to
+  find ones carrying the term being replaced. This is fine at the scale of
+  an infrequent administrative action, but it is a full scan, not an
+  indexed lookup, so it will slow down as the archive grows very large.
+
 ## Backend
 
 - **`embeddings:sync`** retries transient network failures by silently
