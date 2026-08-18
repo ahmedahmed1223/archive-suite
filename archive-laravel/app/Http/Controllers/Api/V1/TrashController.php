@@ -92,50 +92,54 @@ class TrashController extends Controller
         $count = 0;
 
         foreach (array_values(array_unique($validated['ids'])) as $id) {
-            $entry = DB::table('trashed_records')
-                ->where('store', $validated['store'])
-                ->where('uid', $id)
-                ->first();
-
-            if (! $entry instanceof stdClass) {
-                $results[] = ['uid' => $id, 'restored' => false, 'reason' => 'not_found'];
-
-                continue;
+            $outcome = self::restoreEntry($validated['store'], $id);
+            $results[] = ['uid' => $id, 'restored' => $outcome === 'restored', 'reason' => $outcome === 'restored' ? null : $outcome];
+            if ($outcome === 'restored') {
+                $count++;
             }
-
-            $liveExists = DB::table('storage_rows')
-                ->where('store', $entry->store)
-                ->where('uid', $entry->uid)
-                ->exists();
-
-            if ($liveExists) {
-                // A record with this uid was recreated while the old one sat in
-                // the trash. Restoring would silently overwrite live data, so
-                // refuse and leave the trash entry recoverable.
-                $results[] = ['uid' => $id, 'restored' => false, 'reason' => 'conflict'];
-
-                continue;
-            }
-
-            DB::transaction(function () use ($entry): void {
-                DB::table('storage_rows')->insert([
-                    'store' => $entry->store,
-                    'uid' => $entry->uid,
-                    'data' => $entry->data,
-                    'sync_version' => $entry->sync_version,
-                    'last_modified_by' => $entry->last_modified_by,
-                    'created_at' => $entry->original_created_at,
-                    'updated_at' => $entry->original_updated_at,
-                ]);
-
-                DB::table('trashed_records')->where('id', $entry->id)->delete();
-            });
-
-            $results[] = ['uid' => $id, 'restored' => true];
-            $count++;
         }
 
-        return response()->json(['ok' => true, 'count' => $count, 'results' => $results]);
+        return response()->json(['ok' => true, 'count' => $count, 'results' => array_map(fn (array $r): array => array_filter($r, fn ($v): bool => $v !== null), $results)]);
+    }
+
+    /**
+     * Restore one trashed record. Shared by restore() above and
+     * App\Services\BulkMacros\BulkMacroService::rollback() (V3-WORK-003),
+     * which undoes a completed bulk-macro 'delete' step the same way a
+     * manual trash restore would.
+     *
+     * @return 'restored'|'not_found'|'conflict'
+     */
+    public static function restoreEntry(string $store, string $uid): string
+    {
+        $entry = DB::table('trashed_records')->where('store', $store)->where('uid', $uid)->first();
+        if (! $entry instanceof stdClass) {
+            return 'not_found';
+        }
+
+        $liveExists = DB::table('storage_rows')->where('store', $entry->store)->where('uid', $entry->uid)->exists();
+        if ($liveExists) {
+            // A record with this uid was recreated while the old one sat in
+            // the trash. Restoring would silently overwrite live data, so
+            // refuse and leave the trash entry recoverable.
+            return 'conflict';
+        }
+
+        DB::transaction(function () use ($entry): void {
+            DB::table('storage_rows')->insert([
+                'store' => $entry->store,
+                'uid' => $entry->uid,
+                'data' => $entry->data,
+                'sync_version' => $entry->sync_version,
+                'last_modified_by' => $entry->last_modified_by,
+                'created_at' => $entry->original_created_at,
+                'updated_at' => $entry->original_updated_at,
+            ]);
+
+            DB::table('trashed_records')->where('id', $entry->id)->delete();
+        });
+
+        return 'restored';
     }
 
     /**

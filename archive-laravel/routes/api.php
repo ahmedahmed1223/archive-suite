@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AccountExportController;
 use App\Http\Controllers\Api\V1\ActivityController;
 use App\Http\Controllers\Api\V1\AiAssistantController;
 use App\Http\Controllers\Api\V1\ApiKeysController;
+use App\Http\Controllers\Api\V1\ApprovalRequestsController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AutomationRulesController;
 use App\Http\Controllers\Api\V1\AutomationRuleTemplatesController;
@@ -78,6 +79,7 @@ use App\Http\Controllers\Api\V1\SavedSearchesController;
 use App\Http\Controllers\Api\V1\ScheduledUploadsController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SearchSuggestionsController;
+use App\Http\Controllers\Api\V1\SensitiveOperationPoliciesController;
 use App\Http\Controllers\Api\V1\ShareController;
 use App\Http\Controllers\Api\V1\StorageWorkspaceController;
 use App\Http\Controllers\Api\V1\SuggestionsController;
@@ -543,6 +545,17 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/bulk-macros/{id}/run', [BulkMacrosController::class, 'run']);
         Route::get('/bulk-macros/{id}/runs', [BulkMacrosController::class, 'runs']);
         Route::post('/bulk-macros/{id}/runs/{runId}/retry-failed', [BulkMacrosController::class, 'retryFailed']);
+        Route::post('/bulk-macros/{id}/runs/{runId}/rollback', [BulkMacrosController::class, 'rollback']);
+
+        // V3-WORK-003: admin-configurable catalog of which bulk-macro step
+        // types require dual approval, plus the approval-request flow itself.
+        Route::get('/sensitive-operation-policies', [SensitiveOperationPoliciesController::class, 'index']);
+        Route::patch('/sensitive-operation-policies/{operationKey}', [SensitiveOperationPoliciesController::class, 'update']);
+        Route::get('/approval-requests', [ApprovalRequestsController::class, 'index']);
+        Route::get('/approval-requests/{id}', [ApprovalRequestsController::class, 'show']);
+        Route::post('/approval-requests', [ApprovalRequestsController::class, 'store']);
+        Route::post('/approval-requests/{id}/decisions', [ApprovalRequestsController::class, 'decide']);
+        Route::post('/approval-requests/{id}/execute', [ApprovalRequestsController::class, 'execute']);
 
         // V1-721: registered before /users so the literal path isn't shadowed.
         Route::get('/users/mentionable', [UsersController::class, 'mentionable']);

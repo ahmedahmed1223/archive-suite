@@ -86,6 +86,11 @@ class AuditArchiveApiRequest
             ['POST', 'api/v1/review-sessions/{id}/approve'] => ['review_sessions.approve', 'review_session'],
             ['POST', 'api/v1/review-sessions/{id}/resume'] => ['review_sessions.resume', 'review_session'],
             ['POST', 'api/v1/review-sessions/{id}/close'] => ['review_sessions.close', 'review_session'],
+            ['POST', 'api/v1/bulk-macros/{id}/runs/{runId}/rollback'] => ['bulk_macros.rollback', 'bulk_macro_run'],
+            ['PATCH', 'api/v1/sensitive-operation-policies/{operationKey}'] => ['sensitive_operation_policies.update', 'sensitive_operation_policy'],
+            ['POST', 'api/v1/approval-requests'] => ['approval_requests.create', 'approval_request'],
+            ['POST', 'api/v1/approval-requests/{id}/decisions'] => ['approval_requests.decide', 'approval_request'],
+            ['POST', 'api/v1/approval-requests/{id}/execute'] => ['approval_requests.execute', 'approval_request'],
             // V3-MEDIA-007: resourceId intentionally left unset below (falls
             // through to null) -- mirrors share.create, since the response
             // carries the newly minted bearer token and that must not be
@@ -227,6 +232,22 @@ class AuditArchiveApiRequest
 
         if ($route === 'api/v1/system/control/{action}') {
             $resourceId = $request->route('action');
+        }
+
+        if ($route === 'api/v1/bulk-macros/{id}/runs/{runId}/rollback') {
+            $resourceId = $request->route('runId');
+        }
+
+        if ($route === 'api/v1/sensitive-operation-policies/{operationKey}') {
+            $resourceId = $request->route('operationKey');
+        }
+
+        if (in_array($route, ['api/v1/approval-requests/{id}/decisions', 'api/v1/approval-requests/{id}/execute'], true)) {
+            $resourceId = $request->route('id');
+        }
+
+        if ($route === 'api/v1/approval-requests' && $response->isSuccessful()) {
+            $resourceId = data_get($this->responseData($response), 'request.id');
         }
 
         if (in_array($route, [
