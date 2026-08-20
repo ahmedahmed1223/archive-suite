@@ -15,6 +15,12 @@ const appHeader = readSource("components/AppHeader.tsx");
 const commandBar = readSource("components/WorkspaceCommandBar.tsx");
 
 describe("responsive RTL workspace source contract", () => {
+  it("inherits document direction instead of forcing RTL on html or body", () => {
+    expect(baseCss).not.toMatch(/html\s*{[^}]*direction:\s*rtl/s);
+    expect(baseCss).not.toMatch(/body\s*{[^}]*direction:\s*rtl/s);
+    expect(baseCss).toMatch(/body\s*{[^}]*direction:\s*inherit/s);
+  });
+
   it("keeps the viewport and shared shell regions inline-size safe", () => {
     expect(baseCss).toMatch(/html,\s*body\s*{[^}]*overflow-x:\s*clip;/s);
     expect(baseCss).toMatch(/\.content\s*{[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;/s);

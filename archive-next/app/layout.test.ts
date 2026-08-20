@@ -8,7 +8,7 @@ vi.mock("next/headers", () => ({ headers: requestHeaders }));
 vi.mock("@/components/AppProviders", () => ({ default: () => null }));
 vi.mock("@/components/ClientErrorReporter", () => ({ default: () => null }));
 
-import { generateMetadata, metadataDescription } from "./layout";
+import RootLayout, { generateMetadata, metadataDescription } from "./layout";
 
 describe("root metadata", () => {
   test("uses an English description for the English locale", () => {
@@ -20,5 +20,14 @@ describe("root metadata", () => {
     requestHeaders.mockResolvedValue(new Headers({ "x-archive-locale": "en" }));
 
     await expect(generateMetadata()).resolves.toMatchObject({ description: getDictionary("en").auth.login.description });
+  });
+
+  test("sets the document language and direction from the forwarded locale", async () => {
+    requestHeaders.mockResolvedValue(new Headers({ "x-archive-locale": "ar" }));
+
+    const root = await RootLayout({ children: "content" });
+
+    expect(root.props.lang).toBe("ar");
+    expect(root.props.dir).toBe("rtl");
   });
 });
