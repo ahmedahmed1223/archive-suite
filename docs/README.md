@@ -13,7 +13,7 @@ Laravel + Next.js product and its current operating paths.
 - [Native support policy](native-support.md)
 - [Whisper transcription](whisper.md)
 - [Install from an offline bundle](../infra/offline/README.md)
-- [Release notes for v1.1.0](release-notes/v1.1.0.md)
+- [Release notes for v1.3.1](release-notes/v1.3.1.md)
 - [Release notes for v1.0.0](release-notes/v1.0.0.md)
 
 ## Use Archive Suite

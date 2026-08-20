@@ -2,6 +2,12 @@ import { describe, expect, test } from "vitest";
 import { getReleaseNotes, listReleaseVersions } from "./release-notes";
 
 describe("release notes", () => {
+  test("loads the Arabic and English notes for v1.3.1", () => {
+    expect(getReleaseNotes("1.3.1")).toMatchObject({ version: "1.3.1" });
+    expect(getReleaseNotes("1.3.1")?.ar).toContain("اتجاه");
+    expect(getReleaseNotes("1.3.1")?.en).toContain("direction");
+  });
+
   test("loads the Arabic and English notes for an available release", () => {
     expect(getReleaseNotes("1.2.1")).toMatchObject({
       version: "1.2.1",

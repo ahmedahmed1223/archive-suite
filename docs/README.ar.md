@@ -13,7 +13,7 @@
 - [سياسة دعم التشغيل المباشر](native-support.ar.md)
 - [التفريغ باستخدام Whisper](whisper.ar.md)
 - [التثبيت من حزمة دون اتصال](../infra/offline/README.ar.md)
-- [ملاحظات إصدار v1.1.0](release-notes/v1.1.0.ar.md)
+- [ملاحظات إصدار v1.3.1](release-notes/v1.3.1.ar.md)
 - [ملاحظات إصدار v1.0.0](release-notes/v1.0.0.ar.md)
 
 ## استخدم مسار
