@@ -10,6 +10,7 @@ const foundationCss = readSource("app/styles/08-foundation.css");
 const componentsCss = readSource("app/styles/03-components.css");
 const notificationsCss = readSource("app/notifications/notifications.css");
 const statusCss = readSource("app/styles/05-status.css");
+const loginCss = readSource("app/login/login.css");
 const appShell = readSource("components/AppShell.tsx");
 const appHeader = readSource("components/AppHeader.tsx");
 const commandBar = readSource("components/WorkspaceCommandBar.tsx");
@@ -65,5 +66,11 @@ describe("responsive RTL workspace source contract", () => {
   it("keeps notification and help surfaces within the visual viewport", () => {
     expect(notificationsCss).toMatch(/100dvh/);
     expect(statusCss).toMatch(/\.help-content\s*{[^}]*max-inline-size:\s*min\(100%,/s);
+  });
+
+  it("keeps the login hero readable within a narrow viewport", () => {
+    expect(loginCss).toMatch(/\.login-hero__copy\s*{[^}]*min-inline-size:\s*0;[^}]*max-inline-size:\s*100%;[^}]*overflow-wrap:\s*anywhere;/s);
+    expect(loginCss).toMatch(/\.login-hero h1,\s*\.login-hero p\s*{[^}]*min-inline-size:\s*0;[^}]*overflow-wrap:\s*anywhere;/s);
+    expect(loginCss).toMatch(/\.login-content\s*{[\s\S]*?inline-size:\s*min\(calc\(100% - 1rem\),\s*42rem\);/);
   });
 });

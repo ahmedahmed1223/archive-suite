@@ -51,6 +51,15 @@
 .login-hero__copy {
   display: grid;
   gap: var(--space-3);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}
+
+.login-hero h1,
+.login-hero p {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 .login-hero h1 {
@@ -266,7 +275,7 @@
 
 @media (max-width: 760px) {
   .login-content {
-    inline-size: min(100% - 1rem, 42rem);
+    inline-size: min(calc(100% - 1rem), 42rem);
     min-block-size: auto;
     padding-block: var(--space-4);
   }

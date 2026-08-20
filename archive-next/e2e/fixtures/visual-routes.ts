@@ -104,3 +104,25 @@ export async function assertNoClippedInteractiveElements(
       outOfReach.map((box) => `"${box.text}" left=${box.left} right=${box.right}`).join('\n'),
   ).toEqual([]);
 }
+
+export async function assertNoClippedReadableElements(
+  page: Page,
+  viewportWidth: number,
+  label: string,
+): Promise<void> {
+  const clipped = await page.evaluate((width) => {
+    const selectors = 'h1, h2, h3, p, label, summary, [class~="badge"]';
+
+    return [...document.querySelectorAll<HTMLElement>(selectors)]
+      .filter((element) => element.offsetParent !== null && (element.textContent || '').trim())
+      .map((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const rect = range.getBoundingClientRect();
+        return { text: (element.textContent || '').trim().slice(0, 60), left: rect.left, right: rect.right };
+      })
+      .filter((rect) => rect.left < -1 || rect.right > width + 1);
+  }, viewportWidth);
+
+  expect(clipped, `${label}: readable text is clipped`).toEqual([]);
+}

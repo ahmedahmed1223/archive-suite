@@ -1,11 +1,17 @@
 import { expect, test } from '@playwright/test';
 import {
   assertNoClippedInteractiveElements,
+  assertNoClippedReadableElements,
   CORE_ROUTES,
   gotoPublicRoute,
   VIEWPORTS,
 } from './fixtures/visual-routes';
 import { WHATS_NEW_RELEASE, WHATS_NEW_STORAGE_KEY } from '../lib/whats-new';
+
+const LOCALES = [
+  { name: 'arabic', locale: 'ar-SA' },
+  { name: 'english', locale: 'en-US' },
+] as const;
 
 /**
  * V1-303E: live visual review for the core routes at the three required
@@ -38,30 +44,38 @@ import { WHATS_NEW_RELEASE, WHATS_NEW_STORAGE_KEY } from '../lib/whats-new';
  */
 
 test.describe('visual regression: zero horizontal overflow + screenshot evidence', () => {
-  for (const viewport of VIEWPORTS) {
-    test.describe(`@ ${viewport.name}`, () => {
-      test.use({ viewport: { width: viewport.width, height: viewport.height } });
+  for (const language of LOCALES) {
+    test.describe(`@ ${language.name}`, () => {
+      test.use({ locale: language.locale });
 
-      for (const route of CORE_ROUTES) {
-        test(`${route} has no horizontal overflow`, async ({ page }) => {
-          await gotoPublicRoute(page, route);
+      for (const viewport of VIEWPORTS) {
+        test.describe(`@ ${viewport.name}`, () => {
+          test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
-          const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-          const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+          for (const route of CORE_ROUTES) {
+            test(`${route} has no horizontal overflow`, async ({ page }) => {
+              await gotoPublicRoute(page, route);
 
-          expect(
-            scrollWidth,
-            `${route} @ ${viewport.name}: content scrolls horizontally ` +
-              `(scrollWidth ${scrollWidth}px > clientWidth ${clientWidth}px)`,
-          ).toBeLessThanOrEqual(clientWidth);
+              const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+              const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
 
-          await assertNoClippedInteractiveElements(page, viewport.width, `${route} @ ${viewport.name}`);
+              expect(
+                scrollWidth,
+                `${route} @ ${language.name} @ ${viewport.name}: content scrolls horizontally ` +
+                  `(scrollWidth ${scrollWidth}px > clientWidth ${clientWidth}px)`,
+              ).toBeLessThanOrEqual(clientWidth);
 
-          const safeName = route === '/' ? 'home' : route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
-          await page.screenshot({
-            path: `visual-evidence/${safeName}--${viewport.name}.png`,
-            fullPage: true,
-          });
+              const label = `${route} @ ${language.name} @ ${viewport.name}`;
+              await assertNoClippedInteractiveElements(page, viewport.width, label);
+              await assertNoClippedReadableElements(page, viewport.width, label);
+
+              const safeName = route === '/' ? 'home' : route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+              await page.screenshot({
+                path: `visual-evidence/${safeName}--${language.name}--${viewport.name}.png`,
+                fullPage: true,
+              });
+            });
+          }
         });
       }
     });
@@ -87,6 +101,7 @@ test.describe('visual regression: Focus Command shell', () => {
       const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
       expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
       await assertNoClippedInteractiveElements(page, viewport.width, `/first-run @ ${viewport.name}`);
+      await assertNoClippedReadableElements(page, viewport.width, `/first-run @ ${viewport.name}`);
 
       await page.screenshot({
         path: `visual-evidence/focus-command-shell--${viewport.name}.png`,
@@ -114,6 +129,7 @@ test.describe('visual regression: mobile menu open states', () => {
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
     await assertNoClippedInteractiveElements(page, 375, 'first-run nav drawer open @ mobile-375');
+    await assertNoClippedReadableElements(page, 375, 'first-run nav drawer open @ mobile-375');
 
     await page.screenshot({ path: 'visual-evidence/first-run-nav-open--mobile-375.png', fullPage: true });
   });
@@ -132,6 +148,7 @@ test.describe('visual regression: mobile menu open states', () => {
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
     await assertNoClippedInteractiveElements(page, 375, 'first-run more-actions menu open @ mobile-375');
+    await assertNoClippedReadableElements(page, 375, 'first-run more-actions menu open @ mobile-375');
 
     await page.screenshot({ path: 'visual-evidence/first-run-more-actions-open--mobile-375.png', fullPage: true });
   });
