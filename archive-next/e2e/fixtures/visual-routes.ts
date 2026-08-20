@@ -83,6 +83,7 @@ export async function assertNoClippedInteractiveElements(
     );
     const results: Array<{ text: string; left: number; right: number }> = [];
     for (const element of elements) {
+      if (element.closest('[aria-hidden="true"], [inert]')) continue;
       const style = window.getComputedStyle(element);
       if (style.visibility === 'hidden' || style.display === 'none') continue;
       const rect = element.getBoundingClientRect();
@@ -115,6 +116,7 @@ export async function assertNoClippedReadableElements(
 
     return [...document.querySelectorAll<HTMLElement>(selectors)]
       .filter((element) => element.offsetParent !== null && (element.textContent || '').trim())
+      .filter((element) => !element.closest('[aria-hidden="true"], [inert]'))
       .map((element) => {
         const range = document.createRange();
         range.selectNodeContents(element);

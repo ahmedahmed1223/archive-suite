@@ -146,7 +146,7 @@ async function main() {
       // actually draining scheduled-uploads — `php artisan serve` alone only
       // serves HTTP. Both run backgrounded inside this one container so the
       // due-now->completed scenario has something to complete it against.
-      "test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction; php artisan config:clear && php artisan migrate:fresh --seed --seeder=NextIntegrationSeeder --force && (php artisan schedule:work &) && (php artisan queue:work --queue=scheduled-uploads,default --tries=3 --sleep=1 &) && php artisan serve --host=0.0.0.0 --port=8000",
+      "test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction; php artisan config:clear && php artisan migrate:fresh --seed --seeder=NextIntegrationSeeder --force && (php artisan reverb:start &) && (php artisan schedule:work &) && (php artisan queue:work --queue=scheduled-uploads,default --tries=3 --sleep=1 &) && php artisan serve --host=0.0.0.0 --port=8000",
     ]);
   }
 
@@ -194,6 +194,7 @@ async function main() {
       "e2e/onboarding-progress.authed.spec.ts",
       "e2e/scheduled-uploads.authed.spec.ts",
       "e2e/screen-reader-sample.authed.spec.ts",
+      "e2e/visual-regression-authenticated.authed.spec.ts",
     ];
   const e2eCommand = pnpmInvocation([
     "--filter",
