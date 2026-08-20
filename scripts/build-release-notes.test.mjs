@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import test from "node:test";
 import { buildReleaseNotes } from "./build-release-notes.mjs";
 
-test("combines Arabic and English release notes into one GitHub Release body", () => {
+test("builds an Arabic-first GitHub Release body with a collapsible English section", () => {
   const root = mkdtempSync(join(tmpdir(), "archive-release-notes-"));
   const directory = join(root, "docs", "release-notes");
   mkdirSync(directory, { recursive: true });
@@ -14,7 +14,10 @@ test("combines Arabic and English release notes into one GitHub Release body", (
 
   try {
     const notes = buildReleaseNotes("1.2.0", root);
-    assert.match(notes, /## العربية[\s\S]*ميزة عربية[\s\S]*## English[\s\S]*English feature/);
+    assert.match(notes, /> \[!TIP\][\s\S]*هذا ملخص الإصدار بالعربية/i);
+    assert.match(notes, /## العربية[\s\S]*ميزة عربية/);
+    assert.match(notes, /## التنزيلات والتحقق/);
+    assert.match(notes, /<details>[\s\S]*<summary>English release notes<\/summary>[\s\S]*English feature[\s\S]*<\/details>/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

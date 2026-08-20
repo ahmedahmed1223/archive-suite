@@ -20,7 +20,7 @@ export default function ReleaseNotesDocument({ markdown }: ReleaseNotesDocumentP
     if (paragraphBlock) blocks.push(paragraphBlock);
     paragraph = [];
     if (list.length > 0) {
-      blocks.push(<ul key={key++}>{list.map((item) => <li key={item}>{item}</li>)}</ul>);
+      blocks.push(<ul className="release-notes-list" key={key++}>{list.map((item) => <li key={item}>{item}</li>)}</ul>);
       list = [];
     }
   };
