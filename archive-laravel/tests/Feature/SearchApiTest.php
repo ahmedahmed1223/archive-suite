@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -20,6 +21,21 @@ class SearchApiTest extends TestCase
             ->assertJsonCount(1, 'records')
             ->assertJsonPath('records.0.uid', 'clip-001')
             ->assertJsonPath('facets.mode', 'keyword');
+    }
+
+    public function test_keyword_search_rehydrates_a_pool_from_the_database_cache(): void
+    {
+        config(['cache.default' => 'database']);
+        Cache::clear();
+        $this->seedRecords();
+
+        $this->getJson('/api/v1/search?store=archive-items&q=riyadh&limit=10', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('records.0.uid', 'clip-001');
+
+        $this->getJson('/api/v1/search?store=archive-items&q=riyadh&limit=10', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('records.0.uid', 'clip-001');
     }
 
     public function test_it_searches_arabic_text_stored_in_json_records(): void

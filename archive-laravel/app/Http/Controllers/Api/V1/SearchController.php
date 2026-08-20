@@ -84,10 +84,14 @@ class SearchController extends Controller
         // rebuilding/refiltering the pool per page; a genuinely different
         // query never collides because every filter that affects the pool is
         // part of the key.
-        $records = Cache::remember(
+        // Database-backed caches serialize values between requests. Keep the
+        // cached form to plain arrays and reconstruct the collection here;
+        // serializing the Collection itself can rehydrate as an incomplete
+        // PHP class in a later request.
+        $records = collect(Cache::remember(
             $this->searchPoolCacheKey($validated, $mode, $isAdvancedQuery, $useFullTextSearch),
             self::POOL_CACHE_TTL_SECONDS,
-            function () use ($useFullTextSearch, $validated, $queryText, $limit, $mode, $isAdvancedQuery, $advancedQuery): Collection {
+            function () use ($useFullTextSearch, $validated, $queryText, $limit, $mode, $isAdvancedQuery, $advancedQuery): array {
                 if ($useFullTextSearch) {
                     $poolSize = max($limit * 5, 100);
                     $records = $this->storageRows
@@ -122,9 +126,10 @@ class SearchController extends Controller
 
                 return $records
                     ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
-                    ->values();
+                    ->values()
+                    ->all();
             },
-        );
+        ));
 
         $facets = $this->buildFacets($records, $validated, $mode === 'transcript' ? 'transcript' : ($isAdvancedQuery ? 'advanced' : ($wantsSemantic ? 'keyword-fallback' : 'keyword')));
 
