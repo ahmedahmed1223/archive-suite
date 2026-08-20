@@ -136,6 +136,10 @@ async function main() {
       "/app/archive-laravel",
       "-p",
       `${laravelPort}:8000`,
+      // The live gate generates dense, single-client API traffic that must not
+      // be subject to the production-wide API limiter.
+      "-e",
+      "APP_ENV=testing",
       "-e",
       `ARCHIVE_CORS_ORIGINS=http://127.0.0.1:${nextPort},http://localhost:${nextPort}`,
       LARAVEL_RUNTIME_IMAGE,

@@ -21,3 +21,7 @@ test("live integration includes the authenticated visual regression gate", () =>
 test("live integration starts Reverb for realtime events", () => {
   assert.match(source, /php artisan reverb:start/);
 });
+
+test("live integration uses Laravel's testing environment to avoid test traffic throttling", () => {
+  assert.match(source, /"-e",\s*"APP_ENV=testing"/);
+});
