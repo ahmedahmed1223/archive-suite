@@ -15,9 +15,9 @@ test("builds an Arabic-first GitHub Release body with a collapsible English sect
   try {
     const notes = buildReleaseNotes("1.2.0", root);
     assert.match(notes, /> \[!TIP\][\s\S]*هذا ملخص الإصدار بالعربية/i);
-    assert.match(notes, /## العربية[\s\S]*ميزة عربية/);
+    assert.match(notes, /<div dir="rtl" align="right">[\s\S]*## العربية[\s\S]*ميزة عربية[\s\S]*<\/div>/);
     assert.match(notes, /## التنزيلات والتحقق/);
-    assert.match(notes, /<details>[\s\S]*<summary>English release notes<\/summary>[\s\S]*English feature[\s\S]*<\/details>/);
+    assert.match(notes, /<details>[\s\S]*<summary>English release notes<\/summary>[\s\S]*<div dir="ltr" align="left">[\s\S]*English feature[\s\S]*<\/div>[\s\S]*<\/details>/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

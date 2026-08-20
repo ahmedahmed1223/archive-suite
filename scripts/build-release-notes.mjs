@@ -14,7 +14,7 @@ export function buildReleaseNotes(version, root = process.cwd()) {
   const directory = join(root, "docs", "release-notes");
   const arabic = readNotesFile(join(directory, `v${version}.ar.md`));
   const english = readNotesFile(join(directory, `v${version}.md`));
-  return `# Archive Suite v${version}\n\n> [!TIP]\n> هذا ملخص الإصدار بالعربية. ابدأ بقراءة التغييرات أدناه، ثم اختر الحزمة المناسبة من قسم **Assets** في نهاية الصفحة.\n\n## العربية\n\n${arabic}\n\n## التنزيلات والتحقق\n\n- **Windows وLinux:** اختر حزمة النظام الأصلية المناسبة من قسم **Assets**.\n- **التثبيت غير المتصل:** نزّل جميع الأجزاء التي تحمل الاسم نفسه ثم اتبع ملف \`OFFLINE-BUNDLE-README.txt\`.\n- **السلامة:** تحقق من الملفات بواسطة \`SHA256SUMS\` قبل التثبيت.\n\n<details>\n<summary>English release notes</summary>\n\n${english}\n\n</details>\n`;
+  return `# Archive Suite v${version}\n\n> [!TIP]\n> هذا ملخص الإصدار بالعربية. ابدأ بقراءة التغييرات أدناه، ثم اختر الحزمة المناسبة من قسم **Assets** في نهاية الصفحة.\n\n<div dir="rtl" align="right">\n\n## العربية\n\n${arabic}\n\n## التنزيلات والتحقق\n\n- **Windows وLinux:** اختر حزمة النظام الأصلية المناسبة من قسم **Assets**.\n- **التثبيت غير المتصل:** نزّل جميع الأجزاء التي تحمل الاسم نفسه ثم اتبع ملف \`OFFLINE-BUNDLE-README.txt\`.\n- **السلامة:** تحقق من الملفات بواسطة \`SHA256SUMS\` قبل التثبيت.\n\n</div>\n\n<details>\n<summary>English release notes</summary>\n\n<div dir="ltr" align="left">\n\n${english}\n\n</div>\n\n</details>\n`;
 }
 
 function runCli() {
