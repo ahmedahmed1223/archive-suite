@@ -18,6 +18,7 @@ const run = (env = {}) => spawnSync(process.execPath, [CLI], { encoding: "utf8",
 
 function baselineFixture(version = "1.2.3") {
   const dir = mkdtempSync(join(tmpdir(), "readiness-"));
+  mkdirSync(join(dir, "archive-next"), { recursive: true });
   mkdirSync(join(dir, "docs", "release-notes"), { recursive: true });
   mkdirSync(join(dir, "docs", "api"), { recursive: true });
   mkdirSync(join(dir, "infra"), { recursive: true });
@@ -28,6 +29,10 @@ function baselineFixture(version = "1.2.3") {
   mkdirSync(join(dir, ".github", "workflows"), { recursive: true });
 
   writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "fixture", version, license: "MIT" }));
+  writeFileSync(
+    join(dir, "archive-next", "package.json"),
+    JSON.stringify({ name: "@archive/next", version, engines: { node: ">=26.5.0 <27" } })
+  );
   writeFileSync(join(dir, "LICENSE"), "MIT License\n\nCopyright (c) fixture\n");
   writeFileSync(
     join(dir, "docs", "versioning.md"),
@@ -89,6 +94,28 @@ test("fails on an invalid SemVer version", () => {
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("fails when archive-next version differs from the root version", () => {
+  const dir = baselineFixture("1.3.1");
+  try {
+    writeFileSync(
+      join(dir, "archive-next", "package.json"),
+      JSON.stringify({ name: "@archive/next", version: "1.3.0", engines: { node: ">=26.5.0 <27" } })
+    );
+    const r = run({ READINESS_ROOT: dir });
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /archive-next\/package\.json version 1\.3\.0 must match root package\.json version 1\.3\.1/i);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("does not silently ignore a git failure when .git exists", () => {
+  const source = readFileSync(CLI, "utf8");
+  assert.doesNotMatch(source, /catch\s*\{\s*tags\s*=\s*\[\]/s);
+  assert.match(source, /safe\.directory=/);
+  assert.match(source, /function isReleaseMode\(\)[\s\S]*?tagsAtHead\(\)\.some/);
 });
 
 test("fails when release notes for the current version are missing", () => {

@@ -33,6 +33,19 @@ const rootPkg = json("package.json");
 
 const SEMVER_RE = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z-.]+)?(?:\+[0-9A-Za-z-.]+)?$/;
 
+function tagsAtHead() {
+  if (!exists(".git")) return [];
+
+  return execFileSync(
+    "git",
+    ["-c", `safe.directory=${ROOT.replaceAll("\\", "/")}`, "-C", ROOT, "tag", "--points-at", "HEAD"],
+    { encoding: "utf8" }
+  )
+    .split("\n")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
 // 1. Version coherence: SemVer, HEAD tag (if any) matches, release notes exist.
 function checkVersionCoherence() {
   const version = rootPkg.version;
@@ -42,16 +55,14 @@ function checkVersionCoherence() {
     `package.json "version" ("${version}") is not valid SemVer (expected MAJOR.MINOR.PATCH[-pre][+build])`
   );
 
-  let tags = [];
-  try {
-    tags = execFileSync("git", ["-C", ROOT, "tag", "--points-at", "HEAD"], { encoding: "utf8" })
-      .split("\n")
-      .map((t) => t.trim())
-      .filter(Boolean);
-  } catch {
-    tags = []; // not a git repo / git unavailable: skip tag coherence, still check the rest
-  }
-  const versionTag = tags.find((t) => /^v\d/.test(t));
+  const nextVersion = json("archive-next/package.json").version;
+  assert.equal(
+    nextVersion,
+    version,
+    `archive-next/package.json version ${nextVersion} must match root package.json version ${version}`
+  );
+
+  const versionTag = tagsAtHead().find((tag) => /^v\d/.test(tag));
   if (versionTag) {
     assert.equal(
       versionTag,
@@ -173,13 +184,7 @@ function checkOpenApiContract() {
 
 function isReleaseMode() {
   if (process.env.READINESS_RELEASE === "1") return true;
-  try {
-    return execFileSync("git", ["-C", ROOT, "tag", "--points-at", "HEAD"], { encoding: "utf8" })
-      .split("\n")
-      .some((t) => /^v\d/.test(t.trim()));
-  } catch {
-    return false;
-  }
+  return tagsAtHead().some((tag) => /^v\d/.test(tag));
 }
 
 // 6c. V1-406: no platform may claim "supported" without recorded evidence.
