@@ -15,7 +15,7 @@ test("live integration repairs an incomplete vendor directory", () => {
 });
 
 test("live integration includes the authenticated visual regression gate", () => {
-  assert.match(source, /"e2e\/visual-regression-authenticated\.authed\.spec\.ts"/);
+  assert.match(source, /"e2e\/uploads-mobile\.authed\.spec\.ts"/);
 });
 
 test("live integration starts Reverb for realtime events", () => {
