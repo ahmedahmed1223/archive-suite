@@ -55,6 +55,8 @@ export async function gotoPublicRoute(page: Page, route: string): Promise<void> 
 
 export const VIEWPORTS = [
   { name: 'mobile-375', width: 375, height: 812 },
+  // V1.4 Task 10: 640×800 represents a 1280px desktop at 200% zoom.
+  { name: 'zoom-200-640', width: 640, height: 800 },
   { name: 'tablet-768', width: 768, height: 1024 },
   { name: 'desktop-1280', width: 1280, height: 800 },
 ] as const;
