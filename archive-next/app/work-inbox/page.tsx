@@ -5,6 +5,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type PaginationMeta, type WorkInboxCounts, type WorkInboxItem, type WorkInboxItemType } from "@/lib/archive-api";
+import { sortWorkInboxItems } from "@/lib/work-inbox";
 import { formatDate } from "@/lib/record-utils";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
@@ -61,7 +62,9 @@ export default function WorkInboxPage() {
   const items = state.status === "ready" ? state.items : [];
   const counts = state.status === "ready" ? state.counts : { task: 0, review: 0, rights: 0, notification: 0 };
   const total = counts.task + counts.review + counts.rights + counts.notification;
-  const visibleItems = filter === "all" ? items : items.filter((item) => item.type === filter);
+  // V14-UX-003: the daily list is ordered by urgency (soonest/overdue due
+  // date first) with a stable tiebreak — not by arrival order.
+  const visibleItems = sortWorkInboxItems(filter === "all" ? items : items.filter((item) => item.type === filter));
 
   const filterCount = useMemo(() => ({ all: total, ...counts }) as Record<FilterValue, number>, [total, counts]);
 

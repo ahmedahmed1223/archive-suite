@@ -36,7 +36,7 @@ type PresetDefinition = {
 const PRESET_DEFINITIONS: Readonly<Record<PresetId, PresetDefinition>> = {
   archivist: {
     id: "archivist",
-    homePage: "/archive",
+    homePage: "/work-inbox",
     navigationOrder: ["capture", "organize", "library", "insights", "collaborate", "system"],
     hiddenModules: ["/kanban", "/projects", "/copilot"],
     archiveView: { mode: "table", columns: ["title", "store", "type", "updated"] }
