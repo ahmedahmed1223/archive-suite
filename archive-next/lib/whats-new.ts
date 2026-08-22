@@ -1,4 +1,4 @@
-export const WHATS_NEW_RELEASE = "1.2.1";
+export const WHATS_NEW_RELEASE = "1.4.0";
 export const WHATS_NEW_STORAGE_KEY = "archive.whats-new.acknowledged-release";
 export const WHATS_NEW_DISMISSED_KEY = "archive.whats-new.dismissed";
 

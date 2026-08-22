@@ -1,11 +1,11 @@
 const englishHighlights = [
-  { title: "Full bilingual support", description: "Use the application in Arabic or English, including interface labels, operational messages, and workflows." },
-  { title: "Consistent workflows", description: "Shortcuts, statuses, dates, and guided journeys follow the language selected in Settings." },
+  { title: "Stable daily navigation", description: "Every team starts its day from four consistent destinations that respect permissions, with the work inbox as the archivist’s entry point." },
+  { title: "Unified states and filters", description: "Loading, empty, error, and retry follow one contract across pages, while advanced filters wait behind a clear disclosure." },
   { title: "Documented release details", description: "The Help page provides the complete bilingual change log for this release." },
 ] as const;
 
 export const whatsNewDialog = {
-  title: "What’s new in Archive Suite 1.2.1",
+  title: "What’s new in Archive Suite 1.4.0",
   description: "This release completes bilingual application support with equal feature coverage in Arabic and English.",
   highlights: englishHighlights,
   next: "Explore this release",

@@ -28,18 +28,18 @@ describe("WhatsNewDialog", () => {
   it("opens once for a new release and records acknowledgement", async () => {
     render(<WhatsNewDialog />);
 
-    expect(await screen.findByRole("dialog", { name: "ما الجديد في Archive Suite 1.2.1" })).toBeTruthy();
-    expect(screen.getByText("دعم متكامل للغتين")).toBeTruthy();
+    expect(await screen.findByRole("dialog", { name: "ما الجديد في Archive Suite 1.4.0" })).toBeTruthy();
+    expect(screen.getByText("تنقل يومي ثابت")).toBeTruthy();
     expect(screen.getByText("اكتشف تفاصيل الإصدار")).toBeTruthy();
     expect(screen.getByRole("link", { name: "عرض تفاصيل الإصدار" })).toHaveAttribute(
       "href",
-      "/help/releases/1.2.1",
+      "/help/releases/1.4.0",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "ابدأ العمل" }));
 
     expect(window.localStorage.getItem(WHATS_NEW_STORAGE_KEY)).toBe(WHATS_NEW_RELEASE);
-    expect(screen.queryByRole("dialog", { name: "ما الجديد في Archive Suite 1.2.1" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "ما الجديد في Archive Suite 1.4.0" })).toBeNull();
   });
 
   it("stays closed after the current release was acknowledged", () => {
@@ -52,7 +52,7 @@ describe("WhatsNewDialog", () => {
   it("can permanently hide future whats-new dialogs on this device", async () => {
     render(<WhatsNewDialog />);
 
-    await screen.findByRole("dialog", { name: "ما الجديد في Archive Suite 1.2.1" });
+    await screen.findByRole("dialog", { name: "ما الجديد في Archive Suite 1.4.0" });
     fireEvent.click(screen.getByRole("checkbox", { name: "لا تعرض تحديثات ما الجديد مرة أخرى" }));
     fireEvent.click(screen.getByRole("button", { name: "ابدأ العمل" }));
 
