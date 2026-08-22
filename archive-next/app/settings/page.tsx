@@ -1,9 +1,10 @@
 "use client";
 
 import "./settings.css";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Activity, AlertTriangle, DatabaseZap, Fingerprint, KeyRound, LifeBuoy, Settings, ShieldCheck, Users } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import AsyncStateSurface from "@/components/AsyncStateSurface";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useAuthSession } from "@/lib/auth-session";
 import { useDisplaySettings } from "@/lib/display-settings-context";
@@ -48,26 +49,29 @@ export default function SettingsPage() {
     setDisplaySettingsDraft(activeDisplaySettings);
   }, [activeDisplaySettings]);
 
-  useEffect(() => {
-    const fetchSecuritySettings = async () => {
-      try {
-        const client = createArchiveApiClient();
-        const response = await client.getSecuritySettings();
+  // V14-UX-006 (Task 6): extracted so the security panel's error state can
+  // retry through AsyncStateSurface.
+  const fetchSecuritySettings = useCallback(async () => {
+    try {
+      const client = createArchiveApiClient();
+      const response = await client.getSecuritySettings();
 
-        if (response.ok) {
-          setSettings(response.settings);
-        } else {
-          setError(response.error || t.pages.settings.security.loadError);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t.pages.settings.security.loadConnectionError);
-      } finally {
-        setIsLoading(false);
+      if (response.ok) {
+        setSettings(response.settings);
+        setError(null);
+      } else {
+        setError(response.error || t.pages.settings.security.loadError);
       }
-    };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.pages.settings.security.loadConnectionError);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [t]);
 
-    fetchSecuritySettings();
-  }, []);
+  useEffect(() => {
+    void fetchSecuritySettings();
+  }, [fetchSecuritySettings]);
 
   useEffect(() => {
     const fetchOdbcStatus = async () => {
@@ -288,10 +292,14 @@ export default function SettingsPage() {
           </div>
 
           <div className="stack">
-            {isLoading ? (
-              <p className="helper-text">{settingsCopy.security.loading}</p>
-            ) : error ? (
-              <p className="helper-text status-error">{settingsCopy.security.errorPrefix.replace("{error}", error)}</p>
+            {isLoading || error ? (
+              /* V14-UX-006: shared state surface inside the security panel. */
+              <AsyncStateSurface
+                status={isLoading ? "loading" : "error"}
+                loadingLabel={settingsCopy.security.loading}
+                description={error ? settingsCopy.security.errorPrefix.replace("{error}", error) : undefined}
+                onRetry={error ? () => void fetchSecuritySettings() : undefined}
+              />
             ) : (
               <>
                 <div className="kv-grid" role="group" aria-label={settingsCopy.security.postureAriaLabel}>

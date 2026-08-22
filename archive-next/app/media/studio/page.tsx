@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
+import AsyncStateSurface from "@/components/AsyncStateSurface";
 import MediaPlayer from "@/components/MediaPlayer";
 import MediaTechSpecCard, { computeMediaTechSpec, type MediaTechSpec } from "@/components/MediaTechSpecCard";
 import PageToolbar from "@/components/PageToolbar";
@@ -85,7 +86,9 @@ export default function MediaStudioPage() {
   const [techSpec, setTechSpec] = useState<MediaTechSpec>(EMPTY_TECH_SPEC);
   const [currentTime, setCurrentTime] = useState(0);
 
-  useEffect(() => {
+  // V14-UX-006 (Task 6): loading extracted so the error state's retry button
+  // can re-run the exact same operation.
+  const loadStudio = useCallback(async () => {
     const params = new URLSearchParams(window.location.search);
     const recordId = params.get("recordId")?.trim() ?? "";
     const attachmentId = params.get("attachmentId")?.trim() ?? "";
@@ -95,45 +98,40 @@ export default function MediaStudioPage() {
       return;
     }
 
-    let active = true;
     setState({ status: "loading" });
 
-    void (async () => {
-      const recordResponse = await api.record(recordId);
-      if (!active) return;
-      if (!recordResponse.ok) {
-        setState({ status: "error", message: recordResponse.error });
-        return;
-      }
+    const recordResponse = await api.record(recordId);
+    if (!recordResponse.ok) {
+      setState({ status: "error", message: recordResponse.error });
+      return;
+    }
 
-      const record = recordResponse.record;
-      const sourcePath = deriveRecordSourcePath(record);
+    const record = recordResponse.record;
+    const sourcePath = deriveRecordSourcePath(record);
 
-      if (!attachmentId) {
-        setState({ status: "ready", record, attachment: null, sourcePath });
-        return;
-      }
+    if (!attachmentId) {
+      setState({ status: "ready", record, attachment: null, sourcePath });
+      return;
+    }
 
-      const attachmentsResponse = await api.recordAttachments(recordId, record.store || "archive-items");
-      if (!active) return;
-      if (!attachmentsResponse.ok) {
-        setState({ status: "error", message: attachmentsResponse.error });
-        return;
-      }
+    const attachmentsResponse = await api.recordAttachments(recordId, record.store || "archive-items");
+    if (!attachmentsResponse.ok) {
+      setState({ status: "error", message: attachmentsResponse.error });
+      return;
+    }
 
-      const attachment = attachmentsResponse.attachments.find((item) => item.id === attachmentId) ?? null;
-      if (!attachment) {
-        setState({ status: "attachment-not-found" });
-        return;
-      }
+    const attachment = attachmentsResponse.attachments.find((item) => item.id === attachmentId) ?? null;
+    if (!attachment) {
+      setState({ status: "attachment-not-found" });
+      return;
+    }
 
-      setState({ status: "ready", record, attachment, sourcePath });
-    })();
-
-    return () => {
-      active = false;
-    };
+    setState({ status: "ready", record, attachment, sourcePath });
   }, [api]);
+
+  useEffect(() => {
+    void loadStudio();
+  }, [loadStudio]);
 
   const attachmentSizeBytes = state.status === "ready" ? state.attachment?.sizeBytes ?? null : null;
 
@@ -209,17 +207,15 @@ export default function MediaStudioPage() {
         <EmptyState title={copy.missingRecordTitle} description={copy.missingRecordDescription} />
       ) : null}
 
-      {state.status === "loading" ? (
-        <div className="panel">
-          <Skeleton label={copy.loadingRecord} lines={4} />
-        </div>
-      ) : null}
-
-      {state.status === "error" ? (
-        <div className="state-banner state-banner-error" role="alert">
-          <strong>{copy.loadErrorTitle}</strong>
-          <span className="helper-text">{state.message}</span>
-        </div>
+      {state.status === "loading" || state.status === "error" ? (
+        /* V14-UX-006: shared semantic state surface with retry. */
+        <AsyncStateSurface
+          status={state.status === "loading" ? "loading" : "error"}
+          loadingLabel={copy.loadingRecord}
+          title={state.status === "error" ? copy.loadErrorTitle : undefined}
+          description={state.status === "error" ? state.message : undefined}
+          onRetry={state.status === "error" ? () => void loadStudio() : undefined}
+        />
       ) : null}
 
       {state.status === "attachment-not-found" ? (

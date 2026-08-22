@@ -10,6 +10,7 @@ export const uploads = {
   openArchiveAction: "Open archive",
   mediaJobsAction: "Media jobs",
   sectionAriaLabel: "Add material to the archive",
+  otherIntakeOptions: "Other intake options",
   supportAriaLabel: "Supporting intake tools",
   supportHeading: "Supporting tools",
   supportDescription: "Open when you need to import a link or manage templates and team links.",

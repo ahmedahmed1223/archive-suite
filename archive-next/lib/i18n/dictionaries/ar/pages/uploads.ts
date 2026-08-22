@@ -10,6 +10,7 @@ export const uploads = {
   openArchiveAction: "فتح الأرشيف",
   mediaJobsAction: "مهام الوسائط",
   sectionAriaLabel: "إضافة مادة للأرشيف",
+  otherIntakeOptions: "خيارات إضافة أخرى",
   supportAriaLabel: "أدوات الإضافة المساندة",
   supportHeading: "أدوات مساندة",
   supportDescription: "افتح عند الحاجة لاستيراد رابط أو إدارة القوالب وروابط الفريق.",

@@ -2,6 +2,7 @@
 
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
+import DisclosureToolbar from "@/components/DisclosureToolbar";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { Link2, PlusCircle } from "lucide-react";
 import { ImportFromUrlForm } from "./ImportFromUrlForm";
@@ -10,6 +11,9 @@ import { UploadForm } from "./UploadForm";
 import { UploadLinksPanel } from "./UploadLinksPanel";
 import { FilelessRecordForm } from "./FilelessRecordForm";
 
+// V14-UX-006 (Task 6): file upload is THE primary intake path; every other
+// intake route (fileless record, URL import, templates, links) waits behind
+// a disclosure so the first screen shows one obvious action.
 export default function UploadsPage() {
   const { t } = useLocale();
   return (
@@ -37,23 +41,16 @@ export default function UploadsPage() {
 
       <section className="add-workspace" aria-label={t.pages.uploads.sectionAriaLabel}>
         <div className="add-workspace__primary">
-          <FilelessRecordForm />
           <UploadForm />
         </div>
-        <details className="add-workspace__support" aria-label={t.pages.uploads.supportAriaLabel}>
-          <summary className="add-workspace__support-header">
-            <div>
-              <h2>{t.pages.uploads.supportHeading}</h2>
-              <p>{t.pages.uploads.supportDescription}</p>
-            </div>
-            <span className="badge"><Link2 aria-hidden="true" size={14} /> {t.pages.uploads.supportBadge}</span>
-          </summary>
+        <DisclosureToolbar summary={t.pages.uploads.otherIntakeOptions}>
           <div className="add-workspace__support-grid">
+            <FilelessRecordForm />
             <ImportFromUrlForm />
             <IntakeTemplatesPanel />
             <UploadLinksPanel />
           </div>
-        </details>
+        </DisclosureToolbar>
       </section>
     </AppShell>
   );
