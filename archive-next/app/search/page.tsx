@@ -7,6 +7,7 @@ import AppShell from "@/components/AppShell";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import AsyncStateSurface from "@/components/AsyncStateSurface";
+import DisclosureToolbar from "@/components/DisclosureToolbar";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import SearchAutocomplete from "@/components/SearchAutocomplete";
@@ -498,8 +499,8 @@ function SearchPageContent() {
             </label>
             <button type="submit" className="button button-primary">{searchCopy.search}</button>
           </div>
-          <details className="search-advanced-filters">
-            <summary>{searchCopy.advanced}</summary>
+          {/* V14-UX-005: advanced filters behind the shared disclosure. */}
+          <DisclosureToolbar summary={searchCopy.advanced}>
             <div className="archive-toolbar-grid">
               <label>
                 <span>{searchCopy.store}</span>
@@ -537,7 +538,7 @@ function SearchPageContent() {
               </label>
             </div>
             <SearchFilterBuilder value={query} onChange={setQuery} />
-          </details>
+          </DisclosureToolbar>
         </form>
         <div className="search-workbench-actions">
           <button type="button" className="button button-primary" onClick={() => void saveCurrentSearch()} disabled={!query.trim() && !store && typeFilter === "all" && !tagFilter}>

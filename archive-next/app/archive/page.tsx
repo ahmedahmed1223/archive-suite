@@ -13,6 +13,7 @@ import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
 import AsyncStateSurface from "@/components/AsyncStateSurface";
+import DisclosureToolbar from "@/components/DisclosureToolbar";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -973,24 +974,30 @@ function ArchivePageContent() {
               {typeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
-          <label>
-            <span><SlidersHorizontal aria-hidden="true" size={14} /> {t.pages.archiveList.sortLabel}</span>
-            <select value={sortField} onChange={(e) => setSortField(e.target.value as ArchiveSortField)}>
-              {Object.entries(sortLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </select>
-          </label>
-          <label>
-            <span>{t.pages.archiveList.directionLabel}</span>
-            <select value={sortDirection} onChange={(e) => setSortDirection(e.target.value as ArchiveSortDirection)}>
-              <option value="desc">{t.pages.archiveList.newestFirst}</option>
-              <option value="asc">{t.pages.archiveList.oldestFirst}</option>
-            </select>
-          </label>
+          {/* V14-UX-005: primary filters stay visible; sort/direction/density
+              move behind the shared disclosure. */}
+        </form>
+        <DisclosureToolbar summary={t.pages.archiveList.advancedFilters}>
+          <form className="archive-toolbar-grid advanced-filter-grid" onSubmit={handleSearch}>
+            <label>
+              <span><SlidersHorizontal aria-hidden="true" size={14} /> {t.pages.archiveList.sortLabel}</span>
+              <select value={sortField} onChange={(e) => setSortField(e.target.value as ArchiveSortField)}>
+                {Object.entries(sortLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>{t.pages.archiveList.directionLabel}</span>
+              <select value={sortDirection} onChange={(e) => setSortDirection(e.target.value as ArchiveSortDirection)}>
+                <option value="desc">{t.pages.archiveList.newestFirst}</option>
+                <option value="asc">{t.pages.archiveList.oldestFirst}</option>
+              </select>
+            </label>
           <div className="archive-toolbar-actions">
             <button type="submit" className="button button-primary">{t.pages.archiveList.refresh}</button>
             <button type="button" className="button button-secondary" onClick={resetFilters}>{t.pages.archiveList.reset}</button>
           </div>
-        </form>
+          </form>
+        </DisclosureToolbar>
         <div className="archive-toolbar-row" role="group" aria-label={t.pages.archiveList.workflowFilterGroupLabel}>
           <button
             type="button"

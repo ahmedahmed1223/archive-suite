@@ -46,6 +46,7 @@ export const archiveList = {
   allStores: "All stores",
   typeLabel: "Type",
   allTypes: "All types",
+  advancedFilters: "Advanced options",
   sortLabel: "Sort",
   directionLabel: "Direction",
   newestFirst: "Newest first",

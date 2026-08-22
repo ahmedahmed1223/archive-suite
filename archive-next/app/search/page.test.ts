@@ -11,7 +11,8 @@ describe("advanced search workbench", () => {
 
     expect(pageSource).toContain("aria-label={searchCopy.recentSearches}");
     expect(pageSource).toContain("clearRecentSearches");
-    expect(pageSource).toContain('<details className="search-advanced-filters">');
+    // V14-UX-005: advanced filters live behind the shared DisclosureToolbar.
+    expect(pageSource).toContain("<DisclosureToolbar summary={searchCopy.advanced}>");
     expect(dictionary).toContain('recentSearches: "عمليات البحث الأخيرة"');
   });
 

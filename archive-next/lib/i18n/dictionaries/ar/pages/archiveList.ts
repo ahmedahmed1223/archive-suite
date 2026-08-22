@@ -46,6 +46,7 @@ export const archiveList = {
   allStores: "كل المخازن",
   typeLabel: "النوع",
   allTypes: "كل الأنواع",
+  advancedFilters: "خيارات متقدمة",
   sortLabel: "الفرز",
   directionLabel: "الاتجاه",
   newestFirst: "الأحدث أولاً",
