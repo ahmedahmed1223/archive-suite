@@ -71,7 +71,9 @@ export const DYNAMIC_ROUTE_PARAMS: Readonly<Record<string, (data: { recordUid: s
  * Router must appear here or in EXCLUDED_ROUTES.
  */
 export const ROUTE_COVERAGE: readonly RouteCoverage[] = [
+  { url: '/approval-requests', route: '/approval-requests', role: 'editor', states: ALL_STATES },
   { url: '/', route: '/', role: 'viewer', states: ALL_STATES },
+  { url: '/daily', route: '/daily', role: 'viewer', states: ALL_STATES },
   { url: '/activity', route: '/activity', role: 'viewer', states: ALL_STATES },
   { url: '/analytics', route: '/analytics', role: 'viewer', states: ALL_STATES },
   { url: '/archive', route: '/archive', role: 'viewer', states: ALL_STATES },
@@ -83,6 +85,7 @@ export const ROUTE_COVERAGE: readonly RouteCoverage[] = [
   { url: '/collections', route: '/collections', role: 'viewer', states: ALL_STATES },
   { url: '/copilot', route: '/copilot', role: 'viewer', states: ALL_STATES },
   { url: '/data-center', route: '/data-center', role: 'admin', states: ALL_STATES },
+  { url: '/delegations', route: '/delegations', role: 'viewer', states: ALL_STATES },
   { url: '/discover', route: '/discover', role: 'viewer', states: ALL_STATES },
   { url: '/duplicates', route: '/duplicates', role: 'viewer', states: ALL_STATES },
   { url: '/errors', route: '/errors', role: 'viewer', states: ALL_STATES },
@@ -90,6 +93,7 @@ export const ROUTE_COVERAGE: readonly RouteCoverage[] = [
   { url: '/files', route: '/files', role: 'viewer', states: ALL_STATES },
   { url: '/graph', route: '/graph', role: 'viewer', states: ALL_STATES },
   { url: '/help', route: '/help', role: 'viewer', states: ALL_STATES },
+  { url: '/help/releases/[version]', route: '/help/releases/[version]', role: 'viewer', states: ALL_STATES },
   { url: '/inbox', route: '/inbox', role: 'viewer', states: ALL_STATES },
   { url: '/ingest', route: '/ingest', role: 'editor', states: ALL_STATES },
   { url: '/kanban', route: '/kanban', role: 'viewer', states: ALL_STATES },
@@ -98,9 +102,13 @@ export const ROUTE_COVERAGE: readonly RouteCoverage[] = [
   { url: '/media/jobs', route: '/media/jobs', role: 'viewer', states: ALL_STATES },
   { url: '/media/play', route: '/media/play', role: 'viewer', states: ALL_STATES },
   { url: '/media/review', route: '/media/review', role: 'viewer', states: ALL_STATES },
+  { url: '/media/studio', route: '/media/studio', role: 'editor', states: ALL_STATES },
+  { url: '/metadata-templates', route: '/metadata-templates', role: 'viewer', states: ALL_STATES },
   { url: '/notifications', route: '/notifications', role: 'viewer', states: ALL_STATES },
   { url: '/plugins', route: '/plugins', role: 'admin', states: ALL_STATES },
   { url: '/projects', route: '/projects', role: 'viewer', states: ALL_STATES },
+  { url: '/project-groups', route: '/project-groups', role: 'viewer', states: ALL_STATES },
+  { url: '/project-tasks', route: '/project-tasks', role: 'viewer', states: ALL_STATES },
   { url: '/reading-lists', route: '/reading-lists', role: 'viewer', states: ALL_STATES },
   { url: '/reports', route: '/reports', role: 'admin', states: ALL_STATES },
   { url: '/rights', route: '/rights', role: 'viewer', states: ALL_STATES },
@@ -110,6 +118,7 @@ export const ROUTE_COVERAGE: readonly RouteCoverage[] = [
   { url: '/settings/users', route: '/settings/users', role: 'admin', states: ALL_STATES },
   { url: '/shares', route: '/shares', role: 'editor', states: ALL_STATES },
   { url: '/shares/with-me', route: '/shares/with-me', role: 'viewer', states: ALL_STATES },
+  { url: '/safety-preview', route: '/safety-preview', role: 'viewer', states: ALL_STATES },
   { url: '/status', route: '/status', role: 'admin', states: ALL_STATES },
   { url: '/sync', route: '/sync', role: 'viewer', states: ALL_STATES },
   { url: '/system/control', route: '/system/control', role: 'admin', states: ALL_STATES },
@@ -124,6 +133,7 @@ export const ROUTE_COVERAGE: readonly RouteCoverage[] = [
   { url: '/uploads', route: '/uploads', role: 'editor', states: ALL_STATES },
   { url: '/uploads/scheduled', route: '/uploads/scheduled', role: 'editor', states: ALL_STATES },
   { url: '/vocabulary', route: '/vocabulary', role: 'editor', states: ALL_STATES },
+  { url: '/work-inbox', route: '/work-inbox', role: 'viewer', states: ALL_STATES },
 ];
 
 /**
