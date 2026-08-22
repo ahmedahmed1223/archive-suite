@@ -95,30 +95,97 @@ const roleHomeSection: Record<NavigationRole, NavSection> = {
   viewer: "library"
 };
 
+// V14-UX-001: stable per-role daily destinations. The mobile daily bar no
+// longer follows the section the user happens to be browsing — each role
+// gets four fixed entry points, ordered by daily priority.
+export const ROLE_DAILY_ROUTES = {
+  editor: ["/work-inbox", "/uploads", "/archive", "/search"],
+  viewer: ["/work-inbox", "/archive", "/search", "/favorites"],
+  admin: ["/status", "/settings", "/work-inbox", "/backup"],
+} as const satisfies Record<NavigationRole, readonly string[]>;
+
 /**
  * `visibleHrefs`, when passed, restricts both the daily bar and the "more"
  * groups to that set -- used to apply a user's/preset's navigation
  * customization (V3-SET-006) to the mobile bar the same way the desktop
  * sidebar applies it. Omit it to get the full unfiltered navigation, which
  * keeps every existing call site (and the existing unit test) unchanged.
+ *
+ * When called without a section (V14-UX-001), the daily destinations are
+ * picked from ROLE_DAILY_ROUTES for the given role and stay stable while
+ * the user browses; passing an explicit section preserves the previous
+ * section-scoped behaviour for existing callers.
+ */
+/**
+ * V14-UX-001 form: getDailyNavigation(role, visibleHrefs?) — stable per-role
+ * daily destinations that do not follow the section being browsed.
  */
 export function getDailyNavigation(
-  section: NavSection | undefined,
-  role: NavigationRole = "viewer",
+  role: NavigationRole,
   visibleHrefs?: ReadonlySet<string>
+): { daily: NavigationItem[]; more: Array<{ section: NavSection; label: string; items: NavigationItem[] }> };
+/** Legacy section-scoped form kept for existing callers. */
+export function getDailyNavigation(
+  section: NavSection | undefined,
+  role?: NavigationRole,
+  visibleHrefs?: ReadonlySet<string>
+): { daily: NavigationItem[]; more: Array<{ section: NavSection; label: string; items: NavigationItem[] }> };
+export function getDailyNavigation(
+  sectionOrRole?: NavSection | NavigationRole,
+  roleOrVisibleHrefs?: NavigationRole | ReadonlySet<string>,
+  visibleHrefsArg?: ReadonlySet<string>
 ) {
-  const focusedSection = section ?? roleHomeSection[role];
-  const dailyHrefs = new Set(dailyRoutes[focusedSection]);
-  const source = visibleHrefs ? primaryNav.filter((item) => visibleHrefs.has(item.href)) : primaryNav;
-  const daily = source.filter((item) => dailyHrefs.has(item.href));
+  // Distinguish the two shapes by the FIRST argument: the four roles are
+  // never section keys, so a role in position 1 selects the V14-UX-001
+  // form where argument 2 is the visible-hrefs filter.
+  if (!sectionOrRole || sectionOrRole in ROLE_DAILY_ROUTES) {
+    const resolvedRole = (sectionOrRole as NavigationRole | undefined)
+      // Legacy form getDailyNavigation(undefined, role): the role arrives
+      // in position 2.
+      ?? (roleOrVisibleHrefs !== undefined && typeof roleOrVisibleHrefs === "string" ? (roleOrVisibleHrefs as NavigationRole) : "viewer");
+    const visible = secondArgIsVisibleSet(roleOrVisibleHrefs, visibleHrefsArg)
+      ? (roleOrVisibleHrefs as ReadonlySet<string>)
+      : visibleHrefsArg;
+    const source = visible ? primaryNav.filter((item) => visible.has(item.href)) : primaryNav;
+    return buildDailyNavigation(ROLE_DAILY_ROUTES[resolvedRole], source);
+  }
+
+  // Legacy section-scoped form.
+  const source = visibleHrefsArg
+    ? primaryNav.filter((item) => visibleHrefsArg.has(item.href))
+    : primaryNav;
+  return buildDailyNavigation(dailyRoutes[sectionOrRole as NavSection], source);
+}
+
+function secondArgIsVisibleSet(
+  roleOrVisibleHrefs: NavigationRole | ReadonlySet<string> | undefined,
+  visibleHrefsArg: ReadonlySet<string> | undefined
+): boolean {
+  if (
+    roleOrVisibleHrefs !== undefined &&
+    typeof roleOrVisibleHrefs === "object" &&
+    "has" in roleOrVisibleHrefs
+  ) return true;
+  // Second argument is not a set and not undefined → it is a legacy role.
+  // The filter then lives in position 3.
+  return false;
+}
+
+function buildDailyNavigation(
+  dailyHrefs: readonly string[],
+  source: NavigationItem[]
+) {
+  const dailySet = new Set(dailyHrefs);
+  const daily = dailyHrefs
+    .map((href) => source.find((item) => item.href === href))
+    .filter((item): item is NavigationItem => Boolean(item));
   const more = (Object.keys(navSectionLabels) as NavSection[])
-    .map((groupSection) => ({
-      section: groupSection,
-      label: navSectionLabels[groupSection],
-      items: source.filter((item) => item.section === groupSection && !dailyHrefs.has(item.href))
+    .map((section) => ({
+      section,
+      label: navSectionLabels[section],
+      items: source.filter((item) => item.section === section && !dailySet.has(item.href)),
     }))
     .filter((group) => group.items.length > 0);
-
   return { daily, more };
 }
 

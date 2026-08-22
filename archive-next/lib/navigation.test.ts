@@ -33,6 +33,47 @@ describe("role-focused navigation", () => {
   });
 });
 
+// V14-UX-001: the daily bar is stable per role — four fixed destinations
+// regardless of which section the user is currently browsing.
+describe("V14-UX-001 stable role-based daily navigation", () => {
+  it("returns four fixed daily destinations for each role, independent of section", () => {
+    expect(getDailyNavigation("editor").daily.map((item) => item.href)).toEqual([
+      "/work-inbox", "/uploads", "/archive", "/search",
+    ]);
+    expect(getDailyNavigation("viewer").daily.map((item) => item.href)).toEqual([
+      "/work-inbox", "/archive", "/search", "/favorites",
+    ]);
+    expect(getDailyNavigation("admin").daily.map((item) => item.href)).toEqual([
+      "/status", "/settings", "/work-inbox", "/backup",
+    ]);
+  });
+
+  it("keeps the same destinations no matter which section is active", () => {
+    // Legacy form with an undefined section resolves to the role's stable
+    // destinations too.
+    expect(getDailyNavigation(undefined, "editor").daily.map((item) => item.href))
+      .toEqual(getDailyNavigation("editor").daily.map((item) => item.href));
+  });
+
+  it("still exposes every route through more when using role-based daily", () => {
+    for (const role of ["editor", "viewer", "admin"] as const) {
+      const navigation = getDailyNavigation(role);
+      const exposedHrefs = [...navigation.daily, ...navigation.more.flatMap((group) => group.items)].map((item) => item.href);
+
+      expect(new Set(exposedHrefs)).toEqual(new Set(primaryNav.map((item) => item.href)));
+      expect(navigation.more.every((group) => group.items.length > 0)).toBe(true);
+    }
+  });
+
+  it("respects a visible-hrefs filter in both daily and more groups", () => {
+    const visible = visibleNavHrefs(primaryNav, { hiddenModules: ["/favorites"], order: [] }, DEFAULT_CAPABILITIES);
+    const navigation = getDailyNavigation("viewer", visible);
+
+    expect(navigation.daily.map((item) => item.href)).not.toContain("/favorites");
+    expect([...navigation.daily, ...navigation.more.flatMap((group) => group.items)].map((item) => item.href)).not.toContain("/favorites");
+  });
+});
+
 describe("active navigation siblings", () => {
   it("does not activate a parent route for an explicit sibling route", () => {
     expect(isActivePath("/search/saved", "/search")).toBe(false);

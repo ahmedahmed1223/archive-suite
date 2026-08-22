@@ -19,10 +19,11 @@ export default function MobilePrimaryNav() {
   const auth = useAuthSession();
   const { experience, capabilities } = useExperienceProfile();
   const { items } = getLocalizedNavigation(locale);
-  const activeSection = items.find((link) => isActivePath(pathname, link.href))?.section;
   const navigationValue = experience.navigation.value as NavigationExperienceSettings | undefined;
   const visibleHrefs = visibleNavHrefs(items, navigationValue, capabilities);
-  const mobileItems = getDailyNavigation(activeSection, auth.user?.role ?? "viewer", visibleHrefs).daily
+  // V14-UX-001: role-stable destinations — the bar no longer follows the
+  // section of the page being viewed.
+  const mobileItems = getDailyNavigation(auth.user?.role ?? "viewer", visibleHrefs).daily
     .map((item) => items.find((localized) => localized.href === item.href) ?? item);
 
   function openAllRoutes() {

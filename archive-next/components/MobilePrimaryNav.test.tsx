@@ -27,13 +27,18 @@ afterEach(() => {
 });
 
 describe("MobilePrimaryNav", () => {
-  test("renders daily navigation and command controls in English", () => {
+  test("renders the role-stable daily navigation and command controls in English", () => {
     render(<LocaleProvider initialLocale="en" hasLocaleCookie><MobilePrimaryNav /></LocaleProvider>);
 
+    // V14-UX-001: a viewer sees their four fixed daily destinations.
     expect(screen.getByRole("navigation", { name: "Daily navigation" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Work inbox" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Archive" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Search" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Favorites" })).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Dashboard" })).toBeNull();
     expect(screen.getByRole("button", { name: "Open commands" })).toBeVisible();
     expect(screen.getByRole("button", { name: "More" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "Dashboard" })).toBeVisible();
   });
 
   test("opens the global command palette from the mobile navigation", () => {
