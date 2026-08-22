@@ -12,6 +12,7 @@ import { selectedBulkMacroTargets } from "./_components/bulk-macro-helpers";
 import DataTable from "@/components/ui/DataTable";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
+import AsyncStateSurface from "@/components/AsyncStateSurface";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -1111,17 +1112,16 @@ function ArchivePageContent() {
         </div>
       ) : null}
 
-      {state.status === "loading" ? (
-        <div className="panel panel-compact" aria-live="polite" role="status">
-          <Skeleton label={t.pages.archiveList.loadingRecords} />
-        </div>
-      ) : null}
-
-      {state.status === "error" ? (
-        <div className="state-banner state-banner-error" role="alert">
-          <strong>{t.pages.archiveList.loadRecordsError}</strong>
-          <span className="helper-text">{state.message}</span>
-        </div>
+      {/* V14-UX-004: the three data states share one semantic surface —
+          loading (status/aria-busy), error (alert + retry), empty. */}
+      {state.status !== "ready" ? (
+        <AsyncStateSurface
+          status={state.status}
+          loadingLabel={t.pages.archiveList.loadingRecords}
+          title={state.status === "error" ? t.pages.archiveList.loadRecordsError : undefined}
+          description={state.status === "error" ? state.message : undefined}
+          onRetry={state.status === "error" ? () => void loadRecords(query, store, type, workflowStatus) : undefined}
+        />
       ) : null}
 
         {state.status === "ready" ? (

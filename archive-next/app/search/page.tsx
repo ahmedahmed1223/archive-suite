@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwitcher";
 import EmptyState from "@/components/EmptyState";
+import AsyncStateSurface from "@/components/AsyncStateSurface";
 import PageToolbar from "@/components/PageToolbar";
 import SuggestionsPanel from "@/components/SuggestionsPanel";
 import SearchAutocomplete from "@/components/SearchAutocomplete";
@@ -601,17 +602,14 @@ function SearchPageContent() {
         />
       ) : null}
 
-      {state.status === "loading" ? (
-        <div className="panel panel-compact" aria-live="polite" aria-atomic="true" role="status">
-          <p className="form-status">{searchCopy.loading}</p>
-        </div>
-      ) : null}
-
-      {state.status === "error" ? (
-        <div className="state-banner state-banner-error" role="alert">
-          <strong>{searchCopy.unavailable}</strong>
-          <span className="helper-text">{state.message}</span>
-        </div>
+      {/* V14-UX-004: loading and error share the semantic state surface. */}
+      {state.status === "loading" || state.status === "error" ? (
+        <AsyncStateSurface
+          status={state.status === "loading" ? "loading" : "error"}
+          loadingLabel={searchCopy.loading}
+          title={state.status === "error" ? searchCopy.unavailable : undefined}
+          description={state.status === "error" ? state.message : undefined}
+        />
       ) : null}
 
       {state.status === "ready" && visibleRecords.length === 0 ? (
