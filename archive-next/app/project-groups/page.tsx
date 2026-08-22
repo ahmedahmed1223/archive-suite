@@ -21,11 +21,13 @@ export default function ProjectGroupsPage() {
   const [notes, setNotes] = useState("");
   const [recordId, setRecordId] = useState("");
   const [status, setStatus] = useState("");
+  const [loadError, setLoadError] = useState("");
 
   const selected = projects.find((project) => project.id === selectedId) ?? null;
   const refresh = useCallback(async () => {
     const response = await api.projects();
-    if (!response.ok) return setStatus(response.error || copy.errors.projectsLoad);
+    if (!response.ok) return setLoadError(response.error || copy.errors.projectsLoad);
+    setLoadError("");
     setProjects(response.projects);
     setSelectedId((current) => current || response.projects[0]?.id || "");
   }, [api, copy.errors.projectsLoad]);
@@ -70,6 +72,7 @@ export default function ProjectGroupsPage() {
 
   return <AppShell subtitle={t.pageTitles.workProjects} contentClassName="stack" tipsPage="projects">
     <PageToolbar title={copy.toolbar.title} description={copy.toolbar.description} meta={<span className="badge">{copy.toolbar.projectCount.replace("{count}", String(projects.length))}</span>} />
+    {loadError ? <div className="state-banner state-banner-error" role="alert"><strong>{copy.errors.projectsLoad}</strong><span className="helper-text">{loadError}</span><div><button type="button" className="button button-secondary button-sm" onClick={() => void refresh()}>{t.shared.actions.retry}</button></div></div> : null}
     {canManage ? <form className="panel auth-form" onSubmit={create}><label>{copy.form.projectName}<input value={name} onChange={(event) => setName(event.target.value)} required /></label><label>{copy.form.projectNotes}<textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} /></label><button className="button button-primary">{copy.form.create}</button></form> : null}
     {status ? <p className="form-status" role="status">{status}</p> : null}
     {projects.length === 0 ? <EmptyState title={copy.empty.title} description={copy.empty.description} /> : <div className="split-layout"><aside className="panel"><h2>{copy.content.projectsTitle}</h2><div className="stack">{projects.map((project) => <button type="button" className={`button ${project.id === selectedId ? "button-primary" : "button-secondary"}`} onClick={() => { setSelectedId(project.id); setNotes(project.notes || ""); }} key={project.id}>{project.name}</button>)}</div></aside>{selected ? <section className="stack"><article className="panel"><h2>{selected.name}</h2><label>{copy.form.projectNotes}<textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} disabled={!canManage} /></label>{canManage ? <button type="button" className="button button-secondary" onClick={() => void saveNotes()}>{copy.form.saveNotes}</button> : null}</article><article className="panel"><h2>{copy.content.materialsTitle}</h2>{canManage ? <form className="button-row" onSubmit={addRecord}><input value={recordId} onChange={(event) => setRecordId(event.target.value)} placeholder={copy.form.recordIdPlaceholder} /><button className="button button-secondary">{copy.form.linkRecord}</button></form> : null}{recordIds.length ? <ol className="record-note-list">{recordIds.map((id, index) => <li key={id}><a href={`/archive/${encodeURIComponent(id)}`}>{id}</a>{canManage ? <span className="button-row"><button className="button button-secondary button-sm" disabled={index === 0} onClick={() => void reorder([...recordIds.slice(0, index - 1), id, recordIds[index - 1], ...recordIds.slice(index + 1)])}>↑</button><button className="button button-secondary button-sm" disabled={index === recordIds.length - 1} onClick={() => void reorder([...recordIds.slice(0, index), recordIds[index + 1], id, ...recordIds.slice(index + 2)])}>↓</button></span> : null}</li>)}</ol> : <p className="helper-text">{copy.content.noMaterials}</p>}</article></section> : null}</div>}

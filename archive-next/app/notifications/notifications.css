@@ -40,6 +40,16 @@
   transition: background var(--duration-fast) var(--easing-default);
 }
 
+/* V14-UX-008: the mark-all-read action now uses the shared .button styles via
+   PageToolbar; keep the legacy class rule for any remaining callers and give
+   filter buttons a phone-sized touch target in the mobile media query below. */
+
+@media (max-width: 760px) {
+  .notifications-page__filters .filter-button {
+    min-block-size: 2.75rem;
+  }
+}
+
 .notifications-page__mark-all-read:hover {
   background: var(--color-accent-primary-hover);
 }

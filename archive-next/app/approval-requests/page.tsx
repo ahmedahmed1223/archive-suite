@@ -100,7 +100,7 @@ export default function ApprovalRequestsPage() {
         </div>
       </form>
 
-      {loadError ? <div className="state-banner state-banner-error" role="alert">{loadError}</div> : null}
+      {loadError ? <div className="state-banner state-banner-error" role="alert"><strong>{copy.errors.load}</strong><span className="helper-text">{loadError}</span><div><button type="button" className="button button-secondary button-sm" onClick={() => void load()}>{t.shared.actions.retry}</button></div></div> : null}
       {status ? <div className="state-banner state-banner-error" role="alert">{status}</div> : null}
 
       {requests.length === 0 ? <EmptyState title={copy.empty} /> : (

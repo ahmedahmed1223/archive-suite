@@ -505,6 +505,22 @@ textarea.search-input {
   justify-self: start;
 }
 
+/* V14-UX-008 (Task 8): shared page action row — one pattern for the primary
+   action strip on every page group. Wraps instead of compressing, and gives
+   touch targets a 44px minimum on phones. */
+.page-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+@media (max-width: 47.99rem) {
+  .page-action-row > :is(button, a, summary) {
+    min-block-size: 44px;
+  }
+}
+
 .form-status {
   min-block-size: 2.25rem;
   margin: 0;

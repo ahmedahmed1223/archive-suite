@@ -9,6 +9,7 @@ export const projectTasks = {
   createError: "Could not create the task.",
   createSuccess: "Task created.",
   updateError: "Could not update the status.",
+  loadErrorTitle: "Could not load the project tasks.",
   toolbarTitle: "Project task board",
   toolbarDescription: "Independent tasks linked to a project, with an assignee, due date, update history, and an optional archive record.",
   recordsKanban: "Records Kanban",

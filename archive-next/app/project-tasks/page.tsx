@@ -38,12 +38,15 @@ export default function ProjectTasksPage() {
   const [targetDurationMinutes, setTargetDurationMinutes] = useState("");
   const [policy, setPolicy] = useState<TaskEscalationPolicy | null>(null);
   const [policyStatus, setPolicyStatus] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const loadFailed = Boolean(loadError);
 
   const load = useCallback(async () => {
     const [projectResponse, taskResponse, templateResponse] = await Promise.all([api.projects(), api.projectTasks(), api.projectTaskTemplates()]);
     if (projectResponse.ok) setProjects(projectResponse.projects);
     if (taskResponse.ok) setTasks(taskResponse.tasks);
     if (templateResponse.ok) setTemplates(templateResponse.templates);
+    setLoadError(projectResponse.ok && taskResponse.ok && templateResponse.ok ? "" : (!projectResponse.ok ? projectResponse.error : !taskResponse.ok ? taskResponse.error : !templateResponse.ok ? templateResponse.error : "") || "");
   }, [api]);
 
   useEffect(() => { void load(); }, [load]);
@@ -107,8 +110,8 @@ export default function ProjectTasksPage() {
       <label>{copy.targetDurationLabel}<input type="number" min={1} value={targetDurationMinutes} onChange={(event) => setTargetDurationMinutes(event.target.value)} /></label>
       <button className="button button-primary">{copy.addTask}</button>
     </form>
-    {status ? <p className="form-status">{status}</p> : null}
-    {tasks.length ? <section className="workflow-board">{columns.map(([key, label]) => <article className="workflow-column" key={key}><h2>{label}</h2>{tasks.filter((task) => task.status === key).map((task) => <div className="kanban-card" key={task.id}><strong>{task.title}</strong><small>{projects.find((project) => project.id === task.projectId)?.name || task.projectId} · {task.assignee || copy.unassigned}</small><small>{copy.dueDatePrefix.replace("{date}", formatDueDate(task.dueDate, locale, copy.noDueDate))}</small>{task.targetDeadlineAt ? <small>{copy.targetDeadlinePrefix.replace("{date}", new Date(task.targetDeadlineAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA"))}</small> : null}{task.recordId ? <a href={`/archive/${encodeURIComponent(task.recordId)}`}>{copy.linkedRecord}</a> : null}<select aria-label={copy.statusAriaLabel.replace("{title}", task.title)} value={task.status} onChange={(event) => void move(task, event.target.value as ProjectTaskStatus)}>{columns.map(([value, columnLabel]) => <option value={value} key={value}>{columnLabel}</option>)}</select><small>{copy.lastUpdatedPrefix.replace("{date}", new Date(task.updatedAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA"))}</small></div>)}</article>)}</section> : <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />}
+    {status ? <p className="form-status" role="status">{status}</p> : null}
+    {tasks.length ? <section className="workflow-board">{columns.map(([key, label]) => <article className="workflow-column" key={key}><h2>{label}</h2>{tasks.filter((task) => task.status === key).map((task) => <div className="kanban-card" key={task.id}><strong>{task.title}</strong><small>{projects.find((project) => project.id === task.projectId)?.name || task.projectId} · {task.assignee || copy.unassigned}</small><small>{copy.dueDatePrefix.replace("{date}", formatDueDate(task.dueDate, locale, copy.noDueDate))}</small>{task.targetDeadlineAt ? <small>{copy.targetDeadlinePrefix.replace("{date}", new Date(task.targetDeadlineAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA"))}</small> : null}{task.recordId ? <a href={`/archive/${encodeURIComponent(task.recordId)}`}>{copy.linkedRecord}</a> : null}<select aria-label={copy.statusAriaLabel.replace("{title}", task.title)} value={task.status} onChange={(event) => void move(task, event.target.value as ProjectTaskStatus)}>{columns.map(([value, columnLabel]) => <option value={value} key={value}>{columnLabel}</option>)}</select><small>{copy.lastUpdatedPrefix.replace("{date}", new Date(task.updatedAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA"))}</small></div>)}</article>)}</section> : loadFailed ? <div className="state-banner state-banner-error" role="alert"><strong>{copy.loadErrorTitle}</strong><span className="helper-text">{loadError}</span><div><button type="button" className="button button-secondary button-sm" onClick={() => void load()}>{t.shared.actions.retry}</button></div></div> : <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />}
     {isAdmin && policy ? (
       <form className="panel archive-toolbar-grid" onSubmit={savePolicy} aria-label={copy.escalationPanel.title}>
         <h2>{copy.escalationPanel.title}</h2>

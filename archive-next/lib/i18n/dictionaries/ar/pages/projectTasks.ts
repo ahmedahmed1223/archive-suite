@@ -9,6 +9,7 @@ export const projectTasks = {
   createError: "تعذر إنشاء المهمة.",
   createSuccess: "تم إنشاء المهمة.",
   updateError: "تعذر تحديث الحالة.",
+  loadErrorTitle: "تعذر تحميل مهام المشاريع.",
   toolbarTitle: "لوحة مهام المشاريع",
   toolbarDescription: "مهام مستقلة مرتبطة بمشروع، مع مكلّف واستحقاق وتاريخ تحديث وربط اختياري بسجل أرشيفي.",
   recordsKanban: "كانبان السجلات",

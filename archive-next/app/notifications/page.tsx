@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Trash2, CheckCircle2, Info, Package, AtSign } from "lucide-react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
+import PageToolbar from "@/components/PageToolbar";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
@@ -84,25 +85,19 @@ export default function NotificationsPage() {
 
   return (
     <AppShell subtitle={t.pageTitles.notifications} contentClassName="notifications-page">
-      <header className="notifications-page__header">
-        <div>
-          <h1>{copy.title}</h1>
-          {unreadCount > 0 && (
-            <p className="notifications-page__subtitle">
-              {copy.unreadCount.replace("{count}", String(unreadCount))}
-            </p>
-          )}
-        </div>
-        {unreadCount > 0 && (
+      <PageToolbar
+        title={copy.title}
+        description={unreadCount > 0 ? copy.unreadCount.replace("{count}", String(unreadCount)) : undefined}
+        actions={unreadCount > 0 ? (
           <button
             type="button"
-            className="notifications-page__mark-all-read"
+            className="button button-secondary"
             onClick={markAllAsRead}
           >
             {copy.allRead}
           </button>
-        )}
-      </header>
+        ) : undefined}
+      />
 
       <div className="notifications-page__filters">
         <button
