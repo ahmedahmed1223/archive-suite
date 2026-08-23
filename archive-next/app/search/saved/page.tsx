@@ -8,9 +8,11 @@ import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type SavedSearch } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 export default function SavedSearchesPage() {
   const { t } = useLocale();
+  const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [searches, setSearches] = useState<SavedSearch[]>([]);
   const [name, setName] = useState("");
@@ -48,9 +50,18 @@ export default function SavedSearchesPage() {
     await refresh();
   }
 
-  async function handleDelete(id: string) {
-    const response = await api.deleteSavedSearch(id);
+  async function handleDelete(search: SavedSearch) {
+    const confirmed = await dialogs.confirm({
+      title: t.pages.savedSearches.deleteDialog.title,
+      message: t.pages.savedSearches.deleteDialog.message.replace("{name}", search.name),
+      confirmLabel: t.pages.savedSearches.deleteDialog.confirm,
+      destructive: true
+    });
+    if (!confirmed) return;
+    setError(null);
+    const response = await api.deleteSavedSearch(search.id);
     if (response.ok) await refresh();
+    else setError(response.error || t.pages.savedSearches.deleteFailed);
   }
 
   async function saveAccess(search: SavedSearch, members = search.members || []) {
@@ -138,7 +149,7 @@ export default function SavedSearchesPage() {
                 <a className="button button-primary button-sm" href={runUrl(search)}>
                   {t.pages.savedSearches.runSearch}
                 </a>
-                {search.canManage ? <button type="button" className="button button-secondary button-sm" onClick={() => void handleDelete(search.id)}>{t.pages.savedSearches.deleteButton}</button> : <button type="button" className="button button-secondary button-sm" onClick={() => void handleCopy(search.id)}>{t.pages.savedSearches.copyToMine}</button>}
+                {search.canManage ? <button type="button" className="button button-secondary button-sm" onClick={() => void handleDelete(search)}>{t.pages.savedSearches.deleteButton}</button> : <button type="button" className="button button-secondary button-sm" onClick={() => void handleCopy(search.id)}>{t.pages.savedSearches.copyToMine}</button>}
               </div>
               {search.canManage ? <div className="stack">
                 <label>{t.pages.savedSearches.departmentLabel} <input value={departmentDrafts[search.id] ?? search.departmentId ?? ""} onChange={(event) => setDepartmentDrafts((current) => ({ ...current, [search.id]: event.target.value }))} placeholder={t.pages.savedSearches.optionalPlaceholder} /></label>

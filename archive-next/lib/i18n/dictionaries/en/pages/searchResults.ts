@@ -30,6 +30,7 @@ export const searchResults = {
   saveError: "Could not save the search.",
   saveSuccess: "Search saved.",
   deleteError: "Could not delete the search.",
+  deleteDialog: { title: "Delete saved search", message: "\"{name}\" will be permanently deleted. Continue?", confirm: "Delete" },
   suggestionFeedbackError: "Could not save suggestion feedback.",
   untitled: "Untitled",
   playFrom: "Play from {time}",

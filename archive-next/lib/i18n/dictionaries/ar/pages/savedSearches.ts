@@ -25,5 +25,7 @@ export const savedSearches = {
   addMember: "إضافة عضو",
   saveAccess: "حفظ الصلاحيات",
   accessSaveError: "تعذر حفظ صلاحيات الوصول.",
-  removeMember: "إزالة"
+  removeMember: "إزالة",
+  deleteFailed: "تعذر حذف البحث المحفوظ.",
+  deleteDialog: { title: "حذف بحث محفوظ", message: "سيتم حذف «{name}» نهائيًا. هل تريد المتابعة؟", confirm: "حذف" }
 } as const;

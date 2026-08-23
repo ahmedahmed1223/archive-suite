@@ -9,6 +9,7 @@ export const readingLists = {
     officialCollections: "Official collections"
   },
   create: { name: "List name", description: "Short description", submit: "Create list" },
+  deleteDialog: { title: "Delete reading list", message: "The list \"{name}\" and all its items ({count}) will be permanently deleted. Continue?", confirm: "Delete" },
   errors: { recordsLoad: "Unable to load archive records" },
   empty: { title: "There are no reading lists.", description: "Create a list to gather records you want to review later." },
   layout: {

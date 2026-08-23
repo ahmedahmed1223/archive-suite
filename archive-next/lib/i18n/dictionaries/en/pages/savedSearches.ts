@@ -25,5 +25,7 @@ export const savedSearches = {
   addMember: "Add member",
   saveAccess: "Save access",
   accessSaveError: "Could not save access permissions.",
-  removeMember: "Remove"
+  removeMember: "Remove",
+  deleteFailed: "Unable to delete the saved search.",
+  deleteDialog: { title: "Delete saved search", message: "\"{name}\" will be permanently deleted. Continue?", confirm: "Delete" }
 } as const;

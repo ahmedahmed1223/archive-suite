@@ -30,6 +30,7 @@ export const searchResults = {
   saveError: "تعذر حفظ البحث.",
   saveSuccess: "تم حفظ البحث.",
   deleteError: "تعذر حذف البحث.",
+  deleteDialog: { title: "حذف بحث محفوظ", message: "سيتم حذف «{name}» نهائيًا. هل تريد المتابعة؟", confirm: "حذف" },
   suggestionFeedbackError: "تعذر حفظ تقييم الاقتراح.",
   untitled: "بدون عنوان",
   playFrom: "تشغيل من {time}",

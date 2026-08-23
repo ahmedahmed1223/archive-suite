@@ -388,8 +388,15 @@ function SearchPageContent() {
     await search(nextQuery, nextStore, 1, nextType, nextTag, searchMode);
   };
 
-  const removeSavedSearch = async (id: string) => {
-    const response = await api.deleteSavedSearch(id);
+  const removeSavedSearch = async (saved: { id: string; name: string }) => {
+    const confirmed = await dialogs.confirm({
+      title: searchCopy.deleteDialog.title,
+      message: searchCopy.deleteDialog.message.replace("{name}", saved.name),
+      confirmLabel: searchCopy.deleteDialog.confirm,
+      destructive: true
+    });
+    if (!confirmed) return;
+    const response = await api.deleteSavedSearch(saved.id);
     if (!response.ok) {
       setSavedStatus(response.error || searchCopy.deleteError);
       return;
@@ -563,7 +570,7 @@ function SearchPageContent() {
               {savedSearches.map((saved) => (
                 <span key={saved.id} className="saved-view-chip">
                   <button type="button" onClick={() => void applySavedSearch(saved)}>{saved.name}</button>
-                  <button type="button" aria-label={searchCopy.deleteSavedSearchAriaLabel.replace("{name}", saved.name)} onClick={() => void removeSavedSearch(saved.id)}>×</button>
+                  <button type="button" aria-label={searchCopy.deleteSavedSearchAriaLabel.replace("{name}", saved.name)} onClick={() => void removeSavedSearch(saved)}>×</button>
                 </span>
               ))}
             </div>

@@ -8,6 +8,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   createArchiveApiClient,
   type RelationGraphEdge,
@@ -127,7 +128,7 @@ function GraphCanvas({
 
   return (
     <div className="graph-canvas-shell" dir="ltr">
-      <svg className="graph-canvas" viewBox={`0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}`} role="img" aria-label={copy.canvasAriaLabel}>
+      <svg className="graph-canvas" viewBox={`0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}`} role="group" aria-label={copy.canvasAriaLabel}>
         <defs>
           <marker id="graph-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
             <path d="M 0 0 L 8 4 L 0 8 z" fill="currentColor" />
@@ -377,6 +378,7 @@ export default function GraphPage() {
   const copy = t.pages.graph;
   const api = useMemo(() => createArchiveApiClient(), []);
   const canEditRelations = useCapability("records.edit");
+  const dialogs = useConfirmDialog();
   const [state, setState] = useState<GraphState>({ status: "loading" });
   const [selectedId, setSelectedId] = useState("");
   const [focusId, setFocusId] = useState("");
@@ -469,6 +471,13 @@ export default function GraphPage() {
 
   const deleteRelation = async (edge: RelationGraphEdge) => {
     if (!edge.relationId) return;
+    const confirmed = await dialogs.confirm({
+      title: copy.deleteDialog.title,
+      message: copy.deleteDialog.message.replace("{label}", edge.label),
+      confirmLabel: copy.deleteDialog.confirm,
+      destructive: true
+    });
+    if (!confirmed) return;
     const response = await api.deleteRelation(edge.relationId);
     if (!response.ok) {
       setState({ status: "error", message: response.error || copy.errors.delete });

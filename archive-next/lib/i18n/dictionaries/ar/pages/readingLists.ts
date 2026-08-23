@@ -9,6 +9,7 @@ export const readingLists = {
     officialCollections: "المجموعات الرسمية"
   },
   create: { name: "اسم القائمة", description: "وصف مختصر", submit: "إنشاء قائمة" },
+  deleteDialog: { title: "حذف قائمة القراءة", message: "سيتم حذف القائمة «{name}» وكل عناصرها ({count} عنصر) نهائيًا. هل تريد المتابعة؟", confirm: "حذف" },
   errors: { recordsLoad: "تعذر تحميل سجلات الأرشيف" },
   empty: { title: "لا توجد قوائم قراءة.", description: "أنشئ قائمة لتجميع سجلات تريد مراجعتها لاحقًا." },
   layout: {

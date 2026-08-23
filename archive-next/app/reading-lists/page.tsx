@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface ReadingListItem {
   recordId: string;
@@ -50,6 +51,7 @@ function formatDate(value: string | undefined, locale: "ar" | "en") {
 export default function ReadingListsPage() {
   const { locale, t } = useLocale();
   const copy = t.pages.readingLists;
+  const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [records, setRecords] = useState<ArchiveRecord[]>([]);
   const [recordsError, setRecordsError] = useState("");
@@ -100,7 +102,16 @@ export default function ReadingListsPage() {
     setDescription("");
   }
 
-  function deleteList(id: string) {
+  async function deleteList(id: string) {
+    const target = lists.find((list) => list.id === id);
+    if (!target) return;
+    const confirmed = await dialogs.confirm({
+      title: copy.deleteDialog.title,
+      message: copy.deleteDialog.message.replace("{name}", target.name).replace("{count}", String(target.items.length)),
+      confirmLabel: copy.deleteDialog.confirm,
+      destructive: true
+    });
+    if (!confirmed) return;
     persist(lists.filter((list) => list.id !== id));
   }
 
@@ -195,7 +206,7 @@ export default function ReadingListsPage() {
                     <span className="badge">{copy.layout.itemCount.replace("{count}", String(list.items.length))}</span>
                     <span className="badge">{formatDate(list.updatedAt, locale)}</span>
                   </div>
-                  <button type="button" className="button button-danger button-sm" onClick={() => deleteList(list.id)}>{copy.layout.remove}</button>
+                  <button type="button" className="button button-danger button-sm" onClick={() => void deleteList(list.id)}>{copy.layout.remove}</button>
                 </article>
               ))}
             </div>
