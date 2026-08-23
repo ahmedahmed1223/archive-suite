@@ -4,6 +4,8 @@ export const mediaStudio = {
   description: "Player, transcript, comments, versions, and task context for one record's media, in a single workspace.",
   missingRecordTitle: "No record selected",
   missingRecordDescription: "Open the studio from a record's detail page so it has a real record to load.",
+  browseArchive: "Browse the archive to pick a record",
+  openMediaJobs: "Media jobs",
   loadingRecord: "Loading the record…",
   loadErrorTitle: "Could not load this record",
   attachmentNotFoundTitle: "Attachment not found",

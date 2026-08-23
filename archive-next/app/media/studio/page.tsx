@@ -187,6 +187,7 @@ export default function MediaStudioPage() {
         eyebrow={<span className="badge">{copy.eyebrow}</span>}
         title={copy.title}
         description={copy.description}
+        actions={<a className="button button-secondary" href="/media/jobs">{copy.openMediaJobs}</a>}
         meta={
           state.status === "ready" ? (
             <>
@@ -204,7 +205,11 @@ export default function MediaStudioPage() {
       />
 
       {state.status === "invalid" ? (
-        <EmptyState title={copy.missingRecordTitle} description={copy.missingRecordDescription} />
+        <EmptyState
+          title={copy.missingRecordTitle}
+          description={copy.missingRecordDescription}
+          actions={<a className="button button-primary" href="/archive">{copy.browseArchive}</a>}
+        />
       ) : null}
 
       {state.status === "loading" || state.status === "error" ? (

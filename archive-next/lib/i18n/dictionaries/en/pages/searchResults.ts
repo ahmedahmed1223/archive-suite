@@ -16,6 +16,8 @@ export const searchResults = {
   results: "Search results",
   empty: "Start by entering a search term.",
   emptyDescription: "Search records, then save a recurring search for later.",
+  quickSuggestionsLabel: "Quick searches",
+  saveDisabledHint: "Type a query or pick a filter first to save this search.",
   unavailable: "Search could not be completed",
   noResults: "No records found.",
   viewCards: "Cards",

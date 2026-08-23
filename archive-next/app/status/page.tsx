@@ -230,18 +230,24 @@ export default function StatusPage() {
           </>
         }
         actions={
-          <button
-            type="button"
-            onClick={() => void checkHealth()}
-            disabled={state.status === "loading"}
-            className="button button-secondary"
-            aria-label={copy.toolbar.checkNowAriaLabel}
-          >
-            <span className={state.status === "loading" ? "status-refresh-icon is-spinning" : "status-refresh-icon"}>
-              <IconRefresh />
-            </span>
-            {state.status === "loading" ? copy.toolbar.checking : copy.toolbar.checkNow}
-          </button>
+          <>
+            {/* V14-UX-008 follow-up: health check is this page's primary action. */}
+            <button
+              type="button"
+              onClick={() => void checkHealth()}
+              disabled={state.status === "loading"}
+              className="button button-primary"
+              aria-label={copy.toolbar.checkNowAriaLabel}
+            >
+              <span className={state.status === "loading" ? "status-refresh-icon is-spinning" : "status-refresh-icon"}>
+                <IconRefresh />
+              </span>
+              {state.status === "loading" ? copy.toolbar.checking : copy.toolbar.checkNow}
+            </button>
+            {!isOnline && state.status !== "loading" ? (
+              <a className="button button-danger" href="/errors">{copy.toolbar.viewErrors}</a>
+            ) : null}
+          </>
         }
       />
 

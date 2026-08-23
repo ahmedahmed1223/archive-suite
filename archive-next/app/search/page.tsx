@@ -541,9 +541,12 @@ function SearchPageContent() {
           </DisclosureToolbar>
         </form>
         <div className="search-workbench-actions">
-          <button type="button" className="button button-primary" onClick={() => void saveCurrentSearch()} disabled={!query.trim() && !store && typeFilter === "all" && !tagFilter}>
-            {searchCopy.save}
-          </button>
+          {/* V14-UX-008 follow-up: explain the disabled state instead of a silent dead button. */}
+          <span className="helper-text" title={!query.trim() && !store && typeFilter === "all" && !tagFilter ? searchCopy.saveDisabledHint : undefined}>
+            <button type="button" className="button button-primary" onClick={() => void saveCurrentSearch()} disabled={!query.trim() && !store && typeFilter === "all" && !tagFilter}>
+              {searchCopy.save}
+            </button>
+          </span>
           <button type="button" className="button button-secondary" onClick={resetSearch}>
             {searchCopy.reset}
           </button>
@@ -597,10 +600,16 @@ function SearchPageContent() {
       </PageToolbar>
 
       {state.status === "idle" ? (
-        <EmptyState
-          title={searchCopy.empty}
-          description={searchCopy.emptyDescription}
-        />
+        /* V14-UX-008 follow-up: one-click starting points instead of a dead end. */
+        <div className="empty-state empty-state-rich" data-page-state="empty">
+          <strong>{searchCopy.empty}</strong>
+          <p className="helper-text">{searchCopy.emptyDescription}</p>
+          <div className="button-row" aria-label={searchCopy.quickSuggestionsLabel}>
+            <a className="button button-secondary button-sm" href="/work-inbox">{t.pageTitles.workInbox ?? "/work-inbox"}</a>
+            <a className="button button-secondary button-sm" href="/archive">{t.pages.archiveList?.pageTitle ?? "/archive"}</a>
+            <a className="button button-secondary button-sm" href="/favorites">{t.pageTitles.favorites ?? "/favorites"}</a>
+          </div>
+        </div>
       ) : null}
 
       {/* V14-UX-004: loading and error share the semantic state surface. */}

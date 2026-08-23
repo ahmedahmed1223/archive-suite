@@ -37,7 +37,9 @@ export default function OnboardingPrompt() {
         <p>{t.shell.onboardingDescription}</p>
       </div>
       <div className="button-row">
-        <a className="button button-primary button-sm" href="/first-run">
+        {/* V14-UX-008 follow-up: the tour is a secondary nudge, never competing
+            with each page's real primary action. */}
+        <a className="button button-secondary button-sm" href="/first-run">
           {t.shell.openTour}
         </a>
         <button

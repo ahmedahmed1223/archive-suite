@@ -141,6 +141,11 @@ export default function DailyPage() {
           <h1>{displayName ? copy.greetingName.replace("{name}", displayName) : copy.greeting}</h1>
           <p>{todayLabel(locale)}</p>
         </div>
+        {/* V14-UX-008 follow-up: the greeting carries the day's primary actions. */}
+        <div className="button-row">
+          <Link className="button button-primary" href="/uploads">{copy.addMaterial}</Link>
+          <Link className="button button-secondary" href="/work-inbox">{copy.openWorkInbox}</Link>
+        </div>
       </header>
 
       <div className="record-grid">
@@ -238,7 +243,12 @@ export default function DailyPage() {
             <Link className="dashboard-recent__all" href="/favorites">{copy.viewAll}</Link>
           </header>
           {favorites.length === 0 ? (
-            <EmptyState icon={<Star aria-hidden="true" />} title={copy.favoritesEmptyTitle} description={copy.favoritesEmptyDescription} />
+            <EmptyState
+              icon={<Star aria-hidden="true" />}
+              title={copy.favoritesEmptyTitle}
+              description={copy.favoritesEmptyDescription}
+              actions={<Link className="button button-secondary button-sm" href="/archive">{copy.browseArchive}</Link>}
+            />
           ) : (
             <ul className="dashboard-recent__list">
               {favorites.slice(0, PANEL_ITEM_LIMIT).map((favorite) => (

@@ -1,9 +1,10 @@
 export const home = {
-  add: "Add material",
+  add: "Add new material",
   loading: "Loading dashboard data…",
   error: "Unable to load dashboard data.",
   errorTitle: "Dashboard unavailable",
   openArchive: "Open archive",
+  openWorkInbox: "Open work inbox",
   metrics: "Archive metrics",
   quick: "Quick actions",
   recent: "Recently added",

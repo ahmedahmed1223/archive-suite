@@ -292,7 +292,7 @@ export default function ProjectsPage() {
             placeholder={copy.projectsList.newNamePlaceholder}
             aria-label={copy.projectsList.newNameAriaLabel}
           />
-          <button type="button" className="button" onClick={handleCreate} disabled={!newName.trim()}>
+          <button type="button" className="button button-primary" onClick={handleCreate} disabled={!newName.trim()}>
             {copy.projectsList.create}
           </button>
         </div>

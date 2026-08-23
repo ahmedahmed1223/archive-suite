@@ -74,6 +74,7 @@ export default function WorkInboxPage() {
         eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
         title={copy.toolbar.title}
         description={copy.toolbar.description}
+        actions={<><a className="button button-primary" href="/uploads">{copy.toolbar.addMaterial}</a><a className="button button-secondary" href="/daily">{copy.toolbar.openDaily}</a></>}
       >
         <div className="archive-toolbar-row">
           {FILTER_VALUES.map((value) => (

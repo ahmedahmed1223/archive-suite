@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
+import DisclosureToolbar from "@/components/DisclosureToolbar";
 import { createArchiveApiClient, type ActivityFilters, type PaginationMeta, type RecordHistoryEntry } from "@/lib/archive-api";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -137,7 +138,8 @@ export default function ActivityPage() {
         )}
         actions={(
           <>
-            <button type="button" className="button button-secondary" onClick={() => void loadActivity(filters)}>
+            {/* V14-UX-008 follow-up: refresh is this page's one primary action. */}
+            <button type="button" className="button button-primary" onClick={() => void loadActivity(filters)}>
               {copy.refresh}
             </button>
             <a className="button button-secondary" href="/errors">{copy.errors}</a>
@@ -146,45 +148,49 @@ export default function ActivityPage() {
         )}
       />
 
-      <form className="search-form" aria-label={copy.filters}>
-        <select
-          className="search-input"
-          value={filters.event || ""}
-          onChange={(event) => setFilters((current) => ({ ...current, event: event.target.value || undefined }))}
-          aria-label={copy.eventFilter}
-        >
-          {eventOptions.map(([value, label]) => (
-            <option key={value || "all-events"} value={value}>{label}</option>
-          ))}
-        </select>
-        <select
-          className="search-input"
-          value={filters.resourceType || ""}
-          onChange={(event) => setFilters((current) => ({ ...current, resourceType: event.target.value || undefined }))}
-          aria-label={copy.resourceFilter}
-        >
-          {resourceTypeOptions.map(([value, label]) => (
-            <option key={value || "all-resources"} value={value}>{label}</option>
-          ))}
-        </select>
-        <select
-          className="search-input"
-          value={filters.outcome || ""}
-          onChange={(event) => setFilters((current) => ({ ...current, outcome: event.target.value as ActivityFilters["outcome"] }))}
-          aria-label={copy.outcomeFilter}
-        >
-          {outcomeOptions.map(([value, label]) => (
-            <option key={value || "all-outcomes"} value={value}>{label}</option>
-          ))}
-        </select>
-        <input
-          className="search-input"
-          value={filters.resourceId || ""}
-          onChange={(event) => setFilters((current) => ({ ...current, resourceId: event.target.value.trim() || undefined }))}
-          placeholder={copy.resourceId}
-          aria-label={copy.resourceId}
-        />
-      </form>
+      {/* V14-UX-008 follow-up: filters are secondary tools — collapsed behind
+          the shared semantic disclosure like archive/search. */}
+      <DisclosureToolbar summary={copy.filters}>
+        <form className="search-form" aria-label={copy.filters}>
+          <select
+            className="search-input"
+            value={filters.event || ""}
+            onChange={(event) => setFilters((current) => ({ ...current, event: event.target.value || undefined }))}
+            aria-label={copy.eventFilter}
+          >
+            {eventOptions.map(([value, label]) => (
+              <option key={value || "all-events"} value={value}>{label}</option>
+            ))}
+          </select>
+          <select
+            className="search-input"
+            value={filters.resourceType || ""}
+            onChange={(event) => setFilters((current) => ({ ...current, resourceType: event.target.value || undefined }))}
+            aria-label={copy.resourceFilter}
+          >
+            {resourceTypeOptions.map(([value, label]) => (
+              <option key={value || "all-resources"} value={value}>{label}</option>
+            ))}
+          </select>
+          <select
+            className="search-input"
+            value={filters.outcome || ""}
+            onChange={(event) => setFilters((current) => ({ ...current, outcome: event.target.value as ActivityFilters["outcome"] }))}
+            aria-label={copy.outcomeFilter}
+          >
+            {outcomeOptions.map(([value, label]) => (
+              <option key={value || "all-outcomes"} value={value}>{label}</option>
+            ))}
+          </select>
+          <input
+            className="search-input"
+            value={filters.resourceId || ""}
+            onChange={(event) => setFilters((current) => ({ ...current, resourceId: event.target.value.trim() || undefined }))}
+            placeholder={copy.resourceId}
+            aria-label={copy.resourceId}
+          />
+        </form>
+      </DisclosureToolbar>
 
       {state.status === "loading" ? (
         <div className="panel panel-compact">

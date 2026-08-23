@@ -1,6 +1,9 @@
 export const daily = {
   greeting: "يومك",
   greetingName: "يومك، {name}",
+  addMaterial: "إضافة مادة جديدة",
+  openWorkInbox: "صندوق العمل",
+  browseArchive: "استعراض الأرشيف",
   workListsAriaLabel: "قوائم العمل",
   workLists: {
     incomplete: { label: "مواد ناقصة التوصيف", description: "مواد ينقصها العنوان أو الوصف أو النوع أو الوسوم." },

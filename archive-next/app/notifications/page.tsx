@@ -91,7 +91,7 @@ export default function NotificationsPage() {
         actions={unreadCount > 0 ? (
           <button
             type="button"
-            className="button button-secondary"
+            className="button button-primary"
             onClick={markAllAsRead}
           >
             {copy.allRead}

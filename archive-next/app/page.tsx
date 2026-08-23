@@ -103,10 +103,13 @@ export default function HomeDashboard() {
           <h1>{greeting}</h1>
           <p>{roleLabel} · {todayLabel(locale)}</p>
         </div>
-        <Link className="ui-button ui-button-primary" href="/uploads">
-          <UploadCloud aria-hidden="true" size={16} strokeWidth={2} />
-          <span>{copy.add}</span>
-        </Link>
+        <div className="button-row">
+          <Link className="button button-primary" href="/uploads">
+            <UploadCloud aria-hidden="true" size={16} strokeWidth={2} />
+            <span>{copy.add}</span>
+          </Link>
+          <Link className="button button-secondary" href="/work-inbox">{copy.openWorkInbox}</Link>
+        </div>
       </header>
 
       {state.status === "loading" ? (
@@ -120,7 +123,7 @@ export default function HomeDashboard() {
           icon={<Archive aria-hidden="true" />}
           title={copy.errorTitle}
           description={state.message}
-          actions={<Link className="ui-button ui-button-secondary" href="/archive">{copy.openArchive}</Link>}
+          actions={<Link className="button button-secondary" href="/archive">{copy.openArchive}</Link>}
         />
       ) : null}
 
@@ -161,7 +164,7 @@ export default function HomeDashboard() {
                   icon={<Archive aria-hidden="true" />}
                   title={copy.empty}
                   description={copy.emptyDescription}
-                  actions={<Link className="ui-button ui-button-primary" href="/uploads">{copy.add}</Link>}
+                  actions={<Link className="button button-primary" href="/uploads">{copy.add}</Link>}
                 />
               ) : (
                 <ul className="dashboard-recent__grid">

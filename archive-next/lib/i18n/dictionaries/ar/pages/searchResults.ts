@@ -16,6 +16,8 @@ export const searchResults = {
   results: "نتائج البحث",
   empty: "ابدأ بكتابة كلمة بحث.",
   emptyDescription: "استخدم البحث العام للوصول إلى السجلات، ثم احفظ البحث في الخادم إذا كان يتكرر في عملك اليومي.",
+  quickSuggestionsLabel: "عمليات بحث سريعة",
+  saveDisabledHint: "اكتب كلمة بحث أو اختر فلتراً أولاً لحفظ البحث.",
   unavailable: "تعذر تنفيذ البحث",
   noResults: "لم يتم العثور على سجلات.",
   viewCards: "بطاقات",

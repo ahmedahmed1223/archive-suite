@@ -1,6 +1,9 @@
 export const daily = {
   greeting: "Your day",
   greetingName: "Your day, {name}",
+  addMaterial: "Add new material",
+  openWorkInbox: "Work inbox",
+  browseArchive: "Browse the archive",
   workListsAriaLabel: "Work lists",
   workLists: {
     incomplete: { label: "Records needing description", description: "Records missing a title, description, type, or tags." },

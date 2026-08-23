@@ -4,6 +4,8 @@ export const mediaStudio = {
   description: "المشغّل والتفريغ والتعليقات والإصدارات وسياق المهام لمادة سجل واحد، في مساحة عمل واحدة.",
   missingRecordTitle: "لم يتم تحديد سجل",
   missingRecordDescription: "افتح الاستوديو من صفحة تفاصيل سجل حتى يتوفر له سجل حقيقي ليحمّله.",
+  browseArchive: "تصفح الأرشيف لاختيار سجل",
+  openMediaJobs: "مهام الوسائط",
   loadingRecord: "جارٍ تحميل السجل…",
   loadErrorTitle: "تعذر تحميل هذا السجل",
   attachmentNotFoundTitle: "المرفق غير موجود",

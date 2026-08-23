@@ -1,9 +1,10 @@
 export const home = {
-  add: "إضافة مادة",
+  add: "إضافة مادة جديدة",
   loading: "جارٍ تحميل بيانات اللوحة…",
   error: "تعذر تحميل بيانات اللوحة.",
   errorTitle: "تعذر تحميل اللوحة",
   openArchive: "فتح الأرشيف",
+  openWorkInbox: "افتح صندوق العمل",
   metrics: "مؤشرات الأرشيف",
   quick: "مهام سريعة",
   recent: "أُضيف حديثًا",
