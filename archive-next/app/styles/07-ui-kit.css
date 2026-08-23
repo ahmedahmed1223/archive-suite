@@ -866,3 +866,14 @@
     background-image: none;
   }
 }
+
+
+/* V14-AUDIT follow-up: muted secondary links under the login actions row */
+.login-card__links {
+  justify-content: center;
+}
+
+.login-card__links a {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}

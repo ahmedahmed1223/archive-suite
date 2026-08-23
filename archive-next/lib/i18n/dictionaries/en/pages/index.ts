@@ -41,6 +41,7 @@ import { mediaPlay } from "./mediaPlay";
 import { mediaStudio } from "./mediaStudio";
 import { metadataTemplates } from "./metadataTemplates";
 import { notifications } from "./notifications";
+import { passwordRecovery } from "./passwordRecovery";
 import { notificationsPanel } from "./notificationsPanel";
 import { projects } from "./projects";
 import { projectGroups } from "./projectGroups";
@@ -128,6 +129,7 @@ export const pages = {
   mediaStudio,
   metadataTemplates,
   notifications,
+  passwordRecovery,
   notificationsPanel,
   projects,
   projectGroups,

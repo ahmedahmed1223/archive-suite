@@ -41,6 +41,7 @@ function LoginPageContent() {
   const auth = useAuthSession();
   const [state, setState] = useState<LoginState>({ status: "idle" });
   const [showPassword, setShowPassword] = useState(false);
+  const forgotPasswordHref = "/help/password-recovery";
   // Starts null (not new Date()) so SSR and the client's first render match —
   // the clock only exists once mounted, avoiding a hydration mismatch from
   // the SSR and client timestamps differing by however long hydration took.
@@ -166,7 +167,12 @@ function LoginPageContent() {
                 <button type="submit" className="button button-primary" disabled={state.status === "loading"}>
                   {state.status === "loading" ? t.auth.login.submitting : t.auth.login.submit}
                 </button>
-                <a className="badge" href="/first-run">{t.auth.login.gettingStarted}</a>
+              </div>
+
+              {/* V14-AUDIT follow-up: password recovery entry point. */}
+              <div className="login-card__links button-row">
+                <a href={forgotPasswordHref}>{t.auth.login.forgotPassword}</a>
+                <a href="/first-run">{t.auth.login.gettingStarted}</a>
               </div>
 
               {(state.status === "error" || state.status === "success") && (

@@ -29,7 +29,7 @@ describe("localized dictionaries", () => {
     expect(getDictionary("en").shared.feedback.loading).toBe("Loading…");
     expect(getDictionary("ar").shared.languages.en).toBe("الإنجليزية");
     expect(getDictionary("ar").auth.errors.sessionExpired).toBe("انتهت جلستك. سجّل الدخول مرة أخرى.");
-    expect(getDictionary("en").auth.status.redirectingToLogin).toBe("Taking you to sign in…");
+    expect(getDictionary("en").auth.status.redirectingToLogin).toBe("Taking you to the sign-in page…");
   });
 
   it("provides shared shell copy in the selected interface language", () => {

@@ -16,6 +16,7 @@ import AppearanceSettings from "@/components/AppearanceSettings";
 import LanguageSettings from "@/components/LanguageSettings";
 import { BRAND } from "@/lib/brand";
 import { isTipsEnabledGlobally, setTipsEnabledGlobally } from "@/lib/contextual-tips";
+import { ONBOARDING_STORAGE_KEY } from "@/lib/onboarding";
 import { createArchiveApiClient, type OdbcProbe, type SecuritySettings } from "@/lib/archive-api";
 import { StatusBadge, type StatusBadgeTone } from "./StatusBadgeControl";
 import SettingsHub from "./SettingsHub";
@@ -26,6 +27,11 @@ import { disabledOdbcProbe, odbcStatusLabel, type OdbcCoreTable } from "./settin
 export { StatusBadge, type StatusBadgeTone };
 
 export default function SettingsPage() {
+  // V14-UX-REVIEW-3: the "first run" banner belongs to the first run only.
+  const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
+  useEffect(() => {
+    setIsOnboardingComplete(window.localStorage.getItem(ONBOARDING_STORAGE_KEY) === "complete");
+  }, []);
   const { locale, t } = useLocale();
   const { user } = useAuthSession();
   const { settings: activeDisplaySettings, status: displaySettingsStatus, error: displaySettingsError, replaceSettings } = useDisplaySettings();
@@ -200,14 +206,16 @@ export default function SettingsPage() {
         )}
       />
 
-      <section className="state-banner state-banner-info" aria-label={settingsCopy.setupBanner.ariaLabel}>
-        <strong>{settingsCopy.setupBanner.stepTitle}</strong>
-        <p>{settingsCopy.setupBanner.description}</p>
-        <div className="button-row">
-          <a className="button button-secondary button-small" href="/status">{settingsCopy.setupBanner.continueReadiness}</a>
-          <a className="button button-secondary button-small" href="/first-run">{settingsCopy.setupBanner.viewTour}</a>
-        </div>
-      </section>
+      {isOnboardingComplete === false ? (
+        <section className="state-banner state-banner-info" aria-label={settingsCopy.setupBanner.ariaLabel}>
+          <strong>{settingsCopy.setupBanner.stepTitle}</strong>
+          <p>{settingsCopy.setupBanner.description}</p>
+          <div className="button-row">
+            <a className="button button-secondary button-small" href="/status">{settingsCopy.setupBanner.continueReadiness}</a>
+            <a className="button button-secondary button-small" href="/first-run">{settingsCopy.setupBanner.viewTour}</a>
+          </div>
+        </section>
+      ) : null}
 
       <SettingsHub />
 
