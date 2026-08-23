@@ -85,6 +85,7 @@ export const transcriber = {
     title: "Recent transcription jobs",
     loading: "Loading recent transcription jobs...",
     empty: "No previous transcription jobs.",
+          emptyHint: "Run a new transcription job and it will appear here.",
     errorPrefix: "Error: {error}"
   },
   cueEditor: {

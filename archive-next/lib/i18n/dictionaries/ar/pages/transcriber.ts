@@ -85,6 +85,7 @@ export const transcriber = {
     title: "مهام التفريغ الأخيرة",
     loading: "جارٍ تحميل مهام التفريغ الأخيرة...",
     empty: "لا توجد مهام تفريغ سابقة.",
+          emptyHint: "شغّل مهمة تفريغ جديدة وستظهر هنا.",
     errorPrefix: "خطأ: {error}"
   },
   cueEditor: {

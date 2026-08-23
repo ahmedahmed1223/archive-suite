@@ -3,7 +3,7 @@ export const collaboration = {
     active: "نشط",
     viewing: "يشاهد",
     reviewing: "يراجع",
-    editing: "تحرير",
+    editing: "يحرّر",
     idle: "خامل"
   },
   initial: {

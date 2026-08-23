@@ -48,6 +48,7 @@ import RecordAttachmentsPanel from "@/components/RecordAttachmentsPanel";
 import RecordSourceReplacementPanel from "@/components/RecordSourceReplacementPanel";
 import RecordChangeImpactPanel from "@/components/RecordChangeImpactPanel";
 import VocabularyLinkedText, { VocabularyLinkToggle } from "@/components/VocabularyLinkedText";
+import DisclosureToolbar from "@/components/DisclosureToolbar";
 
 export { RecordDescribeForm, type RecordDescribePatch };
 
@@ -609,12 +610,8 @@ export default function ArchiveDetailPage() {
             <Link href="/archive" className="button button-secondary">
               {copy.backToArchive}
             </Link>
-            {state.status === "ready" ? (
-              <Link href={`/copilot?recordId=${encodeURIComponent(id)}`} className="button button-secondary">
-                {copy.askCopilot}
-              </Link>
-            ) : null}
-            {playerHref ? <Link href={playerHref} className="button button-secondary">{copy.playMedia}</Link> : null}
+            {/* V14-AUDIT-012: favorite is the one toggle that earns toolbar space;
+                the other six actions wait behind "more actions". */}
             {state.status === "ready" ? (
               <button
                 type="button"
@@ -626,6 +623,12 @@ export default function ArchiveDetailPage() {
                 {isFav ? copy.removeFavorite : copy.addFavorite}
               </button>
             ) : null}
+            {state.status === "ready" ? (
+              <DisclosureToolbar summary={copy.moreActionsLabel}>
+            <Link href={`/copilot?recordId=${encodeURIComponent(id)}`} className="button button-secondary">
+              {copy.askCopilot}
+            </Link>
+            {playerHref ? <Link href={playerHref} className="button button-secondary">{copy.playMedia}</Link> : null}
             {state.status === "ready" ? (
               <button
                 type="button"
@@ -683,6 +686,8 @@ export default function ArchiveDetailPage() {
               >
                 {ocrState.status === "creating" ? copy.creatingOcrLabel : copy.extractOcrLabel}
               </button>
+            ) : null}
+              </DisclosureToolbar>
             ) : null}
           </>
         }

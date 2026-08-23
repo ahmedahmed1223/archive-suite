@@ -900,3 +900,20 @@
   font-size: 1.5rem;
   line-height: 1.2;
 }
+
+
+/* V14-AUDIT-018: modal overlay for the pre-share checklist */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-bg-primary) 70%, transparent);
+}
+
+.modal-panel {
+  max-inline-size: min(32rem, calc(100vw - var(--space-6)));
+  max-block-size: calc(100vh - var(--space-8));
+  overflow: auto;
+}

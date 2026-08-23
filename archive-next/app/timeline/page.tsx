@@ -120,8 +120,12 @@ export default function TimelinePage() {
       let allRecords: ArchiveRecord[] = [];
       let cursor: string | undefined;
       let hasMore = true;
+      // V14-AUDIT-014: cap pagination like map.tsx — an unbounded while-loop
+      // over a large archive freezes the tab. 25 pages x 100 records.
+      const MAX_PAGES = 25;
+      let pagesFetched = 0;
 
-      while (hasMore) {
+      while (hasMore && pagesFetched < MAX_PAGES) {
         const response = await api.records({ store: "", cursor, limit: 100 });
 
         if (!response.ok) {
@@ -132,9 +136,8 @@ export default function TimelinePage() {
         allRecords = allRecords.concat(response.records || []);
         cursor = response.nextCursor || undefined;
         hasMore = Boolean(cursor);
+        pagesFetched += 1;
       }
-
-      setState({ status: "success", records: allRecords, error: null });
     } catch (err) {
       const message = err instanceof Error ? err.message : copy.unknownError;
       setState({

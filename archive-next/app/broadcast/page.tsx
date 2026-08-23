@@ -295,7 +295,7 @@ export default function BroadcastSimulationPage() {
               <span className="badge">{participants.length}</span>
             </div>
             {participants.length === 0 ? (
-              <p className="helper-text">{copy.presence.empty}</p>
+              <EmptyState title={copy.presence.empty} description={copy.presence.description} />
             ) : (
               <div className="mobile-card-list" role="list">
                 {participants.map((participant) => (
@@ -353,7 +353,7 @@ export default function BroadcastSimulationPage() {
           </div>
         </form>
         {comments.length === 0 ? (
-          <p className="helper-text">{copy.notes.empty}</p>
+          <EmptyState title={copy.notes.empty} description={copy.notes.description} />
         ) : (
           <div className="mobile-card-list" role="list">
             {comments.map((comment) => (

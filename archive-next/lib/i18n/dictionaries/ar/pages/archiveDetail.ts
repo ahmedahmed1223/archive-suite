@@ -1,6 +1,7 @@
 export const archiveDetail = {
   mentionSuggestionsAriaLabel: "اقتراحات الإشارة",
   page: {
+      moreActionsLabel: "إجراءات أخرى",
     defaultTitle: "تفاصيل السجل",
     untitledRecord: "بدون عنوان",
     defaultDescription: "تفاصيل السجل وحقوقه في عرض تشغيلي مركز.",

@@ -239,6 +239,16 @@ export default function FilesPage() {
     setShareChecklist(CLOSED_SHARE_CHECKLIST);
   };
 
+  // V14-AUDIT-018: Escape closes the modal.
+  useEffect(() => {
+    if (!shareChecklist.open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") handleCancelShareChecklist();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
   const handleConfirmShare = async () => {
     if (selectedKeys.length === 0) return;
     const validation = validateShareExpiry(shareChecklist.expiryLocalValue, new Date(), locale);
@@ -579,7 +589,15 @@ export default function FilesPage() {
       ) : null}
 
       {shareChecklist.open ? (
-        <div className="panel" role="dialog" aria-label={copy.preShare}>
+        // V14-AUDIT-018: real modal semantics — overlay, aria-modal, Escape to close.
+        <div className="modal-overlay" onClick={handleCancelShareChecklist}>
+        <div
+          className="panel modal-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label={copy.preShare}
+          onClick={(event) => event.stopPropagation()}
+        >
           <div className="panel-section-header">
             <h2>{copy.preShare}</h2><p className="helper-text">{copy.preShareDescription}</p>
           </div>
@@ -631,6 +649,7 @@ export default function FilesPage() {
               {copy.cancel}
             </button>
           </div>
+        </div>
         </div>
       ) : null}
 

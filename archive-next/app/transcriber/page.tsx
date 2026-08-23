@@ -426,7 +426,9 @@ export default function TranscriberPage() {
         </div>
 
         {recentState.status === "loading" && <Skeleton label={t.pages.transcriber.recent.loading} />}
-        {recentState.status === "empty" && <p className="empty-state">{t.pages.transcriber.recent.empty}</p>}
+        {recentState.status === "empty" && (
+          <EmptyState title={t.pages.transcriber.recent.empty} description={t.pages.transcriber.recent.emptyHint} />
+        )}
         {recentState.status === "error" && (
           <p role="alert" className="form-status status-error">
             {t.pages.transcriber.recent.errorPrefix.replace("{error}", recentState.message)}

@@ -1,6 +1,7 @@
 export const archiveDetail = {
   mentionSuggestionsAriaLabel: "Mention suggestions",
   page: {
+      moreActionsLabel: "More actions",
     defaultTitle: "Record details",
     untitledRecord: "Untitled",
     defaultDescription: "Record details and rights in a focused working view.",
