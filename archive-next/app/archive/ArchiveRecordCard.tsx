@@ -28,6 +28,12 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
   const [titleDraft, setTitleDraft] = useState(record.title || "");
   const href = `/archive/${encodeURIComponent(record.id)}`;
   const status = deriveRecordStatus(record, locale);
+  // V14-UX-REVIEW-3: surface description completeness on the daily list so
+  // undescribed records are spotted without opening each one.
+  const describeStatus = record.descriptorCompletion?.status;
+  const describeLabel =
+    describeStatus === "green" ? t.pages.archiveRecordCard.describeComplete
+    : t.pages.archiveRecordCard.describeIncomplete;
 
   const closeMenu = () => setMenuPosition(null);
 
@@ -130,6 +136,11 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
           <span className="badge" data-record-status={status.kind} aria-label={`${status.label}: ${status.reason}`} title={status.reason}>
             {status.label}
           </span>
+          {describeStatus ? (
+            <span className="badge" data-describe={describeStatus} title={describeLabel}>
+              {describeLabel}
+            </span>
+          ) : null}
           <time className="created-at">{formatDate(record.updatedAt || record.createdAt, t.pages.archiveRecordCard.notSpecified)}</time>
         </div>
         {record.tags && record.tags.length > 0 ? (

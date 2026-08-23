@@ -7,5 +7,8 @@ export const filelessRecordForm = {
   tagsLabel: "الوسوم",
   tagsPlaceholder: "افصل بفاصلة",
   submitButtonBusy: "جارٍ الإنشاء…",
-  submitButton: "إنشاء السجل"
+  submitButton: "إنشاء السجل",
+  createdBanner: "تم إنشاء «{title}»",
+  createdOpen: "فتح السجل",
+  createdAnother: "إضافة سجل آخر"
 };

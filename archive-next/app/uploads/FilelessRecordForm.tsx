@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { createArchiveApiClient } from "@/lib/archive-api";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
@@ -9,13 +8,16 @@ const api = createArchiveApiClient();
 
 export function FilelessRecordForm() {
   const { t } = useLocale();
-  const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("");
   const [tags, setTags] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  // V14-UX-REVIEW-3: daily users create several records in a row — stay on
+  // the form with a success banner instead of navigating away each time.
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [createdTitle, setCreatedTitle] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,15 +35,36 @@ export function FilelessRecordForm() {
       setStatus(response.error);
       return;
     }
-    router.push(`/archive/${encodeURIComponent(response.record.id)}`);
+    setCreatedId(response.record.id);
+    setCreatedTitle(title.trim());
+    setTitle("");
+    setDescription("");
+    setTags("");
   }
 
   return (
-    <details className="panel">
-      {/* V14-UX-011 (P2): bare <summary> renders a ~21px tap target. The
-          shared disclosure summary class enforces the 44px touch minimum. */}
-      <summary className="disclosure-toolbar__summary"><strong>{t.pages.filelessRecordForm.heading}</strong></summary>
+    <section className="panel">
+      <h3>{t.pages.filelessRecordForm.heading}</h3>
       <p className="helper-text">{t.pages.filelessRecordForm.helperText}</p>
+
+      {createdId ? (
+        <div className="state-banner state-banner-success" role="status">
+          <strong>{t.pages.filelessRecordForm.createdBanner.replace("{title}", createdTitle)}</strong>
+          <span className="button-row">
+            <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(createdId)}`}>
+              {t.pages.filelessRecordForm.createdOpen}
+            </a>
+            <button
+              type="button"
+              className="button button-secondary button-sm"
+              onClick={() => { setCreatedId(null); setCreatedTitle(""); }}
+            >
+              {t.pages.filelessRecordForm.createdAnother}
+            </button>
+          </span>
+        </div>
+      ) : null}
+
       <form className="stack" onSubmit={submit}>
         <label className="field"><span>{t.pages.filelessRecordForm.titleLabel}</span><input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={500} /></label>
         <label className="field"><span>{t.pages.filelessRecordForm.descriptionLabel}</span><textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={3} /></label>
@@ -52,6 +75,6 @@ export function FilelessRecordForm() {
         <button className="button button-primary" disabled={busy}>{busy ? t.pages.filelessRecordForm.submitButtonBusy : t.pages.filelessRecordForm.submitButton}</button>
         {status ? <p className="form-status" role="status">{status}</p> : null}
       </form>
-    </details>
+    </section>
   );
 }

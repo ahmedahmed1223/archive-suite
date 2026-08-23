@@ -8,5 +8,7 @@ export const archiveRecordCard = {
   notSpecified: "غير محدد",
   contextMenuOpen: "فتح",
   contextMenuOpenNewTab: "فتح في تبويب جديد",
-  contextMenuSelect: "تحديد"
+  contextMenuSelect: "تحديد",
+  describeComplete: "التوصيف مكتمل",
+  describeIncomplete: "التوصيف ناقص"
 } as const;

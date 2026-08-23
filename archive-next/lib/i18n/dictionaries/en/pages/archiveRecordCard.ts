@@ -8,5 +8,7 @@ export const archiveRecordCard = {
   notSpecified: "Not specified",
   contextMenuOpen: "Open",
   contextMenuOpenNewTab: "Open in a new tab",
-  contextMenuSelect: "Select"
+  contextMenuSelect: "Select",
+  describeComplete: "Fully described",
+  describeIncomplete: "Description incomplete"
 } as const;

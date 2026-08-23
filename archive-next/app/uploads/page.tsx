@@ -1,21 +1,48 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import DisclosureToolbar from "@/components/DisclosureToolbar";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { Link2, PlusCircle } from "lucide-react";
+import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import { ImportFromUrlForm } from "./ImportFromUrlForm";
 import { IntakeTemplatesPanel } from "./IntakeTemplatesPanel";
 import { UploadForm } from "./UploadForm";
 import { UploadLinksPanel } from "./UploadLinksPanel";
 import { FilelessRecordForm } from "./FilelessRecordForm";
 
-// V14-UX-006 (Task 6): file upload is THE primary intake path; every other
-// intake route (fileless record, URL import, templates, links) waits behind
-// a disclosure so the first screen shows one obvious action.
+// V14-UX-REVIEW-3: this is the page archivists live in daily. The four intake
+// paths are now first-class cards (previously three of them hid behind a
+// disclosure), and a "recently added" strip closes the loop after each entry.
 export default function UploadsPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const api = useMemo(() => createArchiveApiClient(), []);
+  const [recent, setRecent] = useState<ArchiveRecord[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void api.records({ store: "", limit: 8 }).then((response) => {
+      if (!cancelled && response.ok) {
+        const sorted = [...response.records].sort((a, b) =>
+          (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
+        );
+        setRecent(sorted.slice(0, 6));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [api]);
+
+  const modes = [
+    { id: "files", icon: "📁", title: t.pages.uploads.modeFilesTitle, description: t.pages.uploads.modeFilesDescription },
+    { id: "fileless", icon: "📝", title: t.pages.uploads.modeFilelessTitle, description: t.pages.uploads.modeFilelessDescription },
+    { id: "url", icon: "🔗", title: t.pages.uploads.modeUrlTitle, description: t.pages.uploads.modeUrlDescription },
+    { id: "links", icon: "📤", title: t.pages.uploads.modeLinksTitle, description: t.pages.uploads.modeLinksDescription },
+  ];
+
   return (
     <AppShell subtitle={t.pageTitles.addArchive} contentClassName="stack" tipsPage="uploads">
       <PageToolbar
@@ -39,6 +66,19 @@ export default function UploadsPage() {
         }
       />
 
+      {/* Intake modes overview — one card per path so nothing hides. */}
+      <section className="add-modes" aria-label={t.pages.uploads.modesAriaLabel}>
+        {modes.map((mode) => (
+          <article className="add-mode-card" key={mode.id}>
+            <span className="add-mode-card__icon" aria-hidden="true">{mode.icon}</span>
+            <div>
+              <strong>{mode.title}</strong>
+              <p className="helper-text">{mode.description}</p>
+            </div>
+          </article>
+        ))}
+      </section>
+
       <section className="add-workspace" aria-label={t.pages.uploads.sectionAriaLabel}>
         <div className="add-workspace__primary">
           <UploadForm />
@@ -51,6 +91,31 @@ export default function UploadsPage() {
             <UploadLinksPanel />
           </div>
         </DisclosureToolbar>
+      </section>
+
+      {/* Recently added: closes the loop and shows what still needs description. */}
+      <section aria-label={t.pages.uploads.recentTitle}>
+        <div className="panel-title-row">
+          <h2>{t.pages.uploads.recentTitle}</h2>
+          <a className="button button-secondary button-sm" href="/archive">{t.pages.uploads.recentOpenAll}</a>
+        </div>
+        {recent === null ? null : recent.length === 0 ? (
+          <p className="helper-text">{t.pages.uploads.recentEmpty}</p>
+        ) : (
+          <ul className="stack-list">
+            {recent.map((record) => {
+              const complete = record.descriptorCompletion?.status !== "red" && record.descriptorCompletion?.status !== "yellow";
+              return (
+                <li key={record.id}>
+                  <a href={`/archive/${encodeURIComponent(record.id)}`}>{record.title || record.id}</a>
+                  <span className={`badge ${complete ? "" : "badge-warn"}`}>
+                    {complete ? t.pages.uploads.recentComplete : t.pages.uploads.recentNeedsDescribe}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
     </AppShell>
   );

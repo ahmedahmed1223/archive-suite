@@ -37,7 +37,8 @@ vi.mock("@/lib/archive-api", async (importOriginal) => {
     createArchiveApiClient: () => ({
       uploadFile: mocks.uploadFile,
       intakeTemplates: vi.fn().mockResolvedValue({ ok: true as const, templates: [] }),
-      uploadLinks: vi.fn().mockResolvedValue({ ok: true as const, links: [] })
+      uploadLinks: vi.fn().mockResolvedValue({ ok: true as const, links: [] }),
+      records: vi.fn().mockResolvedValue({ ok: true as const, records: [] })
     })
   };
 });
@@ -69,11 +70,9 @@ describe("uploads page intake hierarchy", () => {
 
     const primary = container.querySelector(".add-workspace__primary form");
     expect(primary).toBeVisible();
-    // Fileless record is a secondary route now — inside the closed disclosure.
-    const filelessHeading = screen.queryByText(/سجل بلا ملف|Fileless record/);
-    if (filelessHeading) {
-      expect(filelessHeading.closest(".disclosure-toolbar__content")).not.toBeVisible();
-    }
+    // V14-UX-REVIEW-3: all four intake modes are visible as cards up top.
+    expect(screen.getAllByText(/ملفات مع توصيف/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/توصيف بدون ملفات/)).toBeVisible();
   });
 
   test("reveals other intake options on demand", () => {
