@@ -44,7 +44,7 @@ export const metadataTemplates = {
     published: "المنشور {version}",
     noTags: "بلا وسوم",
     tagSeparator: "، ",
-    enabled: "مفعل",
+    enabled: "مفعّل",
     disabled: "معطل",
     versions: "الإصدارات",
     publishDraft: "نشر المسودة",

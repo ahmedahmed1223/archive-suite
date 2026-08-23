@@ -27,6 +27,13 @@ interface AuthSessionContextValue extends AuthSessionState {
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 let pendingBootstrapRefresh: ReturnType<ReturnType<typeof createArchiveApiClient>["refresh"]> | null = null;
+// V14-UX-REVIEW: dev StrictMode remounts the provider right after the first
+// bootstrap resolves, so every full page load fired TWO rotations. Combined
+// with the per-IP refresh throttle that logged users out mid-browsing. Cache
+// the result briefly — a remount within seconds reuses it instead of rotating
+// again against the throttle.
+const BOOTSTRAP_REUSE_MS = 10_000;
+let lastBootstrapRefresh: { at: number; result: Awaited<ReturnType<ReturnType<typeof createArchiveApiClient>["refresh"]>> } | null = null;
 
 function loginPathFor(pathname: string) {
   const next = pathname && pathname !== "/" ? `?next=${encodeURIComponent(pathname)}` : "";
@@ -41,6 +48,17 @@ function refreshBootstrap(api: ReturnType<typeof createArchiveApiClient>) {
   }
 
   return pendingBootstrapRefresh;
+}
+
+function cachedOrRefreshBootstrap(api: ReturnType<typeof createArchiveApiClient>) {
+  const now = Date.now();
+  if (lastBootstrapRefresh && now - lastBootstrapRefresh.at < BOOTSTRAP_REUSE_MS) {
+    return Promise.resolve(lastBootstrapRefresh.result);
+  }
+  return refreshBootstrap(api).then((result) => {
+    lastBootstrapRefresh = { at: Date.now(), result };
+    return result;
+  });
 }
 
 export function safeNextPath(value: string | null) {
@@ -74,7 +92,17 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   );
 
   const refreshSession = useCallback(async () => {
-    const response = await api.refresh();
+    // V14-UX-REVIEW: any refresh call can lose a rotation race against a
+    // sibling tab or an in-flight page load. Retry transient failures with
+    // the freshly stored cookie before concluding the session is dead — a
+    // single unlucky 401 must not log an active user out.
+    let response = await api.refresh();
+    for (let attempt = 0; !response.ok && attempt < 2; attempt += 1) {
+      const transient = response.code === "http_401" || response.code === "http_429" || response.code === "network_error";
+      if (!transient) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 600 : 1800));
+      response = await api.refresh();
+    }
 
     if (!response.ok) {
       setSession({ status: "guest", user: null, error: response.error });
@@ -94,14 +122,16 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     let cancelled = false;
 
     async function bootstrap() {
-      let refreshed = await refreshBootstrap(api);
+      let refreshed = await cachedOrRefreshBootstrap(api);
 
-      // A throttled refresh (429) is transient — a burst of tabs or a test
-      // sweep must not log the user out. Retry briefly before going guest.
-      for (let attempt = 0; attempt < 2 && !cancelled && !refreshed.ok && refreshed.code === "http_429"; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+      // V14-UX-REVIEW: transient refresh failures must not log the user out.
+      // 429 = throttle; 401 = a sibling tab won the rotation race and the new
+      // cookie had not landed yet (the server keeps a 30s reuse grace window,
+      // so an immediate retry re-reads the fresh cookie). Retry both briefly.
+      for (let attempt = 0; attempt < 2 && !cancelled && !refreshed.ok && (refreshed.code === "http_429" || refreshed.code === "http_401"); attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 750 : 2500));
         if (cancelled) return;
-        refreshed = await refreshBootstrap(api);
+        refreshed = await cachedOrRefreshBootstrap(api);
       }
 
       if (cancelled) {
@@ -130,7 +160,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   useEffect(() => {
     function handleUnauthorized() {
-      setSession({ status: "guest", user: null, error: authCopyRef.current.errors.sessionExpired });
+      // V14-UX-REVIEW: during bootstrap the session has no token yet, so a
+      // stray 401 from any early fetch is noise, not an expired session.
+      setSession((current) =>
+        current.status === "loading"
+          ? current
+          : { status: "guest", user: null, error: authCopyRef.current.errors.sessionExpired }
+      );
     }
 
     window.addEventListener(ARCHIVE_UNAUTHORIZED_EVENT, handleUnauthorized);

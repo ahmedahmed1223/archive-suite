@@ -65,7 +65,7 @@ export const uploadForm = {
   nextButton: "التالي",
   clearButton: "مسح",
 
-  uploadingFile: "جار رفع {file}...",
+  uploadingFile: "جارٍ رفع {file}...",
   uploadAndScheduleButton: "رفع وجدولة",
   createRecordsButton: "إنشاء السجلات",
 

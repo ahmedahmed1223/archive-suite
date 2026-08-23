@@ -3,7 +3,7 @@ export const collaboration = {
     active: "نشط",
     viewing: "يشاهد",
     reviewing: "يراجع",
-    editing: "يحرر",
+    editing: "تحرير",
     idle: "خامل"
   },
   initial: {
@@ -38,7 +38,7 @@ export const collaboration = {
     selectRoomAndResource: "اختر غرفة ومورداً قبل حفظ المسودة."
   },
   toolbar: {
-    syncing: "جار المزامنة",
+    syncing: "جارٍ المزامنة",
     activeSync: "مزامنة نشطة",
     title: "التعاون الحي",
     description: "غرفة تشغيلية لإظهار الحضور النشط، وحجز موارد التحرير، وحفظ مسودة مشتركة عبر الخادم.",
@@ -53,11 +53,11 @@ export const collaboration = {
     roomKey: "مفتاح الغرفة",
     resource: "المورد",
     status: "الحالة",
-    refreshing: "جاري التحديث",
+    refreshing: "جارٍ التحديث",
     refreshPresence: "تحديث الحضور",
-    acquiring: "جاري الحجز",
+    acquiring: "جارٍ الحجز",
     acquireResource: "حجز المورد",
-    releasing: "جاري التحرير",
+    releasing: "جارٍ التحرير",
     releaseLock: "تحرير القفل",
     lockStatus: "حالة القفل"
   },
@@ -75,7 +75,7 @@ export const collaboration = {
     title: "مسودة المورد",
     description: "نص مشترك بإصدار متفائل مرتبط بالمورد الحالي.",
     contentLabel: "محتوى مسودة المورد",
-    saving: "جاري الحفظ",
+    saving: "جارٍ الحفظ",
     save: "حفظ المسودة"
   },
   locks: {

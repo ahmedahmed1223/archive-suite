@@ -26,7 +26,7 @@ export const systemControl = {
   availableActionsHeading: "الإجراءات المتاحة",
   availableActionsNote: "كل إجراء يتحقق من التفعيل والصلاحية على الخادم قبل التنفيذ، بصرف النظر عن حالة هذه الواجهة.",
   actionsSectionLabel: "إجراءات التحكم",
-  runningLabel: "جاري التنفيذ...",
+  runningLabel: "جارٍ التنفيذ...",
   executeLabel: "تنفيذ",
   disabledButtonTitle: "غير مفعّل من إعدادات الخادم",
   confirmDialogTitle: "تأكيد تفريغ الذاكرة المؤقتة",
@@ -35,7 +35,7 @@ export const systemControl = {
   cancelButton: "إلغاء",
   confirmClearButton: "تأكيد التفريغ",
   gateStatusLabels: {
-    loading: "جار التحقق",
+    loading: "جارٍ التحقق",
     enabled: "مفعلة للمشرف",
     disabled: "معطلة من الخادم",
     forbidden: "صلاحية مرفوضة",

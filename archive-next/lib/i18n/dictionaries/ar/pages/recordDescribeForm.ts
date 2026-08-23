@@ -9,7 +9,7 @@ export const recordDescribeForm = {
   subtypeLabel: "الفرع",
   tagsLabel: "الوسوم",
   tagsPlaceholder: "أرشيف، مقابلات، 2026",
-  savingButton: "جار الحفظ...",
+  savingButton: "جارٍ الحفظ...",
   saveButton: "حفظ التوصيف",
   undoButton: "تراجع",
   redoButton: "إعادة",

@@ -50,8 +50,9 @@
   min-block-size: 5rem;
   padding: var(--space-4);
   border-radius: var(--radius-md);
-  background: #151515;
-  text-shadow: 0 1px 2px #000;
+  /* V14-UX-REVIEW: token colors instead of raw hex. */
+  background: color-mix(in srgb, var(--color-bg-primary) 92%, var(--color-text-primary));
+  text-shadow: 0 1px 2px var(--color-bg-primary);
 }
 
 .subtitlePreview p {

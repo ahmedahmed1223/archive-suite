@@ -21,7 +21,7 @@ export const mediaDerivativesTree = {
   title: "شجرة المشتقات",
   description: "تتبع التحويلات ومخرجاتها من المادة الأصلية إلى أي مشتق لاحق.",
   artifactCountBadge: "{count} مخرج",
-  loadingText: "جار تحميل مشتقات الوسائط...",
+  loadingText: "جارٍ تحميل مشتقات الوسائط...",
   loadErrorPrefix: "تعذر تحميل شجرة المشتقات: {message}",
   retryButton: "إعادة المحاولة",
   emptyTitle: "لا توجد مشتقات مسجلة بعد",

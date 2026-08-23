@@ -56,7 +56,9 @@ describe("localized authentication gate", () => {
       </LocaleProvider>,
     );
 
-    expect(await screen.findByText("Taking you to sign in…")).toBeInTheDocument();
+    // V14-UX-REVIEW: bootstrap now retries transient 401s (~3.2s) before going
+    // guest, so the redirect copy appears after the retry window.
+    expect(await screen.findByText("Taking you to sign in…", {}, { timeout: 6000 })).toBeInTheDocument();
     expect(mocks.replace).toHaveBeenCalledWith("/login?next=%2Farchive");
   });
 });

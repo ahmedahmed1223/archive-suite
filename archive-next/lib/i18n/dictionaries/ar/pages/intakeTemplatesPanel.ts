@@ -9,12 +9,12 @@ export const intakeTemplatesPanel = {
   typePlaceholder: "video",
   folderLabel: "مجلّد افتراضي (اختياري)",
   tagsLabel: "وسوم افتراضية (مفصولة بفاصلة)",
-  saving: "جار الحفظ...",
+  saving: "جارٍ الحفظ...",
   saveButton: "حفظ القالب",
-  loading: "جار تحميل قوالب الإدخال...",
+  loading: "جارٍ تحميل قوالب الإدخال...",
   loadErrorHeading: "تعذر تحميل قوالب الإدخال",
   retry: "إعادة المحاولة",
   empty: "لا توجد قوالب محفوظة بعد.",
-  deleting: "جار الحذف...",
+  deleting: "جارٍ الحذف...",
   deleteButton: "حذف"
 };

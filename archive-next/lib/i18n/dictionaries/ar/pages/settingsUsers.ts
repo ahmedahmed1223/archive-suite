@@ -12,7 +12,7 @@ export const settingsUsers = {
   inviteSubmit: "إرسال الدعوة",
   inviteRestrictedNote: "هذه الصفحة مقتصرة على المدراء؛ لا يمكنك دعوة أعضاء جدد.",
   membersHeading: "الأعضاء",
-  loadingMembers: "جار تحميل الأعضاء...",
+  loadingMembers: "جارٍ تحميل الأعضاء...",
   errorPrefix: "خطأ: {message}",
   membersCardListLabel: "بطاقات أعضاء الفريق",
   idLabel: "المعرّف",

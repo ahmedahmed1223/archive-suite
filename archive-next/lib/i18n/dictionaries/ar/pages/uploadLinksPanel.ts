@@ -8,9 +8,9 @@ export const uploadLinksPanel = {
   folderLabel: "مجلّد الوجهة (اختياري)",
   folderPlaceholder: "incoming/field",
   expiryLabel: "صلاحية الرابط (ساعات)",
-  creating: "جار الإنشاء...",
+  creating: "جارٍ الإنشاء...",
   createButton: "إنشاء رابط",
-  loading: "جار تحميل روابط الرفع...",
+  loading: "جارٍ تحميل روابط الرفع...",
   loadErrorHeading: "تعذر تحميل روابط الرفع",
   retry: "إعادة المحاولة",
   empty: "لا توجد روابط رفع بعد.",
@@ -18,6 +18,6 @@ export const uploadLinksPanel = {
   revoked: "ملغى",
   active: "فعّال",
   uploadedFilesCount: "{count} ملف مرفوع",
-  revoking: "جار الإلغاء...",
+  revoking: "جارٍ الإلغاء...",
   revokeButton: "إلغاء"
 };

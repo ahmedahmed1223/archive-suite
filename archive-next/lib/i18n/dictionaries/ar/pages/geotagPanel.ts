@@ -6,7 +6,7 @@ export const geotagPanel = {
   placePlaceholder: "مثال: عمّان، الأردن",
   coordinatesLabel: "الإحداثيات",
   saveButton: "حفظ الموقع",
-  savingButton: "جار الحفظ...",
+  savingButton: "جارٍ الحفظ...",
   cancelButton: "إلغاء",
   saveLocationError: "تعذر حفظ الموقع.",
   removeLocationError: "تعذر إزالة الموقع.",
@@ -20,7 +20,7 @@ export const geotagPanel = {
   emptyDescription: "أضف إحداثيات لهذا السجل لعرضه على الخريطة وربطه بسجلات قريبة.",
   addLocationButton: "إضافة موقع",
   nearbyTitle: "سجلات قريبة",
-  nearbyLoading: "جار البحث عن سجلات قريبة...",
+  nearbyLoading: "جارٍ البحث عن سجلات قريبة...",
   nearbyError: "تعذر تحميل السجلات القريبة: {message}",
   nearbyEmpty: "لا توجد سجلات أخرى تحمل موقعاً جغرافياً بعد."
 } as const;

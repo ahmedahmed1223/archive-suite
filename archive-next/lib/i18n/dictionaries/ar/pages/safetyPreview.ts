@@ -30,8 +30,8 @@ export const safetyPreview = {
     scenario: "السيناريو",
     operation: "العملية",
     identifiers: "المعرفات التجريبية",
-    loading: "جار التحميل...",
-    running: "جار تشغيل المحاكاة...",
+    loading: "جارٍ التحميل...",
+    running: "جارٍ تشغيل المحاكاة...",
     run: "تشغيل المحاكاة"
   },
   metrics: {

@@ -6,7 +6,7 @@ export const savedSearches = {
   nameLabel: "اسم البحث",
   queryLabel: "الاستعلام",
   saveButton: "حفظ البحث",
-  loadingLabel: "جار تحميل البحوث المحفوظة...",
+  loadingLabel: "جارٍ تحميل البحوث المحفوظة...",
   emptyTitle: "لا توجد بحوث محفوظة.",
   emptyDescription: "احفظ بحثًا من صفحة البحث المتقدم أو من النموذج أعلاه.",
   archiveViewBadge: "عرض أرشيف",

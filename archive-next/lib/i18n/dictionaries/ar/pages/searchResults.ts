@@ -26,7 +26,7 @@ export const searchResults = {
   savePromptTitle: "حفظ البحث",
   savePromptMessage: "اسم البحث المحفوظ",
   savePromptDefault: "بحث مخصص",
-  savingStatus: "جار حفظ البحث...",
+  savingStatus: "جارٍ حفظ البحث...",
   saveError: "تعذر حفظ البحث.",
   saveSuccess: "تم حفظ البحث.",
   deleteError: "تعذر حذف البحث.",

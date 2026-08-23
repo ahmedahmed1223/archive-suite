@@ -3,7 +3,7 @@ export const importFromUrlForm = {
   description: "أدخل رابط ملف عام (http/https) لمعاينة نوعه وحجمه قبل إنشاء سجل.",
   urlLabel: "رابط الملف",
   urlPlaceholder: "https://example.com/video.mp4",
-  previewing: "جار المعاينة...",
+  previewing: "جارٍ المعاينة...",
   previewButton: "معاينة الرابط",
   previewHeading: "معاينة الاستيراد",
   suggestedType: "النوع المقترح",

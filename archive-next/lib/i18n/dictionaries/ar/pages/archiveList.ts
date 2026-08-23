@@ -69,7 +69,7 @@ export const archiveList = {
   savedViewLoadError: "تعذر تحميل العروض المحفوظة.",
   saveViewDialogTitle: "حفظ العرض",
   saveViewDialogMessage: "اسم العرض المحفوظ",
-  savingView: "جار حفظ العرض...",
+  savingView: "جارٍ حفظ العرض...",
   saveViewError: "تعذر حفظ العرض.",
   saveViewSuccess: "تم حفظ العرض.",
   removeViewError: "تعذر حذف العرض.",
@@ -123,5 +123,5 @@ export const archiveList = {
   resetFiltersButton: "تصفير الفلاتر",
   resultsSectionLabel: "نتائج الأرشيف",
   tableAriaLabel: "جدول نتائج الأرشيف",
-  preparingArchive: "جار تجهيز الأرشيف..."
+  preparingArchive: "جارٍ تجهيز الأرشيف..."
 } as const;
