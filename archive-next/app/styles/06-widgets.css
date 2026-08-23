@@ -1393,6 +1393,10 @@
   color: var(--color-text-link);
   font-size: var(--font-size-sm);
   text-decoration: none;
+  /* V14-UX-REVIEW: keep the click target >= 24px (WCAG 2.5.8) without
+     changing the visual size of the label. */
+  display: inline-block;
+  padding-block: calc((24px - 1lh) / 2);
 }
 
 .dashboard-recent__all:hover {

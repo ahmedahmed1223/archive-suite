@@ -24,6 +24,9 @@ return [
         'refresh_ttl_days' => (int) env('ARCHIVE_REFRESH_TTL_DAYS', 14),
         'refresh_cookie' => env('ARCHIVE_REFRESH_COOKIE', 'va_refresh'),
         'session_cookie' => env('ARCHIVE_SESSION_COOKIE', 'va_session'),
+        // V14-UX-REVIEW: seconds a just-rotated refresh token still resolves
+        // (parallel tabs racing /auth/refresh must not log each other out).
+        'refresh_grace_seconds' => (int) env('ARCHIVE_REFRESH_GRACE_SECONDS', 30),
         'secure_cookies' => (bool) env('ARCHIVE_SECURE_COOKIES', false),
     ],
 

@@ -135,7 +135,7 @@ export default function NotificationsPage() {
             <p>
               {filter === "unread" ? copy.noUnread : copy.empty}
             </p>
-            <Link href="/archive" className="button button--primary">
+            <Link href="/archive" className="button button-primary">
               {copy.back}
             </Link>
           </div>

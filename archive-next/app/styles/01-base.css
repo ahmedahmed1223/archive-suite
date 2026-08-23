@@ -212,6 +212,10 @@ a:hover {
 
 .breadcrumb__item a {
   color: var(--color-text-tertiary);
+  /* V14-UX-REVIEW: >= 24px click target (WCAG 2.5.8) without enlarging the
+     visually small breadcrumb text. */
+  display: inline-block;
+  padding-block: calc((24px - 1lh) / 2);
 }
 
 .breadcrumb__item a:hover {

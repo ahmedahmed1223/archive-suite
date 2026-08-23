@@ -23,24 +23,24 @@ function labelFor(labels: object, value: string): string {
 // V14-UX-011 (P6): raw API event names like "post.api.v1.uploads.schedules"
 // leaked into headings as-is. Map the known HTTP-verb + path shapes onto
 // human labels; fall back to a cleaned-up tail segment instead of the full path.
-function humanEventLabel(entry: { event: string }, labels: object): string {
+function humanEventLabel(
+  entry: { event: string },
+  labels: object,
+  httpVerbs: Record<string, string>,
+  httpSubjects: Record<string, string>,
+): string {
   const direct = labelFor(labels, entry.event);
   if (direct !== entry.event) return direct;
 
+  // V14-UX-011 follow-up (V14-UX-REVIEW): raw HTTP-shaped event names get
+  // locale-aware verb + subject nouns from the dictionary, never path text.
   const match = /^(get|post|put|patch|delete)\.api\.v1\.(.+)$/i.exec(entry.event);
   if (match) {
-    const verb = match[1].toLowerCase();
-    const verbLabel: Record<string, string> = {
-      get: "عرض",
-      post: "إنشاء",
-      put: "تحديث",
-      patch: "تعديل",
-      delete: "حذف",
-    };
-    // Tail: last meaningful path segment, kebab/snake → spaces.
-    const segments = match[2].split(".").filter((part) => part !== "v1");
-    const subject = (segments[segments.length - 1] ?? "").replace(/[-_]+/g, " ");
-    return `${verbLabel[verb] ?? verb}: ${subject}`;
+    const verb = httpVerbs[match[1].toLowerCase()] ?? match[1].toLowerCase();
+    const subjectKey = (match[2].split(".").filter((part) => part !== "v1").pop() ?? "")
+      .replace(/[-_]+/g, " ")
+      .toLowerCase();
+    return `${verb} ${httpSubjects[subjectKey] ?? subjectKey}`;
   }
   return entry.event.replace(/[-_.]+/g, " ");
 }
@@ -248,8 +248,10 @@ export default function ActivityPage() {
               >
                 <div className="panel-title-row">
                   <div>
-                    <h2>{humanEventLabel(entry, copy.eventLabels)}</h2>
-                    <p>{redactAdminSecrets(entry.action)}</p>
+                    <h2>{humanEventLabel(entry, copy.eventLabels, copy.httpVerbs, copy.httpSubjects)}</h2>
+                    {/^\s*(GET|POST|PUT|PATCH|DELETE)\s+\/api\//i.test(entry.action) ? null : (
+                      <p>{redactAdminSecrets(entry.action)}</p>
+                    )}
                   </div>
                   <span className={entry.outcome === "success" ? "badge" : "badge badge-danger"}>
                     {labelFor(copy.outcomeLabels, entry.outcome)}

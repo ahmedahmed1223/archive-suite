@@ -1069,3 +1069,16 @@ textarea:focus-visible,
     min-block-size: var(--control-height);
   }
 }
+
+/* V14-UX-REVIEW: release-notes alternate-language link */
+.release-notes-page__alt {
+  margin-block-end: var(--space-4);
+}
+
+.release-notes-page__alt a,
+.stack-list a.text-accent {
+  color: var(--color-text-link);
+  /* V14-UX-REVIEW: >= 24px click target (WCAG 2.5.8). */
+  display: inline-block;
+  padding-block: calc((24px - 1lh) / 2);
+}

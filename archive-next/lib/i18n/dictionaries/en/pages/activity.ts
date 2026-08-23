@@ -31,6 +31,8 @@ export const activity = {
     outcomes: { all: "All outcomes", success: "Successful", rejected: "Rejected", failed: "Failed" },
     resources: { all: "All resources", record: "Record", note: "Note", comment: "Comment", rights: "Rights", relation: "Relationship", media: "Media", systemControl: "System control" }
   },
+  httpVerbs: { get: "Viewed", post: "Created", put: "Updated", patch: "Edited", delete: "Deleted" },
+  httpSubjects: { uploads: "uploads", schedules: "upload schedules", sessions: "upload sessions", records: "records", notes: "notes", comments: "comments", rights: "rights", relations: "relations", shares: "shares", media: "media" },
   eventLabels: { bulkUpsert: "Record update", noteCreated: "Note added", noteUpdated: "Note updated", noteDeleted: "Note deleted", commentCreated: "Comment added", commentDeleted: "Comment deleted", rightsUpdated: "Rights updated", relationCreated: "Relationship added", relationDeleted: "Relationship deleted", shareCreated: "Share created", mediaQueued: "Media task queued", systemAllowed: "System action", systemBlocked: "System action blocked", systemRejected: "System action rejected" },
   outcomeLabels: { success: "Successful", rejected: "Rejected", failed: "Failed" },
   restore: { defaultLabel: "Restore decision" }

@@ -21,7 +21,7 @@ export const daily = {
   unreadNotifications: "إشعارات غير مقروءة",
   viewAll: "عرض الكل",
   loadingNotifications: "جارٍ تحميل الإشعارات…",
-  notificationsEmptyTitle: "لا إشعارات جديدة",
+  notificationsEmptyTitle: "لا توجد إشعارات جديدة",
   notificationsEmptyDescription: "كل شيء مقروء.",
   favoritesAriaLabel: "المفضلة",
   favorites: "المفضلة",

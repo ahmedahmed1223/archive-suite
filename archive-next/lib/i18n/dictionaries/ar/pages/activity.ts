@@ -31,6 +31,8 @@ export const activity = {
     outcomes: { all: "كل النتائج", success: "ناجحة", rejected: "مرفوضة", failed: "فاشلة" },
     resources: { all: "كل الموارد", record: "سجل", note: "ملاحظة", comment: "تعليق", rights: "حقوق", relation: "علاقة", media: "وسائط", systemControl: "تحكم النظام" }
   },
+  httpVerbs: { get: "عرض", post: "إنشاء", put: "تحديث", patch: "تعديل", delete: "حذف" },
+  httpSubjects: { uploads: "الرفع", schedules: "جدولة الرفع", sessions: "جلسات الرفع", records: "السجلات", notes: "الملاحظات", comments: "التعليقات", rights: "الحقوق", relations: "العلاقات", shares: "المشاركات", media: "الوسائط" },
   eventLabels: { bulkUpsert: "تحديث السجلات", noteCreated: "إضافة ملاحظة", noteUpdated: "تحديث ملاحظة", noteDeleted: "حذف ملاحظة", commentCreated: "إضافة تعليق", commentDeleted: "حذف تعليق", rightsUpdated: "تحديث الحقوق", relationCreated: "إضافة علاقة", relationDeleted: "حذف علاقة", shareCreated: "إنشاء مشاركة", mediaQueued: "إطلاق مهمة وسائط", systemAllowed: "إجراء نظام", systemBlocked: "إجراء نظام مرفوض", systemRejected: "إجراء نظام مرفوض" },
   outcomeLabels: { success: "ناجح", rejected: "مرفوض", failed: "فاشل" },
   restore: { defaultLabel: "قرار استعادة" }

@@ -120,6 +120,37 @@ class AuthApiTest extends TestCase
         $this->assertSame(1, ApiSession::query()->count());
     }
 
+
+    public function test_a_parallel_refresh_with_the_just_rotated_cookie_recovers_within_grace(): void
+    {
+        // V14-UX-REVIEW: two racing tabs share one va_refresh cookie. The loser
+        // of the rotation race must get a fresh session, not a 401 logout.
+        $admin = User::query()->create([
+            'name' => 'Archive Admin',
+            'email' => 'race@example.test',
+            'password' => Hash::make('secret-password'),
+        ]);
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => 'race@example.test',
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        $firstRefreshCookie = $this->responseCookie($login, 'va_refresh')?->getValue();
+
+        $this->call('POST', '/api/v1/auth/refresh', [], [
+            'va_refresh' => $firstRefreshCookie,
+        ], [], ['HTTP_ACCEPT' => 'application/json'])
+            ->assertOk();
+
+        // Second tab replays the ORIGINAL (now previous) hash immediately.
+        $this->call('POST', '/api/v1/auth/refresh', [], [
+            'va_refresh' => $firstRefreshCookie,
+        ], [], ['HTTP_ACCEPT' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+    }
+
     public function test_refresh_cookie_is_scoped_to_the_refresh_route_path(): void
     {
         User::query()->create([

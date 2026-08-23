@@ -1,19 +1,44 @@
 import { notFound } from "next/navigation";
 import ReleaseNotesDocument from "@/components/ReleaseNotesDocument";
 import { getReleaseNotes } from "@/lib/release-notes";
+import { cookies } from "next/headers";
+import { LOCALE_COOKIE_NAME, isAppLocale, type AppLocale } from "@/lib/i18n/types";
 
-export default async function ReleaseNotesPage({ params }: Readonly<{ params: Promise<{ version: string }> }>) {
+/**
+ * V14-UX-REVIEW: previously both language versions rendered stacked on one
+ * page, doubling its length (worst on phones) and mixing reading directions.
+ * Now the page renders only the reader's locale and links to the other one,
+ * matching how the .ar.md files already cross-link each other. `?lang=`
+ * overrides the locale cookie without touching it.
+ */
+function resolveLocale(cookieLocale: string | undefined, searchParams: { lang?: string }): AppLocale {
+  if (isAppLocale(searchParams.lang)) return searchParams.lang;
+  return cookieLocale === "en" ? "en" : "ar";
+}
+
+export default async function ReleaseNotesPage({
+  params,
+  searchParams,
+}: Readonly<{ params: Promise<{ version: string }>; searchParams: Promise<{ lang?: string }> }>) {
   const { version } = await params;
   const release = getReleaseNotes(version);
   if (!release) notFound();
 
+  const cookieStore = await cookies();
+  const query = await searchParams;
+  const locale = resolveLocale(cookieStore.get(LOCALE_COOKIE_NAME)?.value, query);
+  const other: AppLocale = locale === "ar" ? "en" : "ar";
+
   return (
     <main className="release-notes-page">
-      <section dir="rtl" lang="ar">
-        <ReleaseNotesDocument markdown={release.ar} />
-      </section>
-      <section dir="ltr" lang="en">
-        <ReleaseNotesDocument markdown={release.en} />
+      <section dir={locale === "ar" ? "rtl" : "ltr"} lang={locale}>
+        <p className="release-notes-page__alt">
+          {/* Native language name via Intl — keeps source free of Arabic literals (V2-305 guard). */}
+          <a href={`?lang=${other}`} lang={other}>
+            {new Intl.DisplayNames([other], { type: "language" }).of(other)}
+          </a>
+        </p>
+        <ReleaseNotesDocument markdown={release[locale]} />
       </section>
     </main>
   );
