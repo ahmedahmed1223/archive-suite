@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type UploadLink } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 type UploadLinksState =
   | { status: "loading" }
@@ -13,6 +14,7 @@ type UploadLinksState =
 
 export function UploadLinksPanel() {
   const { t } = useLocale();
+  const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [links, setLinks] = useState<UploadLink[]>([]);
   const [linksState, setLinksState] = useState<UploadLinksState>({ status: "loading" });
@@ -84,10 +86,17 @@ export function UploadLinksPanel() {
     setIsCreating(false);
   }
 
-  async function handleRevoke(id: string) {
+  async function handleRevoke(link: UploadLink) {
+    const confirmed = await dialogs.confirm({
+      title: t.pages.uploadLinksPanel.revokeDialog.title,
+      message: t.pages.uploadLinksPanel.revokeDialog.message.replace("{label}", link.label || t.pages.uploadLinksPanel.unlabeled),
+      confirmLabel: t.pages.uploadLinksPanel.revokeDialog.confirm,
+      destructive: true
+    });
+    if (!confirmed) return;
     setError(null);
-    setRevokingId(id);
-    const response = await api.revokeUploadLink(id);
+    setRevokingId(link.id);
+    const response = await api.revokeUploadLink(link.id);
     if (response.ok) await refresh();
     else setError(response.error || t.pages.uploadLinksPanel.revokeError);
     setRevokingId(null);
@@ -169,7 +178,7 @@ export function UploadLinksPanel() {
                 </button>
               ) : null}
               {!link.revoked ? (
-                <button type="button" className="button button-secondary button-sm" disabled={revokingId === link.id} onClick={() => void handleRevoke(link.id)}>
+                <button type="button" className="button button-secondary button-sm" disabled={revokingId === link.id} onClick={() => void handleRevoke(link)}>
                   {revokingId === link.id ? t.pages.uploadLinksPanel.revoking : t.pages.uploadLinksPanel.revokeButton}
                 </button>
               ) : null}

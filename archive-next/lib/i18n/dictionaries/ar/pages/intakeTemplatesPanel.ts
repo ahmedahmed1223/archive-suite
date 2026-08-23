@@ -16,5 +16,6 @@ export const intakeTemplatesPanel = {
   retry: "إعادة المحاولة",
   empty: "لا توجد قوالب محفوظة بعد.",
   deleting: "جارٍ الحذف...",
-  deleteButton: "حذف"
+  deleteButton: "حذف",
+  deleteDialog: { title: "حذف قالب الإدخال", message: "سيتم حذف القالب «{name}» نهائيًا. هل تريد المتابعة؟", confirm: "حذف" }
 };

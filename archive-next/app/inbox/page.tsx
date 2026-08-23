@@ -12,6 +12,7 @@ import { formatDate, normalizeText } from "@/lib/record-utils";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { triageCommand } from "@/lib/inbox-triage";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 type InboxLoadState =
   | { status: "loading" }
@@ -35,6 +36,7 @@ export default function InboxPage() {
   const [routingPreviews, setRoutingPreviews] = useState<Record<string, string>>({});
   const [routingBusyId, setRoutingBusyId] = useState<string | null>(null);
   const canRouteInbox = useCapability("records.edit");
+  const dialogs = useConfirmDialog();
 
   const refreshInbox = useCallback(async () => {
     setLoadState({ status: "loading" });
@@ -122,8 +124,15 @@ export default function InboxPage() {
     await refreshInbox();
   }
 
-  async function removeItem(id: string) {
-    const response = await api.deleteInboxItem(id);
+  async function removeItem(item: InboxItem) {
+    const confirmed = await dialogs.confirm({
+      title: copy.deleteDialog.title,
+      message: copy.deleteDialog.message.replace("{title}", item.title),
+      confirmLabel: copy.deleteDialog.confirm,
+      destructive: true
+    });
+    if (!confirmed) return;
+    const response = await api.deleteInboxItem(item.id);
     if (!response.ok) {
       const message = response.error || copy.errors.remove;
       setStatusMessage(message);
@@ -250,12 +259,16 @@ export default function InboxPage() {
                 <a className="button button-secondary button-sm" href={`/search?q=${encodeURIComponent(normalizeText(item.title))}`}>{copy.item.searchSimilar}</a>
                 {item.status === "ready" ? <a className="button button-primary button-sm" href="/uploads">{copy.item.startArchiving}</a> : null}
                 {item.status === "done" ? <a className="button button-secondary button-sm" href="/archive">{copy.item.openArchive}</a> : null}
-                <button className="button button-danger button-sm" type="button" onClick={() => void removeItem(item.id)}>{copy.item.remove}</button>
+                <button className="button button-danger button-sm" type="button" onClick={() => void removeItem(item)}>{copy.item.remove}</button>
               </div>
               <div className="button-row">
                 <input className="search-input" value={departmentTargets[item.id] || ""} onChange={(event) => setDepartmentTargets((current) => ({ ...current, [item.id]: event.target.value }))} placeholder={copy.item.targetDepartmentPlaceholder} aria-label={copy.item.targetDepartmentFor.replace("{title}", item.title)} />
                 <button className="button button-secondary button-sm" type="button" onClick={() => void previewRouting(item)} disabled={routingBusyId === item.id || !(departmentTargets[item.id] || "").trim()}>{copy.item.previewRoute}</button>
-                {canRouteInbox ? <button className="button button-primary button-sm" type="button" onClick={() => void applyRouting(item)} disabled={routingBusyId === item.id || !(departmentTargets[item.id] || "").trim()}>{copy.item.routeDepartment}</button> : null}
+                {canRouteInbox ? (
+                  <button className="button button-primary button-sm" type="button" onClick={() => void applyRouting(item)} disabled={routingBusyId === item.id || !(departmentTargets[item.id] || "").trim()}>{copy.item.routeDepartment}</button>
+                ) : (
+                  <span className="helper-text">{copy.item.noRoutePermission}</span>
+                )}
               </div>
               {routingPreviews[item.id] ? <p className="helper-text" role="status">{routingPreviews[item.id]}</p> : null}
             </article>

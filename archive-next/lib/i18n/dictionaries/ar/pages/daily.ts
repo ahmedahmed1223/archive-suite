@@ -34,6 +34,7 @@ export const daily = {
   remove: "إزالة",
   basketAriaLabel: "سلة العمل",
   basket: "سلة العمل",
+  clearDialog: { title: "تفريغ {name}", message: "سيتم حذف كل عناصر {name} نهائيًا. هل تريد المتابعة؟", confirm: "تفريغ" },
   clearBasket: "تفريغ السلة",
   basketEmptyTitle: "السلة فارغة",
   basketEmptyDescription: "أضف سجلات من صفحة المادة لجمعها هنا قبل مراجعتها لاحقًا.",

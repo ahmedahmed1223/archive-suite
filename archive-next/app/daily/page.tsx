@@ -19,6 +19,7 @@ import { isContextRecordingEnabled, setContextRecording } from "@/lib/personal-c
 import { formatDate } from "@/lib/record-utils";
 import { getWorkLists, RIGHTS_WARNING_WINDOW_DAYS } from "@/lib/work-lists";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const PANEL_ITEM_LIMIT = 6;
 
@@ -28,6 +29,7 @@ const todayLabel = (locale: "ar" | "en") =>
 export default function DailyPage() {
   const { locale, t } = useLocale();
   const copy = t.pages.daily;
+  const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const auth = useAuthSession();
   const { notifications, isLoading: notificationsLoading } = useNotifications(locale);
@@ -89,7 +91,17 @@ export default function DailyPage() {
     setBasket(listBasket());
   }
 
-  function handleClearBasket() {
+  async function confirmClear(name: string) {
+    return dialogs.confirm({
+      title: copy.clearDialog.title.replace("{name}", name),
+      message: copy.clearDialog.message.replace("{name}", name),
+      confirmLabel: copy.clearDialog.confirm,
+      destructive: true
+    });
+  }
+
+  async function handleClearBasket() {
+    if (!(await confirmClear(copy.basket))) return;
     clearBasket();
     setBasket([]);
   }
@@ -104,7 +116,8 @@ export default function DailyPage() {
     setQueue(listQueue());
   }
 
-  function handleClearQueue() {
+  async function handleClearQueue() {
+    if (!(await confirmClear(copy.queue))) return;
     clearQueue();
     setQueue([]);
   }
@@ -115,7 +128,8 @@ export default function DailyPage() {
     setContextStatus(enabled ? copy.contextRecordingEnabled : copy.contextRecordingDisabled);
   }
 
-  function handleClearRecent() {
+  async function handleClearRecent() {
+    if (!(await confirmClear(copy.recent))) return;
     clearRecent();
     setRecent([]);
     setContextStatus(copy.recentCleared);
@@ -295,7 +309,7 @@ export default function DailyPage() {
               <span>{copy.basket}</span>
             </h2>
             {basket.length > 0 ? (
-              <button type="button" className="button button-secondary button-sm" onClick={handleClearBasket}>
+              <button type="button" className="button button-secondary button-sm" onClick={() => void handleClearBasket()}>
                 {copy.clearBasket}
               </button>
             ) : null}
@@ -325,7 +339,7 @@ export default function DailyPage() {
               <span>{copy.queue}</span>
             </h2>
             {queue.length > 0 ? (
-              <button type="button" className="button button-secondary button-sm" onClick={handleClearQueue}>
+              <button type="button" className="button button-secondary button-sm" onClick={() => void handleClearQueue()}>
                 {copy.clearQueue}
               </button>
             ) : null}
@@ -373,7 +387,7 @@ export default function DailyPage() {
               <span>{copy.recent}</span>
             </h2>
             {recent.length > 0 ? (
-              <button type="button" className="button button-secondary button-sm" onClick={handleClearRecent}>
+              <button type="button" className="button button-secondary button-sm" onClick={() => void handleClearRecent()}>
                 {copy.clearRecent}
               </button>
             ) : null}

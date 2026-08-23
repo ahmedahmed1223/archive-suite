@@ -22,5 +22,6 @@ export const uploadLinksPanel = {
   active: "Active",
   uploadedFilesCount: "{count} files uploaded",
   revoking: "Revoking...",
-  revokeButton: "Revoke"
+  revokeButton: "Revoke",
+  revokeDialog: { title: "Revoke upload link", message: "\"{label}\" will be revoked immediately and can no longer be used. Continue?", confirm: "Revoke link" }
 };

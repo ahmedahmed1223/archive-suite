@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type IntakeTemplate } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 type IntakeTemplatesState =
   | { status: "loading" }
@@ -13,6 +14,7 @@ type IntakeTemplatesState =
 
 export function IntakeTemplatesPanel() {
   const { t } = useLocale();
+  const dialogs = useConfirmDialog();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [templates, setTemplates] = useState<IntakeTemplate[]>([]);
   const [templatesState, setTemplatesState] = useState<IntakeTemplatesState>({ status: "loading" });
@@ -70,10 +72,17 @@ export function IntakeTemplatesPanel() {
     setIsCreating(false);
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(template: IntakeTemplate) {
+    const confirmed = await dialogs.confirm({
+      title: t.pages.intakeTemplatesPanel.deleteDialog.title,
+      message: t.pages.intakeTemplatesPanel.deleteDialog.message.replace("{name}", template.name),
+      confirmLabel: t.pages.intakeTemplatesPanel.deleteDialog.confirm,
+      destructive: true
+    });
+    if (!confirmed) return;
     setError(null);
-    setDeletingId(id);
-    const response = await api.deleteIntakeTemplate(id);
+    setDeletingId(template.id);
+    const response = await api.deleteIntakeTemplate(template.id);
     if (response.ok) await refresh();
     else setError(response.error || t.pages.intakeTemplatesPanel.deleteError);
     setDeletingId(null);
@@ -129,7 +138,7 @@ export function IntakeTemplatesPanel() {
             <li key={template.id} className="record-meta">
               <span className="badge">{template.name}</span>
               {template.type ? <span className="badge">{template.type}</span> : null}
-              <button type="button" className="button button-secondary button-sm" disabled={deletingId === template.id} onClick={() => void handleDelete(template.id)}>
+              <button type="button" className="button button-secondary button-sm" disabled={deletingId === template.id} onClick={() => void handleDelete(template)}>
                 {deletingId === template.id ? t.pages.intakeTemplatesPanel.deleting : t.pages.intakeTemplatesPanel.deleteButton}
               </button>
             </li>

@@ -16,5 +16,6 @@ export const intakeTemplatesPanel = {
   retry: "Retry",
   empty: "No templates saved yet.",
   deleting: "Deleting...",
-  deleteButton: "Delete"
+  deleteButton: "Delete",
+  deleteDialog: { title: "Delete intake template", message: "The template \"{name}\" will be permanently deleted. Continue?", confirm: "Delete" }
 };

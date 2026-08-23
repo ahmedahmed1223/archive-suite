@@ -34,6 +34,7 @@ export const daily = {
   remove: "Remove",
   basketAriaLabel: "Work basket",
   basket: "Work basket",
+  clearDialog: { title: "Clear {name}", message: "All items in {name} will be permanently deleted. Continue?", confirm: "Clear" },
   clearBasket: "Clear basket",
   basketEmptyTitle: "The basket is empty",
   basketEmptyDescription: "Add records from the record page to collect them here for later review.",

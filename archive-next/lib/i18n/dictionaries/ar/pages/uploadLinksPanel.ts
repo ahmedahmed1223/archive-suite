@@ -22,5 +22,6 @@ export const uploadLinksPanel = {
   active: "فعّال",
   uploadedFilesCount: "{count} ملف مرفوع",
   revoking: "جارٍ الإلغاء...",
-  revokeButton: "إلغاء"
+  revokeButton: "إلغاء",
+  revokeDialog: { title: "إلغاء رابط الرفع", message: "سيتم إبطال «{label}» فورًا ولن يعود قابلاً للاستخدام. هل تريد المتابعة؟", confirm: "إلغاء الرابط" }
 };
