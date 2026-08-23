@@ -1,5 +1,10 @@
 // @vitest-environment jsdom
 
+vi.mock("@/components/ui/ConfirmDialog", () => ({
+  useConfirmDialog: () => ({ confirm: vi.fn().mockResolvedValue(true), prompt: vi.fn(), alert: vi.fn() }),
+  ConfirmDialogProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 

@@ -1,4 +1,5 @@
 export const favorites = {
+  loadingLabel: "جارٍ تحميل المفضلة…",
   loadError: "تعذر تحميل المفضلة.",
   removeError: "تعذر إزالة المفضلة.",
   eyebrow: "محفوظة للحساب",

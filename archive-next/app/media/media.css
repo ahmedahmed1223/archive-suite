@@ -50,7 +50,8 @@
 .media-player audio {
   inline-size: 100%;
   border-radius: var(--radius-lg);
-  background: #020617;
+  /* V14-AUDIT-026: token-based video backdrop */
+  background: color-mix(in srgb, var(--color-bg-primary) 94%, var(--color-text-primary));
 }
 
 .media-player video {
@@ -156,7 +157,8 @@
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  background: #020617;
+  /* V14-AUDIT-026: token-based video backdrop */
+  background: color-mix(in srgb, var(--color-bg-primary) 94%, var(--color-text-primary));
 }
 
 .media-frame .media-player video {

@@ -1,4 +1,5 @@
 export const approvalRequests = {
+  loadingLabel: "Loading approval requests…",
   toolbar: {
     eyebrow: "Dual approval",
     title: "Approval requests",

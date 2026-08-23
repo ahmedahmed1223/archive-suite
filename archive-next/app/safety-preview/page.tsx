@@ -104,7 +104,7 @@ export default function SafetyPreviewPage() {
         eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
         title={copy.toolbar.title}
         description={copy.toolbar.description}
-        meta={<span className="badge">synthetic: true</span>}
+        meta={<span className="badge">{copy.syntheticBadge}</span>}
         actions={<button type="button" className="button button-secondary" onClick={() => void loadScenarios()} disabled={scenarioState.status === "loading"}>{copy.toolbar.refresh}</button>}
       />
 
@@ -134,7 +134,7 @@ export default function SafetyPreviewPage() {
             { label: copy.metrics.trashBefore, value: preview.before.trash }, { label: copy.metrics.trashAfter, value: preview.after.trash, tone: "warning" }
           ]} />
           <section className="panel" aria-label={copy.table.sectionAriaLabel}>
-            <div className="panel-title-row"><div><h2>{copy.table.title}</h2><p>synthetic: true · {copy.operationLabels[preview.operation]} · {copy.table.expiresAt.replace("{time}", formatExpiry(preview.expiresAt, locale))}</p></div></div>
+            <div className="panel-title-row"><div><h2>{copy.table.title}</h2><p>{copy.syntheticBadge} · {copy.operationLabels[preview.operation]} · {copy.table.expiresAt.replace("{time}", formatExpiry(preview.expiresAt, locale))}</p></div></div>
             <div className="scroll-x"><table className="data-table" aria-label={copy.table.tableAriaLabel}><thead><tr><th>{copy.table.identifier}</th><th>{copy.table.result}</th><th>{copy.table.details}</th></tr></thead><tbody>
               {preview.results.map((result) => <tr key={result.id}><td dir="ltr">{result.id}</td><td><span className={`badge ${result.reason ? "badge-danger" : ""}`}>{resultLabel(result, copy)}</span></td><td>{resultDetail(result, copy)}</td></tr>)}
             </tbody></table></div>

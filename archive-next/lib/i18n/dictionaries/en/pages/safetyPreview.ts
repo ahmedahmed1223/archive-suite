@@ -1,4 +1,5 @@
 export const safetyPreview = {
+  syntheticBadge: "synthetic data",
   operationLabels: { delete: "Test deletion", restore: "Test restoration" },
   errors: {
     loadScenarios: "Unable to load simulation scenarios.",

@@ -1,4 +1,5 @@
 export const projectTasks = {
+  loadingLabel: "Loading tasks…",
   columns: {
     todo: "To do",
     inProgress: "In progress",

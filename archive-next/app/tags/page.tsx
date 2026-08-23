@@ -227,7 +227,7 @@ export default function TagsPage() {
               const rowIcon = node?.icon ?? undefined;
               const RowIcon = rowIcon ? resolveIcon(rowIcon) : null;
               return (
-                <div className="analytics-tag-row" key={row.tag} style={node?.color ? { borderLeft: `4px solid ${node.color}` } : {}}>
+                <div className="analytics-tag-row" key={row.tag} style={node?.color ? { borderInlineStart: `4px solid ${node.color}` } : {}}>
                   <span>
                     <strong>{row.tag}</strong>
                     {row.parent ? <small className="helper-text"> · {copy.within} {row.parent}</small> : null}

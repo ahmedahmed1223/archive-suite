@@ -58,7 +58,7 @@ export function ShareViewer({ token }: { token: string }) {
   }
 
   return (
-    <main className="share-list" aria-label={copy.content}>
+    <section className="share-list" aria-label={copy.content}>
       <p className="helper-text">{copy.notice}</p>
       <div className="kv-grid">
         <div className="kv-item">
@@ -84,6 +84,6 @@ export function ShareViewer({ token }: { token: string }) {
           </article>
         ))
       )}
-    </main>
+    </section>
   );
 }

@@ -1,4 +1,6 @@
 export const catalog = {
+  typePlaceholder: "فيديو",
+  tagPlaceholder: "عام",
   publishedOnly: "منشور فقط",
   title: "الكتالوج العام",
   description: "سجلات منشورة للعرض العام بحقول محدودة، دون ملفات أو ملاحظات داخلية أو بيانات تشغيلية.",

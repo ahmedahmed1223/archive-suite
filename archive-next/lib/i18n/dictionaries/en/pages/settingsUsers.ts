@@ -1,4 +1,10 @@
 export const settingsUsers = {
+  deleteUserTitle: "Delete user",
+  deleteUserMessage: "{email} will lose access immediately. Remove this user?",
+  deleteConfirm: "Remove user",
+  roleChangeTitle: "Change role",
+  roleChangeMessage: "{email} will become {role}. Change this role?",
+  roleChangeConfirm: "Change role",
   pageTitle: "Users & Roles",
   pageDescription: "Manage team members and their roles, and invite new members by email. Admins only.",
   adminOnlyBadge: "Admins only",

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Eye, RefreshCw } from "lucide-react";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { createArchiveApiClient, type OdbcProbe, type OdbcTablePreview, type OdbcWriteOperation } from "@/lib/archive-api";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { StatusBadge } from "./StatusBadgeControl";
 import { formatPreviewValue, getDefaultOdbcKeyColumn, odbcCoreTables, odbcStatusLabel, odbcStatusMessage, odbcStatusTone, type OdbcCoreTable } from "./settings-helpers";
 
@@ -28,6 +29,7 @@ export function OdbcBridgePanel({
 }>) {
   const { t } = useLocale();
   const settingsCopy = t.pages.settings;
+  const dialog = useConfirmDialog();
 
   const [odbcPreview, setOdbcPreview] = useState<OdbcTablePreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -75,6 +77,19 @@ export function OdbcBridgePanel({
 
   const handleOdbcWrite = async () => {
     if (!canPreviewOdbc) return;
+
+    // V14-AUDIT-002: deletes are irreversible — confirm before executing.
+    if (odbcWriteOperation === "delete") {
+      const confirmed = await dialog.confirm({
+        title: settingsCopy.odbc.deleteConfirmTitle,
+        message: settingsCopy.odbc.deleteConfirmMessage
+          .replace("{table}", selectedOdbcTable)
+          .replace("{key}", odbcKeyValue.trim()),
+        confirmLabel: settingsCopy.odbc.executeButton,
+        destructive: true,
+      });
+      if (!confirmed) return;
+    }
 
     setOdbcWriteState({ status: "saving" });
 

@@ -1,4 +1,9 @@
 // @vitest-environment jsdom
+vi.mock("@/components/ui/ConfirmDialog", () => ({
+  useConfirmDialog: () => ({ confirm: vi.fn().mockResolvedValue(true), prompt: vi.fn(), alert: vi.fn() }),
+  ConfirmDialogProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -82,7 +87,7 @@ describe("safety preview workspace", () => {
       { scenario: "restore-conflict", operation: "restore", ids: ["conflict", "recoverable", "missing"] },
       { accessToken: "token-abc" }
     );
-    expect(screen.getByText("synthetic: true")).toBeTruthy();
+    expect(screen.getByText("بيانات تجريبية")).toBeTruthy();
     expect(screen.getByText("8")).toBeTruthy();
     expect(screen.getByText("9")).toBeTruthy();
     expect(screen.getByText("3")).toBeTruthy();

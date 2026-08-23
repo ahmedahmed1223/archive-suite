@@ -22,6 +22,19 @@ export function UploadLinksPanel() {
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+
+  // V14-AUDIT-003: the created link is useless without its share URL.
+  function shareUrlFor(token: string) {
+    return `${window.location.origin}/upload?token=${encodeURIComponent(token)}`;
+  }
+
+  async function handleCopy(url: string) {
+    await navigator.clipboard.writeText(url);
+    setCopied(url);
+    setTimeout(() => setCopied((current) => (current === url ? null : current)), 2000);
+  }
 
   async function refresh() {
     setLinksState({ status: "loading" });
@@ -53,6 +66,16 @@ export function UploadLinksPanel() {
       setError(response.error);
       setIsCreating(false);
       return;
+    }
+
+    // V14-AUDIT-003: surface the token immediately — copy it to the
+    // clipboard and keep it visible in the row below.
+    if (typeof response.link?.token === "string" && response.link.token) {
+      const url = shareUrlFor(response.link.token);
+      await handleCopy(url).catch(() => undefined);
+      setCreatedUrl(url);
+    } else {
+      setCreatedUrl(null);
     }
 
     setLabel("");
@@ -106,6 +129,18 @@ export function UploadLinksPanel() {
         ) : null}
       </form>
 
+      {createdUrl ? (
+        <div className="state-banner state-banner-info" role="status">
+          <strong>{t.pages.uploadLinksPanel.createdTitle}</strong>
+          <span className="helper-text" dir="ltr">{createdUrl}</span>
+          <div>
+            <button type="button" className="button button-secondary button-sm" onClick={() => void handleCopy(createdUrl)}>
+              {copied === createdUrl ? t.pages.uploadLinksPanel.copied : t.pages.uploadLinksPanel.copy}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {linksState.status === "loading" ? (
         <div className="panel panel-compact"><Skeleton label={t.pages.uploadLinksPanel.loading} /></div>
       ) : linksState.status === "error" ? (
@@ -124,6 +159,15 @@ export function UploadLinksPanel() {
               {link.folder ? <span className="badge">{link.folder}</span> : null}
               <span className="badge">{link.revoked ? t.pages.uploadLinksPanel.revoked : t.pages.uploadLinksPanel.active}</span>
               <span className="badge">{t.pages.uploadLinksPanel.uploadedFilesCount.replace("{count}", String(link.uploadCount))}</span>
+              {!link.revoked && typeof link.token === "string" && link.token ? (
+                <button
+                  type="button"
+                  className="button button-secondary button-sm"
+                  onClick={() => void handleCopy(shareUrlFor(link.token as string))}
+                >
+                  {copied === shareUrlFor(link.token) ? t.pages.uploadLinksPanel.copied : t.pages.uploadLinksPanel.copy}
+                </button>
+              ) : null}
               {!link.revoked ? (
                 <button type="button" className="button button-secondary button-sm" disabled={revokingId === link.id} onClick={() => void handleRevoke(link.id)}>
                   {revokingId === link.id ? t.pages.uploadLinksPanel.revoking : t.pages.uploadLinksPanel.revokeButton}

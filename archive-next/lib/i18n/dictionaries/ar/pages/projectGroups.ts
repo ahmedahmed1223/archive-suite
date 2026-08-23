@@ -1,4 +1,5 @@
 export const projectGroups = {
+  loadingLabel: "جارٍ تحميل المشاريع…",
   errors: {
     projectsLoad: "تعذر تحميل مشاريع العمل.",
     recordsLoad: "تعذر تحميل مواد المشروع.",

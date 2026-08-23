@@ -18,6 +18,7 @@ import {
 } from "@/lib/archive-api";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
 import type { DictionaryShape } from "@/lib/i18n/types";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type PluginsCopy = DictionaryShape<typeof pluginsDictionary>;
 
@@ -276,7 +277,10 @@ export default function PluginsPage() {
 
       <section className="stack" aria-label={copy.list.ariaLabel}>
         {loading ? (
-          <EmptyState title={copy.list.loadingTitle} description={copy.list.loadingDescription} />
+          // V14-AUDIT-022: loading state must be announced to screen readers.
+          <div role="status" aria-live="polite">
+            <Skeleton label={copy.list.loadingTitle} />
+          </div>
         ) : plugins.length ? (
           plugins.map((plugin) => <PluginCard key={plugin.id} plugin={plugin} copy={copy} />)
         ) : (

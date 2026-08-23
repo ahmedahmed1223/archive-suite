@@ -9,6 +9,7 @@ import EmptyState from "@/components/EmptyState";
 import DisclosureToolbar from "@/components/DisclosureToolbar";
 import { useAuthSession } from "@/lib/auth-session";
 import { createArchiveApiClient, type Project, type ProjectTask, type ProjectTaskStatus, type ProjectTaskTemplate, type TaskEscalationPolicy } from "@/lib/archive-api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 function formatDueDate(value: string | null, locale: "ar" | "en", noDueDate: string) {
   return value ? new Intl.DateTimeFormat(locale === "en" ? "en-US" : "ar-SA", { dateStyle: "medium" }).format(new Date(`${value}T00:00:00`)) : noDueDate;
@@ -40,14 +41,18 @@ export default function ProjectTasksPage() {
   const [policy, setPolicy] = useState<TaskEscalationPolicy | null>(null);
   const [policyStatus, setPolicyStatus] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const loadFailed = Boolean(loadError);
 
   const load = useCallback(async () => {
+    setIsLoading(true);
     const [projectResponse, taskResponse, templateResponse] = await Promise.all([api.projects(), api.projectTasks(), api.projectTaskTemplates()]);
     if (projectResponse.ok) setProjects(projectResponse.projects);
     if (taskResponse.ok) setTasks(taskResponse.tasks);
     if (templateResponse.ok) setTemplates(templateResponse.templates);
     setLoadError(projectResponse.ok && taskResponse.ok && templateResponse.ok ? "" : (!projectResponse.ok ? projectResponse.error : !taskResponse.ok ? taskResponse.error : !templateResponse.ok ? templateResponse.error : "") || "");
+    // V14-AUDIT-006: show loading instead of flashing the empty state.
+    setIsLoading(false);
   }, [api]);
 
   useEffect(() => { void load(); }, [load]);
@@ -116,7 +121,7 @@ export default function ProjectTasksPage() {
       </form>
     </DisclosureToolbar>
     {status ? <p className="form-status" role="status">{status}</p> : null}
-    {tasks.length ? <section className="workflow-board">{columns.map(([key, label]) => <article className="workflow-column" key={key}><h2>{label}</h2>{tasks.filter((task) => task.status === key).map((task) => <div className="kanban-card" key={task.id}><strong>{task.title}</strong><small>{projects.find((project) => project.id === task.projectId)?.name || task.projectId} · {task.assignee || copy.unassigned}</small><small>{copy.dueDatePrefix.replace("{date}", formatDueDate(task.dueDate, locale, copy.noDueDate))}</small>{task.targetDeadlineAt ? <small>{copy.targetDeadlinePrefix.replace("{date}", new Date(task.targetDeadlineAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA"))}</small> : null}{task.recordId ? <a href={`/archive/${encodeURIComponent(task.recordId)}`}>{copy.linkedRecord}</a> : null}<select aria-label={copy.statusAriaLabel.replace("{title}", task.title)} value={task.status} onChange={(event) => void move(task, event.target.value as ProjectTaskStatus)}>{columns.map(([value, columnLabel]) => <option value={value} key={value}>{columnLabel}</option>)}</select><small>{copy.lastUpdatedPrefix.replace("{date}", new Date(task.updatedAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA"))}</small></div>)}</article>)}</section> : loadFailed ? <div className="state-banner state-banner-error" role="alert"><strong>{copy.loadErrorTitle}</strong><span className="helper-text">{loadError}</span><div><button type="button" className="button button-secondary button-sm" onClick={() => void load()}>{t.shared.actions.retry}</button></div></div> : <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />}
+    {tasks.length ? <section className="workflow-board">{columns.map(([key, label]) => <article className="workflow-column" key={key}><h2>{label}</h2>{tasks.filter((task) => task.status === key).map((task) => <div className="kanban-card" key={task.id}><strong>{task.title}</strong><small>{projects.find((project) => project.id === task.projectId)?.name || task.projectId} · {task.assignee || copy.unassigned}</small><small>{copy.dueDatePrefix.replace("{date}", formatDueDate(task.dueDate, locale, copy.noDueDate))}</small>{task.targetDeadlineAt ? <small>{copy.targetDeadlinePrefix.replace("{date}", new Date(task.targetDeadlineAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA"))}</small> : null}{task.recordId ? <a href={`/archive/${encodeURIComponent(task.recordId)}`}>{copy.linkedRecord}</a> : null}<select aria-label={copy.statusAriaLabel.replace("{title}", task.title)} value={task.status} onChange={(event) => void move(task, event.target.value as ProjectTaskStatus)}>{columns.map(([value, columnLabel]) => <option value={value} key={value}>{columnLabel}</option>)}</select><small>{copy.lastUpdatedPrefix.replace("{date}", new Date(task.updatedAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA"))}</small></div>)}</article>)}</section> : loadFailed ? <div className="state-banner state-banner-error" role="alert"><strong>{copy.loadErrorTitle}</strong><span className="helper-text">{loadError}</span><div><button type="button" className="button button-secondary button-sm" onClick={() => void load()}>{t.shared.actions.retry}</button></div></div> : isLoading ? <Skeleton label={copy.loadingLabel} /> : <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />}
     {isAdmin && policy ? (
       <form className="panel archive-toolbar-grid" onSubmit={savePolicy} aria-label={copy.escalationPanel.title}>
         <h2>{copy.escalationPanel.title}</h2>

@@ -1,4 +1,5 @@
 export const metadataTemplates = {
+  loadingLabel: "Loading templates…",
   errors: {
     loadTemplates: "Unable to load the template library.",
     saveFieldOwners: "Unable to save field ownership.",

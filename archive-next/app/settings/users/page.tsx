@@ -14,6 +14,7 @@ import { FieldError } from "@/components/ui/Form";
 import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ManagedUser, type ManagedUserRole, type PendingInvitation } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 function formatLocalDate(value: string | undefined, settings: import("@/lib/display-settings").DisplaySettings, locale: import("@/lib/i18n/types").AppLocale) {
   if (!value) return "-";
@@ -46,6 +47,7 @@ export default function UsersSettingsPage() {
   );
   const api = useMemo(() => createArchiveApiClient(), []);
   const canManageUsers = useCapability("users.manage");
+  const dialog = useConfirmDialog();
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [actionState, setActionState] = useState<ActionState>({ status: "idle" });
   const inviteForm = useForm<InviteFormValues>({
@@ -98,6 +100,16 @@ export default function UsersSettingsPage() {
 
   const handleRoleChange = useCallback(
     async (user: ManagedUser, role: ManagedUserRole) => {
+      // V14-AUDIT-001: role changes are destructive enough to confirm.
+      const confirmed = await dialog.confirm({
+        title: t.pages.settingsUsers.roleChangeTitle,
+        message: t.pages.settingsUsers.roleChangeMessage
+          .replace("{email}", user.email)
+          .replace("{role}", roleLabels[role]),
+        confirmLabel: t.pages.settingsUsers.roleChangeConfirm,
+      });
+      if (!confirmed) return;
+
       const response = await api.updateUserRole(user.id, { role });
       if (!response.ok) {
         setActionState({ status: "error", message: response.error });
@@ -105,11 +117,20 @@ export default function UsersSettingsPage() {
       }
       void load();
     },
-    [api, load]
+    [api, dialog, load, roleLabels, t]
   );
 
   const handleDelete = useCallback(
     async (user: ManagedUser) => {
+      // V14-AUDIT-001: deletion must be confirmed (same pattern as trash purge).
+      const confirmed = await dialog.confirm({
+        title: t.pages.settingsUsers.deleteUserTitle,
+        message: t.pages.settingsUsers.deleteUserMessage.replace("{email}", user.email),
+        confirmLabel: t.pages.settingsUsers.deleteConfirm,
+        destructive: true,
+      });
+      if (!confirmed) return;
+
       const response = await api.deleteUser(user.id);
       if (!response.ok) {
         setActionState({ status: "error", message: response.error });
@@ -117,7 +138,7 @@ export default function UsersSettingsPage() {
       }
       void load();
     },
-    [api, load]
+    [api, dialog, load, roleLabels, t]
   );
   const userColumns = useMemo<Array<ColumnDef<ManagedUser, unknown>>>(
     () => [

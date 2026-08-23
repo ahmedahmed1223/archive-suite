@@ -18,6 +18,6 @@ export const discover = {
   noAdditionalDescription: "لا يوجد وصف إضافي",
   record: "سجل",
   unspecified: "غير محدد",
-  untitled: "بلا عنوان",
+  untitled: "بدون عنوان",
   openRecord: "فتح السجل"
 } as const;

@@ -1,4 +1,7 @@
 export const uploadLinksPanel = {
+  createdTitle: "Link created — copy it and send it to the uploader",
+  copy: "Copy",
+  copied: "Copied",
   title: "External upload links",
   description: "Create a temporary link for an external party to upload files into a specific folder without granting full access.",
   loadError: "Failed to load upload links.",

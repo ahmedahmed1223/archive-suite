@@ -1,4 +1,10 @@
 export const settingsUsers = {
+  deleteUserTitle: "حذف المستخدم",
+  deleteUserMessage: "سيُحال {email} إلى حالة معطّلة ولن يتمكن من الدخول. هل تريد إزالة هذا المستخدم؟",
+  deleteConfirm: "إزالة المستخدم",
+  roleChangeTitle: "تغيير الدور",
+  roleChangeMessage: "سيصبح {email} {role}. هل تريد تغيير الدور؟",
+  roleChangeConfirm: "تغيير الدور",
   pageTitle: "المستخدمون والأدوار",
   pageDescription: "إدارة أعضاء الفريق وأدوارهم، ودعوة أعضاء جدد بالبريد الإلكتروني. مقتصر على المدراء.",
   adminOnlyBadge: "مدير فقط",

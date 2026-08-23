@@ -1,4 +1,7 @@
 export const notifications = {
+  deleteConfirmTitle: "حذف الإشعار",
+  deleteConfirmMessage: "سيُحذف هذا الإشعار نهائيًا. هل تريد المتابعة؟",
+  deleteConfirmLabel: "حذف",
   title: "الإشعارات",
   unread: "إشعارات جديدة",
   unreadCount: "لديك {count} إشعار جديد",

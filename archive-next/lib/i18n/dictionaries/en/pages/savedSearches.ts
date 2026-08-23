@@ -1,4 +1,5 @@
 export const savedSearches = {
+  roleAriaLabel: "Member role",
   heading: "Saved searches and views manager",
   description: "Save recurring searches or archive views and run them later without re-entering the query and filters.",
   savedItemsCountTemplate: "{count} saved items",

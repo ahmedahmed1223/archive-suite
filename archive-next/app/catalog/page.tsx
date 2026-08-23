@@ -128,7 +128,7 @@ export default function PublicCatalogPage() {
             <input
               value={filters.type}
               onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value }))}
-              placeholder="video"
+              placeholder={copy.typePlaceholder}
               dir="ltr"
             />
           </label>
@@ -137,7 +137,7 @@ export default function PublicCatalogPage() {
             <input
               value={filters.tag}
               onChange={(event) => setFilters((current) => ({ ...current, tag: event.target.value }))}
-              placeholder="public"
+              placeholder={copy.tagPlaceholder}
             />
           </label>
           <div className="button-row form-actions">

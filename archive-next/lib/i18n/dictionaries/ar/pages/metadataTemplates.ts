@@ -1,4 +1,5 @@
 export const metadataTemplates = {
+  loadingLabel: "جارٍ تحميل القوالب…",
   errors: {
     loadTemplates: "تعذر تحميل مكتبة القوالب.",
     saveFieldOwners: "تعذر حفظ مالكية الحقول.",

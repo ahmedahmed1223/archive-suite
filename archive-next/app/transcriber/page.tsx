@@ -345,7 +345,7 @@ export default function TranscriberPage() {
                     <strong>{trackedJob.progressStage || t.pages.transcriber.job.processingFallback}</strong>
                     <span className="field-note">{(trackedJob.progressPercent ?? 0)}%</span>
                   </div>
-                  <div style={{ width: "100%", height: "8px", backgroundColor: "rgba(0,0,0,0.1)", borderRadius: "4px", overflow: "hidden" }}>
+                  <div style={{ width: "100%", height: "8px", backgroundColor: "var(--color-border-secondary)", borderRadius: "4px", overflow: "hidden" }}>
                     <div style={{ width: `${(trackedJob.progressPercent ?? 0)}%`, height: "100%", backgroundColor: "currentColor", transition: "width 0.2s" }} />
                   </div>
                   <button

@@ -8,6 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useAuthSession } from "@/lib/auth-session";
 import { createArchiveApiClient, type ApprovalRequest, type BulkMacroTarget } from "@/lib/archive-api";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 function parseTargets(raw: string): BulkMacroTarget[] {
   return raw.split(",").map((pair) => pair.trim()).filter(Boolean).map((pair) => {
@@ -34,14 +35,18 @@ export default function ApprovalRequestsPage() {
   const [macroId, setMacroId] = useState("");
   const [targetsText, setTargetsText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // V14-AUDIT-022
 
   const load = useCallback(async () => {
+    setIsLoading(true);
     const response = await api.approvalRequests({ accessToken });
     if (!response.ok) {
       setLoadError(response.error || copy.errors.load);
+      setIsLoading(false);
       return;
     }
     setLoadError("");
+    setIsLoading(false);
     setRequests(response.requests);
   }, [api, accessToken, copy.errors.load]);
 
@@ -103,7 +108,7 @@ export default function ApprovalRequestsPage() {
       {loadError ? <div className="state-banner state-banner-error" role="alert"><strong>{copy.errors.load}</strong><span className="helper-text">{loadError}</span><div><button type="button" className="button button-secondary button-sm" onClick={() => void load()}>{t.shared.actions.retry}</button></div></div> : null}
       {status ? <div className="state-banner state-banner-error" role="alert">{status}</div> : null}
 
-      {requests.length === 0 ? <EmptyState title={copy.empty} /> : (
+      {isLoading ? <Skeleton label={copy.loadingLabel} /> : requests.length === 0 ? <EmptyState title={copy.empty} /> : (
         <section className="panel" aria-label={copy.table.ariaLabel}>
           <div className="scroll-x">
             <table className="data-table" aria-label={copy.table.ariaLabel}>

@@ -143,6 +143,8 @@ export const settings = {
     helper: "Re-enabling brings back every tip previously dismissed for this session or permanently."
   },
   odbc: {
+      deleteConfirmTitle: "Delete row",
+      deleteConfirmMessage: "The row with {key} will be permanently deleted from {table}. Continue?",
     heading: "ODBC for legacy systems",
     description: "Connection check, a limited read-only preview, and restricted row writes for the allowed core tables only.",
     loading: "Checking ODBC...",

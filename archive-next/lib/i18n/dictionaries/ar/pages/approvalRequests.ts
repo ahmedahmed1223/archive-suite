@@ -1,4 +1,5 @@
 export const approvalRequests = {
+  loadingLabel: "جارٍ تحميل طلبات الموافقة…",
   toolbar: {
     eyebrow: "اعتماد مزدوج",
     title: "طلبات الاعتماد",

@@ -6,6 +6,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type SavedFavorite } from "@/lib/archive-api";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 function formatLocalDate(value: string | null, locale: "ar" | "en") {
   if (!value) return "-";
@@ -19,11 +20,13 @@ export default function FavoritesPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [favorites, setFavorites] = useState<SavedFavorite[]>([]);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true); // V14-AUDIT-013
 
   useEffect(() => {
     void api.favorites().then((response) => {
       if (response.ok) setFavorites(response.favorites);
       else setError(response.error || copy.loadError);
+      setIsLoading(false);
     });
   }, [api, copy.loadError]);
 
@@ -54,7 +57,11 @@ export default function FavoritesPage() {
 
       {error ? <div className="state-banner state-banner-error" role="alert">{error}</div> : null}
 
-      {favorites.length === 0 ? (
+      {isLoading ? (
+        <div className="panel panel-compact">
+          <Skeleton label={copy.loadingLabel} />
+        </div>
+      ) : favorites.length === 0 ? (
         <EmptyState
           title={copy.emptyTitle}
           description={copy.emptyDescription}

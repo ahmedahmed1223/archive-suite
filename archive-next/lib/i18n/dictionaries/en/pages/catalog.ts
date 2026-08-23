@@ -1,4 +1,6 @@
 export const catalog = {
+  typePlaceholder: "video",
+  tagPlaceholder: "public",
   publishedOnly: "Published only",
   title: "Public catalogue",
   description: "Published records for public viewing with limited fields. Files, internal notes, and operational data are excluded.",

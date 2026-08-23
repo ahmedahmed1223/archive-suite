@@ -2,6 +2,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+vi.mock("@/components/ui/ConfirmDialog", () => ({
+  useConfirmDialog: () => ({ confirm: vi.fn().mockResolvedValue(true), prompt: vi.fn(), alert: vi.fn() }),
+  ConfirmDialogProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 import type { OdbcProbe } from "@/lib/archive-api";
 
 const { odbcTable } = vi.hoisted(() => ({
@@ -38,7 +43,7 @@ function renderPanel(overrides: Partial<Parameters<typeof OdbcBridgePanel>[0]> =
 describe("OdbcBridgePanel", () => {
   test("shows the loading state while the ODBC probe is in flight", () => {
     renderPanel({ odbc: null, isOdbcLoading: true });
-    expect(screen.getByText("جاري فحص ODBC...")).toBeInTheDocument();
+    expect(screen.getByText("جارٍ فحص ODBC...")).toBeInTheDocument();
   });
 
   test("shows the connected status and posture rows", () => {

@@ -1,4 +1,5 @@
 export const projectTasks = {
+  loadingLabel: "جارٍ تحميل المهام…",
   columns: {
     todo: "للعمل",
     inProgress: "قيد التنفيذ",

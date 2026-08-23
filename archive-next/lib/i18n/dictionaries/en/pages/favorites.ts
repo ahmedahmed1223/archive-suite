@@ -1,4 +1,5 @@
 export const favorites = {
+  loadingLabel: "Loading favorites…",
   loadError: "Could not load favorites.",
   removeError: "Could not remove the favorite.",
   eyebrow: "Saved for this account",

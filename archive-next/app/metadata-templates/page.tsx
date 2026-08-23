@@ -10,6 +10,7 @@ import { createArchiveApiClient, type DepartmentFieldOwner, type DepartmentTempl
 import { previewTemplateApplication } from "@/lib/metadata-template-apply";
 import DepartmentQualityPanel from "@/components/DepartmentQualityPanel";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const roles = ["viewer", "editor", "admin"] as const;
 type Role = (typeof roles)[number];
@@ -39,11 +40,14 @@ export default function MetadataTemplatesPage() {
   const [ownerField, setOwnerField] = useState("");
   const [ownerAssignee, setOwnerAssignee] = useState("");
   const [metrics, setMetrics] = useState<DepartmentTemplateMetrics | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // V14-AUDIT-013
 
   const load = useCallback(async () => {
+    setIsLoading(true);
     const response = await api.metadataTemplates({ departmentId: departmentId || undefined, includeDisabled: canManageTemplates });
     if (response.ok) { setTemplates(response.templates); setError(""); }
     else setError(response.error || copy.errors.loadTemplates);
+    setIsLoading(false);
   }, [api, canManageTemplates, copy.errors.loadTemplates, departmentId]);
 
   useEffect(() => { void load(); }, [load]);
@@ -136,7 +140,7 @@ export default function MetadataTemplatesPage() {
       <section className="split-layout">
         <article className="panel">
           <div className="panel-title-row"><div><h2>{copy.available.title}</h2><p>{copy.available.description}</p></div><span className="badge">{templates.length}</span></div>
-          {templates.length === 0 ? <EmptyState title={copy.available.emptyTitle} description={copy.available.emptyDescription} /> : <div className="analytics-tag-list">{templates.map((template) => (
+          {isLoading ? <Skeleton label={copy.loadingLabel} /> : templates.length === 0 ? <EmptyState title={copy.available.emptyTitle} description={copy.available.emptyDescription} /> : <div className="analytics-tag-list">{templates.map((template) => (
             <div className="analytics-tag-row" key={template.id}><span><strong>{template.name}</strong><small className="helper-text"> · {copy.available.department.replace("{department}", template.departmentId || copy.available.general)} · {copy.available.draft.replace("{version}", String(template.currentVersion))} · {copy.available.published.replace("{version}", String(template.publishedVersion ?? "—"))}</small><small className="helper-text"> · {template.tags.join(copy.available.tagSeparator) || copy.available.noTags}</small></span><div className="button-row"><span className={`badge ${template.enabled ? "badge-success" : "badge-warning"}`}>{template.enabled ? copy.available.enabled : copy.available.disabled}</span><button className="button button-secondary button-sm" type="button" onClick={() => void showVersions(template)}>{copy.available.versions}</button>{canPublishTemplates ? <button className="button button-primary button-sm" type="button" onClick={() => void publish(template)}>{copy.available.publishDraft}</button> : null}{canManageTemplates ? <><button className="button button-secondary button-sm" type="button" onClick={() => beginEdit(template)}>{copy.available.edit}</button><button className="button button-secondary button-sm" type="button" onClick={() => void toggle(template)}>{template.enabled ? copy.available.disable : copy.available.enable}</button></> : null}</div></div>
           ))}</div>}
         </article>

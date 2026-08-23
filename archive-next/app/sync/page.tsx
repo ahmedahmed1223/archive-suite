@@ -145,7 +145,16 @@ export default function SyncPage() {
       )}
 
       {state.status === "error" && (
-        <EmptyState title={copy.error} description={state.message} />
+        // V14-AUDIT-007: errors need alert semantics and a retry, like duplicates/collections.
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>{copy.error}</strong>
+          <span className="helper-text">{state.message}</span>
+          <div>
+            <button type="button" className="button button-secondary button-sm" onClick={() => void loadSync()}>
+              {t.shared.actions.retry}
+            </button>
+          </div>
+        </div>
       )}
 
       {state.status === "ready" && (

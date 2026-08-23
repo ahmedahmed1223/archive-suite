@@ -1,4 +1,5 @@
 export const savedSearches = {
+  roleAriaLabel: "دور العضو",
   heading: "مدير البحوث والعروض المحفوظة",
   description: "احفظ عمليات بحث أو عروض أرشيف متكررة وشغّلها لاحقًا دون إعادة كتابة الاستعلام والفلاتر.",
   savedItemsCountTemplate: "{count} عنصر محفوظ",

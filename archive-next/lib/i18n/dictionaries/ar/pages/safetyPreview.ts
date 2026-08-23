@@ -1,4 +1,5 @@
 export const safetyPreview = {
+  syntheticBadge: "بيانات تجريبية",
   operationLabels: { delete: "حذف تجريبي", restore: "استعادة تجريبية" },
   errors: {
     loadScenarios: "تعذر تحميل سيناريوهات المحاكاة.",

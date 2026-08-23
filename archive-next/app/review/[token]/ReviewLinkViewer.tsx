@@ -101,7 +101,7 @@ function DecisionPanel({
         />
       </label>
       <div className="button-row">
-        <button type="button" className="button-primary" onClick={() => void submit("approve")} disabled={submitting}>
+        <button type="button" className="button button-primary" onClick={() => void submit("approve")} disabled={submitting}>
           {submitting ? copy.submitting : copy.approve}
         </button>
         <button type="button" onClick={() => void submit("request_changes")} disabled={submitting}>
@@ -216,7 +216,7 @@ export function ReviewLinkViewer({ token }: { token: string }) {
           <video src={mediaUrl} controls style={{ width: "100%", maxHeight: "60vh" }} onError={() => setMediaUnavailable(true)} />
         )}
         {!mediaUnavailable && allowDownload ? (
-          <a className="button-secondary" href={`${mediaUrl}?download=1`}>
+          <a className="button button-secondary" href={`${mediaUrl}?download=1`}>
             {copy.media.downloadLabel}
           </a>
         ) : null}

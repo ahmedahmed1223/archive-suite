@@ -878,7 +878,15 @@ function ArchivePageContent() {
           </div>
         ) : null}
         {previewRecord.metadata && Object.keys(previewRecord.metadata).length > 0 ? (
-          <pre className="token-preview">{JSON.stringify(previewRecord.metadata, null, 2)}</pre>
+          // V14-AUDIT-010: structured key/value grid instead of raw JSON.
+          <div className="kv-grid">
+            {Object.entries(previewRecord.metadata).map(([key, value]) => (
+              <div className="kv-item" key={key}>
+                <strong>{key}</strong>
+                <span dir="auto">{typeof value === "object" ? JSON.stringify(value) : String(value)}</span>
+              </div>
+            ))}
+          </div>
         ) : null}
         <div className="button-row">
           <a className="button button-primary" href={`/archive/${encodeURIComponent(previewRecord.id)}`}>{t.pages.archiveList.openDetails}</a>

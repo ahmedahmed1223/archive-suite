@@ -107,7 +107,7 @@ function progressValue(value: number | null | undefined) {
 }
 
 export function MediaJobsList() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const copy = t.pages.mediaJobs;
   const api = useMemo(() => createArchiveApiClient(), []);
   const mediaJobFormSchema = useMemo(() => createMediaJobFormSchema(copy), [copy]);
@@ -678,7 +678,7 @@ export function MediaJobsList() {
                       aria-valuemin={0}
                       aria-valuemax={100}
                       aria-valuenow={progressValue(job.progressPercent)}
-                      style={{ width: "100%", height: "4px", backgroundColor: "rgba(0,0,0,0.1)", borderRadius: "2px", overflow: "hidden" }}
+                      style={{ width: "100%", height: "4px", backgroundColor: "var(--color-border-secondary)", borderRadius: "2px", overflow: "hidden" }}
                     >
                       <div style={{ width: `${progressValue(job.progressPercent)}%`, height: "100%", backgroundColor: "currentColor", transition: "width 0.2s" }} />
                     </div>
@@ -702,7 +702,7 @@ export function MediaJobsList() {
                   {job.queuedAt && (
                     <div className="kv-item">
                       <strong>{copy.list.queuedAtLabel}</strong>
-                      <time>{new Date(job.queuedAt).toLocaleString("ar-SA")}</time>
+                      <time>{new Date(job.queuedAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA")}</time>
                     </div>
                   )}
                 </div>

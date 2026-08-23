@@ -8,6 +8,7 @@ import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 const typeIcons = {
@@ -78,10 +79,23 @@ export default function NotificationsPage() {
   const copy = t.pages.notifications;
   const { notifications, unreadCount, isLoading, error, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications(locale);
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const dialog = useConfirmDialog();
 
   const filteredNotifications = filter === "unread"
     ? notifications.filter((n) => !n.is_read)
     : notifications;
+
+  // V14-AUDIT-029: deleting a notification is irreversible — confirm first.
+  const confirmDelete = async (id: number) => {
+    const confirmed = await dialog.confirm({
+      title: copy.deleteConfirmTitle,
+      message: copy.deleteConfirmMessage,
+      confirmLabel: copy.deleteConfirmLabel,
+      destructive: true,
+    });
+    if (!confirmed) return;
+    await deleteNotification(id);
+  };
 
   return (
     <AppShell subtitle={t.pageTitles.notifications} contentClassName="notifications-page">
@@ -146,7 +160,7 @@ export default function NotificationsPage() {
                 key={notification.id}
                 notification={notification}
                 onRead={markAsRead}
-                onDelete={deleteNotification}
+                onDelete={(id) => void confirmDelete(id)}
                 locale={locale}
                 copy={copy}
               />

@@ -1,4 +1,7 @@
 export const notifications = {
+  deleteConfirmTitle: "Delete notification",
+  deleteConfirmMessage: "This notification will be permanently removed. Continue?",
+  deleteConfirmLabel: "Delete",
   title: "Notifications",
   unread: "new notifications",
   unreadCount: "You have {count} new notifications",
