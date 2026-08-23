@@ -320,7 +320,23 @@ export default function ProjectsPage() {
       </section>
 
       {!selected ? (
-        <EmptyState title={copy.projectsList.noSelectionTitle} description={copy.projectsList.noSelectionDescription} />
+        /* V14-UX-011 (P5): point the user straight at the create field instead
+           of a dead-end message; the form lives in the projects panel above. */
+        <EmptyState
+          title={copy.projectsList.noSelectionTitle}
+          description={copy.projectsList.noSelectionDescription}
+          actions={
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={() => {
+                document.querySelector<HTMLInputElement>('input[aria-label="' + copy.projectsList.newNameAriaLabel + '"]')?.focus();
+              }}
+            >
+              {copy.projectsList.create}
+            </button>
+          }
+        />
       ) : (
         <>
           <section className="panel panel-compact" aria-label={copy.clipSearch.ariaLabel}>

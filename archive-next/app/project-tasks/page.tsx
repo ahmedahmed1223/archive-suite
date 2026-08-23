@@ -6,6 +6,7 @@ import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
 import EmptyState from "@/components/EmptyState";
+import DisclosureToolbar from "@/components/DisclosureToolbar";
 import { useAuthSession } from "@/lib/auth-session";
 import { createArchiveApiClient, type Project, type ProjectTask, type ProjectTaskStatus, type ProjectTaskTemplate, type TaskEscalationPolicy } from "@/lib/archive-api";
 
@@ -97,8 +98,11 @@ export default function ProjectTasksPage() {
   }
 
   return <AppShell subtitle={t.pageTitles.projectTasks} contentClassName="stack">
-    <PageToolbar title={copy.toolbarTitle} description={copy.toolbarDescription} actions={<a className="button button-secondary" href="/kanban">{copy.recordsKanban}</a>} />
-    <form className="panel archive-toolbar-grid" onSubmit={create}>
+    <PageToolbar title={copy.toolbarTitle} description={copy.toolbarDescription} actions={<><a className="button button-primary" href="/kanban">{copy.recordsKanban}</a></>} />
+    {/* V14-UX-011 (P4): the board is the page's reason to exist — the 7-field
+        create form waits behind a disclosure so tasks stay above the fold. */}
+    <DisclosureToolbar summary={copy.addTask}>
+      <form className="panel archive-toolbar-grid" onSubmit={create}>
       {templates.length > 0 ? (
         <label>{copy.templateLabel}<select value={templateId} onChange={(event) => applyTemplate(event.target.value)}><option value="">{copy.templateNone}</option>{templates.map((template) => <option value={template.id} key={template.id}>{template.title}</option>)}</select></label>
       ) : null}
@@ -109,7 +113,8 @@ export default function ProjectTasksPage() {
       <label>{copy.dueDateLabel}<input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></label>
       <label>{copy.targetDurationLabel}<input type="number" min={1} value={targetDurationMinutes} onChange={(event) => setTargetDurationMinutes(event.target.value)} /></label>
       <button className="button button-primary">{copy.addTask}</button>
-    </form>
+      </form>
+    </DisclosureToolbar>
     {status ? <p className="form-status" role="status">{status}</p> : null}
     {tasks.length ? <section className="workflow-board">{columns.map(([key, label]) => <article className="workflow-column" key={key}><h2>{label}</h2>{tasks.filter((task) => task.status === key).map((task) => <div className="kanban-card" key={task.id}><strong>{task.title}</strong><small>{projects.find((project) => project.id === task.projectId)?.name || task.projectId} · {task.assignee || copy.unassigned}</small><small>{copy.dueDatePrefix.replace("{date}", formatDueDate(task.dueDate, locale, copy.noDueDate))}</small>{task.targetDeadlineAt ? <small>{copy.targetDeadlinePrefix.replace("{date}", new Date(task.targetDeadlineAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA"))}</small> : null}{task.recordId ? <a href={`/archive/${encodeURIComponent(task.recordId)}`}>{copy.linkedRecord}</a> : null}<select aria-label={copy.statusAriaLabel.replace("{title}", task.title)} value={task.status} onChange={(event) => void move(task, event.target.value as ProjectTaskStatus)}>{columns.map(([value, columnLabel]) => <option value={value} key={value}>{columnLabel}</option>)}</select><small>{copy.lastUpdatedPrefix.replace("{date}", new Date(task.updatedAt).toLocaleString(locale === "en" ? "en-US" : "ar-SA"))}</small></div>)}</article>)}</section> : loadFailed ? <div className="state-banner state-banner-error" role="alert"><strong>{copy.loadErrorTitle}</strong><span className="helper-text">{loadError}</span><div><button type="button" className="button button-secondary button-sm" onClick={() => void load()}>{t.shared.actions.retry}</button></div></div> : <EmptyState title={copy.emptyTitle} description={copy.emptyDescription} />}
     {isAdmin && policy ? (

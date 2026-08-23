@@ -724,7 +724,10 @@ textarea.search-input {
   background: var(--color-surface-subtle);
 }
 
-.disclosure-toolbar > summary {
+.disclosure-toolbar > summary,
+/* V14-UX-011 (P2): any bare <details><summary> gets the same 44px touch
+   target as the disclosure toolbar — a summary is a click target. */
+summary.disclosure-toolbar__summary {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);

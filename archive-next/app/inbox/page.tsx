@@ -181,7 +181,9 @@ export default function InboxPage() {
         )}
         actions={<><button className="button button-secondary" type="button" aria-pressed={triageMode} onClick={() => setTriageMode((value) => !value)}>{triageMode ? copy.toolbar.endTriage : copy.toolbar.startTriage}</button><a className="button button-primary" href="/uploads">{copy.toolbar.upload}</a></>}
       >
-        <form className="archive-toolbar-grid" onSubmit={addItem}>
+        {/* V14-UX-011 (P7): the quick-add form is the page's primary tool —
+            visually set it apart from the filter row below it. */}
+        <form className="archive-toolbar-grid quick-add-form" onSubmit={addItem}>
           <label>
             <span>{copy.form.title}</span>
             <input className="search-input" value={title} onChange={(event) => setTitle(event.target.value)} placeholder={copy.form.titlePlaceholder} />

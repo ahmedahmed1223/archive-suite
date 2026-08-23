@@ -38,7 +38,9 @@ export function FilelessRecordForm() {
 
   return (
     <details className="panel">
-      <summary><strong>{t.pages.filelessRecordForm.heading}</strong></summary>
+      {/* V14-UX-011 (P2): bare <summary> renders a ~21px tap target. The
+          shared disclosure summary class enforces the 44px touch minimum. */}
+      <summary className="disclosure-toolbar__summary"><strong>{t.pages.filelessRecordForm.heading}</strong></summary>
       <p className="helper-text">{t.pages.filelessRecordForm.helperText}</p>
       <form className="stack" onSubmit={submit}>
         <label className="field"><span>{t.pages.filelessRecordForm.titleLabel}</span><input value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={500} /></label>

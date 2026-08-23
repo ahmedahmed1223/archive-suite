@@ -600,15 +600,44 @@ function SearchPageContent() {
       </PageToolbar>
 
       {state.status === "idle" ? (
-        /* V14-UX-008 follow-up: one-click starting points instead of a dead end. */
+        /* V14-UX-011 (P3): a searcher wants searches, not navigation. Offer
+           one-click example queries plus any saved searches from the server. */
         <div className="empty-state empty-state-rich" data-page-state="empty">
           <strong>{searchCopy.empty}</strong>
           <p className="helper-text">{searchCopy.emptyDescription}</p>
-          <div className="button-row" aria-label={searchCopy.quickSuggestionsLabel}>
-            <a className="button button-secondary button-sm" href="/work-inbox">{t.pageTitles.workInbox ?? "/work-inbox"}</a>
-            <a className="button button-secondary button-sm" href="/archive">{t.pages.archiveList?.pageTitle ?? "/archive"}</a>
-            <a className="button button-secondary button-sm" href="/favorites">{t.pageTitles.favorites ?? "/favorites"}</a>
-          </div>
+          {savedSearches.length > 0 ? (
+            <>
+              <p className="helper-text" style={{ marginBlockStart: "var(--space-3)" }}>{searchCopy.savedSearchesAriaLabel}:</p>
+              <div className="button-row">
+                {savedSearches.slice(0, 4).map((saved) => (
+                  <button
+                    key={saved.id}
+                    type="button"
+                    className="button button-secondary button-sm"
+                    onClick={() => setQuery(saved.query ?? saved.name)}
+                  >
+                    {saved.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="helper-text" style={{ marginBlockStart: "var(--space-3)" }}>{searchCopy.quickSuggestionsLabel}:</p>
+              <div className="button-row">
+                {[searchCopy.structuredSearchExample].map((example) => (
+                  <button
+                    key={example}
+                    type="button"
+                    className="button button-secondary button-sm"
+                    onClick={() => setQuery(example)}
+                  >
+                    <code dir="ltr">{example}</code>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       ) : null}
 

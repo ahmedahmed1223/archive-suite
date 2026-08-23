@@ -20,6 +20,31 @@ function labelFor(labels: object, value: string): string {
   return typeof label === "string" ? label : value;
 }
 
+// V14-UX-011 (P6): raw API event names like "post.api.v1.uploads.schedules"
+// leaked into headings as-is. Map the known HTTP-verb + path shapes onto
+// human labels; fall back to a cleaned-up tail segment instead of the full path.
+function humanEventLabel(entry: { event: string }, labels: object): string {
+  const direct = labelFor(labels, entry.event);
+  if (direct !== entry.event) return direct;
+
+  const match = /^(get|post|put|patch|delete)\.api\.v1\.(.+)$/i.exec(entry.event);
+  if (match) {
+    const verb = match[1].toLowerCase();
+    const verbLabel: Record<string, string> = {
+      get: "عرض",
+      post: "إنشاء",
+      put: "تحديث",
+      patch: "تعديل",
+      delete: "حذف",
+    };
+    // Tail: last meaningful path segment, kebab/snake → spaces.
+    const segments = match[2].split(".").filter((part) => part !== "v1");
+    const subject = (segments[segments.length - 1] ?? "").replace(/[-_]+/g, " ");
+    return `${verbLabel[verb] ?? verb}: ${subject}`;
+  }
+  return entry.event.replace(/[-_.]+/g, " ");
+}
+
 function hrefForEntry(entry: RecordHistoryEntry) {
   if (!entry.resourceId) return null;
 
@@ -223,7 +248,7 @@ export default function ActivityPage() {
               >
                 <div className="panel-title-row">
                   <div>
-                    <h2>{labelFor(copy.eventLabels, entry.event)}</h2>
+                    <h2>{humanEventLabel(entry, copy.eventLabels)}</h2>
                     <p>{redactAdminSecrets(entry.action)}</p>
                   </div>
                   <span className={entry.outcome === "success" ? "badge" : "badge badge-danger"}>

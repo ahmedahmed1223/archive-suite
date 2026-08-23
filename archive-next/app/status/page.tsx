@@ -251,6 +251,18 @@ export default function StatusPage() {
         }
       />
 
+      {/* V14-UX-011 (P8): when the backend is unreachable, the error log is the
+          natural next step — surface it in the page body, not just the toolbar. */}
+      {!isOnline && state.status !== "loading" ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>{copy.health.stopped}</strong>
+          <span className="helper-text">{state.error || copy.errors.healthConnection}</span>
+          <div>
+            <a className="button button-secondary button-sm" href="/errors">{copy.toolbar.viewErrors}</a>
+          </div>
+        </div>
+      ) : null}
+
       <section className="system-health-strip" data-tone={statusTone} aria-live="polite">
         <div className="system-health-strip__icon">{isOnline ? <IconSignal /> : <IconSignalOff />}</div>
         <div>

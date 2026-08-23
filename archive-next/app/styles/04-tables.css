@@ -184,6 +184,15 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* V14-UX-011 (P7): the inbox quick-add form is a tool, not a filter — give it
+   an accent edge so users see it before the filter chips below. */
+.quick-add-form {
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 28%, var(--color-border-secondary));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-brand-primary) 5%, var(--color-bg-secondary));
+}
+
 .archive-toolbar-grid select,
 .archive-toolbar-grid input {
   inline-size: 100%;

@@ -140,6 +140,38 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     };
   }, []);
 
+  // V14-UX-011 (P1): proactive silent refresh. The refresh token outlives the
+  // short access token, but nothing renewed the access token mid-session, so
+  // an active user was bounced to /login after a few navigations. Refresh one
+  // minute before expiry (and retry hourly as a floor for long-lived tokens).
+  const sessionExpiresAt = session.status === "authenticated" ? session.expiresAt : undefined;
+  useEffect(() => {
+    if (!sessionExpiresAt) return;
+    const expiresMs = Date.parse(sessionExpiresAt);
+    if (!Number.isFinite(expiresMs)) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const schedule = () => {
+      const remaining = expiresMs - Date.now() - 60_000; // refresh 60s early
+      const delay = Math.max(Math.min(remaining, 3_600_000), 5_000);
+      timer = setTimeout(() => {
+        if (cancelled) return;
+        void refreshSession().then((ok) => {
+          // If the refreshed token carries its own expiry the state update
+          // re-runs this effect and schedules the next renewal.
+          if (!ok) schedule();
+        });
+      }, delay);
+    };
+    schedule();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [refreshSession, sessionExpiresAt]);
+
   const login = useCallback<AuthSessionContextValue["login"]>(
     async (payload) => {
       setSession((current) => ({ ...current, status: "loading", error: undefined }));
