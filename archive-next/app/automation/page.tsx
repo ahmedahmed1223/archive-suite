@@ -263,7 +263,9 @@ export default function AutomationPage() {
               <button type="submit" className="button button-primary" disabled={!name.trim()}>{copy.form.save}</button>
             </div>
           </form>
-        ) : null}
+        ) : (
+          <p className="helper-text">{copy.noPermissionNote}</p>
+        )}
         {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
       </PageToolbar>
 
@@ -315,7 +317,9 @@ export default function AutomationPage() {
                     </button>
                     <button className="button button-danger button-sm" type="button" onClick={() => void deleteRule(rule)} disabled={busyId === rule.id}>{copy.rules.delete}</button>
                   </>
-                ) : null}
+                ) : (
+                  <span className="helper-text">{copy.noPermissionNote}</span>
+                )}
               </div>
             </article>
           ))}
@@ -330,7 +334,7 @@ export default function AutomationPage() {
           <ul className="compact-list">
             {runs.map((run) => (
               <li key={run.id}>
-                <strong>{run.dryRun ? copy.runs.dryRun : copy.runs.liveRun} · {run.status}</strong>
+                <strong>{run.dryRun ? copy.runs.dryRun : copy.runs.liveRun} · {copy.runStatusLabels[run.status as keyof typeof copy.runStatusLabels] || run.status}</strong>
                 <span className="helper-text">
                   {copy.runs.matched.replace("{count}", String(run.matchedCount))} · {copy.runs.executed.replace("{count}", String(run.executedCount))} · {formatDate(run.createdAt, locale)}
                 </span>

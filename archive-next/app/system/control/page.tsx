@@ -8,6 +8,7 @@ import PageToolbar from "@/components/PageToolbar";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/Dialog";
 import { createArchiveApiClient, type SystemControlAction, type SystemControlResult } from "@/lib/archive-api";
+import { formatKvValue } from "@/lib/kv-format";
 
 type GateState =
   | { status: "loading" }
@@ -178,7 +179,16 @@ export default function SystemControlPage() {
       {actionState.status === "success" ? (
         <div className="state-banner state-banner-success" role="status">
           <strong>{t.pages.systemControl.successTitle.replace("{action}", actionState.result.action)}</strong>
-          <pre className="mono-text text-sm wrap-anywhere">{JSON.stringify(actionState.result.detail, null, 2)}</pre>
+          {Object.keys(actionState.result.detail).length > 0 ? (
+            <div className="kv-grid">
+              {Object.entries(actionState.result.detail).map(([key, value]) => (
+                <div className="kv-item" key={key}>
+                  <strong>{key}</strong>
+                  <span dir="auto">{formatKvValue(value, t.pages.systemControl.detailNotAvailable)}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <div className="button-row">
             <a className="button button-secondary" href="/status">{t.pages.systemControl.checkResultLink}</a>
             <a className="button button-secondary" href="/first-run">{t.pages.systemControl.continueOnboardingLink}</a>

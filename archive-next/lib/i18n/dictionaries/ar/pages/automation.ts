@@ -9,5 +9,7 @@ export const automation = {
   load: { errorTitle: "تعذر تحميل بيانات الأتمتة", loading: "جارٍ تحميل قواعد الأتمتة..." },
   empty: { title: "لا توجد قواعد بعد.", description: "أنشئ قاعدة محفوظة في الخادم، ثم اختبرها بمحاكاة التشغيل قبل التشغيل الفعلي." },
   rules: { ariaLabel: "قواعد الأتمتة", enabled: "مفعّلة", stopped: "متوقفة", triggerLabel: "المشغّل", conditionsLabel: "الشروط", allRecords: "كل السجلات", actionLabel: "الإجراء", lastRunLabel: "آخر تشغيل", dryRun: "محاكاة تشغيل", liveRun: "تشغيل فعلي", stop: "إيقاف", enable: "تفعيل", delete: "حذف" },
-  runs: { title: "سجل تشغيل الأتمتة", dryRun: "محاكاة تشغيل", liveRun: "تشغيل فعلي", matched: "مطابق {count}", executed: "منفذ {count}" }
+  runs: { title: "سجل تشغيل الأتمتة", dryRun: "محاكاة تشغيل", liveRun: "تشغيل فعلي", matched: "مطابق {count}", executed: "منفذ {count}" },
+  runStatusLabels: { completed: "مكتمل", failed: "فشل" },
+  noPermissionNote: "تحتاج إلى صلاحية إدارة الأتمتة لإنشاء القواعد أو تشغيلها فعليًا أو حذفها."
 } as const;

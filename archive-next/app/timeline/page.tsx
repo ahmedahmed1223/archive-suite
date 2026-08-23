@@ -138,6 +138,8 @@ export default function TimelinePage() {
         hasMore = Boolean(cursor);
         pagesFetched += 1;
       }
+
+      setState({ status: "success", records: allRecords, error: null });
     } catch (err) {
       const message = err instanceof Error ? err.message : copy.unknownError;
       setState({

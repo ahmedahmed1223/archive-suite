@@ -172,7 +172,9 @@ export default function BackupPage() {
               >
                 {runState.status === "running" ? t.pages.backup.running : t.pages.backup.runNow}
               </button>
-            ) : null}
+            ) : (
+              <span className="helper-text">{t.pages.backup.noPermissionNote}</span>
+            )}
             <button type="button" className="button button-secondary" onClick={() => void loadBackups()} disabled={listState.status === "loading"}>
               {t.pages.backup.refresh}
             </button>

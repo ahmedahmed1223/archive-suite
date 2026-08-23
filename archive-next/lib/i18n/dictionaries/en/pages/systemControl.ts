@@ -34,6 +34,7 @@ export const systemControl = {
   confirmDialogBody: "Make sure you want to proceed with this action in the production environment.",
   cancelButton: "Cancel",
   confirmClearButton: "Confirm clear",
+  detailNotAvailable: "—",
   gateStatusLabels: {
     loading: "Checking",
     enabled: "Enabled for admin",

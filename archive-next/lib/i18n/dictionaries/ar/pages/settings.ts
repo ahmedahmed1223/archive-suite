@@ -145,6 +145,8 @@ export const settings = {
   odbc: {
       deleteConfirmTitle: "حذف صف",
       deleteConfirmMessage: "سيُحذف الصف ذو {key} من جدول {table} نهائيًا. هل تريد المتابعة؟",
+      updateConfirmTitle: "تحديث صف",
+      updateConfirmMessage: "سيتم استبدال بيانات الصف ذو {key} في جدول {table} بالقيم المُدخلة. هل تريد المتابعة؟",
     heading: "ODBC للأنظمة القديمة",
     description: "فحص الاتصال، معاينة قراءة محدودة، وكتابة صفوف مقيدة للجداول الأساسية المسموحة فقط.",
     loading: "جارٍ فحص ODBC...",

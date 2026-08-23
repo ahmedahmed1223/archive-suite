@@ -41,6 +41,7 @@ export default function ReportsPage() {
   const eventOptions = [
     ["", copy.eventOptions.all], ["records.bulk_upsert", copy.eventOptions.recordsBulkUpsert], ["rights.upsert", copy.eventOptions.rightsUpsert], ["media.workflow.queue", copy.eventOptions.mediaWorkflowQueue], ["relations.create", copy.eventOptions.relationsCreate], ["system_control.allowed", copy.eventOptions.systemControlAllowed], ["system_control.rejected", copy.eventOptions.systemControlRejected],
   ] as const;
+  const eventLabels: Record<string, string> = Object.fromEntries(eventOptions.filter(([value]) => value !== ""));
   const resourceTypeOptions = [["", copy.resourceTypeOptions.all], ["record", copy.resourceTypeOptions.record], ["rights_record", copy.resourceTypeOptions.rightsRecord], ["media_job", copy.resourceTypeOptions.mediaJob], ["record_relation", copy.resourceTypeOptions.recordRelation], ["system_control_action", copy.resourceTypeOptions.systemControlAction]] as const;
   const outcomeOptions = [["", copy.outcomeOptions.all], ["success", copy.outcomeOptions.success], ["rejected", copy.outcomeOptions.rejected], ["failed", copy.outcomeOptions.failed]] as const;
   const forecastReasons: Record<string, string> = { INSUFFICIENT_SAMPLES: copy.forecast.insufficientSamples, NO_TIME_SPAN: copy.forecast.noTimeSpan, SAMPLE_INVALID: copy.forecast.sampleInvalid };
@@ -246,7 +247,7 @@ export default function ReportsPage() {
           <div className="panel-title-row"><div><h2>{copy.table.title}</h2><p>{copy.table.description}</p></div><span className="badge">{copy.table.displayed.replace("{count}", String(entries.length))}</span></div>
           <div className="ui-data-table-wrap" tabIndex={0}>
             <table className="data-table"><thead><tr><th>{copy.table.event}</th><th>{copy.table.resource}</th><th>{copy.table.identifier}</th><th>{copy.table.outcome}</th><th>{copy.table.code}</th><th>{copy.table.date}</th></tr></thead>
-              <tbody>{entries.map((entry) => <tr key={entry.id}><td>{entry.event}</td><td>{entry.resourceType || copy.table.general}</td><td dir="ltr">{entry.resourceId || "—"}</td><td><span className={entry.outcome === "success" ? "badge" : "badge badge-danger"}>{copy.outcomeLabels[entry.outcome]}</span></td><td>{entry.statusCode}</td><td>{formatDate(entry.createdAt || undefined, "-", locale)}</td></tr>)}</tbody>
+              <tbody>{entries.map((entry) => <tr key={entry.id}><td>{eventLabels[entry.event] || entry.event}</td><td>{entry.resourceType || copy.table.general}</td><td dir="ltr">{entry.resourceId || "—"}</td><td><span className={entry.outcome === "success" ? "badge" : "badge badge-danger"}>{copy.outcomeLabels[entry.outcome]}</span></td><td>{entry.statusCode}</td><td>{formatDate(entry.createdAt || undefined, "-", locale)}</td></tr>)}</tbody>
             </table>
           </div>
         </section>

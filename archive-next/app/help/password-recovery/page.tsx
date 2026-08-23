@@ -1,3 +1,5 @@
+"use client";
+
 import AppShell from "@/components/AppShell";
 import PageToolbar from "@/components/PageToolbar";
 import { useLocale } from "@/lib/i18n/LocaleProvider";

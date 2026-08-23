@@ -145,6 +145,8 @@ export const settings = {
   odbc: {
       deleteConfirmTitle: "Delete row",
       deleteConfirmMessage: "The row with {key} will be permanently deleted from {table}. Continue?",
+      updateConfirmTitle: "Update row",
+      updateConfirmMessage: "The row with {key} in {table} will be overwritten with the entered values. Continue?",
     heading: "ODBC for legacy systems",
     description: "Connection check, a limited read-only preview, and restricted row writes for the allowed core tables only.",
     loading: "Checking ODBC...",

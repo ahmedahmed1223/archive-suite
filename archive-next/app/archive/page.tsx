@@ -23,6 +23,7 @@ import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted
 import { toastError, toastSuccess } from "@/lib/toast";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { isIncompleteRecord } from "@/lib/work-lists";
+import { formatKvValue } from "@/lib/kv-format";
 import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import styles from "./archive.module.css";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -883,7 +884,7 @@ function ArchivePageContent() {
             {Object.entries(previewRecord.metadata).map(([key, value]) => (
               <div className="kv-item" key={key}>
                 <strong>{key}</strong>
-                <span dir="auto">{typeof value === "object" ? JSON.stringify(value) : String(value)}</span>
+                <span dir="auto">{formatKvValue(value, "—")}</span>
               </div>
             ))}
           </div>

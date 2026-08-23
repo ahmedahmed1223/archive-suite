@@ -3,6 +3,7 @@ export const backup = {
   title: "Backup and restore",
   description: "Manage backups for record stores: create an instant backup, preview its contents, or run a full restore (administrators only).",
   countSuffix: "backups",
+  noPermissionNote: "You need the backup management permission to create or restore backups.",
   runNow: "Create backup now",
   running: "Creating backup...",
   refresh: "Refresh",

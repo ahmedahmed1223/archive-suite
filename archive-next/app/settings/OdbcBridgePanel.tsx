@@ -79,14 +79,17 @@ export function OdbcBridgePanel({
     if (!canPreviewOdbc) return;
 
     // V14-AUDIT-002: deletes are irreversible — confirm before executing.
-    if (odbcWriteOperation === "delete") {
+    // Updates overwrite a row's data via free-form JSON with the same
+    // no-undo risk, so they get the same confirmation gate.
+    if (odbcWriteOperation === "delete" || odbcWriteOperation === "update") {
+      const isDelete = odbcWriteOperation === "delete";
       const confirmed = await dialog.confirm({
-        title: settingsCopy.odbc.deleteConfirmTitle,
-        message: settingsCopy.odbc.deleteConfirmMessage
+        title: isDelete ? settingsCopy.odbc.deleteConfirmTitle : settingsCopy.odbc.updateConfirmTitle,
+        message: (isDelete ? settingsCopy.odbc.deleteConfirmMessage : settingsCopy.odbc.updateConfirmMessage)
           .replace("{table}", selectedOdbcTable)
           .replace("{key}", odbcKeyValue.trim()),
         confirmLabel: settingsCopy.odbc.executeButton,
-        destructive: true,
+        destructive: isDelete,
       });
       if (!confirmed) return;
     }

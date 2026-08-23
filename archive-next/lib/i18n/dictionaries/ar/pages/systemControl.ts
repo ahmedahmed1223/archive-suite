@@ -34,6 +34,7 @@ export const systemControl = {
   confirmDialogBody: "تأكد من أنك تريد متابعة الإجراء في بيئة الإنتاج.",
   cancelButton: "إلغاء",
   confirmClearButton: "تأكيد التفريغ",
+  detailNotAvailable: "—",
   gateStatusLabels: {
     loading: "جارٍ التحقق",
     enabled: "مفعلة للمشرف",

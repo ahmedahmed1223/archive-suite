@@ -9,5 +9,7 @@ export const automation = {
   load: { errorTitle: "Unable to load automation data", loading: "Loading automation rules..." },
   empty: { title: "No rules yet.", description: "Create a server-saved rule, then test it with a dry run before a live run." },
   rules: { ariaLabel: "Automation rules", enabled: "Enabled", stopped: "Stopped", triggerLabel: "Trigger", conditionsLabel: "Conditions", allRecords: "All records", actionLabel: "Action", lastRunLabel: "Last run", dryRun: "Dry run", liveRun: "Live run", stop: "Stop", enable: "Enable", delete: "Delete" },
-  runs: { title: "Automation run log", dryRun: "Dry run", liveRun: "Live run", matched: "Matched {count}", executed: "Executed {count}" }
+  runs: { title: "Automation run log", dryRun: "Dry run", liveRun: "Live run", matched: "Matched {count}", executed: "Executed {count}" },
+  runStatusLabels: { completed: "Completed", failed: "Failed" },
+  noPermissionNote: "You need the automation management permission to create rules or run/delete them for real."
 } as const;
