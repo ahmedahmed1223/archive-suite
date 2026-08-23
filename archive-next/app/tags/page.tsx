@@ -26,6 +26,10 @@ type TagsLoadState =
   | { status: "ready" }
   | { status: "error"; message: string };
 
+
+// V14-AUDIT-033: named default instead of an inline magic value.
+const DEFAULT_TAG_COLOR = "#808080";
+
 export default function TagsPage() {
   const { locale, t } = useLocale();
   const copy = t.pages.tags;
@@ -250,10 +254,10 @@ export default function TagsPage() {
                     {node && canManageTags && (
                       <input
                         type="color"
-                        value={node.color || "#808080"}
+                        value={node.color || DEFAULT_TAG_COLOR}
                         onChange={(event) => void updateColor(node.id, event.target.value)}
                         aria-label={copy.colorLabel.replace("{tag}", row.tag)}
-                        style={{ width: "2.5rem", height: "2.5rem", cursor: "pointer" }}
+                        style={{ inlineSize: "var(--space-8)", blockSize: "var(--space-8)", cursor: "pointer" }}
                       />
                     )}
                     {canManageTags ? (

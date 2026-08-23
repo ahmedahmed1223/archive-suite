@@ -1,4 +1,5 @@
 export const archiveRecordCard = {
+  doubleClickRenameHint: "Double-click to rename",
   selectRecord: "Select {title}",
   fallbackRecordLabel: "record",
   preview: "Preview",

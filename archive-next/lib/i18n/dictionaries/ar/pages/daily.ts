@@ -2,7 +2,7 @@ export const daily = {
   greeting: "يومك",
   greetingName: "يومك، {name}",
   addMaterial: "إضافة مادة جديدة",
-  openWorkInbox: "صندوق العمل",
+  openWorkInbox: "فتح صندوق العمل",
   browseArchive: "استعراض الأرشيف",
   workListsAriaLabel: "قوائم العمل",
   workLists: {

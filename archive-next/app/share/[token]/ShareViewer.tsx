@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createArchiveApiClient, type ArchiveRecord } from "@/lib/archive-api";
 import { redactAdminSecrets } from "@/lib/admin-action-summary";
+import EmptyState from "@/components/EmptyState";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 type ShareState =
@@ -71,7 +72,7 @@ export function ShareViewer({ token }: { token: string }) {
         </div>
       </div>
       {state.records.length === 0 ? (
-        <div className="empty-state">{copy.empty}</div>
+        <EmptyState title={copy.empty} />
       ) : (
         state.records.map((record) => (
           <article className="panel" key={record.uid ?? record.id}>

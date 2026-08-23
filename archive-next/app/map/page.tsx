@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CircleAlert, ExternalLink, MapPin } from "lucide-react";
 import AppShell from "@/components/AppShell";
@@ -27,6 +28,7 @@ const MAX_PAGES = 25;
 const PAGE_LIMIT = 200;
 
 export default function MapPage() {
+  const router = useRouter();
   const { t } = useLocale();
   const copy = t.pages.map;
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -98,10 +100,11 @@ export default function MapPage() {
               {copy.capped.replace("{count}", String(state.points.length))}
             </p>
           ) : null}
+          {/* V14-AUDIT-031: client-side navigation instead of a full reload. */}
           <GeoMap
             points={state.points}
             onSelect={(recordId) => {
-              window.location.href = `/archive/${encodeURIComponent(recordId)}`;
+              router.push(`/archive/${encodeURIComponent(recordId)}`);
             }}
           />
           <ul className="map-page-list" aria-label={copy.list}>

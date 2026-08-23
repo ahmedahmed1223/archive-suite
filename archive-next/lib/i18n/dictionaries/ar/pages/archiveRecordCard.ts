@@ -1,4 +1,5 @@
 export const archiveRecordCard = {
+  doubleClickRenameHint: "انقر نقرًا مزدوجًا لإعادة التسمية",
   selectRecord: "تحديد {title}",
   fallbackRecordLabel: "السجل",
   preview: "معاينة",

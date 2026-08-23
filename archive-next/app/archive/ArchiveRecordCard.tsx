@@ -103,6 +103,7 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
                 ref={titleLinkRef}
                 href={href}
                 className="text-accent"
+                title={canEdit ? t.pages.archiveRecordCard.doubleClickRenameHint : undefined}
                 onDoubleClick={canEdit ? (e) => {
                   e.preventDefault();
                   startEditingTitle();
