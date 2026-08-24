@@ -1191,7 +1191,20 @@
 .dashboard-workspace-grid,
 .first-run-workspace-grid {
   display: grid;
+  grid-template-columns: 1fr;
   gap: var(--space-4);
+}
+
+/* Base (sub-1120px) stacked order — must match the desktop grid-area names
+   below or named-but-unmapped grid-area assignments force each child into
+   its own implicit column instead of stacking (V14-AUDIT: horizontal
+   overflow on /). */
+.dashboard-workspace-grid {
+  grid-template-areas: "quick" "recent";
+}
+
+.first-run-workspace-grid {
+  grid-template-areas: "journey" "preset" "health" "progress" "defaults" "feedback" "security";
 }
 
 .dashboard-quick {

@@ -186,7 +186,7 @@ test.describe('Arabic RTL audit (V1-791)', () => {
     const { page } = await roleSession('admin');
 
     await visit(page, '/search', 'ready');
-    await expect(page.locator('code[dir="ltr"]')).toContainText('type:video');
+    await expect(page.locator('#advanced-search-hint code[dir="ltr"]')).toContainText('type:video');
 
     await visit(page, '/media/review', 'ready');
     await expect(page.locator('input[placeholder="media/file.mp4"]')).toHaveAttribute('dir', 'ltr');

@@ -113,6 +113,7 @@ export default function ViewCustomizationSection({ experience, onUpdate }: Reado
         <p className="helper-text mt-tight">{copy.filtersHint}</p>
         <select
           className="search-input mt-tight"
+          aria-label={copy.filtersHeading}
           value={archiveView.defaultSavedSearchId ?? ""}
           disabled={!isEditable || isSaving}
           onChange={(event) => setDefaultSavedSearch(event.target.value)}
