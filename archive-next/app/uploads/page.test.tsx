@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import UploadsPage from "./page";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+import { ConfirmDialogProvider } from "@/components/ui/ConfirmDialog";
 
 // The intake forms hit the API and the auth session on mount — both are
 // irrelevant to this hierarchy test, so they are stubbed out.
@@ -58,7 +59,9 @@ mocks.useAuthSession.mockReturnValue({ status: "authenticated", user: { role: "e
 function renderUploads(locale: "ar" | "en" = "ar") {
   return render(
     <LocaleProvider initialLocale={locale} hasLocaleCookie>
-      <UploadsPage />
+      <ConfirmDialogProvider>
+        <UploadsPage />
+      </ConfirmDialogProvider>
     </LocaleProvider>
   );
 }

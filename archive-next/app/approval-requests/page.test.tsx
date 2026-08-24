@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+import { ConfirmDialogProvider } from "@/components/ui/ConfirmDialog";
 
 const approvalRequests = vi.fn();
 const createApprovalRequest = vi.fn();
@@ -28,7 +29,9 @@ import ApprovalRequestsPage from "./page";
 function renderPage() {
   return render(
     <LocaleProvider initialLocale="ar" hasLocaleCookie={false}>
-      <ApprovalRequestsPage />
+      <ConfirmDialogProvider>
+        <ApprovalRequestsPage />
+      </ConfirmDialogProvider>
     </LocaleProvider>
   );
 }
@@ -76,6 +79,8 @@ test("a different editor can approve, and execute appears once approved", async 
 
   const approveButton = await screen.findByRole("button", { name: "موافقة" });
   fireEvent.click(approveButton);
+  const confirmationButtons = await screen.findAllByRole("button", { name: "موافقة" });
+  fireEvent.click(confirmationButtons.at(-1)!);
 
   await waitFor(() => expect(decideApprovalRequest).toHaveBeenCalledWith(
     "11111111-1111-1111-1111-111111111111",

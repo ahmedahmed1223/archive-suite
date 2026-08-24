@@ -66,7 +66,7 @@ export default function UploadsPage() {
         }
       />
 
-      {/* Intake modes overview — one card per path so nothing hides. */}
+      {/* Input modes overview — one card per path so nothing hides. */}
       <section className="add-modes" aria-label={t.pages.uploads.modesAriaLabel}>
         {modes.map((mode) => (
           <article className="add-mode-card" key={mode.id}>
