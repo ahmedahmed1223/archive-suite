@@ -1,5 +1,6 @@
 export const projectGroups = {
   loadingLabel: "Loading projects…",
+  noPermission: "You do not have permission to create work projects.",
   errors: {
     projectsLoad: "Unable to load work projects.",
     recordsLoad: "Unable to load project materials.",

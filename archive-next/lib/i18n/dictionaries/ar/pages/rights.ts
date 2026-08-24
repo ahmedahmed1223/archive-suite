@@ -52,5 +52,6 @@ export const rights = {
   allowed: "مسموح",
   blocked: "محظور",
   requiredFieldsMessage: "معرّف العنصر وصاحب الحقوق حقلان إلزاميان.",
-  enforcementCheckErrorTitle: "تعذر فحص الإنفاذ."
+  enforcementCheckErrorTitle: "تعذر فحص الإنفاذ.",
+  noPermission: "لا تملك صلاحية تسجيل الحقوق."
 } as const;

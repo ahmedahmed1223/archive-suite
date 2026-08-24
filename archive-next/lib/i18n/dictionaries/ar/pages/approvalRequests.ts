@@ -13,7 +13,8 @@ export const approvalRequests = {
     macroId: "معرّف الإجراء الجماعي",
     targets: "الأهداف (المخزن:المعرّف، المخزن:المعرّف)",
     submit: "إرسال للاعتماد",
-    submitting: "جارٍ الإرسال…"
+    submitting: "جارٍ الإرسال…",
+    targetsInvalidWarning: "تم تجاهل {count} هدف/أهداف غير صالحة؛ يجب أن يكون كل هدف بصيغة المخزن:المعرّف."
   },
   errors: {
     load: "تعذر تحميل طلبات الاعتماد.",
@@ -41,7 +42,13 @@ export const approvalRequests = {
     reject: "رفض",
     execute: "تنفيذ",
     selfApprovalBlocked: "أنت من قدّم هذا الطلب، ولا يمكنك اتخاذ قرار بشأنه بنفسك.",
-    alreadyDecided: "سبق أن سجّلت قرارًا على هذا الطلب."
+    alreadyDecided: "سبق أن سجّلت قرارًا على هذا الطلب.",
+    confirmApproveTitle: "اعتماد هذا الإجراء الجماعي؟",
+    confirmApproveMessage: "ستشمل هذه الموافقة كل أهداف الطلب ولا يمكن التراجع عنها.",
+    confirmRejectTitle: "رفض هذا الإجراء الجماعي؟",
+    confirmRejectMessage: "سيشمل هذا الرفض كل أهداف الطلب ولا يمكن التراجع عنه.",
+    confirmExecuteTitle: "تنفيذ هذا الإجراء المعتمد؟",
+    confirmExecuteMessage: "سيُنفَّذ الإجراء الجماعي فورًا على كل أهداف الطلب ولا يمكن التراجع عنه."
   },
   empty: "لا توجد طلبات اعتماد بعد.",
   decidedCount: "{approved} موافقة، {rejected} رفض"

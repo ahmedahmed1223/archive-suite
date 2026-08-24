@@ -83,6 +83,13 @@ export const projects = {
     mp4Hint: "MP4 export runs as an asynchronous server job that assembles clips with ffmpeg in the background without blocking the request.",
     pathResolutionError: "Unable to determine a file path for some clips: {titles}. Every clip must have a valid file path before continuing.",
     status: "MP4 export status: {status}",
+    statusLabels: {
+      queued: "Queued",
+      processing: "Processing",
+      completed: "Completed",
+      failed: "Failed",
+      canceled: "Canceled"
+    },
     download: "Download MP4 file",
     failed: "Export failed: {error}",
     running: "Running in the background..."

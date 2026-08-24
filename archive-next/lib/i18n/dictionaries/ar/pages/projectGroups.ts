@@ -1,5 +1,6 @@
 export const projectGroups = {
   loadingLabel: "جارٍ تحميل المشاريع…",
+  noPermission: "لا تملك صلاحية إنشاء مشاريع عمل جديدة.",
   errors: {
     projectsLoad: "تعذر تحميل مشاريع العمل.",
     recordsLoad: "تعذر تحميل مواد المشروع.",

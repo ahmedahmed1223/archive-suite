@@ -473,7 +473,7 @@ export default function ProjectsPage() {
             {exportError ? <p className="form-status status-error" role="alert">{exportError}</p> : null}
             {exportJob ? (
               <div className="state-banner" role="status">
-                <strong>{copy.export.status.replace("{status}", exportJob.status)}</strong>
+                <strong>{copy.export.status.replace("{status}", copy.export.statusLabels[exportJob.status] ?? exportJob.status)}</strong>
                 {exportJob.status === "completed" && exportJob.result?.artifacts ? (
                   <a
                     className="button button-secondary button-sm"

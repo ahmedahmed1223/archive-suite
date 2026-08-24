@@ -22,7 +22,8 @@ export const collaboration = {
     unspecifiedTime: "وقت غير محدد",
     lockReleased: "تم تحرير القفل.",
     noOwnedLock: "لا يوجد قفل لك على هذا المورد.",
-    savedVersion: "تم حفظ النسخة {version}"
+    savedVersion: "تم حفظ النسخة {version}",
+    conflictKeptMine: "تعذر الحفظ: توجد نسخة أحدث على الخادم. تم الاحتفاظ بتعديلاتك غير المحفوظة؛ حمّل نسختهم للمتابعة."
   },
   errors: {
     liveCollaboration: "تعذر تحديث التعاون الحي.",
@@ -36,6 +37,13 @@ export const collaboration = {
     selectResourceToAcquire: "اختر مورداً قبل طلب القفل.",
     selectResourceToRelease: "اختر مورداً قبل تحرير القفل.",
     selectRoomAndResource: "اختر غرفة ومورداً قبل حفظ المسودة."
+  },
+  conflict: {
+    title: "تعارض في الحفظ",
+    message: "قام {name} بحفظ نسخة أحدث من هذه المسودة أثناء تحريرك لها. هل تريد تحميل نسختهم والتخلي عن تعديلاتك غير المحفوظة، أم الاحتفاظ بتعديلاتك ومحاولة الحفظ لاحقاً؟",
+    someone: "مشارك آخر",
+    loadTheirs: "تحميل نسختهم",
+    keepMine: "الاحتفاظ بتعديلاتي"
   },
   toolbar: {
     syncing: "جارٍ المزامنة",

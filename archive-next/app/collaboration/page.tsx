@@ -6,6 +6,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   createArchiveApiClient,
   type CollaborationDocument,
@@ -57,6 +58,7 @@ export default function CollaborationPage() {
   const copy = t.pages.collaboration;
   const timeLocale = locale === "ar" ? "ar-EG" : "en-US";
   const api = useMemo(() => createArchiveApiClient(), []);
+  const dialogs = useConfirmDialog();
   const [roomKey, setRoomKey] = useState("review-1");
   const [resourceId, setResourceId] = useState("media-123");
   const [status, setStatus] = useState<CollaborationStatus>("reviewing");
@@ -312,12 +314,25 @@ export default function CollaborationPage() {
 
       const conflict = response as typeof response & { document?: CollaborationDocument; code?: string };
       if (conflict.document) {
-        setDocumentContent(conflict.document.content);
-        setDocumentVersion(conflict.document.version);
-        setDocumentMeta({
-          updatedAt: conflict.document.updatedAt,
-          updatedByDisplayName: conflict.document.updatedByDisplayName
+        const loadTheirs = await dialogs.confirm({
+          title: copy.conflict.title,
+          message: copy.conflict.message.replace("{name}", conflict.document.updatedByDisplayName || copy.conflict.someone),
+          confirmLabel: copy.conflict.loadTheirs,
+          cancelLabel: copy.conflict.keepMine,
+          destructive: true
         });
+        if (loadTheirs) {
+          setDocumentContent(conflict.document.content);
+          setDocumentVersion(conflict.document.version);
+          setDocumentMeta({
+            updatedAt: conflict.document.updatedAt,
+            updatedByDisplayName: conflict.document.updatedByDisplayName
+          });
+          setDocumentMessage(copy.messages.loadedLatestVersion);
+        } else {
+          setDocumentMessage(copy.messages.conflictKeptMine);
+        }
+        return;
       }
       setDocumentMessage(response.error);
     } catch (err) {

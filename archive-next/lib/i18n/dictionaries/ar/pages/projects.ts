@@ -83,6 +83,13 @@ export const projects = {
     mp4Hint: "يعمل تصدير MP4 كمهمة خادم غير متزامنة تجمع القصاصات عبر ffmpeg في الخلفية دون حجب الطلب.",
     pathResolutionError: "تعذر تحديد مسار الملف لبعض القصاصات: {titles}. لا يمكن المتابعة حتى تحتوي كل قصاصة على مسار ملف صالح.",
     status: "حالة تصدير MP4: {status}",
+    statusLabels: {
+      queued: "قيد الانتظار",
+      processing: "قيد المعالجة",
+      completed: "مكتمل",
+      failed: "فشل",
+      canceled: "أُلغي"
+    },
     download: "تنزيل ملف MP4",
     failed: "فشل التصدير: {error}",
     running: "جارٍ التنفيذ في الخلفية..."

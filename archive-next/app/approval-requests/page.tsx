@@ -7,14 +7,17 @@ import PageToolbar from "@/components/PageToolbar";
 import EmptyState from "@/components/EmptyState";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useAuthSession } from "@/lib/auth-session";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ApprovalRequest, type BulkMacroTarget } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-function parseTargets(raw: string): BulkMacroTarget[] {
-  return raw.split(",").map((pair) => pair.trim()).filter(Boolean).map((pair) => {
+function parseTargets(raw: string): { targets: BulkMacroTarget[]; droppedCount: number } {
+  const parts = raw.split(",").map((pair) => pair.trim()).filter(Boolean);
+  const targets = parts.map((pair) => {
     const [store, id] = pair.split(":").map((part) => part.trim());
     return { store: store || "", id: id || "" };
   }).filter((target) => target.store && target.id);
+  return { targets, droppedCount: parts.length - targets.length };
 }
 
 function approvalCounts(request: ApprovalRequest): { approved: number; rejected: number } {
@@ -29,6 +32,7 @@ export default function ApprovalRequestsPage() {
   const copy = t.pages.approvalRequests;
   const api = useMemo(() => createArchiveApiClient(), []);
   const { user, accessToken } = useAuthSession();
+  const dialogs = useConfirmDialog();
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
   const [loadError, setLoadError] = useState("");
   const [status, setStatus] = useState("");
@@ -54,8 +58,12 @@ export default function ApprovalRequestsPage() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const targets = parseTargets(targetsText);
+    const { targets, droppedCount } = parseTargets(targetsText);
     if (!macroId.trim() || targets.length === 0) return;
+    if (droppedCount > 0) {
+      setStatus(copy.submit.targetsInvalidWarning.replace("{count}", String(droppedCount)));
+      return;
+    }
     setSubmitting(true);
     const response = await api.createApprovalRequest({ targetType: "bulk-macro", targetId: macroId.trim(), targets }, { accessToken });
     setSubmitting(false);
@@ -70,6 +78,13 @@ export default function ApprovalRequestsPage() {
   }
 
   async function decide(request: ApprovalRequest, decision: "approve" | "reject") {
+    const confirmed = await dialogs.confirm({
+      title: decision === "approve" ? copy.actions.confirmApproveTitle : copy.actions.confirmRejectTitle,
+      message: decision === "approve" ? copy.actions.confirmApproveMessage : copy.actions.confirmRejectMessage,
+      confirmLabel: decision === "approve" ? copy.actions.approve : copy.actions.reject,
+      destructive: true
+    });
+    if (!confirmed) return;
     const response = await api.decideApprovalRequest(request.id, { decision }, { accessToken });
     if (!response.ok) {
       setStatus(response.error || copy.errors.decide);
@@ -79,6 +94,13 @@ export default function ApprovalRequestsPage() {
   }
 
   async function execute(request: ApprovalRequest) {
+    const confirmed = await dialogs.confirm({
+      title: copy.actions.confirmExecuteTitle,
+      message: copy.actions.confirmExecuteMessage,
+      confirmLabel: copy.actions.execute,
+      destructive: true
+    });
+    if (!confirmed) return;
     const response = await api.executeApprovalRequest(request.id, { accessToken });
     if (!response.ok) {
       setStatus(response.error || copy.errors.execute);

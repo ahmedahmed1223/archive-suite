@@ -13,7 +13,8 @@ export const approvalRequests = {
     macroId: "Bulk macro ID",
     targets: "Targets (store:id, store:id)",
     submit: "Submit for approval",
-    submitting: "Submitting…"
+    submitting: "Submitting…",
+    targetsInvalidWarning: "Ignored {count} malformed target(s); each target must use the store:id format."
   },
   errors: {
     load: "Unable to load approval requests.",
@@ -41,7 +42,13 @@ export const approvalRequests = {
     reject: "Reject",
     execute: "Execute",
     selfApprovalBlocked: "You submitted this request; you cannot decide it yourself.",
-    alreadyDecided: "You already recorded a decision on this request."
+    alreadyDecided: "You already recorded a decision on this request.",
+    confirmApproveTitle: "Approve this bulk macro?",
+    confirmApproveMessage: "This approval acts on every target in the request and cannot be undone.",
+    confirmRejectTitle: "Reject this bulk macro?",
+    confirmRejectMessage: "This rejection acts on every target in the request and cannot be undone.",
+    confirmExecuteTitle: "Execute this approved macro?",
+    confirmExecuteMessage: "This runs the bulk macro against every target in the request immediately and cannot be undone."
   },
   empty: "No approval requests yet.",
   decidedCount: "{approved} approved, {rejected} rejected"

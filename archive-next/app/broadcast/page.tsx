@@ -7,8 +7,10 @@ import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
 import PageToolbar from "@/components/PageToolbar";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   createArchiveApiClient,
+  type CollaborationDocument,
   type CollaborationLock,
   type CollaborationParticipant,
   type ReviewComment
@@ -39,6 +41,7 @@ export default function BroadcastSimulationPage() {
   const { locale, t } = useLocale();
   const copy = t.pages.broadcast;
   const api = useMemo(() => createArchiveApiClient(), []);
+  const dialogs = useConfirmDialog();
   const [mediaPath, setMediaPath] = useState("media-123");
   const [roomKey, setRoomKey] = useState("broadcast-main");
   const [status, setStatus] = useState<"viewing" | "reviewing" | "editing">("reviewing");
@@ -176,9 +179,31 @@ export default function BroadcastSimulationPage() {
         setRundown(response.document.content);
         setRundownVersion(response.document.version);
         setRundownMessage(copy.messages.saved.replace("{time}", formatClock(new Date(), locale)));
-      } else {
-        setError(response.error);
+        return;
       }
+
+      const conflict = response as typeof response & { document?: CollaborationDocument };
+      if (conflict.document) {
+        const loadTheirs = await dialogs.confirm({
+          title: t.pages.collaboration.conflict.title,
+          message: t.pages.collaboration.conflict.message.replace(
+            "{name}",
+            conflict.document.updatedByDisplayName || t.pages.collaboration.conflict.someone
+          ),
+          confirmLabel: t.pages.collaboration.conflict.loadTheirs,
+          cancelLabel: t.pages.collaboration.conflict.keepMine,
+          destructive: true
+        });
+        if (loadTheirs) {
+          setRundown(conflict.document.content);
+          setRundownVersion(conflict.document.version);
+          setRundownMessage(copy.messages.latestRundown);
+        } else {
+          setRundownMessage(t.pages.collaboration.messages.conflictKeptMine);
+        }
+        return;
+      }
+      setError(response.error);
     } catch (err) {
       setError(err instanceof Error ? err.message : copy.errors.save);
     } finally {
@@ -301,7 +326,7 @@ export default function BroadcastSimulationPage() {
                 {participants.map((participant) => (
                   <article className="local-list-card" key={participant.id} role="listitem">
                     <strong>{participant.displayName}</strong>
-                    <span className="badge">{participant.status}</span>
+                    <span className="badge">{t.pages.collaboration.statusLabels[participant.status] ?? participant.status}</span>
                   </article>
                 ))}
               </div>

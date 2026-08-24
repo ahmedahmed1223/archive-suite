@@ -216,7 +216,9 @@ export default function RightsPage() {
               <button type="button" className="button button-primary" onClick={() => setIsFormOpen((open) => !open)}>
                 {isFormOpen ? t.pages.rights.closeForm : t.pages.rights.registerRights}
               </button>
-            ) : null}
+            ) : (
+              <p className="helper-text">{t.pages.rights.noPermission}</p>
+            )}
             <button type="button" className="button button-secondary" onClick={() => void loadRights(days)} disabled={state.status === "loading"}>
               {t.pages.rights.refresh}
             </button>

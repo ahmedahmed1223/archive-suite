@@ -22,7 +22,8 @@ export const collaboration = {
     unspecifiedTime: "an unspecified time",
     lockReleased: "Lock released.",
     noOwnedLock: "You do not have a lock on this resource.",
-    savedVersion: "Version {version} saved"
+    savedVersion: "Version {version} saved",
+    conflictKeptMine: "Save blocked: a newer version exists on the server. Your unsaved edits were kept; reload their version to continue."
   },
   errors: {
     liveCollaboration: "Unable to update live collaboration.",
@@ -36,6 +37,13 @@ export const collaboration = {
     selectResourceToAcquire: "Select a resource before requesting a lock.",
     selectResourceToRelease: "Select a resource before releasing a lock.",
     selectRoomAndResource: "Select a room and resource before saving the draft."
+  },
+  conflict: {
+    title: "Save conflict",
+    message: "{name} saved a newer version of this draft while you were editing. Load their version and discard your unsaved edits, or keep your edits and try saving again later?",
+    someone: "Another participant",
+    loadTheirs: "Load their version",
+    keepMine: "Keep my edits"
   },
   toolbar: {
     syncing: "Syncing",

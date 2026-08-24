@@ -52,5 +52,6 @@ export const rights = {
   allowed: "Allowed",
   blocked: "Blocked",
   requiredFieldsMessage: "Item ID and rights holder are required fields.",
-  enforcementCheckErrorTitle: "Could not check enforcement."
+  enforcementCheckErrorTitle: "Could not check enforcement.",
+  noPermission: "You do not have permission to register rights."
 } as const;
