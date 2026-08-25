@@ -15,6 +15,7 @@ import WorkResumeLink, { type WorkResumeTarget } from "@/components/WorkResumeLi
 import {
   readWorkspacePreferences,
   resolveWorkspaceRoute,
+  updateWorkspacePreferences,
   workspacePreferencesStorageKey,
 } from "@/lib/workspace-preferences";
 
@@ -45,8 +46,28 @@ export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: 
     } catch {
       return null;
     }
-  }, [auth.user?.id, t.shell.workspace]);
+  }, [auth.user?.id, t.shell.workspace, pathname]);
   const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl / Cmd + K");
+
+  // V15-DAILY-004: record the current workspace route so the resume link can
+  // offer the previous one. Only valid, known routes are persisted (per-user
+  // storage key), and never while on the destination surfaces themselves.
+  useEffect(() => {
+    const userId = auth.user?.id;
+    if (!userId) return;
+    const valid = resolveWorkspaceRoute(pathname);
+    if (!valid) return;
+    try {
+      const key = workspacePreferencesStorageKey(userId);
+      const current = readWorkspacePreferences(localStorage.getItem(key));
+      const next = updateWorkspacePreferences(current, valid, {});
+      next.lastWorkspaceRoute = valid;
+      next.lastVisitedAt = new Date().toISOString();
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      // Local preferences are optional.
+    }
+  }, [auth.user?.id, pathname]);
 
   useEffect(() => {
     const binding = getShortcut("commandPalette");

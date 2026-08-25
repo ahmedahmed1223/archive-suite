@@ -16,7 +16,7 @@ import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
-import { buildSearchPlaybackHref, buildActiveSearchFilters } from "@/lib/search";
+import { buildSearchPlaybackHref, buildActiveSearchFilters, resolveSearchSession, describePreviewForScreenReader } from "@/lib/search";
 import ActiveFilterBar from "@/components/ActiveFilterBar";
 import { clearRecentSearches, listRecentSearches, recordRecentSearch } from "@/lib/recent-searches";
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
@@ -328,6 +328,16 @@ function SearchPageContent() {
     if (previewId) return filteredRecords.find((record) => record.id === previewId) || filteredRecords[0] || null;
     return filteredRecords[0] || null;
   }, [filteredRecords, previewId]);
+  // V15-SEARCH-004: a screen-reader summary of the previewed result, announced
+  // via the aside's aria-live region.
+  const previewSummary = useMemo(
+    () => describePreviewForScreenReader(previewRecord, {
+      untitled: searchCopy.untitled,
+      noDescription: searchCopy.noDescription,
+      updatedLabel: searchCopy.updatedLabel,
+    }),
+    [previewRecord, searchCopy.untitled, searchCopy.noDescription, searchCopy.updatedLabel]
+  );
   const localEnrichment = useMemo(
     () => deriveLocalSearchEnrichment(filteredRecords, query, locale),
     [filteredRecords, locale, query]
@@ -356,6 +366,12 @@ function SearchPageContent() {
     if (!name?.trim()) return;
 
     setSavedStatus(searchCopy.savingStatus);
+    // V15-SEARCH-001: a deterministic session key so two equivalent queries
+    // collapse to one saved search and can be restored unambiguously.
+    const sessionKey = resolveSearchSession({
+      q: query, store, type: typeFilter, tag: tagFilter, mode: searchMode,
+      dateFrom, dateTo, descriptionState,
+    });
     const response = await api.createSavedSearch({
       name: name.trim(),
       query: query || undefined,
@@ -363,7 +379,8 @@ function SearchPageContent() {
         viewKind: "search",
         store,
         type: typeFilter,
-        tag: tagFilter
+        tag: tagFilter,
+        session: sessionKey || undefined,
       }
     });
 
@@ -783,6 +800,8 @@ function SearchPageContent() {
           </div>
 
           <aside className="record-preview-rail" aria-label={searchCopy.previewRailAriaLabel} aria-live="polite">
+            {/* V15-SEARCH-004: screen-reader summary announced on preview change. */}
+            <p className="sr-only">{previewSummary ? `${previewSummary.title} — ${previewSummary.descriptionSnippet}` : ""}</p>
             {previewRecord ? (
               <>
                 <div className="panel-section-header">
