@@ -86,5 +86,8 @@ export const searchResults = {
   noPreviewDescription: "اختر نتيجة من القائمة لعرض ملخصها.",
   filterField: "حقل الفلتر",
   filterValue: "قيمة الفلتر",
-  addFilter: "إضافة فلتر"
+  addFilter: "إضافة فلتر",
+  activeFilters: "الفلاتر النشطة",
+  removeFilter: "إزالة الفلتر",
+  resetFilters: "مسح الكل"
 } as const;

@@ -86,5 +86,8 @@ export const searchResults = {
   noPreviewDescription: "Select a result from the list to view its summary.",
   filterField: "Filter field",
   filterValue: "Filter value",
-  addFilter: "Add filter"
+  addFilter: "Add filter",
+  activeFilters: "Active filters",
+  removeFilter: "Remove filter",
+  resetFilters: "Clear all"
 } as const;

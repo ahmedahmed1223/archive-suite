@@ -16,7 +16,8 @@ import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
-import { buildSearchPlaybackHref } from "@/lib/search";
+import { buildSearchPlaybackHref, buildActiveSearchFilters } from "@/lib/search";
+import ActiveFilterBar from "@/components/ActiveFilterBar";
 import { clearRecentSearches, listRecentSearches, recordRecentSearch } from "@/lib/recent-searches";
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
 import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
@@ -561,6 +562,34 @@ function SearchPageContent() {
             {searchCopy.manageSavedSearches}
           </a>
         </div>
+        {/* V15-SEARCH-003: reuse the shared active-filter bar to surface every
+            non-default constraint as a removable chip, with one-tap reset. */}
+        <ActiveFilterBar
+          filters={buildActiveSearchFilters({
+            query, store, typeFilter, tagFilter, searchMode, dateFrom, dateTo, descriptionState,
+            labels: {
+              query: searchCopy.keywords,
+              store: searchCopy.store,
+              type: searchCopy.type,
+              tag: searchCopy.tag,
+              mode: searchCopy.searchModeLabel,
+              from: searchCopy.from,
+              to: searchCopy.to,
+              description: searchCopy.descriptionStateLabel,
+            },
+            handlers: {
+              onQuery: () => setQuery(""),
+              onStore: () => setStore(""),
+              onType: () => setTypeFilter("all"),
+              onTag: () => setTagFilter(""),
+              onMode: () => setSearchMode("keyword"),
+              onDateFrom: () => setDateFrom(""),
+              onDateTo: () => setDateTo(""),
+              onDescription: () => setDescriptionState(""),
+            },
+          })}
+          onReset={resetSearch}
+        />
         {searchMode === "transcript" ? <p className="helper-text">{searchCopy.transcriptModeHint}</p> : null}
         {searchMode === "semantic" && facets?.mode === "keyword-fallback" ? <p className="form-status">{searchCopy.semanticFallbackHint}</p> : null}
         <div className="archive-toolbar-row">
@@ -753,7 +782,7 @@ function SearchPageContent() {
             ) : null}
           </div>
 
-          <aside className="record-preview-rail" aria-label={searchCopy.previewRailAriaLabel}>
+          <aside className="record-preview-rail" aria-label={searchCopy.previewRailAriaLabel} aria-live="polite">
             {previewRecord ? (
               <>
                 <div className="panel-section-header">
