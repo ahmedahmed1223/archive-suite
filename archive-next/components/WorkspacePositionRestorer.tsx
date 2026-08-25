@@ -3,31 +3,34 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import {
-  readWorkspacePreferences,
+  readUserWorkspacePreferences,
   resolveWorkspaceRoute,
   updateWorkspacePreferences,
-  WORKSPACE_PREFERENCES_STORAGE_KEY
+  workspacePreferencesStorageKey,
 } from "@/lib/workspace-preferences";
+import { useAuthSession } from "@/lib/auth-session";
+import { isContextRecordingEnabled } from "@/lib/personal-context";
 
 /** Keeps a per-workspace reading position locally; storage failures are deliberately non-blocking. */
 export default function WorkspacePositionRestorer() {
   const pathname = usePathname();
+  const { user } = useAuthSession();
 
   useEffect(() => {
     const route = resolveWorkspaceRoute(pathname);
-    if (!route) return;
+    if (!route || !user?.id || !isContextRecordingEnabled()) return;
 
     try {
-      const saved = readWorkspacePreferences(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY));
+      const saved = readUserWorkspacePreferences(window.localStorage, user.id);
       const position = saved.routes[route]?.workPosition;
       if (typeof position === "number" && position > 0) {
         requestAnimationFrame(() => window.scrollTo(0, position));
       }
 
       const savePosition = () => {
-        const current = readWorkspacePreferences(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY));
+        const current = readUserWorkspacePreferences(window.localStorage, user.id);
         const next = updateWorkspacePreferences(current, route, { workPosition: Math.round(window.scrollY) });
-        window.localStorage.setItem(WORKSPACE_PREFERENCES_STORAGE_KEY, JSON.stringify(next));
+        window.localStorage.setItem(workspacePreferencesStorageKey(user.id), JSON.stringify(next));
       };
 
       // ponytail: rAF-throttled so it keeps storage fresh as the user scrolls, instead of
@@ -52,7 +55,7 @@ export default function WorkspacePositionRestorer() {
     } catch {
       return;
     }
-  }, [pathname]);
+  }, [pathname, user?.id]);
 
   return null;
 }

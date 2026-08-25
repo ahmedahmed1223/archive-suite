@@ -18,6 +18,7 @@ import {
   updateWorkspacePreferences,
   workspacePreferencesStorageKey,
 } from "@/lib/workspace-preferences";
+import { isContextRecordingEnabled } from "@/lib/personal-context";
 
 export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: PageKey }>) {
   const { locale, t } = useLocale();
@@ -34,6 +35,7 @@ export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: 
   const activeSection = sections[activeLink.section];
   // V15-DAILY-004: derive a resume target from the user-scoped saved workspace.
   const resumeTarget: WorkResumeTarget | null = useMemo(() => {
+    if (!isContextRecordingEnabled()) return null;
     try {
       const raw = localStorage.getItem(workspacePreferencesStorageKey(auth.user?.id ?? ""));
       if (!raw) return null;
@@ -42,7 +44,8 @@ export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: 
       if (!lastRoute) return null;
       const valid = resolveWorkspaceRoute(lastRoute);
       if (!valid) return null;
-      return { pathname: valid, label: t.shell.workspace, visitedAt: prefs.lastVisitedAt ?? new Date().toISOString() };
+      if (!prefs.lastVisitedAt) return null;
+      return { pathname: valid, label: t.shell.workspace, visitedAt: prefs.lastVisitedAt };
     } catch {
       return null;
     }
@@ -54,7 +57,7 @@ export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: 
   // storage key), and never while on the destination surfaces themselves.
   useEffect(() => {
     const userId = auth.user?.id;
-    if (!userId) return;
+    if (!userId || !isContextRecordingEnabled()) return;
     const valid = resolveWorkspaceRoute(pathname);
     if (!valid) return;
     try {
@@ -84,7 +87,7 @@ export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: 
 
   return (
     <div className="workspace-commandbar" data-layout="workspace-commandbar" aria-label={t.shell.workspaceCommandBar}>
-      <WorkResumeLink target={resumeTarget} pathname={pathname} enabled={pathname === "/work-inbox" || pathname === "/"} resumeLabel={t.shell.resumeWork} />
+      <WorkResumeLink target={resumeTarget} pathname={pathname} enabled={isContextRecordingEnabled() && (pathname === "/work-inbox" || pathname === "/")} resumeLabel={t.shell.resumeWork} />
       <div className="workspace-commandbar__context">
         <div className="workspace-commandbar__user" title={userLabel}>
           <UserCircle size={34} aria-hidden="true" />

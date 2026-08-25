@@ -37,4 +37,18 @@ describe("WorkResumeLink", () => {
     );
     expect(container.querySelector(".workspace-resume-link")).toBeNull();
   });
+
+  it("never offers the home page as a resume destination", () => {
+    const { container } = render(
+      <WorkResumeLink target={{ pathname: "/", label: "الرئيسية", visitedAt: new Date().toISOString() }} pathname="/work-inbox" enabled resumeLabel={label} />
+    );
+    expect(container.querySelector(".workspace-resume-link")).toBeNull();
+  });
+
+  it("rejects a missing or invalid visit timestamp", () => {
+    const { container } = render(
+      <WorkResumeLink target={{ pathname: "/archive", label: "الأرشيف", visitedAt: "invalid" }} pathname="/work-inbox" enabled resumeLabel={label} />
+    );
+    expect(container.querySelector(".workspace-resume-link")).toBeNull();
+  });
 });

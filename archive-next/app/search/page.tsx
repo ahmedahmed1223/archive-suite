@@ -16,11 +16,13 @@ import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
-import { buildSearchPlaybackHref, buildActiveSearchFilters, resolveSearchSession, describePreviewForScreenReader } from "@/lib/search";
+import { buildSearchPlaybackHref, buildActiveSearchFilters, resolveSearchSession as serializeSearchSession, describePreviewForScreenReader } from "@/lib/search";
 import ActiveFilterBar from "@/components/ActiveFilterBar";
+import { resolveSearchSession, resetSearchSession } from "@/lib/search-session";
 import { clearRecentSearches, listRecentSearches, recordRecentSearch } from "@/lib/recent-searches";
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
-import { deriveWorkspaceResultCount, readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
+import { deriveWorkspaceResultCount, readUserWorkspacePreferences, updateWorkspacePreferences, workspacePreferencesStorageKey } from "@/lib/workspace-preferences";
+import { isContextRecordingEnabled } from "@/lib/personal-context";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useDisplaySettings } from "@/lib/display-settings-context";
@@ -156,24 +158,24 @@ function SearchPageContent() {
 
   // Per-user filter/view persistence (V1-752); URL params still win on load.
   useEffect(() => {
-    if (authStatus === "loading") return;
+    if (authStatus === "loading" || !userId) return;
     writePersistedViewState<SearchPersistedViewState>(userId, SEARCH_VIEW_STATE_PAGE, { typeFilter, tagFilter, viewMode });
   }, [authStatus, tagFilter, typeFilter, userId, viewMode]);
 
   useEffect(() => {
-    if (!searchParams.toString() && !hasCompletedWorkspacePreferenceRestore.current) return;
+    if (!userId || !isContextRecordingEnabled() || !hasCompletedWorkspacePreferenceRestore.current) return;
     try {
-      const current = readWorkspacePreferences(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY));
+      const current = readUserWorkspacePreferences(window.localStorage, userId);
       const next = updateWorkspacePreferences(current, "/search", {
         view: viewMode,
         previewId: previewId || undefined,
         filters: { q: query, store, type: typeFilter, tag: tagFilter, page: String(currentPage) }
       });
-      window.localStorage.setItem(WORKSPACE_PREFERENCES_STORAGE_KEY, JSON.stringify(next));
+      window.localStorage.setItem(workspacePreferencesStorageKey(userId), JSON.stringify(next));
     } catch {
       // Local preferences are optional.
     }
-  }, [currentPage, previewId, query, searchParams, store, tagFilter, typeFilter, viewMode]);
+  }, [currentPage, previewId, query, store, tagFilter, typeFilter, userId, viewMode]);
 
   const updateParams = useCallback(
     (q: string, s: string, page: number, type: string, tag: string, mode: SearchMode = searchMode) => {
@@ -257,28 +259,37 @@ function SearchPageContent() {
   );
 
   useEffect(() => {
-    if (authStatus === "loading" || searchParams.toString() || hasCompletedWorkspacePreferenceRestore.current) return;
+    if (authStatus === "loading" || hasCompletedWorkspacePreferenceRestore.current) return;
     try {
-      const saved = readWorkspacePreferences(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY)).routes["/search"];
-      // Per-user override (V1-752): a user-scoped type/tag/view choice takes
-      // precedence over the route-scoped (shared-browser) preference above.
-      const perUser = readPersistedViewState<SearchPersistedViewState>(userId, SEARCH_VIEW_STATE_PAGE);
-      if (!saved && !perUser.typeFilter && !perUser.tagFilter && !perUser.viewMode) return;
-      const restoredQuery = saved?.filters?.q || "";
-      const restoredStore = saved?.filters?.store || "";
-      const restoredType = perUser.typeFilter || saved?.filters?.type || "all";
-      const restoredTag = perUser.tagFilter || saved?.filters?.tag || "";
-      const restoredPage = Math.max(1, Number(saved?.filters?.page) || 1);
-      const restoredView = perUser.viewMode || saved?.view;
-      if (restoredView === "cards" || restoredView === "list") setViewMode(restoredView);
-      if (saved?.previewId) setPreviewId(saved.previewId);
-      setQuery(restoredQuery);
-      setStore(restoredStore);
-      setTypeFilter(restoredType);
-      setTagFilter(restoredTag);
-      setCurrentPage(restoredPage);
-      if (restoredQuery || restoredStore || restoredType !== "all" || restoredTag) {
-        void search(restoredQuery, restoredStore, restoredPage, restoredType, restoredTag);
+      const contextEnabled = isContextRecordingEnabled();
+      const saved = contextEnabled && userId
+        ? readUserWorkspacePreferences(window.localStorage, userId).routes["/search"]
+        : undefined;
+      const perUser = userId ? readPersistedViewState<SearchPersistedViewState>(userId, SEARCH_VIEW_STATE_PAGE) : {};
+      const session = resolveSearchSession({
+        url: searchParams.toString(),
+        persisted: {
+          q: saved?.filters?.q,
+          store: saved?.filters?.store,
+          type: perUser.typeFilter || saved?.filters?.type,
+          tag: perUser.tagFilter || saved?.filters?.tag,
+          view: perUser.viewMode || (saved?.view === "cards" || saved?.view === "list" ? saved.view : undefined),
+          previewId: saved?.previewId,
+        },
+        isContextRecordingEnabled: contextEnabled,
+      });
+      setQuery(session.q);
+      setStore(session.store);
+      setTypeFilter(session.type);
+      setTagFilter(session.tag);
+      setDateFrom(session.dateFrom);
+      setDateTo(session.dateTo);
+      setDescriptionState(session.descriptionState);
+      setSearchMode(session.mode);
+      setViewMode(session.view);
+      setPreviewId(session.previewId);
+      if (session.q || session.store || session.type !== "all" || session.tag) {
+        void search(session.q, session.store, 1, session.type, session.tag, session.mode);
       }
     } catch {
       // Local preferences are optional.
@@ -368,7 +379,7 @@ function SearchPageContent() {
     setSavedStatus(searchCopy.savingStatus);
     // V15-SEARCH-001: a deterministic session key so two equivalent queries
     // collapse to one saved search and can be restored unambiguously.
-    const sessionKey = resolveSearchSession({
+    const sessionKey = serializeSearchSession({
       q: query, store, type: typeFilter, tag: tagFilter, mode: searchMode,
       dateFrom, dateTo, descriptionState,
     });
@@ -440,19 +451,23 @@ function SearchPageContent() {
   };
 
   const resetSearch = () => {
-    setQuery("");
-    setStore("");
-    setTypeFilter("all");
-    setTagFilter("");
-    setDateFrom("");
-    setDateTo("");
-    setDescriptionState("");
+    const reset = resetSearchSession({
+      q: query, store, type: typeFilter, tag: tagFilter, mode: searchMode,
+      dateFrom, dateTo, descriptionState, view: viewMode, density: "comfortable", previewId,
+    });
+    setQuery(reset.q);
+    setStore(reset.store);
+    setTypeFilter(reset.type);
+    setTagFilter(reset.tag);
+    setDateFrom(reset.dateFrom);
+    setDateTo(reset.dateTo);
+    setDescriptionState(reset.descriptionState);
     setCurrentPage(1);
     setPreviewId(null);
     setState({ status: "idle" });
     setAllRecords([]);
-    setSearchMode("keyword");
-    updateParams("", "", 1, "all", "", "keyword");
+    setSearchMode(reset.mode);
+    updateParams("", "", 1, "all", "", reset.mode);
   };
 
   const renderRecord = (record: ArchiveRecord) => {

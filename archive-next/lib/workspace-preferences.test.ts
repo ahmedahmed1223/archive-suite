@@ -3,9 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   deriveWorkspaceResultCount,
   readWorkspacePreferences,
+  WORKSPACE_PREFERENCES_STORAGE_KEY,
   resolveWorkspaceRoute,
   updateWorkspacePreferences,
   workspacePreferencesStorageKey,
+  readUserWorkspacePreferences,
+  clearUserWorkspacePreferences,
 } from "./workspace-preferences";
 
 describe("workspace preferences", () => {
@@ -118,5 +121,37 @@ describe("per-user workspace preferences (v3)", () => {
     }));
     expect(result.lastVisitedAt).toBe("2026-08-24T10:00:00.000Z");
   });
-});
 
+  it("migrates the unscoped workspace only once to the first authenticated user", () => {
+    const storage = new Map<string, string>();
+    storage.set(WORKSPACE_PREFERENCES_STORAGE_KEY, JSON.stringify({
+      version: 2,
+      routes: { "/work-inbox": { filters: { source: "review" } } },
+    }));
+    const localStorage = {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    };
+
+    expect(readUserWorkspacePreferences(localStorage, "first").routes["/work-inbox"]?.filters).toEqual({ source: "review" });
+    expect(storage.has(WORKSPACE_PREFERENCES_STORAGE_KEY)).toBe(false);
+    expect(readUserWorkspacePreferences(localStorage, "second").routes).toEqual({});
+  });
+
+  it("clears only the selected user's personal workspace context", () => {
+    const storage = new Map<string, string>();
+    storage.set(workspacePreferencesStorageKey("first"), JSON.stringify({ version: 3, routes: { "/search": { filters: { q: "private" } } } }));
+    storage.set(workspacePreferencesStorageKey("second"), JSON.stringify({ version: 3, routes: { "/search": { filters: { q: "keep" } } } }));
+    const localStorage = {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    };
+
+    clearUserWorkspacePreferences(localStorage, "first");
+
+    expect(storage.has(workspacePreferencesStorageKey("first"))).toBe(false);
+    expect(readUserWorkspacePreferences(localStorage, "second").routes["/search"]?.filters).toEqual({ q: "keep" });
+  });
+});

@@ -35,7 +35,7 @@ export default function WorkResumeLink({
     return Number.isNaN(age) || age > DAY_MS;
   }, [target]);
 
-  if (!enabled || !target || isStale || target.pathname === pathname) {
+  if (!enabled || !target || isStale || target.pathname === "/" || target.pathname === pathname) {
     return null;
   }
 

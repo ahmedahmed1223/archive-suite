@@ -47,6 +47,12 @@ export interface WorkspaceResultCount {
   label: string;
 }
 
+export interface WorkspacePreferenceStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
 const validViews: WorkspaceView[] = ["grid", "gallery", "compact", "list", "details", "cards", "table", "split"];
 const validDensities: WorkspaceDensity[] = ["compact", "comfortable", "large"];
 
@@ -131,10 +137,47 @@ export function readWorkspacePreferences(raw: string | null | undefined): Worksp
       !Number.isNaN(Date.parse(parsed.lastVisitedAt))
         ? parsed.lastVisitedAt
         : undefined;
-    return { version: WORKSPACE_PREFERENCES_VERSION, routes, ...(lastVisitedAt ? { lastVisitedAt } : {}) };
+    const lastWorkspaceRoute = isRoute(parsed.lastWorkspaceRoute) ? parsed.lastWorkspaceRoute : undefined;
+    return {
+      version: WORKSPACE_PREFERENCES_VERSION,
+      routes,
+      ...(lastVisitedAt ? { lastVisitedAt } : {}),
+      ...(lastWorkspaceRoute ? { lastWorkspaceRoute } : {}),
+    };
   } catch {
     return empty;
   }
+}
+
+/**
+ * Restores preferences from a user-scoped key.  The legacy unscoped payload is
+ * moved only after its scoped replacement was written successfully, preventing
+ * a second account in the same browser from receiving another user's context.
+ */
+export function readUserWorkspacePreferences(
+  storage: WorkspacePreferenceStorage,
+  userId: string,
+): WorkspacePreferences {
+  const scopedKey = workspacePreferencesStorageKey(userId);
+  const scopedRaw = storage.getItem(scopedKey);
+  if (scopedRaw) return readWorkspacePreferences(scopedRaw);
+
+  const legacyRaw = storage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY);
+  if (!legacyRaw || scopedKey === WORKSPACE_PREFERENCES_STORAGE_KEY) return readWorkspacePreferences(null);
+
+  const migrated = readWorkspacePreferences(legacyRaw);
+  try {
+    storage.setItem(scopedKey, JSON.stringify(migrated));
+    storage.removeItem(WORKSPACE_PREFERENCES_STORAGE_KEY);
+  } catch {
+    // Keep the legacy value intact when storage is unavailable or full.
+  }
+  return migrated;
+}
+
+export function clearUserWorkspacePreferences(storage: WorkspacePreferenceStorage, userId: string): void {
+  const key = workspacePreferencesStorageKey(userId);
+  if (key !== WORKSPACE_PREFERENCES_STORAGE_KEY) storage.removeItem(key);
 }
 
 export function updateWorkspacePreferences(
@@ -143,9 +186,14 @@ export function updateWorkspacePreferences(
   patch: WorkspaceRoutePreferences
 ): WorkspacePreferences {
   const nextRoute = cleanRoutePreferences({ ...current.routes[route], ...patch });
+  const routes = { ...current.routes };
+  if (nextRoute) routes[route] = nextRoute;
+  else delete routes[route];
   return {
     version: WORKSPACE_PREFERENCES_VERSION,
-    routes: { ...current.routes, ...(nextRoute ? { [route]: nextRoute } : {}) }
+    routes,
+    ...(current.lastVisitedAt ? { lastVisitedAt: current.lastVisitedAt } : {}),
+    ...(current.lastWorkspaceRoute ? { lastWorkspaceRoute: current.lastWorkspaceRoute } : {}),
   };
 }
 

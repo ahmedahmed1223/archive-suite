@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
@@ -9,6 +9,9 @@ import { sortWorkInboxItems, groupWorkInboxItems } from "@/lib/work-inbox";
 import { formatDate } from "@/lib/record-utils";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { useAuthSession } from "@/lib/auth-session";
+import { isContextRecordingEnabled } from "@/lib/personal-context";
+import { readUserWorkspacePreferences, updateWorkspacePreferences, workspacePreferencesStorageKey } from "@/lib/workspace-preferences";
 
 const PAGE_LIMIT = 20;
 
@@ -23,10 +26,12 @@ const FILTER_VALUES: FilterValue[] = ["all", "task", "review", "rights", "notifi
 
 export default function WorkInboxPage() {
   const { locale, t } = useLocale();
+  const { user } = useAuthSession();
   const copy = t.pages.workInbox;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<WorkInboxState>({ status: "loading" });
   const [filter, setFilter] = useState<FilterValue>("all");
+  const isFilterRestored = useRef(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // ponytail: the UI always fetches every type and filters the loaded page
@@ -46,6 +51,42 @@ export default function WorkInboxPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!user?.id || isFilterRestored.current) return;
+    try {
+      if (!isContextRecordingEnabled()) {
+        const key = workspacePreferencesStorageKey(user.id);
+        const scoped = localStorage.getItem(key);
+        if (scoped) {
+          const saved = readUserWorkspacePreferences(localStorage, user.id);
+          const withoutInboxContext = updateWorkspacePreferences(saved, "/work-inbox", { filters: {} });
+          localStorage.setItem(key, JSON.stringify(withoutInboxContext));
+        }
+      } else {
+        const saved = readUserWorkspacePreferences(localStorage, user.id);
+        const source = saved.routes["/work-inbox"]?.filters?.source;
+        if (source && FILTER_VALUES.includes(source as FilterValue)) setFilter(source as FilterValue);
+      }
+    } catch {
+      // Context is optional; the inbox remains usable without browser storage.
+    } finally {
+      isFilterRestored.current = true;
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !isFilterRestored.current || !isContextRecordingEnabled()) return;
+    try {
+      const saved = readUserWorkspacePreferences(localStorage, user.id);
+      const next = updateWorkspacePreferences(saved, "/work-inbox", {
+        filters: filter === "all" ? {} : { source: filter },
+      });
+      localStorage.setItem(workspacePreferencesStorageKey(user.id), JSON.stringify(next));
+    } catch {
+      // Context is optional; the inbox remains usable without browser storage.
+    }
+  }, [filter, user?.id]);
 
   const loadMore = useCallback(async () => {
     if (state.status !== "ready" || !state.pagination.hasMore || loadingMore) return;
@@ -96,6 +137,7 @@ export default function WorkInboxPage() {
               {copy.filters[value].replace("{count}", String(filterCount[value]))}
             </button>
           ))}
+          {filter !== "all" ? <button className="button button-secondary button-sm" type="button" onClick={() => setFilter("all")}>{copy.filters.clear}</button> : null}
         </div>
       </PageToolbar>
 

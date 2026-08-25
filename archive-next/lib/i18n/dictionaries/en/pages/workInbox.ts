@@ -13,6 +13,7 @@ export const workInbox = {
     review: "Reviews · {count}",
     rights: "Rights · {count}",
     notification: "Notifications · {count}",
+    clear: "Clear filter",
   },
   types: {
     task: "Task",

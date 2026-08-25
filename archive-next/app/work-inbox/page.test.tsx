@@ -6,6 +6,7 @@ import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import type { WorkInboxCounts, WorkInboxItem } from "@/lib/archive-api";
 
 const workInbox = vi.fn();
+let contextRecordingEnabled = true;
 
 vi.mock("@/lib/archive-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
@@ -18,6 +19,8 @@ vi.mock("@/components/PageToolbar", () => ({
   ),
 }));
 vi.mock("@/components/EmptyState", () => ({ default: ({ title }: { title: string }) => <p>{title}</p> }));
+vi.mock("@/lib/auth-session", () => ({ useAuthSession: () => ({ user: { id: "user-1" }, status: "authenticated" }) }));
+vi.mock("@/lib/personal-context", () => ({ isContextRecordingEnabled: () => contextRecordingEnabled }));
 
 import WorkInboxPage from "./page";
 
@@ -49,6 +52,8 @@ function makeCounts(overrides: Partial<WorkInboxCounts> = {}): WorkInboxCounts {
 afterEach(cleanup);
 beforeEach(() => {
   workInbox.mockReset();
+  contextRecordingEnabled = true;
+  window.localStorage.clear();
 });
 
 test("renders aggregated items with their source-type badge and links back to the real record", async () => {
@@ -129,4 +134,64 @@ test("shows an error state with a retry action when the request fails", async ()
 
   expect(await screen.findByText("Unable to load the work inbox")).toBeTruthy();
   expect(screen.getByText("network down")).toBeTruthy();
+});
+
+test("restores and persists the user-scoped inbox source filter without another fetch", async () => {
+  window.localStorage.setItem("masar.workspace-preferences:user-1", JSON.stringify({
+    version: 3,
+    routes: { "/work-inbox": { filters: { source: "review" } } },
+  }));
+  workInbox.mockResolvedValue({
+    ok: true,
+    items: [makeItem({ id: "task:1", title: "Task" }), makeItem({ id: "review:1", type: "review", title: "Review" })],
+    pagination: { total: 2, page: 1, limit: 20, hasMore: false },
+    counts: makeCounts({ task: 1, review: 1 }),
+  });
+
+  renderPage();
+
+  expect(await screen.findByRole("heading", { name: "Review", level: 3 })).toBeTruthy();
+  expect(screen.queryByRole("heading", { name: "Task", level: 3 })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: /Tasks/ }));
+  await screen.findByRole("heading", { name: "Task", level: 3 });
+
+  expect(workInbox).toHaveBeenCalledTimes(1);
+  const saved = JSON.parse(window.localStorage.getItem("masar.workspace-preferences:user-1") || "{}");
+  expect(saved.routes["/work-inbox"].filters.source).toBe("task");
+});
+
+test("does not restore or retain the inbox filter when personal-context recording is disabled", async () => {
+  contextRecordingEnabled = false;
+  window.localStorage.setItem("masar.workspace-preferences:user-1", JSON.stringify({
+    version: 3,
+    routes: { "/work-inbox": { filters: { source: "review" } } },
+  }));
+  workInbox.mockResolvedValue({
+    ok: true,
+    items: [makeItem({ id: "task:1", title: "Task" }), makeItem({ id: "review:1", type: "review", title: "Review" })],
+    pagination: { total: 2, page: 1, limit: 20, hasMore: false },
+    counts: makeCounts({ task: 1, review: 1 }),
+  });
+
+  renderPage();
+
+  await screen.findByRole("heading", { name: "Task", level: 3 });
+  expect(screen.getByRole("heading", { name: "Review", level: 3 })).toBeTruthy();
+  const saved = JSON.parse(window.localStorage.getItem("masar.workspace-preferences:user-1") || "{}");
+  expect(saved.routes["/work-inbox"]?.filters).toBeUndefined();
+});
+
+test("does not migrate an unscoped inbox context while personal-context recording is disabled", async () => {
+  contextRecordingEnabled = false;
+  window.localStorage.setItem("masar.workspace-preferences", JSON.stringify({
+    version: 2,
+    routes: { "/work-inbox": { filters: { source: "review" } } },
+  }));
+  workInbox.mockResolvedValue({ ok: true, items: [], pagination: { total: 0, page: 1, limit: 20, hasMore: false }, counts: makeCounts() });
+
+  renderPage();
+  await screen.findByText("Nothing here right now.");
+
+  expect(window.localStorage.getItem("masar.workspace-preferences:user-1")).toBeNull();
+  expect(window.localStorage.getItem("masar.workspace-preferences")).not.toBeNull();
 });

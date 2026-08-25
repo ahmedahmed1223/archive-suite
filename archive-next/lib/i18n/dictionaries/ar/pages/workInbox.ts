@@ -13,6 +13,7 @@ export const workInbox = {
     review: "المراجعات · {count}",
     rights: "الحقوق · {count}",
     notification: "الإشعارات · {count}",
+    clear: "مسح التصفية",
   },
   types: {
     task: "مهمة",

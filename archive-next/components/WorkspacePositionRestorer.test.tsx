@@ -4,9 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const pathnameMock = vi.fn(() => "/archive");
 vi.mock("next/navigation", () => ({ usePathname: () => pathnameMock() }));
+vi.mock("@/lib/auth-session", () => ({ useAuthSession: () => ({ user: { id: "user-1" } }) }));
+vi.mock("@/lib/personal-context", () => ({ isContextRecordingEnabled: () => true }));
 
 import WorkspacePositionRestorer from "@/components/WorkspacePositionRestorer";
-import { WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
+import { workspacePreferencesStorageKey } from "@/lib/workspace-preferences";
 
 function setScrollY(value: number) {
   Object.defineProperty(window, "scrollY", { value, writable: true, configurable: true });
@@ -36,7 +38,7 @@ describe("WorkspacePositionRestorer", () => {
       fireEvent.scroll(window);
     });
 
-    const stored = JSON.parse(window.localStorage.getItem(WORKSPACE_PREFERENCES_STORAGE_KEY) ?? "{}");
+    const stored = JSON.parse(window.localStorage.getItem(workspacePreferencesStorageKey("user-1")) ?? "{}");
     expect(stored.routes["/archive"].workPosition).toBe(420);
   });
 
