@@ -22,6 +22,7 @@ export const shell = {
   expandAllGroups: "فتح كل المجموعات",
   collapseAllGroups: "طي كل المجموعات",
   workspaceCommandBar: "شريط أوامر مساحة العمل",
+  resumeWork: "متابعة العمل: {name}",
   archiveManager: "مدير الأرشيف",
   workspace: "مساحة العمل",
   currentLocation: "الموقع الحالي",

@@ -125,3 +125,6 @@ docs/performance/runs/
 # source control (docs/acceptance/v1-extended-capabilities.md). The redacted
 # summary that IS committed lives in docs/evidence/<task>/.
 artifacts/
+
+# stray error log
+live-final.err

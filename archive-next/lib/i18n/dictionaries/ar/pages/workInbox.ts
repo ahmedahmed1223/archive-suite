@@ -33,5 +33,11 @@ export const workInbox = {
     noDue: "بلا موعد استحقاق",
     open: "فتح",
   },
+  groups: {
+    overdue: "متأخر",
+    today: "اليوم",
+    upcoming: "قادم",
+    undated: "بلا موعد",
+  },
   loadMore: "تحميل المزيد",
 } as const;

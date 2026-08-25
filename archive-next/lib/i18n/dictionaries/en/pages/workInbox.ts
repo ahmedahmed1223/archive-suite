@@ -33,5 +33,11 @@ export const workInbox = {
     noDue: "No due date",
     open: "Open",
   },
+  groups: {
+    overdue: "Overdue",
+    today: "Today",
+    upcoming: "Upcoming",
+    undated: "No date",
+  },
   loadMore: "Load more",
 } as const;

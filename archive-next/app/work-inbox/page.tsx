@@ -5,7 +5,7 @@ import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import { createArchiveApiClient, type PaginationMeta, type WorkInboxCounts, type WorkInboxItem, type WorkInboxItemType } from "@/lib/archive-api";
-import { sortWorkInboxItems } from "@/lib/work-inbox";
+import { sortWorkInboxItems, groupWorkInboxItems } from "@/lib/work-inbox";
 import { formatDate } from "@/lib/record-utils";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
@@ -65,6 +65,14 @@ export default function WorkInboxPage() {
   // V14-UX-003: the daily list is ordered by urgency (soonest/overdue due
   // date first) with a stable tiebreak — not by arrival order.
   const visibleItems = sortWorkInboxItems(filter === "all" ? items : items.filter((item) => item.type === filter));
+  // V15-DAILY-003: group the visible items by urgency for a scannable inbox.
+  const groups = groupWorkInboxItems(visibleItems);
+  const groupLabels: Record<string, string> = {
+    overdue: copy.groups.overdue,
+    today: copy.groups.today,
+    upcoming: copy.groups.upcoming,
+    undated: copy.groups.undated,
+  };
 
   const filterCount = useMemo(() => ({ all: total, ...counts }) as Record<FilterValue, number>, [total, counts]);
 
@@ -108,22 +116,29 @@ export default function WorkInboxPage() {
       ) : null}
 
       {state.status === "ready" && visibleItems.length > 0 ? (
-        <section className="dense-grid" aria-label={copy.states.ariaLabel}>
-          {visibleItems.map((item) => (
-            <a className="local-list-card" href={item.href} key={item.id}>
-              <div className="local-list-card__main">
-                <div>
-                  <span className="badge">{copy.types[item.type]}</span>
-                  <h3>{item.title}</h3>
-                </div>
-                <span className="badge">{item.dueAt ? copy.item.due.replace("{date}", formatDate(item.dueAt, "-", locale)) : copy.item.noDue}</span>
+        <div className="work-inbox-groups">
+          {groups.map((group) => (
+            <section key={group.key} aria-label={groupLabels[group.key]}>
+              <h2 className="work-inbox-group-title">{groupLabels[group.key]} <span className="badge">{group.items.length}</span></h2>
+              <div className="dense-grid">
+                {group.items.map((item) => (
+                  <a className="local-list-card" href={item.href} key={item.id}>
+                    <div className="local-list-card__main">
+                      <div>
+                        <span className="badge">{copy.types[item.type]}</span>
+                        <h3>{item.title}</h3>
+                      </div>
+                      <span className="badge">{item.dueAt ? copy.item.due.replace("{date}", formatDate(item.dueAt, "-", locale)) : copy.item.noDue}</span>
+                    </div>
+                    <dl className="mobile-field-list">
+                      <div><dt>{copy.types[item.type]}</dt><dd dir="auto">{item.status}</dd></div>
+                    </dl>
+                  </a>
+                ))}
               </div>
-              <dl className="mobile-field-list">
-                <div><dt>{copy.types[item.type]}</dt><dd dir="auto">{item.status}</dd></div>
-              </dl>
-            </a>
+            </section>
           ))}
-        </section>
+        </div>
       ) : null}
 
       {state.status === "ready" && state.pagination.hasMore ? (

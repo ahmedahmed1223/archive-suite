@@ -3,7 +3,7 @@
 import { Activity, Bell, ChevronLeft, Gauge, Search, UploadCloud, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { openCommandPalette } from "@/components/CommandPalette";
 import ContextualTips from "@/components/ContextualTips";
 import type { PageKey } from "@/lib/contextual-tips";
@@ -11,6 +11,12 @@ import { useAuthSession } from "@/lib/auth-session";
 import { getLocalizedNavigation, isActivePath } from "@/lib/navigation";
 import { getShortcut, formatShortcutDisplay } from "@/lib/keyboard-shortcuts";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import WorkResumeLink, { type WorkResumeTarget } from "@/components/WorkResumeLink";
+import {
+  readWorkspacePreferences,
+  resolveWorkspaceRoute,
+  workspacePreferencesStorageKey,
+} from "@/lib/workspace-preferences";
 
 export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: PageKey }>) {
   const { locale, t } = useLocale();
@@ -25,6 +31,21 @@ export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: 
   const userLabel = auth.user?.name ?? auth.user?.email ?? auth.user?.id ?? t.shell.workspace;
   const activeLink = items.find((link) => isActivePath(pathname, link.href)) ?? items[0];
   const activeSection = sections[activeLink.section];
+  // V15-DAILY-004: derive a resume target from the user-scoped saved workspace.
+  const resumeTarget: WorkResumeTarget | null = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(workspacePreferencesStorageKey(auth.user?.id ?? ""));
+      if (!raw) return null;
+      const prefs = readWorkspacePreferences(raw);
+      const lastRoute = prefs.lastWorkspaceRoute;
+      if (!lastRoute) return null;
+      const valid = resolveWorkspaceRoute(lastRoute);
+      if (!valid) return null;
+      return { pathname: valid, label: t.shell.workspace, visitedAt: prefs.lastVisitedAt ?? new Date().toISOString() };
+    } catch {
+      return null;
+    }
+  }, [auth.user?.id, t.shell.workspace]);
   const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl / Cmd + K");
 
   useEffect(() => {
@@ -42,6 +63,7 @@ export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: 
 
   return (
     <div className="workspace-commandbar" data-layout="workspace-commandbar" aria-label={t.shell.workspaceCommandBar}>
+      <WorkResumeLink target={resumeTarget} pathname={pathname} enabled={pathname === "/work-inbox" || pathname === "/"} resumeLabel={t.shell.resumeWork} />
       <div className="workspace-commandbar__context">
         <div className="workspace-commandbar__user" title={userLabel}>
           <UserCircle size={34} aria-hidden="true" />

@@ -1,9 +1,15 @@
-export const WORKSPACE_PREFERENCES_VERSION = 2;
+export const WORKSPACE_PREFERENCES_VERSION = 3;
 import type { AppLocale } from "@/lib/i18n/types";
 export const WORKSPACE_PREFERENCES_STORAGE_KEY = "masar.workspace-preferences";
 
+export function workspacePreferencesStorageKey(userId: string): string {
+  const safe = String(userId || "").replace(/[^a-zA-Z0-9_-]/g, "");
+  return safe ? `${WORKSPACE_PREFERENCES_STORAGE_KEY}:${safe}` : WORKSPACE_PREFERENCES_STORAGE_KEY;
+}
+
 export const workspaceRoutes = [
   "/",
+  "/work-inbox",
   "/archive",
   "/search",
   "/search/saved",
@@ -30,6 +36,8 @@ export interface WorkspaceRoutePreferences {
 export interface WorkspacePreferences {
   version: typeof WORKSPACE_PREFERENCES_VERSION;
   routes: Partial<Record<WorkspaceRoute, WorkspaceRoutePreferences>>;
+  lastVisitedAt?: string;
+  lastWorkspaceRoute?: string;
 }
 
 export interface WorkspaceResultCount {
@@ -61,9 +69,19 @@ function cleanRoutePreferences(value: unknown): WorkspaceRoutePreferences | unde
   if (typeof value.density === "string" && validDensities.includes(value.density as WorkspaceDensity)) next.density = value.density as WorkspaceDensity;
   if (typeof value.previewId === "string" && value.previewId.trim()) next.previewId = value.previewId;
   if (isRecord(value.filters)) {
+    // V15-DAILY-002: keep only recognised filter keys to avoid persisting junk.
+    const KNOWN_FILTER_KEYS = new Set([
+      "source",
+      "type",
+      "tag",
+      "q",
+      "status",
+      "speaker",
+      "language",
+    ]);
     const filters: Record<string, string> = {};
     for (const [key, filter] of Object.entries(value.filters)) {
-      if (typeof filter === "string") filters[key] = filter;
+      if (typeof filter === "string" && KNOWN_FILTER_KEYS.has(key)) filters[key] = filter;
     }
     if (Object.keys(filters).length) next.filters = filters;
   }
@@ -85,13 +103,35 @@ export function readWorkspacePreferences(raw: string | null | undefined): Worksp
       if (migrated) routes[parsed.route] = migrated;
       return { version: WORKSPACE_PREFERENCES_VERSION, routes };
     }
+    if (parsed.version === 2 && isRecord(parsed.routes)) {
+      // V15-DAILY-002: upgrade unscoped v2 to user-scoped v3 without data loss.
+      for (const [route, preferences] of Object.entries(parsed.routes)) {
+        if (!isRoute(route)) continue;
+        const cleaned = cleanRoutePreferences(preferences);
+        if (cleaned) routes[route] = cleaned;
+      }
+      const lastVisitedAt =
+        typeof parsed.lastVisitedAt === "string" && !Number.isNaN(Date.parse(parsed.lastVisitedAt))
+          ? parsed.lastVisitedAt
+          : undefined;
+      return {
+        version: WORKSPACE_PREFERENCES_VERSION,
+        routes,
+        ...(lastVisitedAt ? { lastVisitedAt } : {}),
+      };
+    }
     if (parsed.version !== WORKSPACE_PREFERENCES_VERSION || !isRecord(parsed.routes)) return empty;
     for (const [route, preferences] of Object.entries(parsed.routes)) {
       if (!isRoute(route)) continue;
       const cleaned = cleanRoutePreferences(preferences);
       if (cleaned) routes[route] = cleaned;
     }
-    return { version: WORKSPACE_PREFERENCES_VERSION, routes };
+    const lastVisitedAt =
+      typeof parsed.lastVisitedAt === "string" &&
+      !Number.isNaN(Date.parse(parsed.lastVisitedAt))
+        ? parsed.lastVisitedAt
+        : undefined;
+    return { version: WORKSPACE_PREFERENCES_VERSION, routes, ...(lastVisitedAt ? { lastVisitedAt } : {}) };
   } catch {
     return empty;
   }

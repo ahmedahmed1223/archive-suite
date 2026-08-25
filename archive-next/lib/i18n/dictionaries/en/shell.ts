@@ -25,6 +25,7 @@ export const shell = {
   expandAllGroups: "Expand all groups",
   collapseAllGroups: "Collapse all groups",
   workspaceCommandBar: "Workspace command bar",
+  resumeWork: "Resume work: {name}",
   archiveManager: "Archive manager",
   workspace: "Workspace",
   currentLocation: "Current location",

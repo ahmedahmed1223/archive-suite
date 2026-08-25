@@ -4,7 +4,8 @@ import {
   deriveWorkspaceResultCount,
   readWorkspacePreferences,
   resolveWorkspaceRoute,
-  updateWorkspacePreferences
+  updateWorkspacePreferences,
+  workspacePreferencesStorageKey,
 } from "./workspace-preferences";
 
 describe("workspace preferences", () => {
@@ -75,3 +76,47 @@ describe("workspace preferences", () => {
     expect(deriveWorkspaceResultCount({ total: 27, page: 2, pageSize: 10, filtered: 13 }, "en").label).toBe("Showing 3 of 13 results");
   });
 });
+
+// V15-DAILY-002: per-user (v3) storage key + safe migration of unscoped v1/v2 payloads.
+describe("per-user workspace preferences (v3)", () => {
+  it("derives a user-scoped storage key", () => {
+    expect(workspacePreferencesStorageKey("user-42")).toBe("masar.workspace-preferences:user-42");
+  });
+
+  it("migrates unscoped v2 payload without data loss and tags v3", () => {
+    const migrated = readWorkspacePreferences(JSON.stringify({
+      version: 2,
+      routes: { "/archive": { view: "grid", workPosition: 18 } },
+    }));
+    expect(migrated.version).toBe(3);
+    expect(migrated.routes["/archive"]).toEqual({ view: "grid", workPosition: 18 });
+  });
+
+  it("rejects malformed timestamps", () => {
+    const result = readWorkspacePreferences(JSON.stringify({
+      version: 3,
+      routes: { "/archive": { view: "grid" } },
+      lastVisitedAt: "not-a-date",
+    }));
+    expect(result.lastVisitedAt).toBeUndefined();
+  });
+
+  it("accepts only known inbox filters in v3", () => {
+    const result = readWorkspacePreferences(JSON.stringify({
+      version: 3,
+      routes: { "/work-inbox": { filters: { source: "review", bogus: "x" } } },
+    }));
+    // unknown filter keys are dropped by the cleaner
+    expect(result.routes["/work-inbox"]?.filters).toEqual({ source: "review" });
+  });
+
+  it("records a valid ISO lastVisitedAt", () => {
+    const result = readWorkspacePreferences(JSON.stringify({
+      version: 3,
+      routes: {},
+      lastVisitedAt: "2026-08-24T10:00:00.000Z",
+    }));
+    expect(result.lastVisitedAt).toBe("2026-08-24T10:00:00.000Z");
+  });
+});
+
