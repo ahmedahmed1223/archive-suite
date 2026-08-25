@@ -28,6 +28,12 @@ export interface DataTableProps<TData> {
   wrapperClassName?: string;
   /** V1-746: enables a persisted per-user column visibility menu. Omit to keep the table exactly as before. */
   columnVisibilityStorageKey?: string;
+  /**
+   * Pins the last visible column via `.data-table-sticky-end` (see V1-821 in
+   * 04-tables.css) so it stays reachable on a freshly-loaded RTL table that
+   * needs `.scroll-x` on narrow viewports, instead of starting off-screen.
+   */
+  stickyLastColumn?: boolean;
 }
 
 function columnLabel<TData>(column: { id: string; columnDef: ColumnDef<TData, unknown> }): string {
@@ -51,7 +57,8 @@ export default function DataTable<TData>({
   tableClassName,
   virtualized = false,
   wrapperClassName,
-  columnVisibilityStorageKey
+  columnVisibilityStorageKey,
+  stickyLastColumn = false
 }: DataTableProps<TData>) {
   const { t } = useLocale();
   const copy = t.shared.dataTable;
@@ -183,10 +190,11 @@ export default function DataTable<TData>({
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
+              {headerGroup.headers.map((header, headerIndex) => (
                 <th
                   key={header.id}
                   scope="col"
+                  className={stickyLastColumn && headerIndex === headerGroup.headers.length - 1 ? "data-table-sticky-end" : undefined}
                   style={{ width: header.getSize() }}
                   aria-sort={header.column.getIsSorted() === "asc" ? "ascending" : header.column.getIsSorted() === "desc" ? "descending" : undefined}
                 >
@@ -214,13 +222,21 @@ export default function DataTable<TData>({
               <td colSpan={columns.length} style={{ height: paddingTop }} />
             </tr>
           ) : null}
-          {visibleRows.map((row) => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-              ))}
-            </tr>
-          ))}
+          {visibleRows.map((row) => {
+            const cells = row.getVisibleCells();
+            return (
+              <tr key={row.id}>
+                {cells.map((cell, cellIndex) => (
+                  <td
+                    key={cell.id}
+                    className={stickyLastColumn && cellIndex === cells.length - 1 ? "data-table-sticky-end" : undefined}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
           {paddingBottom > 0 ? (
             <tr aria-hidden="true">
               <td colSpan={columns.length} style={{ height: paddingBottom }} />

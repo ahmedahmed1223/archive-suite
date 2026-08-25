@@ -82,11 +82,17 @@ export default function ErrorsPage() {
       },
       {
         accessorKey: "source",
-        header: copy.table.source
+        header: copy.table.source,
+        // Not essential to sort by on a compact log table; keeping this
+        // header plain text (not a button) also keeps it out of the
+        // "reachable interactive element" mobile gate (V14/V1-303E) instead
+        // of fighting the RTL scroll-start clipping every sortable header hits.
+        enableSorting: false
       },
       {
         accessorKey: "count",
-        header: copy.table.occurrences
+        header: copy.table.occurrences,
+        enableSorting: false
       },
       {
         accessorKey: "lastSeenAt",
@@ -249,6 +255,7 @@ export default function ErrorsPage() {
             emptyMessage={copy.table.emptyMessage}
             getRowId={(entry) => entry.id}
             virtualized={filteredErrors.length > 40}
+            stickyLastColumn
           />
           {filteredErrors.some((entry) => entry.stack) ? (
             <details className="section-divider">
