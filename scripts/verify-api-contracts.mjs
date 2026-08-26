@@ -130,6 +130,60 @@ for (const pathName of [
   assert.ok(contract.paths?.[pathName], `API contract should include ${pathName}`);
 }
 
+const montageOperations = {
+  "/montage-projects/{id}/revision": ["post", "saveMontageRevision"],
+  "/montage-projects/{id}/revisions": ["get", "listMontageRevisions"],
+  "/montage-projects/{id}/revisions/{revisionId}/restore": ["post", "restoreMontageRevision"],
+  "/montage-projects/{id}/exports": ["post", "requestMontageExport"],
+  "/montage-projects/{id}/exports/{exportId}": ["get", "getMontageExport"],
+  "/montage-projects/{id}/exports/{exportId}/cancel": ["post", "cancelMontageExport"],
+  "/montage-projects/{id}/exports/{exportId}/retry": ["post", "retryMontageExport"]
+};
+
+for (const [pathName, [method, operationId]] of Object.entries(montageOperations)) {
+  const operation = contract.paths?.[pathName]?.[method];
+  assert.ok(operation, `API contract should include ${method.toUpperCase()} ${pathName}`);
+  assert.equal(operation.operationId, operationId, `${method.toUpperCase()} ${pathName} should keep its generated operationId`);
+  assert.deepEqual(operation.security, [{ bearerAuth: [] }, { cookieAuth: [] }]);
+}
+
+for (const operationId of [
+  "saveMontageRevision",
+  "restoreMontageRevision",
+  "requestMontageExport",
+  "cancelMontageExport",
+  "retryMontageExport"
+]) {
+  const operation = Object.values(contract.paths)
+    .flatMap((pathItem) => Object.values(pathItem))
+    .find((candidate) => candidate?.operationId === operationId);
+  assert.ok(operation?.responses?.["403"], `${operationId} should document resource authorization`);
+  assert.ok(operation?.responses?.["422"], `${operationId} should document validation/state errors`);
+}
+
+assert.equal(
+  contract.paths?.["/montage-projects/{id}/revision"]?.post?.requestBody?.content?.["application/json"]?.schema?.$ref,
+  "#/components/schemas/MontageRevisionSaveRequest"
+);
+assert.equal(
+  contract.paths?.["/montage-projects/{id}/revisions"]?.get?.responses?.["200"]?.content?.["application/json"]?.schema?.$ref,
+  "#/components/schemas/MontageRevisionListResponse"
+);
+assert.equal(
+  contract.paths?.["/montage-projects/{id}/revisions/{revisionId}/restore"]?.post?.requestBody?.content?.["application/json"]?.schema?.$ref,
+  "#/components/schemas/MontageRevisionRestoreRequest"
+);
+assert.equal(
+  contract.paths?.["/montage-projects/{id}/exports"]?.post?.requestBody?.content?.["application/json"]?.schema?.$ref,
+  "#/components/schemas/MontageExportRequest"
+);
+for (const operationId of ["saveMontageRevision", "restoreMontageRevision", "requestMontageExport"]) {
+  const operation = Object.values(contract.paths)
+    .flatMap((pathItem) => Object.values(pathItem))
+    .find((candidate) => candidate?.operationId === operationId);
+  assert.equal(operation?.responses?.["409"]?.$ref, "#/components/responses/MontageRevisionConflict");
+}
+
 for (const schemaName of [
   "OkEnvelope",
   "ErrorEnvelope",

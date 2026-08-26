@@ -279,6 +279,8 @@ class MontageProjectsApiTest extends TestCase
 
     public function test_delete_montage_project(): void
     {
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
+
         $project = MontageProject::query()->create([
             'id' => 'proj-delete',
             'name' => 'To Delete',

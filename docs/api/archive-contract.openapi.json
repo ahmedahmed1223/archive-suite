@@ -10332,6 +10332,426 @@
         }
       }
     },
+    "/montage-projects/{id}/revision": {
+      "post": {
+        "tags": [
+          "Montage"
+        ],
+        "summary": "Save the next immutable montage revision",
+        "operationId": "saveMontageRevision",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MontageRevisionSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "New immutable revision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MontageProjectRevision"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/MontageRevisionConflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/MontageValidation"
+          }
+        }
+      }
+    },
+    "/montage-projects/{id}/revisions": {
+      "get": {
+        "tags": [
+          "Montage"
+        ],
+        "summary": "List accessible montage revision history",
+        "operationId": "listMontageRevisions",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revision history, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MontageRevisionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/montage-projects/{id}/revisions/{revisionId}/restore": {
+      "post": {
+        "tags": [
+          "Montage"
+        ],
+        "summary": "Restore a historical snapshot as a new immutable revision",
+        "operationId": "restoreMontageRevision",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MontageRevisionRestoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "New revision copied from the selected snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MontageProjectRevision"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/MontageRevisionConflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/MontageValidation"
+          }
+        }
+      }
+    },
+    "/montage-projects/{id}/exports": {
+      "post": {
+        "tags": [
+          "Montage"
+        ],
+        "summary": "Request an export of the active montage revision",
+        "operationId": "requestMontageExport",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MontageExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Queued montage export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MontageExportResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/MontageRevisionConflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/MontageValidation"
+          }
+        }
+      }
+    },
+    "/montage-projects/{id}/exports/{exportId}": {
+      "get": {
+        "tags": [
+          "Montage"
+        ],
+        "summary": "Read an accessible montage export",
+        "operationId": "getMontageExport",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Montage export status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MontageExportResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/montage-projects/{id}/exports/{exportId}/cancel": {
+      "post": {
+        "tags": [
+          "Montage"
+        ],
+        "summary": "Cancel a queued or processing montage export",
+        "operationId": "cancelMontageExport",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled montage export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MontageExportResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/MontageExportState"
+          }
+        }
+      }
+    },
+    "/montage-projects/{id}/exports/{exportId}/retry": {
+      "post": {
+        "tags": [
+          "Montage"
+        ],
+        "summary": "Retry a failed montage export as a new export",
+        "operationId": "retryMontageExport",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exportId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New queued retry export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MontageExportResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/MontageExportState"
+          }
+        }
+      }
+    },
     "/public/catalog": {
       "get": {
         "tags": [
@@ -16050,6 +16470,36 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/FileWriteResponse"
+            }
+          }
+        }
+      },
+      "MontageRevisionConflict": {
+        "description": "The supplied revision is stale",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/MontageRevisionConflictError"
+            }
+          }
+        }
+      },
+      "MontageValidation": {
+        "description": "Montage timeline, preset, or request validation failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/MontageValidationError"
+            }
+          }
+        }
+      },
+      "MontageExportState": {
+        "description": "The export state does not allow this operation",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/MontageExportStateError"
             }
           }
         }
@@ -22678,7 +23128,8 @@
           "markers",
           "comments",
           "transitions",
-          "status"
+          "status",
+          "ownerId"
         ],
         "properties": {
           "id": {
@@ -22765,6 +23216,13 @@
               "null"
             ],
             "format": "uuid"
+          },
+          "ownerId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Owning Archive user id; null only for legacy projects created before ownership was introduced."
           }
         }
       },
@@ -30785,6 +31243,70 @@
         },
         "additionalProperties": false
       },
+      "MontageRevisionSaveRequest": {
+        "type": "object",
+        "required": [
+          "expectedRevision",
+          "tracks",
+          "clips"
+        ],
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "clips": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MontageClip"
+            }
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "markers": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "comments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "transitions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "MontageRevisionRestoreRequest": {
+        "type": "object",
+        "required": [
+          "expectedRevision"
+        ],
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
       "MontageProjectRevision": {
         "type": "object",
         "required": [
@@ -30862,6 +31384,133 @@
           }
         },
         "additionalProperties": false
+      },
+      "MontageRevisionSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "revisionNumber",
+          "createdBy",
+          "sourceVersionToken",
+          "clipCount",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revisionNumber": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "sourceVersionToken": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "clipCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MontageRevisionListResponse": {
+        "type": "object",
+        "required": [
+          "projectId",
+          "currentRevision",
+          "revisions"
+        ],
+        "properties": {
+          "projectId": {
+            "type": "string"
+          },
+          "currentRevision": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "revisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MontageRevisionSummary"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "MontageRevisionConflictError": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "code",
+              "currentRevision",
+              "expectedRevision"
+            ],
+            "properties": {
+              "code": {
+                "const": "CONFLICT"
+              },
+              "currentRevision": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "expectedRevision": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      },
+      "MontageValidationError": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "code",
+              "errors"
+            ],
+            "properties": {
+              "code": {
+                "const": "VALIDATION_FAILED"
+              },
+              "errors": {
+                "type": "object",
+                "additionalProperties": {
+                  "oneOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
       },
       "MontageExportRequest": {
         "type": "object",
@@ -30946,6 +31595,35 @@
           }
         },
         "additionalProperties": false
+      },
+      "MontageExportStateError": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ErrorEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "code",
+              "status"
+            ],
+            "properties": {
+              "code": {
+                "const": "VALIDATION_FAILED"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "processing",
+                  "completed",
+                  "failed",
+                  "cancelled"
+                ]
+              }
+            }
+          }
+        ]
       }
     }
   }

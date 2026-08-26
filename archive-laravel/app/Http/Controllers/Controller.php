@@ -12,6 +12,18 @@ use Illuminate\Support\Facades\Gate;
 abstract class Controller
 {
     /**
+     * The Archive API authenticates sessions and API keys into this request
+     * attribute rather than Laravel's web guard. API-key actors carry the
+     * key's capped role, so callers must not fall back to request()->user().
+     */
+    protected function archiveUser(Request $request): ?User
+    {
+        $user = $request->attributes->get('archive_user');
+
+        return $user instanceof User ? $user : null;
+    }
+
+    /**
      * Return a 403 response unless the authenticated archive user is an admin.
      */
     protected function requireAdmin(Request $request): ?JsonResponse
@@ -43,7 +55,7 @@ abstract class Controller
             return null;
         }
 
-        $user = $request->attributes->get('archive_user');
+        $user = $this->archiveUser($request);
 
         if (! $user instanceof User || $itemIds === []) {
             return response()->json(ApiError::envelope('Forbidden.', 403), 403);
@@ -66,7 +78,7 @@ abstract class Controller
 
     private function requireAbility(Request $request, string $ability): ?JsonResponse
     {
-        $user = $request->attributes->get('archive_user');
+        $user = $this->archiveUser($request);
 
         if (! $user instanceof User || Gate::forUser($user)->denies($ability)) {
             return response()->json(ApiError::envelope('Forbidden.', 403), 403);

@@ -1,11 +1,18 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import type { components } from "./generated/archive-api";
+import type { components, operations, paths } from "./generated/archive-api";
 
 type MontageSource = components["schemas"]["MontageSource"];
 type MontageClip = components["schemas"]["MontageClip"];
 type MontageProjectRevision = components["schemas"]["MontageProjectRevision"];
 type MontageExportRequest = components["schemas"]["MontageExportRequest"];
 type MontageExportResponse = components["schemas"]["MontageExportResponse"];
+type SaveMontageRevision = operations["saveMontageRevision"];
+type ListMontageRevisions = operations["listMontageRevisions"];
+type RestoreMontageRevision = operations["restoreMontageRevision"];
+type RequestMontageExport = operations["requestMontageExport"];
+type GetMontageExport = operations["getMontageExport"];
+type CancelMontageExport = operations["cancelMontageExport"];
+type RetryMontageExport = operations["retryMontageExport"];
 
 /**
  * V1.5 operational expansion — Task 1 contract shape tests.
@@ -43,5 +50,15 @@ describe("montage contract shapes (Task 1)", () => {
   it("reports export progress through the documented status union", () => {
     const status: MontageExportResponse["status"] = "queued";
     expect(["queued", "processing", "completed", "failed", "cancelled"]).toContain(status);
+  });
+
+  it("generates every authenticated revision and export operation", () => {
+    expectTypeOf<paths["/montage-projects/{id}/revision"]["post"]>().toEqualTypeOf<SaveMontageRevision>();
+    expectTypeOf<paths["/montage-projects/{id}/revisions"]["get"]>().toEqualTypeOf<ListMontageRevisions>();
+    expectTypeOf<paths["/montage-projects/{id}/revisions/{revisionId}/restore"]["post"]>().toEqualTypeOf<RestoreMontageRevision>();
+    expectTypeOf<paths["/montage-projects/{id}/exports"]["post"]>().toEqualTypeOf<RequestMontageExport>();
+    expectTypeOf<paths["/montage-projects/{id}/exports/{exportId}"]["get"]>().toEqualTypeOf<GetMontageExport>();
+    expectTypeOf<paths["/montage-projects/{id}/exports/{exportId}/cancel"]["post"]>().toEqualTypeOf<CancelMontageExport>();
+    expectTypeOf<paths["/montage-projects/{id}/exports/{exportId}/retry"]["post"]>().toEqualTypeOf<RetryMontageExport>();
   });
 });

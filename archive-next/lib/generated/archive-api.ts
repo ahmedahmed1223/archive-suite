@@ -1503,6 +1503,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/montage-projects/{id}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request an export of the active montage revision */
+        post: operations["requestMontageExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/montage-projects/{id}/exports/{exportId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read an accessible montage export */
+        get: operations["getMontageExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/montage-projects/{id}/exports/{exportId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a queued or processing montage export */
+        post: operations["cancelMontageExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/montage-projects/{id}/exports/{exportId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry a failed montage export as a new export */
+        post: operations["retryMontageExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/montage-projects/{id}/revision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save the next immutable montage revision */
+        post: operations["saveMontageRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/montage-projects/{id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List accessible montage revision history */
+        get: operations["listMontageRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/montage-projects/{id}/revisions/{revisionId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore a historical snapshot as a new immutable revision */
+        post: operations["restoreMontageRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/naming-rules": {
         parameters: {
             query?: never;
@@ -5624,6 +5743,12 @@ export interface components {
             /** @enum {string} */
             status: "queued" | "processing" | "completed" | "failed" | "cancelled";
         };
+        MontageExportStateError: components["schemas"]["ErrorEnvelope"] & {
+            /** @constant */
+            code: "VALIDATION_FAILED";
+            /** @enum {string} */
+            status: "queued" | "processing" | "completed" | "failed" | "cancelled";
+        };
         MontageProject: {
             /** Format: uuid */
             activeRevisionId?: string | null;
@@ -5638,6 +5763,8 @@ export interface components {
             id: string;
             markers: Record<string, never>[];
             name: string;
+            /** @description Owning Archive user id; null only for legacy projects created before ownership was introduced. */
+            ownerId: string | null;
             /** @description Latest revision counter; 0 means no revisions yet. */
             revision?: number;
             /** @enum {string} */
@@ -5671,10 +5798,50 @@ export interface components {
             pagination: components["schemas"]["PaginationMeta"];
             projects: components["schemas"]["MontageProject"][];
         };
+        MontageRevisionConflictError: components["schemas"]["ErrorEnvelope"] & {
+            /** @constant */
+            code: "CONFLICT";
+            currentRevision: number;
+            expectedRevision: number;
+        };
+        MontageRevisionListResponse: {
+            currentRevision: number;
+            projectId: string;
+            revisions: components["schemas"]["MontageRevisionSummary"][];
+        };
+        MontageRevisionRestoreRequest: {
+            expectedRevision: number;
+        };
+        MontageRevisionSaveRequest: {
+            clips: components["schemas"]["MontageClip"][];
+            comments?: Record<string, never>[];
+            effects?: Record<string, never>[];
+            expectedRevision: number;
+            markers?: Record<string, never>[];
+            tracks: Record<string, never>[];
+            transitions?: Record<string, never>[];
+        };
+        MontageRevisionSummary: {
+            clipCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            createdBy: string;
+            /** Format: uuid */
+            id: string;
+            revisionNumber: number;
+            sourceVersionToken: string | null;
+        };
         MontageSource: {
             attachmentId?: string | null;
             recordId: string;
             sourceVersionToken: string;
+        };
+        MontageValidationError: components["schemas"]["ErrorEnvelope"] & {
+            /** @constant */
+            code: "VALIDATION_FAILED";
+            errors: {
+                [key: string]: string | string[];
+            };
         };
         NamingRule: {
             key: string;
@@ -7553,6 +7720,33 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["FileWriteResponse"];
+            };
+        };
+        /** @description The export state does not allow this operation */
+        MontageExportState: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["MontageExportStateError"];
+            };
+        };
+        /** @description The supplied revision is stale */
+        MontageRevisionConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["MontageRevisionConflictError"];
+            };
+        };
+        /** @description Montage timeline, preset, or request validation failed */
+        MontageValidation: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["MontageValidationError"];
             };
         };
         /** @description Success */
@@ -10590,6 +10784,203 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    requestMontageExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MontageExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Queued montage export */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MontageExportResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["MontageRevisionConflict"];
+            422: components["responses"]["MontageValidation"];
+        };
+    };
+    getMontageExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exportId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Montage export status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MontageExportResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    cancelMontageExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exportId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled montage export */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MontageExportResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["MontageExportState"];
+        };
+    };
+    retryMontageExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exportId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description New queued retry export */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MontageExportResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["MontageExportState"];
+        };
+    };
+    saveMontageRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MontageRevisionSaveRequest"];
+            };
+        };
+        responses: {
+            /** @description New immutable revision */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MontageProjectRevision"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["MontageRevisionConflict"];
+            422: components["responses"]["MontageValidation"];
+        };
+    };
+    listMontageRevisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revision history, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MontageRevisionListResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    restoreMontageRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                revisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MontageRevisionRestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description New revision copied from the selected snapshot */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MontageProjectRevision"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["MontageRevisionConflict"];
+            422: components["responses"]["MontageValidation"];
         };
     };
     listNamingRules: {

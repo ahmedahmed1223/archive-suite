@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\MontageExport;
+use App\Models\MontageProject;
 use App\Models\User;
+use App\Policies\MontageExportPolicy;
+use App\Policies\MontageProjectPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,6 +22,9 @@ class AuthServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        Gate::policy(MontageProject::class, MontageProjectPolicy::class);
+        Gate::policy(MontageExport::class, MontageExportPolicy::class);
+
         Gate::define('manage-system', fn (User $user): bool => $user->role === 'admin');
 
         Gate::define('manage-content', fn (User $user): bool => in_array($user->role, ['admin', 'editor'], true));

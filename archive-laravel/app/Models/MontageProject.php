@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MontageProject extends Model
 {
@@ -27,6 +29,9 @@ class MontageProject extends Model
         'comments',
         'transitions',
         'status',
+        'revision',
+        'active_revision_id',
+        'owner_id',
     ];
 
     /**
@@ -45,7 +50,7 @@ class MontageProject extends Model
         ];
     }
 
-    public function revisions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function revisions(): HasMany
     {
         return $this->hasMany(MontageProjectRevision::class, 'montage_project_id');
     }
@@ -55,8 +60,13 @@ class MontageProject extends Model
         return $this->revisions()->orderByDesc('revision_number')->first();
     }
 
-    public function exports(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function exports(): HasMany
     {
         return $this->hasMany(MontageExport::class, 'montage_project_id');
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
     }
 }

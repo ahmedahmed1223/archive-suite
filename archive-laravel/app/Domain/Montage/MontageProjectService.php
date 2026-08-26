@@ -11,8 +11,7 @@ class MontageProjectService
 {
     public function __construct(
         private readonly MontageTimelineValidator $validator,
-    ) {
-    }
+    ) {}
 
     /**
      * Save the next revision of a project inside one transaction. A stale
@@ -51,5 +50,22 @@ class MontageProjectService
 
             return $revision;
         });
+    }
+
+    /** Restore is append-only: copy the historical snapshot into a new revision. */
+    public function restoreRevision(
+        MontageProject $project,
+        MontageProjectRevision $source,
+        int $expectedRevision,
+        User $actor,
+    ): MontageProjectRevision {
+        return $this->saveRevision($project, [
+            'tracks' => $source->tracks ?? [],
+            'clips' => $source->clips ?? [],
+            'effects' => $source->effects ?? [],
+            'markers' => $source->markers ?? [],
+            'comments' => $source->comments ?? [],
+            'transitions' => $source->transitions ?? [],
+        ], $expectedRevision, $actor);
     }
 }

@@ -13,8 +13,8 @@ class MontageRevisionsApiTest extends TestCase
 
     public function test_owner_can_save_a_new_revision(): void
     {
-        $owner = User::factory()->create();
-        $project = MontageProject::factory()->create();
+        $owner = User::factory()->create(['role' => 'editor']);
+        $project = MontageProject::factory()->create(['owner_id' => $owner->id]);
 
         $response = $this->actingAs($owner)
             ->postJson("/api/v1/montage-projects/{$project->id}/revision", [
@@ -30,8 +30,8 @@ class MontageRevisionsApiTest extends TestCase
 
     public function test_stale_revision_returns_current_revision_without_overwriting(): void
     {
-        $owner = User::factory()->create();
-        $project = MontageProject::factory()->create();
+        $owner = User::factory()->create(['role' => 'editor']);
+        $project = MontageProject::factory()->create(['owner_id' => $owner->id]);
         // Bring the project to revision 4 by saving four revisions.
         foreach ([0, 1, 2, 3] as $expected) {
             $this->actingAs($owner)

@@ -7,18 +7,29 @@ use App\Models\MontageProject;
 use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 class MontageProjectsController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $actor = $this->archiveUser($request);
+        if ($actor === null || Gate::forUser($actor)->denies('viewAny', MontageProject::class)) {
+            return response()->json(ApiError::envelope('Forbidden.', 403), 403);
+        }
+
         $status = $request->query('status', 'draft');
         $limit = (int) ($request->query('limit', 50));
         $limit = min(max($limit, 1), 100);
         $page = max((int) $request->query('page', 1), 1);
 
         $paginated = MontageProject::query()
+            ->when($actor->role !== 'admin', fn ($query) => $query->where(
+                fn ($accessible) => $accessible
+                    ->whereNull('owner_id')
+                    ->orWhere('owner_id', $actor->getKey())
+            ))
             ->where('status', $status)
             ->orderByDesc('updated_at')
             ->paginate($limit, ['*'], 'page', $page);
@@ -35,11 +46,16 @@ class MontageProjectsController extends Controller
         ]);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $project = MontageProject::query()->find($id);
 
         if (! $project) {
+            return response()->json(ApiError::envelope('Montage project not found.', 404), 404);
+        }
+
+        $actor = $this->archiveUser($request);
+        if ($actor === null || Gate::forUser($actor)->denies('view', $project)) {
             return response()->json(ApiError::envelope('Montage project not found.', 404), 404);
         }
 
@@ -53,6 +69,11 @@ class MontageProjectsController extends Controller
     {
         if ($denied = $this->requireEditor($request)) {
             return $denied;
+        }
+
+        $actor = $this->archiveUser($request);
+        if ($actor === null || Gate::forUser($actor)->denies('create', MontageProject::class)) {
+            return response()->json(ApiError::envelope('Forbidden.', 403), 403);
         }
 
         $validated = $request->validate([
@@ -77,6 +98,7 @@ class MontageProjectsController extends Controller
             'comments' => $validated['comments'] ?? [],
             'transitions' => $validated['transitions'] ?? [],
             'status' => 'draft',
+            'owner_id' => $actor->getKey(),
         ]);
 
         return response()->json([
@@ -95,6 +117,11 @@ class MontageProjectsController extends Controller
 
         if (! $project) {
             return response()->json(ApiError::envelope('Montage project not found.', 404), 404);
+        }
+
+        $actor = $this->archiveUser($request);
+        if ($actor === null || Gate::forUser($actor)->denies('update', $project)) {
+            return response()->json(ApiError::envelope('Forbidden.', 403), 403);
         }
 
         $validated = $request->validate([
@@ -119,14 +146,15 @@ class MontageProjectsController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) {
-            return $denied;
-        }
-
         $project = MontageProject::query()->find($id);
 
         if (! $project) {
             return response()->json(ApiError::envelope('Montage project not found.', 404), 404);
+        }
+
+        $actor = $this->archiveUser($request);
+        if ($actor === null || Gate::forUser($actor)->denies('delete', $project)) {
+            return response()->json(ApiError::envelope('Forbidden.', 403), 403);
         }
 
         $project->delete();
@@ -150,6 +178,9 @@ class MontageProjectsController extends Controller
             'comments' => $project->comments ?? [],
             'transitions' => $project->transitions ?? [],
             'status' => $project->status,
+            'revision' => (int) $project->revision,
+            'activeRevisionId' => $project->active_revision_id,
+            'ownerId' => $project->owner_id === null ? null : (string) $project->owner_id,
             'createdAt' => $project->created_at?->toISOString(),
             'updatedAt' => $project->updated_at?->toISOString(),
         ];
