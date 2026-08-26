@@ -27,6 +27,8 @@ class MontageExport extends Model
         'montage_project_id',
         'montage_project_revision_id',
         'requested_by',
+        'idempotency_key',
+        'media_job_id',
         'preset',
         'status',
         'progress',

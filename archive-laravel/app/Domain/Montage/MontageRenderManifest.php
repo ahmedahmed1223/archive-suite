@@ -16,8 +16,8 @@ class MontageRenderManifest
     public function __construct(
         public readonly string $revisionId,
         public readonly string $preset,
-        public readonly int $width,
-        public readonly int $height,
+        public readonly ?int $width,
+        public readonly ?int $height,
         public readonly string $videoCodec,
         public readonly string $audioCodec,
         public readonly ?int $videoBitrateKbps,

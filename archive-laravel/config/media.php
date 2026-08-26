@@ -35,6 +35,9 @@ return [
     // dispatch with 429 once a queue (default/gpu) already has this many
     // queued+processing rows, instead of letting the queue grow unbounded.
     'max_queued_jobs_per_queue' => (int) env('MEDIA_MAX_QUEUED_JOBS_PER_QUEUE', 50),
+    // Montage exports need headroom for intermediate segments plus the final
+    // derivative; pre-queue QC refuses work that would fill the local volume.
+    'montage_min_free_bytes' => (int) env('MEDIA_MONTAGE_MIN_FREE_BYTES', 100 * 1024 * 1024),
 
     // Base URL of the ocr-service microservice (infra/ocr-service);
     // POST {base}/ocr, multipart file upload, returns { text, lines, lang }.

@@ -656,6 +656,10 @@ class RealMediaProcessor implements MediaProcessor
         $segments = [];
 
         foreach ($clips as $index => $clip) {
+            $this->updateProgress($job, [
+                'progress_stage' => "montage_segment_{$index}_".count($clips),
+                'progress_percent' => 10 + (int) (($index / max(1, count($clips))) * 75),
+            ]);
             $path = is_array($clip) ? ($clip['path'] ?? null) : null;
             if (! is_string($path) || trim($path) === '') {
                 throw new \RuntimeException('Montage export clip is missing a source path.');
@@ -714,6 +718,11 @@ class RealMediaProcessor implements MediaProcessor
         if ($concatResult['exitCode'] !== 0) {
             throw new \RuntimeException("ffmpeg montage concat failed: {$concatResult['stderr']}");
         }
+
+        $this->updateProgress($job, [
+            'progress_stage' => 'montage_complete',
+            'progress_percent' => 95,
+        ]);
 
         return [
             [
