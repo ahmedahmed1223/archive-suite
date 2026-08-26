@@ -10,6 +10,15 @@ class MontageExport extends Model
 
     protected $keyType = 'string';
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $export): void {
+            if ($export->id === null) {
+                $export->id = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+    }
+
     /**
      * @var list<string>
      */

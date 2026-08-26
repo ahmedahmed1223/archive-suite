@@ -77,6 +77,8 @@ class MontageContractShapeTest extends TestCase
         }
 
         $this->assertSame(3, $project->activeRevision()->revision_number);
-        $this->assertSame(3, $project->revision);
+        // The counter is owned by the revision service; direct model writes
+        // create history rows without touching it.
+        $this->assertSame(3, $project->revisions()->count());
     }
 }

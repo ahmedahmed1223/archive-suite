@@ -19,6 +19,23 @@ class MontageProjectRevision extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $revision): void {
+            if ($revision->id === null) {
+                $revision->id = (string) \Illuminate\Support\Str::uuid();
+            }
+            // Pin the source version from the first clip that carries one, so
+            // exports can verify media has not changed underneath a revision.
+            if ($revision->source_version_token === null && is_array($revision->clips)) {
+                foreach ($revision->clips as $clip) {
+                    $token = $clip['source']['sourceVersionToken'] ?? null;
+                    if (is_string($token) && $token !== '') {
+                        $revision->source_version_token = $token;
+                        break;
+                    }
+                }
+            }
+        });
+
         static::updating(function (): void {
             throw new LogicException('Montage revisions are immutable.');
         });
