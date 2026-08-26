@@ -41,4 +41,19 @@ class MontageProject extends Model
             'updated_at' => 'datetime',
         ];
     }
+
+    public function revisions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MontageProjectRevision::class, 'montage_project_id');
+    }
+
+    public function activeRevision(): ?MontageProjectRevision
+    {
+        return $this->revisions()->orderByDesc('revision_number')->first();
+    }
+
+    public function exports(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MontageExport::class, 'montage_project_id');
+    }
 }

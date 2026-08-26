@@ -5594,7 +5594,39 @@ export interface components {
         MetadataTemplateVersionsResponse: components["schemas"]["OkEnvelope"] & {
             versions: components["schemas"]["MetadataTemplateVersion"][];
         };
+        MontageClip: {
+            /** Format: uuid */
+            id: string;
+            source: components["schemas"]["MontageSource"];
+            sourceIn: number;
+            sourceOut: number;
+            timelineStart: number;
+            trackId: string;
+        };
+        MontageExportRequest: {
+            expectedRevision: number;
+            /** @enum {string} */
+            preset: "web-1080p" | "web-4k" | "archive-master";
+        };
+        MontageExportResponse: {
+            checksum?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            error?: string | null;
+            expectedRevision?: number;
+            /** Format: uuid */
+            id: string;
+            preset: string;
+            progress: number;
+            projectId: string;
+            /** Format: uuid */
+            revisionId: string;
+            /** @enum {string} */
+            status: "queued" | "processing" | "completed" | "failed" | "cancelled";
+        };
         MontageProject: {
+            /** Format: uuid */
+            activeRevisionId?: string | null;
             /** @description Timeline clips; item shape is client-defined and stored as-is. */
             clips: Record<string, never>[];
             comments: Record<string, never>[];
@@ -5606,6 +5638,8 @@ export interface components {
             id: string;
             markers: Record<string, never>[];
             name: string;
+            /** @description Latest revision counter; 0 means no revisions yet. */
+            revision?: number;
             /** @enum {string} */
             status: "draft" | "finalized" | "archived";
             /** @description Timeline tracks; item shape is client-defined and stored as-is. */
@@ -5617,9 +5651,30 @@ export interface components {
         MontageProjectResponse: components["schemas"]["OkEnvelope"] & {
             project: components["schemas"]["MontageProject"];
         };
+        MontageProjectRevision: {
+            clips: components["schemas"]["MontageClip"][];
+            comments?: Record<string, never>[];
+            /** Format: date-time */
+            createdAt: string;
+            createdBy?: string | null;
+            effects?: Record<string, never>[];
+            /** Format: uuid */
+            id: string;
+            markers?: Record<string, never>[];
+            projectId: string;
+            revisionNumber: number;
+            sourceVersionToken?: string | null;
+            tracks: Record<string, never>[];
+            transitions?: Record<string, never>[];
+        };
         MontageProjectsResponse: components["schemas"]["OkEnvelope"] & {
             pagination: components["schemas"]["PaginationMeta"];
             projects: components["schemas"]["MontageProject"][];
+        };
+        MontageSource: {
+            attachmentId?: string | null;
+            recordId: string;
+            sourceVersionToken: string;
         };
         NamingRule: {
             key: string;
