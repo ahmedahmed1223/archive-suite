@@ -57,7 +57,7 @@ function makeState(): EditorState {
 }
 
 const materials: MaterialBinItem[] = [
-  { id: "m1", title: "Clip A", recordId: "r1", kind: "video" },
+  { id: "m1", name: "Clip A", durationSeconds: 10, source: { recordId: "r1", sourceVersionToken: "sha256:a" } },
 ];
 
 afterEach(cleanup);

@@ -93,12 +93,14 @@ exports[`Montage component visual baselines (T10 step 3 stand-in) > MediaBin pop
         <span
           class="media-bin__name"
           dir="auto"
-        />
+        >
+          Clip A
+        </span>
         <span
           class="media-bin__duration"
           dir="ltr"
         >
-          NaN
+          10
           s
         </span>
       </button>
