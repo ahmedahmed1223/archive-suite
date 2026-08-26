@@ -1,0 +1,341 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Montage component visual baselines (T10 step 3 stand-in) > ExportDrawer (QC not ready) snapshot 1`] = `
+<aside
+  aria-label="Export drawer"
+  class="export-drawer"
+>
+  <h2>
+    Export project
+  </h2>
+  <div
+    aria-label="Choose export quality"
+    role="group"
+  >
+    <label
+      class="export-drawer__preset"
+    >
+      <input
+        checked=""
+        name="export-preset"
+        type="radio"
+        value="web-1080p"
+      />
+      <span
+        dir="auto"
+      >
+        Web 1080p
+      </span>
+    </label>
+    <label
+      class="export-drawer__preset"
+    >
+      <input
+        name="export-preset"
+        type="radio"
+        value="web-4k"
+      />
+      <span
+        dir="auto"
+      >
+        Web 4K
+      </span>
+    </label>
+    <label
+      class="export-drawer__preset"
+    >
+      <input
+        name="export-preset"
+        type="radio"
+        value="archive-master"
+      />
+      <span
+        dir="auto"
+      >
+        Archive master
+      </span>
+    </label>
+  </div>
+  <button
+    class="export-drawer__qc"
+    type="button"
+  >
+    Check project
+  </button>
+  <button
+    class="export-drawer__start"
+    disabled=""
+    title="QC must pass first"
+    type="button"
+  >
+    Start export
+  </button>
+</aside>
+`;
+
+exports[`Montage component visual baselines (T10 step 3 stand-in) > MediaBin populated snapshot 1`] = `
+<section
+  aria-label="Material bin"
+  class="media-bin"
+>
+  <ul
+    aria-label="Available materials"
+    class="media-bin__list"
+    role="listbox"
+  >
+    <li>
+      <button
+        aria-selected="false"
+        class="media-bin__item"
+        role="option"
+        type="button"
+      >
+        <span
+          class="media-bin__name"
+          dir="auto"
+        />
+        <span
+          class="media-bin__duration"
+          dir="ltr"
+        >
+          NaN
+          s
+        </span>
+      </button>
+    </li>
+  </ul>
+</section>
+`;
+
+exports[`Montage component visual baselines (T10 step 3 stand-in) > MontageEditorPanel structure snapshot 1`] = `
+<section
+  aria-label="Montage editor panel"
+  class="montage-editor-panel"
+>
+  <div
+    aria-live="polite"
+    class="ui-visually-hidden montage-editor-panel__presence"
+    role="status"
+  >
+    No other editor
+  </div>
+  <div
+    class="montage-editor-panel__toolbar"
+  >
+    <button
+      disabled=""
+      type="button"
+    >
+      Undo
+    </button>
+    <button
+      disabled=""
+      type="button"
+    >
+      Redo
+    </button>
+    <span
+      class="montage-editor-panel__rev"
+      dir="ltr"
+    >
+      rev 
+      1
+       · 
+      1
+       
+      clips
+    </span>
+    <button
+      class="montage-editor-panel__save"
+      type="button"
+    >
+      Save revision
+    </button>
+  </div>
+  <p
+    class="ui-visually-hidden montage-editor-panel__status"
+    role="status"
+  />
+  <div
+    class="montage-editor-panel__columns"
+  >
+    <section
+      aria-label="Material bin"
+      class="media-bin"
+    >
+      <ul
+        aria-label="Available materials"
+        class="media-bin__list"
+        role="listbox"
+      >
+        <li
+          class="media-bin__empty"
+        >
+          No materials yet
+        </li>
+      </ul>
+    </section>
+    <div
+      class="timeline-canvas"
+    >
+      <div
+        aria-label="Timeline clips"
+        class="timeline-canvas__tracks"
+        role="listbox"
+        tabindex="0"
+      >
+        <div
+          class="timeline-canvas__track"
+          data-track-kind="video"
+        >
+          <span
+            class="timeline-canvas__track-label"
+          >
+            V1
+          </span>
+          <div
+            class="timeline-canvas__clips"
+          >
+            <button
+              aria-selected="false"
+              class="timeline-canvas__clip"
+              role="option"
+              style="inset-inline-start: 0rem; inline-size: 20rem;"
+            >
+              <span
+                class="timeline-canvas__timecode"
+                dir="ltr"
+              >
+                10:00
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <p
+        class="timeline-canvas__status sr-only"
+        role="status"
+      >
+        Select a clip to start editing
+      </p>
+    </div>
+    <aside
+      aria-label="Export drawer"
+      class="export-drawer"
+    >
+      <h2>
+        Export project
+      </h2>
+      <div
+        aria-label="Choose export quality"
+        role="group"
+      >
+        <label
+          class="export-drawer__preset"
+        >
+          <input
+            checked=""
+            name="export-preset"
+            type="radio"
+            value="web-1080p"
+          />
+          <span
+            dir="auto"
+          >
+            Web 1080p
+          </span>
+        </label>
+        <label
+          class="export-drawer__preset"
+        >
+          <input
+            name="export-preset"
+            type="radio"
+            value="web-4k"
+          />
+          <span
+            dir="auto"
+          >
+            Web 4K
+          </span>
+        </label>
+        <label
+          class="export-drawer__preset"
+        >
+          <input
+            name="export-preset"
+            type="radio"
+            value="archive-master"
+          />
+          <span
+            dir="auto"
+          >
+            Archive master
+          </span>
+        </label>
+      </div>
+      <button
+        class="export-drawer__qc"
+        type="button"
+      >
+        Check project
+      </button>
+      <button
+        class="export-drawer__start"
+        disabled=""
+        title="QC must pass first"
+        type="button"
+      >
+        Start export
+      </button>
+    </aside>
+  </div>
+</section>
+`;
+
+exports[`Montage component visual baselines (T10 step 3 stand-in) > TimelineCanvas with a clip snapshot 1`] = `
+<div
+  class="timeline-canvas"
+>
+  <div
+    aria-label="Timeline clips"
+    class="timeline-canvas__tracks"
+    role="listbox"
+    tabindex="0"
+  >
+    <div
+      class="timeline-canvas__track"
+      data-track-kind="video"
+    >
+      <span
+        class="timeline-canvas__track-label"
+      >
+        V1
+      </span>
+      <div
+        class="timeline-canvas__clips"
+      >
+        <button
+          aria-selected="false"
+          class="timeline-canvas__clip"
+          role="option"
+          style="inset-inline-start: 0rem; inline-size: 20rem;"
+        >
+          <span
+            class="timeline-canvas__timecode"
+            dir="ltr"
+          >
+            10:00
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <p
+    class="timeline-canvas__status sr-only"
+    role="status"
+  >
+    Select a clip to start editing
+  </p>
+</div>
+`;

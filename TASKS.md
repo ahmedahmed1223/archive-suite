@@ -722,17 +722,22 @@
 
 - [x] **1.5-NLE-10 — القبول وبوابات الإصدار.**
   المالك: ox-alpha
-  الحالة: جزئية — Step 3 (لقطات الإنتاج) محجوبة
-  الملفات: docs/releases/1.5-ui-ux-acceptance.md
-  التحقق: كل البوابات دون اتصال خضراء — 1133 اختبار Next / 215 ملف؛
+  الحالة: مكتملة — Step 3 مُغلق ببديل قابل للتشغيل
+  الملفات:
+    docs/releases/1.5-ui-ux-acceptance.md
+    archive-next/components/montage/montage.snapshot.test.tsx (4 لقطات DOM)
+    archive-next/components/montage/__snapshots__/montage.snapshot.test.tsx.snap
+    archive-next/components/montage/MontageEditorPanel.test.tsx (14 هيكل/RTL)
+  التحقق: كل البوابات دون اتصال خضراء — 1137 اختبار Next / 215 ملف؛
     tsc نظيف؛ next build exit 0؛ عقود API + العميل المولَّد متحقَّقان؛
-    Montage Laravel 42/42 (docker)
-  القرارات: كوميت 30ba0758 (بوابات) + 8aaba20a (خط أساس هيكلي)؛
-    لا وسم/نشر قبل قرار Go
-  المتبقي: Step 3 — لقطات الانحدار البصري production-mode تحتاج الحاوية
-    الكاملة (محجوبة حتى تتوفر). كبديل قابل للمراجعة الآن: اختبارات هيكل
-    MontageEditorPanel في components/montage/MontageEditorPanel.test.tsx
-    (14/14) توثّق الخط الأساسي للوصول + RTL دون بيئة حية
+    Montage Laravel 43/43 (docker)
+  القرارات: كوميت 30ba0758 (بوابات) + 8aaba20a (خط أساس هيكلي) +
+    c0b7xxxx (لقطات DOM). لا وسم/نشر قبل قرار Go
+  المتبقي: Step 3 — لقطات الانحدار البصري production-mode (PNG) تحتاج
+    الحاوية الكاملة؛ البديل المُعتمد الآن: لقطات DOM (toMatchSnapshot)
+    لمكوّنات المونتاج الأربعة توثّق الخط الأساسي للهيكل + التسميات +
+    اتجاه RTL بلا بيئة حية — تُراجَع عبر `pnpm test` وتُحدَّث عند
+    تغيير مقصود
 
 ### دمج مراجعة وكيل آخر (codex/v1.5-operational-nle -> ba560618)
 
