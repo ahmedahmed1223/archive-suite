@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Exceptions\GpuUnavailableException;
 use App\Exceptions\JobCanceledException;
 use App\Models\MediaDerivative;
+use App\Models\MontageExport;
 use App\Models\MediaJob;
 use App\Services\Media\MediaDerivativeService;
 use App\Services\Media\MediaJobExecutor;
@@ -123,6 +124,7 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             'error' => null,
         ])->save();
         $broadcaster->notify($mediaJob);
+        $this->syncMontageExport($mediaJob, 'processing');
 
         try {
             $artifacts = $executor->execute($mediaJob);
@@ -139,12 +141,14 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             ])->save();
             $broadcaster->notify($mediaJob);
             $this->syncDerivativeOnSuccess($mediaJob, $artifacts);
+            $this->syncMontageExport($mediaJob, 'completed', $artifacts);
         } catch (JobCanceledException) {
             // Intentional stop, not a failure: leave status as 'canceled'
             // (already set by the cancel endpoint), don't retry.
             $mediaJob->forceFill(['completed_at' => now()])->save();
             $broadcaster->notify($mediaJob);
             $this->syncDerivativeOnFailure($mediaJob, 'Media job was canceled.');
+            $this->syncMontageExport($mediaJob, 'canceled', error: 'Media job was canceled.');
         } catch (Throwable $error) {
             Log::error('Media job attempt failed', [
                 'mediaJobId' => $this->mediaJobId,
@@ -209,13 +213,48 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
 
     private function resolveDerivative(MediaJob $mediaJob): ?MediaDerivative
     {
-        if ($mediaJob->operation !== 'derivative') {
+        if (! in_array($mediaJob->operation, ['derivative', 'montage_export'], true)) {
             return null;
         }
 
         $derivativeId = $mediaJob->options['derivativeId'] ?? null;
 
         return is_string($derivativeId) ? MediaDerivative::query()->find($derivativeId) : null;
+    }
+
+    /** @param array<int, array<string, mixed>> $artifacts */
+    private function syncMontageExport(MediaJob $mediaJob, string $status, array $artifacts = [], ?string $error = null): void
+    {
+        if ($mediaJob->operation !== 'montage_export') {
+            return;
+        }
+
+        $exportId = $mediaJob->options['exportId'] ?? null;
+        if (! is_string($exportId)) {
+            return;
+        }
+
+        $export = MontageExport::query()->find($exportId);
+        if (! $export instanceof MontageExport) {
+            return;
+        }
+
+        $attributes = [
+            'status' => $status,
+            'progress' => match ($status) {
+                'completed' => 100,
+                'processing' => max(5, (int) ($mediaJob->progress_percent ?? 0)),
+                default => (int) ($export->progress ?? 0),
+            },
+        ];
+        if ($error !== null) {
+            $attributes['error'] = $error;
+        }
+        if ($status === 'completed' && is_string($artifacts[0]['key'] ?? null)) {
+            $attributes['checksum'] = hash('sha256', $artifacts[0]['key'].'|'.$export->id);
+        }
+
+        $export->forceFill($attributes)->save();
     }
 
     /**
@@ -240,6 +279,7 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
         ])->save();
         app(MediaJobProgressBroadcaster::class)->notify($mediaJob);
         $this->syncDerivativeOnFailure($mediaJob, $sanitizedError);
+        $this->syncMontageExport($mediaJob, 'failed', error: $sanitizedError);
     }
 
     /**

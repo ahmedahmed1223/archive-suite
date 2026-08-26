@@ -2,6 +2,8 @@
 
 namespace App\Domain\Montage;
 
+use App\Models\User;
+
 /**
  * Builds a validated render manifest from an allowlisted preset and a
  * revision's clips. Source media is resolved from record ids + pinned version
@@ -16,7 +18,9 @@ class MontageRenderManifestBuilder
         'archive-master' => ['width' => null, 'height' => null, 'v' => 'ffv1', 'a' => 'pcm_s16le', 'kbps' => null],
     ];
 
-    public function build(string $preset, string $revisionId, array $clips): MontageRenderManifest
+    public function __construct(private readonly MontageSourceResolver $sources) {}
+
+    public function build(string $preset, string $revisionId, array $clips, User $actor): MontageRenderManifest
     {
         $spec = self::PRESETS[$preset] ?? throw new MontageValidationException([
             'preset' => "Unknown export preset '$preset'.",
@@ -26,20 +30,25 @@ class MontageRenderManifestBuilder
         $manifestClips = [];
 
         foreach ($clips as $i => $clip) {
-            $recordId = $clip['source']['recordId'] ?? null;
-            if (! is_string($recordId) || $recordId === ''
-                || str_contains($recordId, '/') || str_contains($recordId, '\\')
-                || str_contains($recordId, '..')) {
+            if (! is_array($clip) || ! is_array($clip['source'] ?? null)) {
                 throw new MontageValidationException([
-                    "clips.$i.source.recordId" => 'Source must be a record id; local paths are not accepted.',
+                    "clips.$i.source" => 'Every clip must reference a source record.',
                 ]);
             }
 
-            $token = $clip['source']['sourceVersionToken'] ?? null;
-            if (! is_string($token) || $token === '') {
-                throw new MontageValidationException([
-                    "clips.$i.source.sourceVersionToken" => 'Missing source version token.',
-                ]);
+            $source = $this->sources->resolve($clip['source'], $actor, $i);
+
+            foreach (['sourceIn', 'sourceOut', 'timelineStart'] as $rangeField) {
+                if (! array_key_exists($rangeField, $clip) || ! is_int($clip[$rangeField]) && ! is_float($clip[$rangeField])) {
+                    throw new MontageValidationException([
+                        "clips.$i.$rangeField" => "$rangeField must be a finite number.",
+                    ]);
+                }
+                if (! is_finite((float) $clip[$rangeField])) {
+                    throw new MontageValidationException([
+                        "clips.$i.$rangeField" => "$rangeField must be a finite number.",
+                    ]);
+                }
             }
 
             $sourceIn = (float) ($clip['sourceIn'] ?? 0);
@@ -50,16 +59,16 @@ class MontageRenderManifestBuilder
                 ]);
             }
 
-            $sources[$recordId] ??= [
-                'recordId' => $recordId,
-                'sourceVersionToken' => $token,
-                // Resolved server-side at render time from the record id.
-                'remotePath' => "records/$recordId/master",
-            ];
+            $sourceKey = implode('|', [
+                $source['recordId'],
+                $source['attachmentId'] ?? '',
+                $source['sourceVersionToken'],
+            ]);
+            $sources[$sourceKey] ??= $source;
 
             $manifestClips[] = [
                 'id' => $clip['id'],
-                'remotePath' => "records/$recordId/master",
+                'path' => $source['path'],
                 'sourceIn' => $sourceIn,
                 'durationSeconds' => round($sourceOut - $sourceIn, 3),
                 'timelineStart' => (float) ($clip['timelineStart'] ?? 0),
