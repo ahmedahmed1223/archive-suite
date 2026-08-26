@@ -657,26 +657,40 @@
     القائمة (TimelinePanel) ولا تستبدلها
   المتبقي: لا شيء
 
-- [x] **1.5-NLE-6 — NLE المتقدم: تصدير + تعاون + معاينة (جزئي).**
+- [x] **1.5-NLE-6 — NLE المتقدم: تصدير + تعاون + معاينة + ربط حي.**
   المالك: ox-alpha
-  الحالة: جزئية — Step 4 (presence) قيد الإكمال أدناه
+  الحالة: مكتملة
   الملفات:
     archive-next/components/montage/ExportDrawer.tsx (+StudioPanels.test.tsx)
-  التحقق: 9/9 أخضر؛ زر التصدير محجوب حتى اجتياز QC؛ presets من allowlist فقط
-  القرارات: كوميت 522ccd7b؛ ExportDrawer يأخذ كل النصوص من copy prop
-  المتبقي: Step 4 — سطح presence/تقدّم آمن (انظر 1.5-NLE-6b)
+    archive-next/app/media/montage/[id]/page.tsx (route حيّ يربط المحرر)
+    archive-next/components/montage/MontageEditorPanel.tsx (مرتبط بالعميل)
+    archive-next/lib/archive-api.ts (montageProject/montageActiveRevision +
+      montageSaveRevision/montageRequestExport عبر العميل)
+    archive-laravel/app/Http/Controllers/Api/V1/MontageRevisionsController.php
+      (show = GET المراجعة النشطة) + route جديد
+  التحقق: 9/9 ExportDrawer + 14/14 MontageEditorPanel (هيكل/RTL) + 43/43
+    Laravel Montage (docker)؛ zر التصدير محجوب حتى اجتياز QC؛ presets من
+    allowlist فقط؛ الحصول على المشروع/المراجعة النشطة + الحفظ/التصدير عبر
+    عقد العميل المعتمد
+  القرارات: كوميت b26caa36؛ المحرر الذي كان «ميتًا» (مبني بلا تركيب) صار
+    مُركّبًا بمسار فعلي — إغلاق فخ «الميزة الميتة» الذي علّمتني إياه مراجعة
+    v1.5
+  المتبقي: لا شيء
 
-- [~] **1.5-NLE-6b — سطح presence وتقدّم التصدير الآمن (Step 4).**
+- [x] **1.5-NLE-6b — سطح presence وتقدّم التصدير الآمن (Step 4).**
   المالك: ox-alpha
-  الحالة: قيد التنفيذ
-  الملفات (مقترحة داخل المسار القانوني):
-    archive-next/lib/montage-presence.ts (+اختبار) — مضافة، 4/4 أخضر
-    archive-next/components/montage/StudioShell.tsx — مضافة (تحتاج تدقيق sr-only)
-  التحقق: montage-presence 4/4 أخضر (TTL drop + hasOtherLiveEditor + clampProgress)
-  القرارات: تُؤجَّل طبقة Reverb/WS الحية لبيئة التشغيل الكاملة؛ يُبنى العقد
-    النقي (shape + merge) الآن ليُستبدل النقل لاحقًا بلا تغيير نقاط الاستدعاء
-  المتبقي: ربط StudioShell فعليًا بمسار /media/studio الحالي + التأكد من
-    وجود sr-only utility؛ أو دمج presence في الصفحة بدل مكوّن منفصل
+  الحالة: مكتملة
+  الملفات:
+    archive-next/lib/montage-presence.ts (+اختبار 4/4 أخضر)
+    ربط presence عبر CollaborationController النظامي (collaborationPresence
+      roomKey montage:{projectId}) — لا endpoint وهمي
+    archive-next/components/montage/MontageEditorPanel.tsx (استقصاء آمن +
+      role=status live region)
+  التحقق: montage-presence 4/4 أخضر؛ حارس V2-305 أخضر؛ الاستقصاء يتجاهل
+    أخطاء الشبكة العابرة وآمن ضد unmount
+  القرارات: كوميت b26caa36؛ طبقة Reverb/WS الحية تُستبدل لاحقًا بلا تغيير
+    نقاط الاستدعاء (العقد النقي موجود في montage-presence.ts)
+  المتبقي: لا شيء
 
 - [x] **1.5-NLE-7 — تمديد العمل اليومي للمعالجة/التصدير.**
   المالك: ox-alpha
