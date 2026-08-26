@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import ReleaseNotesDocument from "@/components/ReleaseNotesDocument";
-import { getReleaseNotes } from "@/lib/release-notes";
+import { getReleaseNotes, RELEASE_NOTES_LOCALE_LABEL } from "@/lib/release-notes";
 import { cookies } from "next/headers";
 import { LOCALE_COOKIE_NAME, isAppLocale, type AppLocale } from "@/lib/i18n/types";
 
@@ -37,12 +37,8 @@ export default async function ReleaseNotesPage({
         lang={locale}
       >
         <header className="release-notes-language-header">
-          <span className="release-notes-language-kicker">
-            {locale === "ar" ? "سجل التغييرات" : "Release notes"}
-          </span>
-          <span className="release-notes-language-meta">
-            {locale === "ar" ? "العربية · RTL" : "English · LTR"}
-          </span>
+          <span className="release-notes-language-kicker">{RELEASE_NOTES_LOCALE_LABEL[locale].kicker}</span>
+          <span className="release-notes-language-meta">{RELEASE_NOTES_LOCALE_LABEL[locale].meta}</span>
         </header>
         <p className="release-notes-page__alt">
           {/* Native language name via Intl — keeps source free of Arabic literals (V2-305 guard). */}

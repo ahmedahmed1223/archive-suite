@@ -53,6 +53,7 @@
     { "path": "docs/evidence/v1.1.0-docker/README.md", "lifecycle": "release-evidence-index" },
     { "path": "docs/v3-gate-001-capability-matrix.ar.md", "lifecycle": "internal-release-gate-evidence" },
     { "path": "docs/v3-gate-001-mcp-acceptance.ar.md", "lifecycle": "internal-release-gate-evidence" },
-    { "path": "docs/designmd-ux-guide.md", "lifecycle": "internal-design-record" }
+    { "path": "docs/designmd-ux-guide.md", "lifecycle": "internal-design-record" },
+    { "path": "TASKS.md", "lifecycle": "internal-task-tracking" }
   ]
 }

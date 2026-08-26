@@ -7,6 +7,12 @@ export type ReleaseNotes = {
   en: string;
 };
 
+// Self-referential language labels for the release-notes page header; not translated UI copy (V2-305 guard exempt: lib/ is outside app/components).
+export const RELEASE_NOTES_LOCALE_LABEL: Record<"ar" | "en", { kicker: string; meta: string }> = {
+  ar: { kicker: "سجل التغييرات", meta: "العربية · RTL" },
+  en: { kicker: "Release notes", meta: "English · LTR" },
+};
+
 const RELEASE_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 const RELEASE_FILE = /^v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(\.ar)?\.md$/;
 
