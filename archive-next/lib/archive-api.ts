@@ -1559,6 +1559,26 @@ export interface ArchiveApiClient {
   createApprovalRequest(payload: CreateApprovalRequestPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest }>>;
   decideApprovalRequest(id: string, payload: DecideApprovalRequestPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest }>>;
   executeApprovalRequest(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ request: ApprovalRequest; run: { id: string; macroId: string; targetCount: number; completedCount: number; failedCount: number; results: BulkMacroTargetResult[] } }>>;
+
+  // V1.5 Montage editor operations.
+  montageSaveRevision(
+    projectId: string,
+    payload: { expectedRevision: number; tracks: unknown[]; clips: unknown[]; effects?: unknown[]; markers?: unknown[]; comments?: unknown[]; transitions?: unknown[] },
+    options?: AuthRequestOptions,
+  ): Promise<ApiEnvelope<{ id: string; projectId: string; revisionNumber: number; createdBy: string }>>;
+  montageRequestExport(
+    projectId: string,
+    payload: { expectedRevision: number; preset: "web-1080p" | "web-4k" | "archive-master" },
+    options?: AuthRequestOptions,
+  ): Promise<ApiEnvelope<{ id: string; projectId: string; revisionId: string; preset: string; status: string; progress: number }>>;
+  montageProject(
+    projectId: string,
+    options?: AuthRequestOptions,
+  ): Promise<ApiEnvelope<{ id: string; name: string; ownerId: string | null; revision: number; activeRevisionId: string | null; status: string }>>;
+  montageActiveRevision(
+    projectId: string,
+    options?: AuthRequestOptions,
+  ): Promise<ApiEnvelope<{ id: string; revisionNumber: number; tracks: unknown[]; clips: unknown[]; effects: unknown[]; markers: unknown[]; comments: unknown[]; transitions: unknown[] }>>;
 }
 
 export interface AuthRequestOptions {
@@ -2717,6 +2737,29 @@ export function createArchiveApiClient({
     decideApprovalRequest: (id: string, payload: DecideApprovalRequestPayload, options?: AuthRequestOptions) =>
       post<{ request: ApprovalRequest }>(`/approval-requests/${encodeURIComponent(id)}/decisions`, payload, options),
     executeApprovalRequest: (id: string, options?: AuthRequestOptions) =>
-      post<{ request: ApprovalRequest; run: { id: string; macroId: string; targetCount: number; completedCount: number; failedCount: number; results: BulkMacroTargetResult[] } }>(`/approval-requests/${encodeURIComponent(id)}/execute`, undefined, options)
-  };
+      post<{ request: ApprovalRequest; run: { id: string; macroId: string; targetCount: number; completedCount: number; failedCount: number; results: BulkMacroTargetResult[] } }>(`/approval-requests/${encodeURIComponent(id)}/execute`, undefined, options),
+
+    montageSaveRevision: (projectId, payload, options?: AuthRequestOptions) =>
+      post<{ id: string; projectId: string; revisionNumber: number; createdBy: string }>(
+        `/montage-projects/${encodeURIComponent(projectId)}/revision`,
+        payload,
+        options,
+      ),
+    montageRequestExport: (projectId, payload, options?: AuthRequestOptions) =>
+      post<{ id: string; projectId: string; revisionId: string; preset: string; status: string; progress: number }>(
+        `/montage-projects/${encodeURIComponent(projectId)}/exports`,
+        payload,
+        options,
+      ),
+    montageActiveRevision: (projectId, options?: AuthRequestOptions) =>
+      get<{ id: string; revisionNumber: number; tracks: unknown[]; clips: unknown[]; effects: unknown[]; markers: unknown[]; comments: unknown[]; transitions: unknown[] }>(
+        `/montage-projects/${encodeURIComponent(projectId)}/revision`,
+        options,
+      ),
+    montageProject: (projectId, options?: AuthRequestOptions) =>
+      get<{ id: string; name: string; ownerId: string | null; revision: number; activeRevisionId: string | null; status: string }>(
+        `/montage-projects/${encodeURIComponent(projectId)}`,
+        options,
+      ),
+};
 }

@@ -1,9 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createArchiveApiClient } from "@/lib/archive-api";
 import MediaBin, { type MaterialBinItem } from "./MediaBin";
 import TimelineCanvas from "./TimelineCanvas";
 import ExportDrawer from "./ExportDrawer";
+import {
+  buildPresenceSnapshot,
+  type PresenceSnapshot,
+} from "@/lib/montage-presence";
 import {
   redoEditor,
   reduceEditor,
@@ -24,6 +29,8 @@ export type MontageEditorCopy = {
   conflictPrefix: string;
   conflictSuffix: string;
   clipsUnit: string;
+  presenceLabel: string;
+  noOtherEditors: string;
 };
 
 type MontageEditorPanelProps = {
@@ -31,6 +38,8 @@ type MontageEditorPanelProps = {
   initialState: EditorState;
   fps?: number;
   materials: MaterialBinItem[];
+  /** Poll interval (ms) for the collaboration presence surface. */
+  presencePollMs?: number;
   /** Full dictionary section — passed by the studio page. */
   copy: MontageEditorCopy & {
     timelineAriaLabel: string;
@@ -49,20 +58,25 @@ type MontageEditorPanelProps = {
 };
 
 /**
- * V1.5 Task 5/6: the editing surface added alongside the existing studio
- * player/comments panels. Owns editor state locally; saving goes through the
- * revision API with optimistic concurrency (Task 2 endpoints).
+ * V1.5 Task 5/6: the editing surface. Owns editor state locally; saving and
+ * exporting go through the archive API client (same contract as the rest of
+ * the app). A short polling loop derives the live-collab presence snapshot
+ * from the server; the Reverb/WS transport can replace the poll later
+ * without touching this component.
  */
 export default function MontageEditorPanel({
   projectId,
   initialState,
   fps = 25,
   materials,
+  presencePollMs = 15_000,
   copy,
 }: MontageEditorPanelProps) {
+  const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<EditorState>(initialState);
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string>("");
+  const [presence, setPresence] = useState<PresenceSnapshot>({ projectId, editors: [] });
 
   const dispatch = useCallback(
     (action: EditorAction) => setState((current) => reduceEditor(current, action, fps)),
@@ -72,34 +86,79 @@ export default function MontageEditorPanel({
   const undo = useCallback(() => setState((c) => undoEditor(c)), []);
   const redo = useCallback(() => setState((c) => redoEditor(c)), []);
 
+  // Presence poll — safe against unmount and transient errors.
+  const pollRef = useRef<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await api.collaborationPresence(`montage:${projectId}`);
+        if (cancelled || !res.ok) return;
+        const participants = (res.participants ?? [])
+          .filter((p) => p.status === "editing" || p.status === "viewing")
+          .map((p) => ({
+            userId: p.userId,
+            displayName: p.displayName,
+            lastSeenAt: p.lastSeenAt ? Date.parse(p.lastSeenAt) : 0,
+          }));
+        setPresence(buildPresenceSnapshot(projectId, participants as never, Date.now()));
+      } catch {
+        // Presence is best-effort; ignore network blips.
+      }
+    };
+    void tick();
+    pollRef.current = window.setInterval(tick, presencePollMs);
+    return () => {
+      cancelled = true;
+      if (pollRef.current !== null) window.clearInterval(pollRef.current);
+    };
+  }, [api, projectId, presencePollMs]);
+
   const saveRevision = useCallback(async () => {
     setSaveStatus(copy.savingStatus);
     try {
-      const response = await fetch(`/api/v1/montage-projects/${projectId}/revision`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(serializeRevision(state)),
-      });
-      if (response.status === 409) {
-        const body = (await response.json()) as { currentRevision?: number };
+      const res = await api.montageSaveRevision(projectId, serializeRevision(state));
+      if (res.ok) {
+        setSaveStatus(copy.savedNewRevision);
+        return;
+      }
+      // The client surfaces conflict/unauthorized via `error`; surface it.
+      const body = res as { currentRevision?: number; error?: string };
+      if (body.error === "revision_conflict" || body.currentRevision !== undefined) {
         setSaveStatus(
           `${copy.conflictPrefix} ${body.currentRevision ?? "?"} — ${copy.conflictSuffix}`,
         );
         return;
       }
-      if (!response.ok) throw new Error(String(response.status));
-      setSaveStatus(copy.savedNewRevision);
+      setSaveStatus(copy.saveFailed);
     } catch {
       setSaveStatus(copy.saveFailed);
     }
-  }, [copy, projectId, state]);
+  }, [api, copy, projectId, state]);
+
+  const requestExport = useCallback(
+    async (preset: "web-1080p" | "web-4k" | "archive-master") => {
+      await api.montageRequestExport(projectId, {
+        expectedRevision: state.revisionNumber,
+        preset,
+      });
+    },
+    [api, projectId, state.revisionNumber],
+  );
 
   const canUndo = state.past.length > 0;
   const canRedo = state.future.length > 0;
   const clipCount = useMemo(() => state.timeline.clips.length, [state.timeline.clips]);
+  const others = presence.editors.filter((e) => e.userId !== "self");
 
   return (
     <section aria-label={copy.panelAriaLabel} className="montage-editor-panel">
+      <div role="status" aria-live="polite" className="ui-visually-hidden montage-editor-panel__presence">
+        {others.length > 0
+          ? `${copy.presenceLabel}: ${others.map((e) => e.displayName).join("، ")}`
+          : copy.noOtherEditors}
+      </div>
+
       <div className="montage-editor-panel__toolbar">
         <button type="button" onClick={undo} disabled={!canUndo}>{copy.undoButton}</button>
         <button type="button" onClick={redo} disabled={!canRedo}>{copy.redoButton}</button>
@@ -111,7 +170,7 @@ export default function MontageEditorPanel({
         </button>
       </div>
 
-      <p role="status" className="montage-editor-panel__status sr-only">{saveStatus}</p>
+      <p role="status" className="ui-visually-hidden montage-editor-panel__status">{saveStatus}</p>
 
       <div className="montage-editor-panel__columns">
         <MediaBin
@@ -140,13 +199,7 @@ export default function MontageEditorPanel({
           projectId={projectId}
           currentRevision={state.revisionNumber}
           qcReady={false}
-          onRequestExport={(preset) => {
-            void fetch(`/api/v1/montage-projects/${projectId}/exports`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ expectedRevision: state.revisionNumber, preset }),
-            });
-          }}
+          onRequestExport={requestExport}
           copy={{
             drawerAriaLabel: copy.drawerAriaLabel,
             title: copy.exportTitle,
@@ -160,4 +213,3 @@ export default function MontageEditorPanel({
     </section>
   );
 }
-

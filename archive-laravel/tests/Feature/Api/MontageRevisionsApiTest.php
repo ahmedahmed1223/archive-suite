@@ -54,4 +54,23 @@ class MontageRevisionsApiTest extends TestCase
         // The conflicting write must not create a fifth revision.
         $this->assertSame(4, $project->fresh()->revision);
     }
+
+    public function test_owner_can_fetch_the_active_revision(): void
+    {
+        $owner = User::factory()->create(['role' => 'editor']);
+        $project = MontageProject::factory()->create(['owner_id' => $owner->id]);
+        $this->actingAs($owner)
+            ->postJson("/api/v1/montage-projects/{$project->id}/revision", [
+                'expectedRevision' => 0,
+                'tracks' => [['id' => 't1', 'kind' => 'video']],
+                'clips' => [],
+            ])
+            ->assertCreated();
+
+        $this->actingAs($owner)
+            ->getJson("/api/v1/montage-projects/{$project->id}/revision")
+            ->assertOk()
+            ->assertJsonPath('revisionNumber', 1)
+            ->assertJsonPath('projectId', $project->id);
+    }
 }

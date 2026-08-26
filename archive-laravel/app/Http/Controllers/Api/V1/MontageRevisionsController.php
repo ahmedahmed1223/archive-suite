@@ -173,4 +173,25 @@ class MontageRevisionsController extends Controller
             'createdAt' => $revision->created_at?->toIso8601String(),
         ];
     }
+
+    /** Return the active revision of a project (latest by revision_number). */
+    public function show(Request $request, string $id): JsonResponse
+    {
+        $project = MontageProject::find($id);
+        if (! $project) {
+            return $this->notFound();
+        }
+
+        $actor = $this->archiveUser($request);
+        if ($actor === null || Gate::forUser($actor)->denies('view', $project)) {
+            return $this->notFound();
+        }
+
+        $revision = $project->activeRevision();
+        if ($revision === null) {
+            return response()->json(ApiError::envelope('No revision yet.', 404), 404);
+        }
+
+        return response()->json($this->present($revision));
+    }
 }

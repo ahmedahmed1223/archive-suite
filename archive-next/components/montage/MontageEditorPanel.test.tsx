@@ -37,6 +37,8 @@ const copy = {
   conflictPrefix: "Conflict: server is at revision",
   conflictSuffix: "Your edits were kept",
   clipsUnit: "clips",
+  presenceLabel: "Other editors open",
+  noOtherEditors: "No other editor",
   timelineAriaLabel: "Timeline clips",
   selectHint: "Select a clip to start editing",
   selectedHint: "Clip selected",
