@@ -84,5 +84,29 @@ export const mediaStudio = {
     title: "المهام",
     comingSoonTitle: "ربط المهام غير متاح بعد",
     comingSoonDescription: "سيتوفر ربط مهام العمل في تحديث لاحق."
-  }
+  },
+  montageEditor: {
+    timelineAriaLabel: "مقاطع الخط الزمني",
+    selectHint: "حدد مقطعًا لبدء التحرير",
+    selectedHint: "المقطع محدد — S للتقسيم، T لتقليص الموجة، الأسهم للتحريك",
+    materialBinAriaLabel: "مخزن المواد",
+    materialsListLabel: "المواد المتاحة",
+    emptyBin: "لا توجد مواد بعد",
+    exportDrawerAriaLabel: "درج التصدير",
+    exportTitle: "تصدير المشروع",
+    presetGroupLabel: "اختيار جودة التصدير",
+    runQc: "فحص المشروع",
+    startExport: "بدء التصدير",
+    qcRequiredHint: "يجب اجتياز فحص المشروع قبل بدء التصدير",
+    undoButton: "تراجع",
+    redoButton: "إعادة",
+    saveRevision: "حفظ مراجعة",
+    savingStatus: "جارٍ الحفظ…",
+    savedNewRevision: "تم حفظ مراجعة جديدة",
+    saveFailed: "تعذر الحفظ — أعد المحاولة",
+    conflictPrefix: "تعارض: الخادم عند المراجعة",
+    conflictSuffix: "لم تُفقد تعديلاتك",
+    clipsUnit: "مقاطع",
+    panelAriaLabel: "لوحة تحرير المونتاج"
+  },
 } as const;

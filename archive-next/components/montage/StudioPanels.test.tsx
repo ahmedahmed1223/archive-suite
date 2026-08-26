@@ -6,6 +6,21 @@ import MediaBin, { type MaterialBinItem } from "./MediaBin";
 
 afterEach(cleanup);
 
+const exportCopy = {
+  drawerAriaLabel: "Export drawer",
+  title: "Export project",
+  presetGroupLabel: "Choose export quality",
+  runQc: "Check project",
+  startExport: "Start export",
+  qcRequiredHint: "QC must pass first",
+};
+
+const binCopy = {
+  binAriaLabel: "Material bin",
+  listLabel: "Available materials",
+  emptyBin: "No materials yet",
+};
+
 describe("ExportDrawer (Task 6)", () => {
   it("keeps the export button disabled until the server QC response is ready", async () => {
     let qcReady = false;
@@ -19,13 +34,14 @@ describe("ExportDrawer (Task 6)", () => {
         qcReady={qcReady}
         onRunQc={onRunQc}
         onRequestExport={vi.fn()}
+        copy={exportCopy}
       />,
     );
 
-    const start = screen.getByRole("button", { name: "بدء التصدير" });
+    const start = screen.getByRole("button", { name: exportCopy.startExport });
     expect(start).toBeDisabled();
 
-    fireEvent.click(screen.getByRole("button", { name: "فحص المشروع" }));
+    fireEvent.click(screen.getByRole("button", { name: exportCopy.runQc }));
     await waitFor(() => expect(onRunQc).toHaveBeenCalled());
 
     rerender(
@@ -35,6 +51,7 @@ describe("ExportDrawer (Task 6)", () => {
         qcReady={qcReady}
         onRunQc={onRunQc}
         onRequestExport={vi.fn()}
+        copy={exportCopy}
       />,
     );
     await waitFor(() => expect(start).toBeEnabled());
@@ -48,10 +65,11 @@ describe("ExportDrawer (Task 6)", () => {
         currentRevision={7}
         qcReady
         onRequestExport={onRequestExport}
+        copy={exportCopy}
       />,
     );
-    fireEvent.click(screen.getByLabelText("نسخة الأرشيف"));
-    fireEvent.click(screen.getByRole("button", { name: "بدء التصدير" }));
+    fireEvent.click(screen.getByLabelText("Archive master"));
+    fireEvent.click(screen.getByRole("button", { name: exportCopy.startExport }));
     expect(onRequestExport).toHaveBeenCalledWith("archive-master");
   });
 });
@@ -68,16 +86,16 @@ const binItems: MaterialBinItem[] = [
 describe("MediaBin (Task 5)", () => {
   it("lists materials as selectable options with LTR durations", () => {
     const onSelect = vi.fn();
-    render(<MediaBin items={binItems} selectedId={null} onSelect={onSelect} />);
+    render(<MediaBin items={binItems} selectedId={null} onSelect={onSelect} copy={binCopy} />);
     const option = screen.getByRole("option");
     fireEvent.click(option);
     expect(onSelect).toHaveBeenCalledWith(binItems[0]);
-    const duration = screen.getByText(/ث$/);
+    const duration = screen.getByText(/s$/);
     expect(duration.getAttribute("dir")).toBe("ltr");
   });
 
-  it("shows an empty state without items", () => {
-    render(<MediaBin items={[]} selectedId={null} onSelect={vi.fn()} />);
-    expect(screen.getByText(/لا توجد مواد/)).toBeInTheDocument();
+  it("shows the localized empty state without items", () => {
+    render(<MediaBin items={[]} selectedId={null} onSelect={vi.fn()} copy={binCopy} />);
+    expect(screen.getByText(binCopy.emptyBin)).toBeInTheDocument();
   });
 });

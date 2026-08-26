@@ -3,12 +3,19 @@
 import { useCallback } from "react";
 import { reduceEditor, type EditorAction, type EditorState } from "@/lib/montage-editor";
 
+export type TimelineCanvasCopy = {
+  timelineAriaLabel: string;
+  selectHint: string;
+  selectedHint: string;
+};
+
 type TimelineCanvasProps = {
   state: EditorState;
   dispatch: (action: EditorAction) => void;
   fps?: number;
   selectedClipId: string | null;
   onSelectClip: (clipId: string) => void;
+  copy: TimelineCanvasCopy;
 };
 
 /**
@@ -22,6 +29,7 @@ export default function TimelineCanvas({
   fps = 25,
   selectedClipId,
   onSelectClip,
+  copy,
 }: TimelineCanvasProps) {
   const { clips, tracks } = state.timeline;
 
@@ -78,7 +86,7 @@ export default function TimelineCanvas({
     <div className="timeline-canvas">
       <div
         role="listbox"
-        aria-label={/* i18n via caller */ "مقاطع الخط الزمني"}
+        aria-label={copy.timelineAriaLabel}
         tabIndex={0}
         className="timeline-canvas__tracks"
         onKeyDown={handleKeyDown}
@@ -112,9 +120,7 @@ export default function TimelineCanvas({
         ))}
       </div>
       <p role="status" className="timeline-canvas__status sr-only">
-        {selectedClipId
-          ? `المقطع ${selectedClipId} محدد — S للتقسيم، T لتقليص الموجة، الأسهم للتحريك`
-          : "حدد مقطعًا لبدء التحرير"}
+        {selectedClipId ? copy.selectedHint : copy.selectHint}
       </p>
     </div>
   );

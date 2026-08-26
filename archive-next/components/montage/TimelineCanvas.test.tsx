@@ -2,14 +2,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import TimelineCanvas from "./TimelineCanvas";
-import { reduceEditor, type EditorState } from "@/lib/montage-editor";
+import { type EditorState } from "@/lib/montage-editor";
+
+const copy = {
+  timelineAriaLabel: "Timeline clips",
+  selectHint: "Select a clip to start editing",
+  selectedHint: "Clip selected — S to split",
+};
 
 function makeState(): EditorState {
   return {
     projectId: "p1",
     revisionNumber: 1,
     timeline: {
-      tracks: [{ id: "t1", kind: "video", name: "فيديو ١" }],
+      tracks: [{ id: "t1", kind: "video", name: "V1" }],
       clips: [
         {
           id: "clip-1",
@@ -28,35 +34,30 @@ function makeState(): EditorState {
 
 afterEach(cleanup);
 
+function renderCanvas(over: Partial<Parameters<typeof TimelineCanvas>[0]> = {}) {
+  const props = {
+    state: makeState(),
+    dispatch: vi.fn(),
+    selectedClipId: null as string | null,
+    onSelectClip: vi.fn(),
+    copy,
+    ...over,
+  };
+  render(<TimelineCanvas {...props} />);
+  return props;
+}
+
 describe("TimelineCanvas (Task 5)", () => {
   it("dispatches split when the selected clip receives the s key", () => {
-    const dispatch = vi.fn();
-    const onSelectClip = vi.fn();
-    render(
-      <TimelineCanvas
-        state={makeState()}
-        dispatch={dispatch}
-        selectedClipId="clip-1"
-        onSelectClip={onSelectClip}
-      />,
-    );
-    const listbox = screen.getByRole("listbox");
-    fireEvent.keyDown(listbox, { key: "s" });
-    expect(dispatch).toHaveBeenCalledWith(
+    const props = renderCanvas({ selectedClipId: "clip-1" });
+    fireEvent.keyDown(screen.getByRole("listbox"), { key: "s" });
+    expect(props.dispatch).toHaveBeenCalledWith(
       expect.objectContaining({ type: "split", clipId: "clip-1" }),
     );
   });
 
   it("selects a clip on click and marks it aria-selected", () => {
-    const onSelectClip = vi.fn();
-    render(
-      <TimelineCanvas
-        state={makeState()}
-        dispatch={vi.fn()}
-        selectedClipId={null}
-        onSelectClip={onSelectClip}
-      />,
-    );
+    const { onSelectClip } = renderCanvas();
     const option = screen.getByRole("option");
     expect(option).toHaveAttribute("aria-selected", "false");
     fireEvent.click(option);
@@ -64,46 +65,32 @@ describe("TimelineCanvas (Task 5)", () => {
   });
 
   it("renders timecode LTR inside the RTL layout", () => {
-    render(
-      <TimelineCanvas
-        state={makeState()}
-        dispatch={vi.fn()}
-        selectedClipId={null}
-        onSelectClip={vi.fn()}
-      />,
-    );
+    renderCanvas();
     const tc = screen.getByText(/\d{2}:\d{2}/);
     expect(tc.getAttribute("dir")).toBe("ltr");
   });
 
   it("announces selection guidance through the status region", () => {
-    render(
-      <TimelineCanvas
-        state={makeState()}
-        dispatch={vi.fn()}
-        selectedClipId="clip-1"
-        onSelectClip={vi.fn()}
-      />,
-    );
-    expect(screen.getByRole("status")).toHaveTextContent(/محدد/);
+    renderCanvas({ selectedClipId: "clip-1" });
+    expect(screen.getByRole("status")).toHaveTextContent(copy.selectedHint);
   });
 
   it("moves the selected clip with arrow keys one frame at a time", () => {
-    const dispatch = vi.fn();
-    render(
-      <TimelineCanvas
-        state={makeState()}
-        dispatch={dispatch}
-        selectedClipId="clip-1"
-        onSelectClip={vi.fn()}
-      />,
-    );
+    const props = renderCanvas({ selectedClipId: "clip-1" });
     fireEvent.keyDown(screen.getByRole("listbox"), { key: "ArrowRight" });
-    expect(dispatch).toHaveBeenCalledWith({
+    expect(props.dispatch).toHaveBeenCalledWith({
       type: "move",
       clipId: "clip-1",
       trackId: "t1",
       start: 0.04,
     });
+  });
+
+  it("ripple-trims with the t key", () => {
+    const props = renderCanvas({ selectedClipId: "clip-1" });
+    fireEvent.keyDown(screen.getByRole("listbox"), { key: "t" });
+    expect(props.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "rippleTrim", clipId: "clip-1" }),
+    );
   });
 });

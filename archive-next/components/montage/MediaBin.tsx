@@ -9,18 +9,25 @@ export type MaterialBinItem = {
   source: MontageSourceRef;
 };
 
+export type MediaBinCopy = {
+  binAriaLabel: string;
+  listLabel: string;
+  emptyBin: string;
+};
+
 type MediaBinProps = {
   items: MaterialBinItem[];
   selectedId: string | null;
   onSelect: (item: MaterialBinItem) => void;
   onAddToTimeline?: (item: MaterialBinItem) => void;
+  copy: MediaBinCopy;
 };
 
 /** V1.5 Task 5: accessible material bin — native list semantics, keyboard first. */
-export default function MediaBin({ items, selectedId, onSelect, onAddToTimeline }: MediaBinProps) {
+export default function MediaBin({ items, selectedId, onSelect, onAddToTimeline, copy }: MediaBinProps) {
   return (
-    <section aria-label="مخزن المواد" className="media-bin">
-      <ul role="listbox" aria-label="المواد المتاحة" className="media-bin__list">
+    <section aria-label={copy.binAriaLabel} className="media-bin">
+      <ul role="listbox" aria-label={copy.listLabel} className="media-bin__list">
         {items.map((item) => (
           <li key={item.id}>
             <button
@@ -33,12 +40,12 @@ export default function MediaBin({ items, selectedId, onSelect, onAddToTimeline 
             >
               <span dir="auto" className="media-bin__name">{item.name}</span>
               <span dir="ltr" className="media-bin__duration">
-                {Math.round(item.durationSeconds)}ث
+                {Math.round(item.durationSeconds)}s
               </span>
             </button>
           </li>
         ))}
-        {items.length === 0 && <li className="media-bin__empty">لا توجد مواد بعد</li>}
+        {items.length === 0 && <li className="media-bin__empty">{copy.emptyBin}</li>}
       </ul>
     </section>
   );

@@ -84,5 +84,29 @@ export const mediaStudio = {
     title: "Tasks",
     comingSoonTitle: "Task linking is not available yet",
     comingSoonDescription: "Linked work tasks ship in a later update."
-  }
+  },
+  montageEditor: {
+    timelineAriaLabel: "Timeline clips",
+    selectHint: "Select a clip to start editing",
+    selectedHint: "Clip selected — S to split, T to ripple trim, arrows to move",
+    materialBinAriaLabel: "Material bin",
+    materialsListLabel: "Available materials",
+    emptyBin: "No materials yet",
+    exportDrawerAriaLabel: "Export drawer",
+    exportTitle: "Export project",
+    presetGroupLabel: "Choose export quality",
+    runQc: "Check project",
+    startExport: "Start export",
+    qcRequiredHint: "Project QC must pass before exporting",
+    undoButton: "Undo",
+    redoButton: "Redo",
+    saveRevision: "Save revision",
+    savingStatus: "Saving…",
+    savedNewRevision: "Saved a new revision",
+    saveFailed: "Could not save — try again",
+    conflictPrefix: "Conflict: server is at revision",
+    conflictSuffix: "Your edits were kept",
+    clipsUnit: "clips",
+    panelAriaLabel: "Montage editor panel"
+  },
 } as const;

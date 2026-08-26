@@ -2,6 +2,15 @@
 
 import { useState } from "react";
 
+export type ExportDrawerCopy = {
+  drawerAriaLabel: string;
+  title: string;
+  presetGroupLabel: string;
+  runQc: string;
+  startExport: string;
+  qcRequiredHint: string;
+};
+
 type ExportDrawerProps = {
   projectId: string;
   currentRevision: number;
@@ -9,12 +18,13 @@ type ExportDrawerProps = {
   qcReady: boolean;
   onRunQc?: () => Promise<void>;
   onRequestExport: (preset: "web-1080p" | "web-4k" | "archive-master") => void;
+  copy: ExportDrawerCopy;
 };
 
 const PRESETS = [
-  { value: "web-1080p", label: "ويب 1080p" },
-  { value: "web-4k", label: "ويب 4K" },
-  { value: "archive-master", label: "نسخة الأرشيف" },
+  { value: "web-1080p", label: "Web 1080p" },
+  { value: "web-4k", label: "Web 4K" },
+  { value: "archive-master", label: "Archive master" },
 ] as const;
 
 /**
@@ -28,9 +38,11 @@ export default function ExportDrawer({
   qcReady,
   onRunQc,
   onRequestExport,
+  copy,
 }: ExportDrawerProps) {
   const [preset, setPreset] = useState<(typeof PRESETS)[number]["value"]>("web-1080p");
   const [qcPending, setQcPending] = useState(false);
+  const locale = useLocaleSafe();
 
   const runQc = async () => {
     setQcPending(true);
@@ -42,10 +54,10 @@ export default function ExportDrawer({
   };
 
   return (
-    <aside aria-label="درج التصدير" className="export-drawer">
-      <h2>تصدير المشروع</h2>
+    <aside aria-label={copy.drawerAriaLabel} className="export-drawer">
+      <h2>{copy.title}</h2>
 
-      <div role="group" aria-label="اختيار جودة التصدير">
+      <div role="group" aria-label={copy.presetGroupLabel}>
         {PRESETS.map((p) => (
           <label key={p.value} className="export-drawer__preset">
             <input
@@ -66,7 +78,7 @@ export default function ExportDrawer({
         onClick={() => void runQc()}
         disabled={qcPending}
       >
-        فحص المشروع
+        {copy.runQc}
       </button>
 
       <button
@@ -74,19 +86,21 @@ export default function ExportDrawer({
         className="export-drawer__start"
         disabled={!qcReady || qcPending}
         onClick={() => onRequestExport(preset)}
-        title={
-          !qcReady
-            ? "يجب اجتياز فحص المشروع قبل بدء التصدير"
-            : `سيُصدَّر المشروع عند المراجعة ${currentRevision}`
-        }
+        title={!qcReady ? copy.qcRequiredHint : undefined}
       >
-        بدء التصدير
+        {copy.startExport}
       </button>
-
-      <p className="export-drawer__hint">
-        سيُصدَّر المشروع «{projectId}» عند المراجعة رقم {currentRevision}. أي تعديل جديد يتطلب فحصًا
-        جديدًا.
-      </p>
     </aside>
   );
+}
+
+// Local import shim to keep this file self-contained without a circular dep.
+import { useLocale } from "@/lib/i18n/LocaleProvider";
+function useLocaleSafe(): "ar" | "en" {
+  try {
+    const ctx = useLocale();
+    return (ctx as unknown as { locale?: "ar" | "en" }).locale ?? "ar";
+  } catch {
+    return "ar";
+  }
 }
