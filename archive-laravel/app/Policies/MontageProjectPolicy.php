@@ -46,7 +46,10 @@ class MontageProjectPolicy
 
     public function delete(User $user, MontageProject $project): bool
     {
-        return $user->role === 'admin';
+        // Editors own their projects end-to-end (create/update/delete); admins
+        // may delete anything. Mirrors the RoleMatrix contract, not a stricter
+        // admin-only rule that would orphan editor-owned work.
+        return $user->role === 'admin' || $this->canEdit($user);
     }
 
     private function canEdit(User $user): bool

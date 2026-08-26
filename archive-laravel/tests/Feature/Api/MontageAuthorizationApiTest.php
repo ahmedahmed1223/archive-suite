@@ -136,16 +136,18 @@ class MontageAuthorizationApiTest extends TestCase
         $this->assertSame(3, (int) $project->fresh()->revision);
     }
 
-    public function test_only_admin_can_delete_even_when_editor_owns_project(): void
+    public function test_owner_editor_can_delete_owned_project_but_viewer_cannot(): void
     {
         $owner = $this->user('editor');
-        $admin = $this->user('admin');
+        $viewer = $this->user('viewer');
         $project = MontageProject::factory()->create(['owner_id' => $owner->id]);
 
         $this->deleteJson("/api/v1/montage-projects/{$project->id}", [], $this->headersFor($owner))
-            ->assertForbidden();
-        $this->deleteJson("/api/v1/montage-projects/{$project->id}", [], $this->headersFor($admin))
             ->assertOk();
+        // A fresh project owned by the editor; a viewer must be refused.
+        $other = MontageProject::factory()->create(['owner_id' => $owner->id]);
+        $this->deleteJson("/api/v1/montage-projects/{$other->id}", [], $this->headersFor($viewer))
+            ->assertForbidden();
     }
 
     public function test_revision_conflict_uses_documented_error_shape(): void
