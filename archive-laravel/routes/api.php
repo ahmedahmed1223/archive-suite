@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\MetadataTemplatesController;
 use App\Http\Controllers\Api\V1\MontageProjectsController;
 use App\Http\Controllers\Api\V1\MontageRevisionsController;
+use App\Http\Controllers\Api\V1\MontageExportsController;
 use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\NotificationsController;
 use App\Http\Controllers\Api\V1\OnboardingProgressController;
@@ -445,6 +446,10 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/montage-projects/{id}', [MontageProjectsController::class, 'destroy']);
 Route::get('/montage-projects/{id}/revisions', [MontageRevisionsController::class, 'index']);
 Route::post('/montage-projects/{id}/revision', [MontageRevisionsController::class, 'store']);
+Route::post('/montage-projects/{id}/exports', [MontageExportsController::class, 'store']);
+Route::get('/montage-projects/{id}/exports/{exportId}', [MontageExportsController::class, 'show']);
+Route::post('/montage-projects/{id}/exports/{exportId}/cancel', [MontageExportsController::class, 'cancel']);
+Route::post('/montage-projects/{id}/exports/{exportId}/retry', [MontageExportsController::class, 'retry']);
 
         Route::post('/share', [ShareController::class, 'store']);
         Route::delete('/share/{token}', [ShareController::class, 'destroy']);
