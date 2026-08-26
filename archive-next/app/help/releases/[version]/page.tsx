@@ -30,8 +30,20 @@ export default async function ReleaseNotesPage({
   const other: AppLocale = locale === "ar" ? "en" : "ar";
 
   return (
-    <main className="release-notes-page">
-      <section dir={locale === "ar" ? "rtl" : "ltr"} lang={locale}>
+    <main className="release-notes-page" aria-label="Release notes">
+      <section
+        className={`release-notes-language release-notes-language-${locale}`}
+        dir={locale === "ar" ? "rtl" : "ltr"}
+        lang={locale}
+      >
+        <header className="release-notes-language-header">
+          <span className="release-notes-language-kicker">
+            {locale === "ar" ? "سجل التغييرات" : "Release notes"}
+          </span>
+          <span className="release-notes-language-meta">
+            {locale === "ar" ? "العربية · RTL" : "English · LTR"}
+          </span>
+        </header>
         <p className="release-notes-page__alt">
           {/* Native language name via Intl — keeps source free of Arabic literals (V2-305 guard). */}
           <a href={`?lang=${other}`} lang={other}>

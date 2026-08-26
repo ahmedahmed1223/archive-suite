@@ -1,20 +1,35 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { posix, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
+const REPOSITORY_URL = "https://github.com/ahmedahmed1223/archive-suite";
 
 function readNotesFile(path) {
   if (!existsSync(path)) throw new Error(`missing release-notes file: ${path}`);
   return readFileSync(path, "utf8").replace(/^# .+\r?\n+/u, "").trim();
 }
 
+function releaseDocumentUrl(path, version) {
+  const [pathname, hash = ""] = path.split("#", 2);
+  const normalized = posix.normalize(`docs/release-notes/${pathname}`);
+  return `${REPOSITORY_URL}/blob/v${version}/${normalized}${hash ? `#${hash}` : ""}`;
+}
+
+function rewriteInternalLinks(markdown, version) {
+  return markdown.replace(/\]\(([^)]+)\)/gu, (match, target) => {
+    if (/^(?:https?:|mailto:|#)/iu.test(target)) return match;
+    return `](${releaseDocumentUrl(target, version)})`;
+  });
+}
+
 export function buildReleaseNotes(version, root = process.cwd()) {
   if (!VERSION.test(version)) throw new Error(`invalid release version: ${version}`);
   const directory = join(root, "docs", "release-notes");
-  const arabic = readNotesFile(join(directory, `v${version}.ar.md`));
-  const english = readNotesFile(join(directory, `v${version}.md`));
-  return `# Archive Suite v${version}\n\n## العربية\n\n${arabic}\n\n---\n\n## English\n\n${english}\n`;
+  const arabic = rewriteInternalLinks(readNotesFile(join(directory, `v${version}.ar.md`)), version);
+  const english = rewriteInternalLinks(readNotesFile(join(directory, `v${version}.md`)), version);
+  const englishNotesUrl = `${REPOSITORY_URL}/blob/v${version}/docs/release-notes/v${version}.md`;
+  return `# Archive Suite v${version}\n\n> [!TIP]\n> هذا ملخص الإصدار بالعربية. ابدأ بقراءة التغييرات أدناه، ثم اختر الحزمة المناسبة من قسم **Assets** في نهاية الصفحة.\n\n[English release notes](${englishNotesUrl})\n\n<div dir="rtl" align="right">\n\n## العربية\n\n${arabic}\n\n## التنزيلات والتحقق\n\n- **Windows وLinux:** اختر حزمة النظام الأصلية المناسبة من قسم **Assets**.\n- **التثبيت غير المتصل:** نزّل جميع الأجزاء التي تحمل الاسم نفسه ثم اتبع ملف \`OFFLINE-BUNDLE-README.txt\`.\n- **السلامة:** تحقق من الملفات بواسطة \`SHA256SUMS\` قبل التثبيت.\n\n</div>\n\n<details>\n<summary>English release notes</summary>\n\n<div dir="ltr" align="left">\n\n${english}\n\n</div>\n\n</details>\n`;
 }
 
 function runCli() {
