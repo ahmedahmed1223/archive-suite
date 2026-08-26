@@ -627,16 +627,43 @@
   border-radius: var(--radius-sm);
   background: var(--color-bg-secondary);
   color: var(--color-text-primary);
-  text-decoration: none;
   font-size: var(--font-size-sm);
 }
 
-.workspace-resume-link:hover {
+.workspace-resume-link > a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: inherit;
+  text-decoration: none;
+}
+
+.workspace-resume-link:hover,
+.workspace-resume-link:focus-within {
   background: var(--color-bg-tertiary);
 }
 
 .workspace-resume-link small {
   color: var(--color-text-tertiary);
+}
+
+.workspace-resume-link__dismiss {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.workspace-resume-link__dismiss:hover,
+.workspace-resume-link__dismiss:focus-visible {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 /* ── V15-SEARCH-002: reusable active-filter bar ────────────── */

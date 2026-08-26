@@ -207,6 +207,7 @@ async function main() {
     "playwright",
     "test",
     ...e2eSpecs,
+    ...(process.env.ARCHIVE_E2E_GREP ? ["--grep", process.env.ARCHIVE_E2E_GREP] : []),
   ]);
   const e2e = spawnChild("playwright", e2eCommand.command, e2eCommand.args, {
     env: {

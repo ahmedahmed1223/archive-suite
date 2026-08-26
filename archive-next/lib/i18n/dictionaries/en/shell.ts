@@ -26,6 +26,7 @@ export const shell = {
   collapseAllGroups: "Collapse all groups",
   workspaceCommandBar: "Workspace command bar",
   resumeWork: "Resume work: {name}",
+  dismissResumeWork: "Dismiss resume suggestion",
   archiveManager: "Archive manager",
   workspace: "Workspace",
   currentLocation: "Current location",

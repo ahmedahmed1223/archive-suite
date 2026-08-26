@@ -51,6 +51,7 @@ export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: 
     }
   }, [auth.user?.id, t.shell.workspace, pathname]);
   const [shortcutDisplay, setShortcutDisplay] = useState("Ctrl / Cmd + K");
+  const [resumeDismissed, setResumeDismissed] = useState(false);
 
   // V15-DAILY-004: record the current workspace route so the resume link can
   // offer the previous one. Only valid, known routes are persisted (per-user
@@ -87,7 +88,14 @@ export default function WorkspaceCommandBar({ tipsPage }: Readonly<{ tipsPage?: 
 
   return (
     <div className="workspace-commandbar" data-layout="workspace-commandbar" aria-label={t.shell.workspaceCommandBar}>
-      <WorkResumeLink target={resumeTarget} pathname={pathname} enabled={isContextRecordingEnabled() && (pathname === "/work-inbox" || pathname === "/")} resumeLabel={t.shell.resumeWork} />
+      <WorkResumeLink
+        target={resumeTarget}
+        pathname={pathname}
+        enabled={!resumeDismissed && isContextRecordingEnabled() && (pathname === "/work-inbox" || pathname === "/")}
+        resumeLabel={t.shell.resumeWork}
+        dismissLabel={t.shell.dismissResumeWork}
+        onDismiss={() => setResumeDismissed(true)}
+      />
       <div className="workspace-commandbar__context">
         <div className="workspace-commandbar__user" title={userLabel}>
           <UserCircle size={34} aria-hidden="true" />

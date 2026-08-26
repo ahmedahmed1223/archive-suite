@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 import { useMemo } from "react";
 
 export type WorkResumeTarget = {
@@ -23,11 +23,15 @@ export default function WorkResumeLink({
   pathname,
   enabled,
   resumeLabel,
+  dismissLabel,
+  onDismiss,
 }: Readonly<{
   target: WorkResumeTarget | null;
   pathname: string;
   enabled: boolean;
   resumeLabel: string;
+  dismissLabel?: string;
+  onDismiss?: () => void;
 }>) {
   const isStale = useMemo(() => {
     if (!target) return true;
@@ -42,11 +46,18 @@ export default function WorkResumeLink({
   const relative = formatRelative(target.visitedAt);
 
   return (
-    <Link className="workspace-resume-link" href={target.pathname}>
-      <ArrowRight size={14} aria-hidden="true" />
-      <span>{resumeLabel.replace("{name}", target.label)}</span>
-      <small>{relative}</small>
-    </Link>
+    <div className="workspace-resume-link">
+      <Link href={target.pathname}>
+        <ArrowRight size={14} aria-hidden="true" />
+        <span>{resumeLabel.replace("{name}", target.label)}</span>
+        <small>{relative}</small>
+      </Link>
+      {onDismiss && dismissLabel && (
+        <button type="button" className="workspace-resume-link__dismiss" onClick={onDismiss} aria-label={dismissLabel}>
+          <X size={14} aria-hidden="true" />
+        </button>
+      )}
+    </div>
   );
 }
 

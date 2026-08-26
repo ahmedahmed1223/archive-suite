@@ -197,3 +197,29 @@ test.describe('Arabic RTL audit (V1-791)', () => {
     await expect(permissionScope.locator('strong')).toHaveAttribute('dir', 'ltr');
   });
 });
+
+test.describe('V15 narrow-workspace acceptance', () => {
+  const routes = ['/work-inbox', '/search', '/archive'] as const;
+  const locales = [
+    { code: 'ar', direction: 'rtl' },
+    { code: 'en', direction: 'ltr' },
+  ] as const;
+
+  for (const locale of locales) {
+    for (const url of routes) {
+      test(`${url} remains accessible at 320px in ${locale.code.toUpperCase()}`, async ({ roleSession }) => {
+        const { page, context } = await roleSession('viewer');
+        const baseUrl = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:3000';
+        await context.addCookies([{ name: 'archive_locale', value: locale.code, url: baseUrl }]);
+        await page.setViewportSize({ width: 320, height: 800 });
+        await visit(page, url, 'ready');
+
+        await expect(page.locator('html')).toHaveAttribute('dir', locale.direction);
+        await expect(page.locator('main h1')).toHaveCount(1);
+        const widths = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
+        expect(widths.scroll, `${url} [${locale.code}] overflow at 320px`).toBeLessThanOrEqual(widths.client);
+        await auditAxe(page, `${url} [viewer/ready] @ 320px ${locale.code}`);
+      });
+    }
+  }
+});

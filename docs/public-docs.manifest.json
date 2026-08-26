@@ -26,6 +26,7 @@
     { "id": "support", "audience": ["operator"], "lifecycle": "living", "english": "docs/ops/support.md", "arabic": "docs/ops/support.ar.md", "sections": [{ "id": "before", "english": "Before troubleshooting", "arabic": "قبل التشخيص" }, { "id": "request", "english": "What to include in a support request", "arabic": "محتوى طلب الدعم" }, { "id": "severity", "english": "Severity", "arabic": "درجة الخطورة" }, { "id": "recovery", "english": "Safe recovery", "arabic": "الاستعادة الآمنة" }], "sourceOfTruth": ["scripts/control-center.mjs"] },
     { "id": "known-limitations", "audience": ["user", "operator", "developer"], "lifecycle": "living", "english": "docs/known-limitations.md", "arabic": "docs/known-limitations.ar.md", "sourceOfTruth": ["archive-laravel/config/odbc.php", "archive-laravel/config/media.php", "docs/performance/baseline.v1.json"] },
     { "id": "release-v1-4-1", "audience": ["user", "operator", "developer"], "lifecycle": "release-history", "english": "docs/release-notes/v1.4.1.md", "arabic": "docs/release-notes/v1.4.1.ar.md", "sourceOfTruth": ["package.json", ".github/workflows/release.yml"] },
+    { "id": "release-v1-5-0", "audience": ["user", "operator", "developer"], "lifecycle": "release-history", "english": "docs/release-notes/v1.5.0.md", "arabic": "docs/release-notes/v1.5.0.ar.md", "sourceOfTruth": ["package.json", ".github/workflows/release.yml"] },
     { "id": "release-v1-4-0", "audience": ["user", "operator", "developer"], "lifecycle": "release-history", "english": "docs/release-notes/v1.4.0.md", "arabic": "docs/release-notes/v1.4.0.ar.md", "sourceOfTruth": ["package.json", ".github/workflows/release.yml"] },
     { "id": "release-v1-3-0", "audience": ["user", "operator", "developer"], "lifecycle": "release-history", "english": "docs/release-notes/v1.3.0.md", "arabic": "docs/release-notes/v1.3.0.ar.md", "sourceOfTruth": ["package.json", ".github/workflows/release.yml"] },
     { "id": "release-v1-3-1", "audience": ["user", "operator", "developer"], "lifecycle": "release-history", "english": "docs/release-notes/v1.3.1.md", "arabic": "docs/release-notes/v1.3.1.ar.md", "sourceOfTruth": ["package.json", ".github/workflows/release.yml"] },
@@ -45,6 +46,7 @@
     { "path": "docs/superpowers/", "lifecycle": "internal-design-record" }
   ],
   "excludedFiles": [
+    { "path": "archive-next/docs/v15-visual-baselines.md", "lifecycle": "internal-release-gate-evidence" },
     { "path": "docs/releases/1.5-ui-ux-acceptance.md", "lifecycle": "internal-release-gate-evidence" },
     { "path": "docs/release/v1.2.0-file-review.md", "lifecycle": "internal-release-review" },
     { "path": "docs/evidence/v1.1.0-native/README.md", "lifecycle": "release-evidence-index" },

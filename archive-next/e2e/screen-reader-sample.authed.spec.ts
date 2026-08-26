@@ -20,6 +20,7 @@ import { DYNAMIC_ROUTE_PARAMS, ROUTE_COVERAGE } from './fixtures/route-inventory
  */
 
 const TARGET_ROUTES = [
+  '/work-inbox',
   '/archive',
   '/archive/[id]',
   '/search',

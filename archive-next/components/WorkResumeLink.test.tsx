@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import WorkResumeLink from "./WorkResumeLink";
 
 describe("WorkResumeLink", () => {
@@ -50,5 +50,21 @@ describe("WorkResumeLink", () => {
       <WorkResumeLink target={{ pathname: "/archive", label: "الأرشيف", visitedAt: "invalid" }} pathname="/work-inbox" enabled resumeLabel={label} />
     );
     expect(container.querySelector(".workspace-resume-link")).toBeNull();
+  });
+
+  it("lets the command surface dismiss a suggestion for the current session", () => {
+    const onDismiss = vi.fn();
+    render(
+      <WorkResumeLink
+        target={{ pathname: "/archive", label: "الأرشيف", visitedAt: new Date().toISOString() }}
+        pathname="/work-inbox"
+        enabled
+        resumeLabel={label}
+        dismissLabel="إخفاء الاقتراح"
+        onDismiss={onDismiss}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "إخفاء الاقتراح" }));
+    expect(onDismiss).toHaveBeenCalledOnce();
   });
 });

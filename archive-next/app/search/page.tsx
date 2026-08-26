@@ -18,6 +18,7 @@ import { useAuthSession } from "@/lib/auth-session";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
 import { buildSearchPlaybackHref, buildActiveSearchFilters, resolveSearchSession as serializeSearchSession, describePreviewForScreenReader } from "@/lib/search";
 import ActiveFilterBar from "@/components/ActiveFilterBar";
+import SearchResultPreview from "@/components/SearchResultPreview";
 import { resolveSearchSession, resetSearchSession } from "@/lib/search-session";
 import { clearRecentSearches, listRecentSearches, recordRecentSearch } from "@/lib/recent-searches";
 import { readPersistedViewState, writePersistedViewState } from "@/lib/persisted-view-state";
@@ -159,7 +160,9 @@ function SearchPageContent() {
   // Per-user filter/view persistence (V1-752); URL params still win on load.
   useEffect(() => {
     if (authStatus === "loading" || !userId) return;
-    writePersistedViewState<SearchPersistedViewState>(userId, SEARCH_VIEW_STATE_PAGE, { typeFilter, tagFilter, viewMode });
+    writePersistedViewState<SearchPersistedViewState>(userId, SEARCH_VIEW_STATE_PAGE, isContextRecordingEnabled()
+      ? { typeFilter, tagFilter, viewMode }
+      : { viewMode });
   }, [authStatus, tagFilter, typeFilter, userId, viewMode]);
 
   useEffect(() => {
@@ -814,24 +817,28 @@ function SearchPageContent() {
             ) : null}
           </div>
 
-          <aside className="record-preview-rail" aria-label={searchCopy.previewRailAriaLabel} aria-live="polite">
-            {/* V15-SEARCH-004: screen-reader summary announced on preview change. */}
-            <p className="sr-only">{previewSummary ? `${previewSummary.title} — ${previewSummary.descriptionSnippet}` : ""}</p>
-            {previewRecord ? (
+          <SearchResultPreview
+            records={filteredRecords}
+            selectedId={previewId}
+            previewLabel={searchCopy.previewRailAriaLabel}
+            empty={<EmptyState title={searchCopy.noPreviewTitle} description={searchCopy.noPreviewDescription} />}
+            renderPreview={(record, headingId) => (
               <>
+                {/* The summary changes with the selected record and is announced politely. */}
+                <p className="sr-only">{previewSummary ? `${previewSummary.title} — ${previewSummary.descriptionSnippet}` : ""}</p>
                 <div className="panel-section-header">
                   <span className="badge">{searchCopy.preview}</span>
-                  <h2>{previewRecord.title || searchCopy.untitled}</h2>
+                  <h2 id={headingId}>{record.title || searchCopy.untitled}</h2>
                 </div>
-                <p>{previewRecord.description || searchCopy.noDescription}</p>
+                <p>{record.description || searchCopy.noDescription}</p>
                 <div className="kv-grid">
                   <div className="kv-item">
                     <strong>{searchCopy.store}</strong>
-                    <span>{previewRecord.store || "-"}</span>
+                    <span>{record.store || "-"}</span>
                   </div>
                   <div className="kv-item">
                     <strong>{searchCopy.type}</strong>
-                    <span>{previewRecord.type || "-"}</span>
+                    <span>{record.type || "-"}</span>
                   </div>
                   <div className="kv-item">
                     <strong>{searchCopy.selectedTagLabel}</strong>
@@ -839,22 +846,20 @@ function SearchPageContent() {
                   </div>
                   <div className="kv-item">
                     <strong>{searchCopy.updatedLabel}</strong>
-                    <span>{formatDate(previewRecord.updatedAt || previewRecord.createdAt, displaySettings, locale)}</span>
+                    <span>{formatDate(record.updatedAt || record.createdAt, displaySettings, locale)}</span>
                   </div>
                 </div>
-                {previewRecord.tags && previewRecord.tags.length > 0 ? (
+                {record.tags && record.tags.length > 0 ? (
                   <div className="tags">
-                    {previewRecord.tags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
+                    {record.tags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
                   </div>
                 ) : null}
-                <a className="button button-primary" href={`/archive/${encodeURIComponent(previewRecord.id)}`}>
+                <a className="button button-primary" href={`/archive/${encodeURIComponent(record.id)}`}>
                   {searchCopy.openDetails}
                 </a>
               </>
-            ) : (
-              <EmptyState title={searchCopy.noPreviewTitle} description={searchCopy.noPreviewDescription} />
             )}
-          </aside>
+          />
         </section>
       ) : null}
     </AppShell>
