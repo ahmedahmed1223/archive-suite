@@ -96,8 +96,23 @@ class AuthenticateArchiveApiRequest
             return null;
         }
 
+        $hash = ApiToken::hash($token);
+
+        $current = ApiSession::query()
+            ->where('access_token_hash', $hash)
+            ->where('access_expires_at', '>', now())
+            ->first();
+        if ($current) {
+            return $current;
+        }
+
+        // V14-UX-REVIEW: a parallel tab still holds the access token this
+        // session rotated away from moments ago — honor it inside the same
+        // short grace window instead of 401-ing it into a forced logout.
+        $graceSeconds = (int) config('archive.auth.refresh_grace_seconds', 30);
         return ApiSession::query()
-            ->where('access_token_hash', ApiToken::hash($token))
+            ->where('previous_access_token_hash', $hash)
+            ->where('rotated_at', '>=', now()->subSeconds($graceSeconds))
             ->where('access_expires_at', '>', now())
             ->first();
     }

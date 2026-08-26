@@ -75,17 +75,50 @@ class AuthController extends Controller
             return $rejected;
         }
 
-        $session = $this->sessionFromRefreshCookie($request);
+        $graceReissue = false;
+        $session = $this->sessionFromRefreshCookie($request, $graceReissue);
 
         if (! $session) {
             return response()->json(ApiError::envelope('Unauthorized.', 401), 401);
         }
 
+        // V14-UX-REVIEW: a token that was rotated within the grace window
+        // belongs to a parallel tab that lost the race. Re-issue a fresh
+        // session for the same user instead of logging them out. The stale
+        // row keeps its own (now previous) hash so the window self-expires.
+        if ($graceReissue) {
+            return $this->issueSession($session->user, 200, $session->remember_me);
+        }
+
         $user = $session->user;
         $rememberMe = $session->remember_me;
-        $session->delete();
 
-        return $this->issueSession($user, 200, $rememberMe);
+        // Rotate in place: remember the old hash briefly so a racing sibling
+        // request can still recover, then hand this session fresh tokens.
+        $accessToken = ApiToken::create();
+        $refreshToken = ApiToken::create();
+        $accessExpiresAt = now()->addMinutes((int) config('archive.auth.access_ttl_minutes'));
+        $refreshExpiresAt = now()->addDays((int) config('archive.auth.refresh_ttl_days'));
+
+        $session->update([
+            'previous_refresh_token_hash' => $session->refresh_token_hash,
+            'previous_access_token_hash' => $session->access_token_hash,
+            'rotated_at' => now(),
+            'access_token_hash' => ApiToken::hash($accessToken),
+            'refresh_token_hash' => ApiToken::hash($refreshToken),
+            'access_expires_at' => $accessExpiresAt,
+            'refresh_expires_at' => $refreshExpiresAt,
+            'last_used_at' => now(),
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'user' => $this->formatUser($user),
+            'accessToken' => $accessToken,
+            'expiresAt' => $accessExpiresAt->toISOString(),
+        ], 200)
+            ->withCookie($this->refreshCookie($refreshToken, $refreshExpiresAt, $rememberMe))
+            ->withCookie($this->sessionCookie($refreshExpiresAt, $rememberMe));
     }
 
     public function logout(Request $request): JsonResponse
@@ -165,7 +198,7 @@ class AuthController extends Controller
             ->withCookie($this->sessionCookie($refreshExpiresAt, $rememberMe));
     }
 
-    private function sessionFromRefreshCookie(Request $request): ?ApiSession
+    private function sessionFromRefreshCookie(Request $request, ?bool &$withinGrace = null): ?ApiSession
     {
         $token = $request->cookie($this->cookieName());
 
@@ -173,10 +206,33 @@ class AuthController extends Controller
             return null;
         }
 
-        return ApiSession::query()
-            ->where('refresh_token_hash', ApiToken::hash($token))
+        $hash = ApiToken::hash($token);
+
+        $current = ApiSession::query()
+            ->where('refresh_token_hash', $hash)
             ->where('refresh_expires_at', '>', now())
             ->first();
+        if ($current) {
+            $withinGrace = false;
+
+            return $current;
+        }
+
+        // V14-UX-REVIEW: grace window — accept a hash we rotated away from in
+        // the last few seconds as a parallel-tab loser, not token theft.
+        $graceSeconds = (int) config('archive.auth.refresh_grace_seconds', 30);
+        $recentlyRotated = ApiSession::query()
+            ->where('previous_refresh_token_hash', $hash)
+            ->where('rotated_at', '>=', now()->subSeconds($graceSeconds))
+            ->where('refresh_expires_at', '>', now())
+            ->first();
+        if ($recentlyRotated) {
+            $withinGrace = true;
+
+            return $recentlyRotated;
+        }
+
+        return null;
     }
 
     private function refreshCookie(string $token, mixed $expiresAt, bool $rememberMe): Cookie

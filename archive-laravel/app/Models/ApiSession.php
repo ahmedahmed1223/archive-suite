@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['id', 'user_id', 'remember_me', 'access_token_hash', 'refresh_token_hash', 'access_expires_at', 'refresh_expires_at', 'last_used_at'])]
+#[Fillable(['id', 'user_id', 'remember_me', 'access_token_hash', 'refresh_token_hash', 'previous_refresh_token_hash', 'previous_access_token_hash', 'access_expires_at', 'refresh_expires_at', 'last_used_at', 'rotated_at'])]
 class ApiSession extends Model
 {
     public $incrementing = false;
