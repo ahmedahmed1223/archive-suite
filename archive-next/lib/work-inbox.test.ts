@@ -69,7 +69,7 @@ describe("groupWorkInboxItems", () => {
       { id: "next", type: "task", dueAt: "2026-08-26T09:00:00+03:00" },
       { id: "none", type: "notification", dueAt: null },
     ];
-    const groups = groupWorkInboxItems(items, now);
+    const groups = groupWorkInboxItems(items, now, "Europe/Istanbul");
     expect(
       groups.map((g) => [g.key, g.items.map((i) => i.id)])
     ).toEqual([
@@ -87,7 +87,7 @@ describe("groupWorkInboxItems", () => {
       { id: "u2", type: "task", dueAt: "2026-08-30T09:00:00+03:00" },
       { id: "u1", type: "review", dueAt: "2026-08-29T09:00:00+03:00" },
     ];
-    const groups = groupWorkInboxItems(items, now);
+    const groups = groupWorkInboxItems(items, now, "Europe/Istanbul");
     const byKey = Object.fromEntries(groups.map((g) => [g.key, g.items.map((i) => i.id)]));
     expect(byKey["today"]).toEqual(["t1", "t2"]);
     expect(byKey["upcoming"]).toEqual(["u1", "u2"]);
@@ -100,7 +100,7 @@ describe("groupWorkInboxItems", () => {
       // invalid date string → undated
       { id: "bad", type: "task", dueAt: "not-a-date" as unknown as string },
     ];
-    const groups = groupWorkInboxItems(items, now);
+    const groups = groupWorkInboxItems(items, now, "Europe/Istanbul");
     const allIds = groups.flatMap((g) => g.items.map((i) => i.id));
     expect(allIds).toContain("mid");
     expect(allIds).toContain("bad");

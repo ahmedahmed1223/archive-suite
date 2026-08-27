@@ -47,31 +47,36 @@ const GROUP_ORDER: WorkInboxGroupKey[] = [
   "undated",
 ];
 
-const startOfLocalDay = (now: Date): number => {
-  const d = new Date(now);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-};
-
-const endOfLocalDay = (now: Date): number => {
-  const d = new Date(now);
-  d.setHours(23, 59, 59, 999);
-  return d.getTime();
+const calendarDay = (value: Date, timeZone: string): string | null => {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(value);
+    const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+    return `${byType.year}-${byType.month}-${byType.day}`;
+  } catch {
+    return null;
+  }
 };
 
 export function groupWorkInboxItems<T extends WorkInboxSortItem>(
   items: readonly T[],
-  now: Date = new Date()
+  now: Date = new Date(),
+  timeZone: string = Intl.DateTimeFormat().resolvedOptions().timeZone
 ): WorkInboxGroup<T>[] {
-  const dayStart = startOfLocalDay(now);
-  const dayEnd = endOfLocalDay(now);
+  const today = calendarDay(now, timeZone);
 
   const bucket = (item: WorkInboxSortItem): WorkInboxGroupKey => {
     if (!item.dueAt) return "undated";
-    const t = new Date(item.dueAt).getTime();
-    if (Number.isNaN(t)) return "undated";
-    if (t < dayStart) return "overdue";
-    if (t <= dayEnd) return "today";
+    const dueAt = new Date(item.dueAt);
+    if (Number.isNaN(dueAt.getTime()) || !today) return "undated";
+    const dueDay = calendarDay(dueAt, timeZone);
+    if (!dueDay) return "undated";
+    if (dueDay < today) return "overdue";
+    if (dueDay === today) return "today";
     return "upcoming";
   };
 
