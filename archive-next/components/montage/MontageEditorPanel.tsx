@@ -75,7 +75,9 @@ export default function MontageEditorPanel({
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<EditorState>(initialState);
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
+  const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string>("");
+  const [qcReady, setQcReady] = useState(false);
   const [presence, setPresence] = useState<PresenceSnapshot>({ projectId, editors: [] });
 
   const dispatch = useCallback(
@@ -85,6 +87,11 @@ export default function MontageEditorPanel({
 
   const undo = useCallback(() => setState((c) => undoEditor(c)), []);
   const redo = useCallback(() => setState((c) => redoEditor(c)), []);
+
+  // Any timeline edit invalidates a previous export verdict.
+  useEffect(() => {
+    setQcReady(false);
+  }, [state.timeline]);
 
   // Presence poll — safe against unmount and transient errors.
   const pollRef = useRef<number | null>(null);
@@ -119,6 +126,10 @@ export default function MontageEditorPanel({
     try {
       const res = await api.montageSaveRevision(projectId, serializeRevision(state));
       if (res.ok) {
+        const saved = res as { revisionNumber?: number };
+        if (typeof saved.revisionNumber === "number") {
+          setState((current) => ({ ...current, revisionNumber: saved.revisionNumber }));
+        }
         setSaveStatus(copy.savedNewRevision);
         return;
       }
@@ -145,6 +156,33 @@ export default function MontageEditorPanel({
     },
     [api, projectId, state.revisionNumber],
   );
+
+  const runQc = useCallback(async () => {
+    const hasTrack = state.timeline.tracks.length > 0;
+    const hasValidClip = state.timeline.clips.length > 0 && state.timeline.clips.every((clip) =>
+      Number.isFinite(clip.timelineStart)
+      && Number.isFinite(clip.sourceIn)
+      && Number.isFinite(clip.sourceOut)
+      && clip.timelineStart >= 0
+      && clip.sourceOut > clip.sourceIn
+      && state.timeline.tracks.some((track) => track.id === clip.trackId),
+    );
+    setQcReady(hasTrack && hasValidClip);
+  }, [state.timeline]);
+
+  const addMaterial = useCallback((item: MaterialBinItem) => {
+    const selectedClip = selectedClipId === null
+      ? null
+      : state.timeline.clips.find((clip) => clip.id === selectedClipId) ?? null;
+    const targetTrack = selectedClip?.trackId ?? state.timeline.tracks[0]?.id;
+    if (!targetTrack) return;
+    dispatch({
+      type: "add",
+      trackId: targetTrack,
+      source: item.source,
+      durationSeconds: item.durationSeconds,
+    });
+  }, [dispatch, selectedClipId, state.timeline.clips, state.timeline.tracks]);
 
   const canUndo = state.past.length > 0;
   const canRedo = state.future.length > 0;
@@ -175,8 +213,9 @@ export default function MontageEditorPanel({
       <div className="montage-editor-panel__columns">
         <MediaBin
           items={materials}
-          selectedId={null}
-          onSelect={() => undefined}
+          selectedId={selectedMaterialId}
+          onSelect={(item) => setSelectedMaterialId(item.id)}
+          onAddToTimeline={addMaterial}
           copy={{
             binAriaLabel: copy.binAriaLabel,
             listLabel: copy.materialsListLabel,
@@ -198,7 +237,8 @@ export default function MontageEditorPanel({
         <ExportDrawer
           projectId={projectId}
           currentRevision={state.revisionNumber}
-          qcReady={false}
+          qcReady={qcReady}
+          onRunQc={runQc}
           onRequestExport={requestExport}
           copy={{
             drawerAriaLabel: copy.drawerAriaLabel,

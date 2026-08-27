@@ -39,6 +39,12 @@ export type EditorState = {
 };
 
 export type EditorAction =
+  | {
+      type: "add";
+      trackId: string;
+      source: MontageSourceRef;
+      durationSeconds: number;
+    }
   | { type: "split"; clipId: string; at: number }
   | { type: "move"; clipId: string; trackId: string; start: number }
   | { type: "rippleTrim"; clipId: string; out: number }
@@ -72,6 +78,19 @@ function updateClip(
   };
 }
 
+function newClipId(): string {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  // The server accepts UUID clip identifiers. This fallback is only for
+  // runtimes without Web Crypto (for example older embedded web views).
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (token) => {
+    const value = Math.floor(Math.random() * 16);
+    return (token === "x" ? value : (value & 0x3) | 0x8).toString(16);
+  });
+}
+
 /** Ripple trim: shorten one clip and pull every later clip on that track left. */
 function rippleTrimClips(
   clips: MontageClipState[],
@@ -102,6 +121,32 @@ function rippleTrimClips(
 
 export function reduceEditor(state: EditorState, action: EditorAction, fps = 25): EditorState {
   switch (action.type) {
+    case "add": {
+      if (!state.timeline.tracks.some((track) => track.id === action.trackId)) return state;
+      const duration = snapToFrame(action.durationSeconds, fps);
+      if (!Number.isFinite(duration) || duration <= 0) return state;
+      const timelineStart = state.timeline.clips
+        .filter((clip) => clip.trackId === action.trackId)
+        .reduce(
+          (end, clip) => Math.max(end, clip.timelineStart + (clip.sourceOut - clip.sourceIn)),
+          0,
+        );
+      return withHistory(state, {
+        ...state.timeline,
+        clips: [
+          ...state.timeline.clips,
+          {
+            id: newClipId(),
+            trackId: action.trackId,
+            source: action.source,
+            timelineStart,
+            sourceIn: 0,
+            sourceOut: duration,
+          },
+        ],
+      });
+    }
+
     case "split": {
       const at = snapToFrame(action.at, fps);
       const target = state.timeline.clips.find((c) => c.id === action.clipId);

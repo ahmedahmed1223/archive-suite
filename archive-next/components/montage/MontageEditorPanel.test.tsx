@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import MontageEditorPanel from "./MontageEditorPanel";
 import { type EditorState } from "@/lib/montage-editor";
 
@@ -117,5 +117,40 @@ describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
     // direction that would break Arabic. dir is set by the studio shell/page.
     const columns = container.querySelectorAll(".montage-editor-panel__columns");
     expect(columns).toHaveLength(1);
+  });
+
+  it("enables export only after the editor QC check passes", async () => {
+    render(
+      <MontageEditorPanel
+        projectId="p1"
+        initialState={makeState()}
+        materials={[]}
+        copy={copy}
+      />,
+    );
+
+    const startExport = screen.getByRole("button", { name: copy.startExport });
+    expect(startExport).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: copy.runQc }));
+    await waitFor(() => expect(startExport).toBeEnabled());
+  });
+
+  it("adds material to the selected track from the material bin", () => {
+    render(
+      <MontageEditorPanel
+        projectId="p1"
+        initialState={makeState()}
+        materials={[{
+          id: "m1",
+          name: "Interview",
+          durationSeconds: 5,
+          source: { recordId: "r2", sourceVersionToken: "sha256:two" },
+        }]}
+        copy={copy}
+      />,
+    );
+
+    fireEvent.doubleClick(screen.getByRole("option", { name: /Interview/ }));
+    expect(screen.getByText(/rev 1 · 2 clips/)).toBeInTheDocument();
   });
 });

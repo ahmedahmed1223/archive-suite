@@ -9,13 +9,15 @@ import PageToolbar from "@/components/PageToolbar";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { createArchiveApiClient } from "@/lib/archive-api";
 import { type EditorState } from "@/lib/montage-editor";
+import { deriveMontageMaterials } from "@/lib/montage-materials";
 import MontageEditorPanel from "@/components/montage/MontageEditorPanel";
+import type { MaterialBinItem } from "@/components/montage/MediaBin";
 
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "not-found" }
-  | { status: "ready"; state: EditorState };
+  | { status: "ready"; state: EditorState; materials: MaterialBinItem[] };
 
 export default function MontageEditorPage() {
   const params = useParams<{ id: string }>();
@@ -37,7 +39,10 @@ export default function MontageEditorPage() {
       setLoad(projectRes.error === "Forbidden." ? { status: "not-found" } : { status: "error", message: projectRes.error });
       return;
     }
-    const project = projectRes as unknown as { revision: number };
+    const project = projectRes as unknown as {
+      revision: number;
+      clips?: EditorState["timeline"]["clips"];
+    };
     if (!revRes.ok) {
       // No revision yet — start from an empty timeline.
       setLoad({
@@ -45,10 +50,11 @@ export default function MontageEditorPage() {
         state: {
           projectId,
           revisionNumber: project.revision ?? 0,
-          timeline: { tracks: [], clips: [] },
+          timeline: { tracks: [{ id: "video-1", kind: "video", name: "V1" }], clips: [] },
           past: [],
           future: [],
         },
+        materials: deriveMontageMaterials(project.clips ?? []),
       });
       return;
     }
@@ -69,6 +75,7 @@ export default function MontageEditorPage() {
         past: [],
         future: [],
       },
+      materials: deriveMontageMaterials(rev.clips ?? project.clips ?? []),
     });
   }, [api, projectId]);
 
@@ -97,7 +104,7 @@ export default function MontageEditorPage() {
           <MontageEditorPanel
             projectId={projectId}
             initialState={load.state}
-            materials={[]}
+            materials={load.materials}
             copy={{
               ...copy,
               presenceLabel: copy.presenceLabel,

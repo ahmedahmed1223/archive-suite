@@ -74,6 +74,25 @@ describe("montage editor reducer (Task 4)", () => {
     expect(rejected.timeline).toEqual(makeState().timeline);
   });
 
+  it("adds selected material at the end of the target track", () => {
+    const next = reduceEditor(makeState(), {
+      type: "add",
+      trackId: "t1",
+      source: { recordId: "r3", sourceVersionToken: "sha256:three" },
+      durationSeconds: 4,
+    });
+
+    const added = next.timeline.clips.at(-1);
+    expect(added).toMatchObject({
+      trackId: "t1",
+      source: { recordId: "r3", sourceVersionToken: "sha256:three" },
+      timelineStart: 16,
+      sourceIn: 0,
+      sourceOut: 4,
+    });
+    expect(added?.id).toMatch(/^[0-9a-f-]{36}$/i);
+  });
+
   it("undoes and redoes through history stacks", () => {
     let state = makeState();
     state = reduceEditor(state, { type: "rippleTrim", clipId: "a", out: 7 });
