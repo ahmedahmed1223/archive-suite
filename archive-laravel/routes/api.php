@@ -451,6 +451,7 @@ Route::prefix('v1')->group(function (): void {
 Route::post('/montage-projects/{id}/revision', [MontageRevisionsController::class, 'store']);
         Route::post('/montage-projects/{id}/revisions/{revisionId}/restore', [MontageRevisionsController::class, 'restore']);
         Route::post('/montage-projects/{id}/exports', [MontageExportsController::class, 'store']);
+        Route::post('/montage-projects/{id}/exports/qc', [MontageExportsController::class, 'qc']);
         Route::get('/montage-projects/{id}/exports/{exportId}', [MontageExportsController::class, 'show']);
         Route::post('/montage-projects/{id}/exports/{exportId}/cancel', [MontageExportsController::class, 'cancel']);
         Route::post('/montage-projects/{id}/exports/{exportId}/retry', [MontageExportsController::class, 'retry']);

@@ -132,4 +132,24 @@ class MontageExportService
             throw $exception;
         }
     }
+
+    /** Runs the same pre-queue checks used by export without creating work. */
+    public function assertReady(MontageProject $project, int $expectedRevision, string $preset, User $actor): void
+    {
+        $project->refresh();
+        if ((int) $project->revision !== $expectedRevision) {
+            throw new MontageRevisionConflict((int) $project->revision, $expectedRevision);
+        }
+
+        $revision = $project->revisions()
+            ->where('revision_number', $expectedRevision)
+            ->whereKey($project->active_revision_id)
+            ->first();
+        if ($revision === null) {
+            throw new MontageValidationException(['revision' => 'Project has no revision to export.']);
+        }
+
+        $manifest = $this->manifests->build($preset, $revision->id, $revision->clips ?? [], $actor);
+        $this->qc->assertReady($revision, $manifest);
+    }
 }

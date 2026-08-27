@@ -1,8 +1,21 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import MontageEditorPanel from "./MontageEditorPanel";
 import { type EditorState } from "@/lib/montage-editor";
+
+const { montageExportQc, collaborationPresence } = vi.hoisted(() => ({
+  montageExportQc: vi.fn(),
+  collaborationPresence: vi.fn(),
+}));
+
+vi.mock("@/lib/archive-api", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
+  return {
+    ...actual,
+    createArchiveApiClient: () => ({ montageExportQc, collaborationPresence }),
+  };
+});
 
 function makeState(): EditorState {
   return {
@@ -54,6 +67,10 @@ const copy = {
 } as const;
 
 afterEach(cleanup);
+beforeEach(() => {
+  montageExportQc.mockResolvedValue({ ok: true, ready: true, revisionNumber: 1 });
+  collaborationPresence.mockResolvedValue({ ok: true, participants: [] });
+});
 
 describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
   it("renders the editing surface with labelled regions", () => {

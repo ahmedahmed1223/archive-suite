@@ -39,6 +39,26 @@ class MontageExportsApiTest extends TestCase
         Queue::assertPushedOn('default', ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $mediaJob->id);
     }
 
+    public function test_pre_export_qc_uses_the_export_manifest_checks_without_creating_work(): void
+    {
+        Queue::fake();
+        $owner = User::factory()->create(['role' => 'editor']);
+        [$project] = $this->projectWithRevision($owner);
+
+        $this->actingAs($owner)
+            ->postJson("/api/v1/montage-projects/{$project->id}/exports/qc", [
+                'expectedRevision' => 1,
+                'preset' => 'web-1080p',
+            ])
+            ->assertOk()
+            ->assertJsonPath('ready', true)
+            ->assertJsonPath('revisionNumber', 1);
+
+        $this->assertDatabaseCount('montage_exports', 0);
+        $this->assertDatabaseCount('media_jobs', 0);
+        Queue::assertNothingPushed();
+    }
+
     public function test_pre_queue_qc_rejects_insufficient_output_storage_as_structured_422(): void
     {
         Queue::fake();

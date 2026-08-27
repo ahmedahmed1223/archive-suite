@@ -1571,6 +1571,11 @@ export interface ArchiveApiClient {
     payload: { expectedRevision: number; preset: "web-1080p" | "web-4k" | "archive-master" },
     options?: AuthRequestOptions,
   ): Promise<ApiEnvelope<{ id: string; projectId: string; revisionId: string; preset: string; status: string; progress: number }>>;
+  montageExportQc(
+    projectId: string,
+    payload: { expectedRevision: number; preset: "web-1080p" | "web-4k" | "archive-master" },
+    options?: AuthRequestOptions,
+  ): Promise<ApiEnvelope<{ ready: boolean; revisionNumber: number }>>;
   montageCancelExport(
     projectId: string,
     exportId: string,
@@ -2762,6 +2767,12 @@ export function createArchiveApiClient({
     montageRequestExport: (projectId, payload, options?: AuthRequestOptions) =>
       post<{ id: string; projectId: string; revisionId: string; preset: string; status: string; progress: number }>(
         `/montage-projects/${encodeURIComponent(projectId)}/exports`,
+        payload,
+        options,
+      ),
+    montageExportQc: (projectId, payload, options?: AuthRequestOptions) =>
+      post<{ ready: boolean; revisionNumber: number }>(
+        `/montage-projects/${encodeURIComponent(projectId)}/exports/qc`,
         payload,
         options,
       ),

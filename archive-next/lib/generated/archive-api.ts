@@ -1571,6 +1571,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/montage-projects/{id}/exports/qc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run pre-export quality checks for the active revision */
+        post: operations["checkMontageExportQc"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/montage-projects/{id}/materials": {
         parameters: {
             query?: never;
@@ -5823,6 +5840,10 @@ export interface components {
         MontageProjectsResponse: components["schemas"]["OkEnvelope"] & {
             pagination: components["schemas"]["PaginationMeta"];
             projects: components["schemas"]["MontageProject"][];
+        };
+        MontageQcResponse: components["schemas"]["OkEnvelope"] & {
+            ready: boolean;
+            revisionNumber: number;
         };
         MontageRevisionConflictError: components["schemas"]["ErrorEnvelope"] & {
             /** @constant */
@@ -10922,6 +10943,34 @@ export interface operations {
             403: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["MontageExportState"];
+        };
+    };
+    checkMontageExportQc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MontageExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Quality checks passed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MontageQcResponse"];
+                };
+            };
+            409: components["responses"]["MontageRevisionConflict"];
+            422: components["responses"]["MontageValidation"];
         };
     };
     listMontageMaterials: {

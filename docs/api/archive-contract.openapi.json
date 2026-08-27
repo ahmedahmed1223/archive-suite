@@ -10540,6 +10540,40 @@
         }
       }
     },
+    "/montage-projects/{id}/exports/qc": {
+      "post": {
+        "tags": ["Montage"],
+        "summary": "Run pre-export quality checks for the active revision",
+        "operationId": "checkMontageExportQc",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" }
+        }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MontageExportRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Quality checks passed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MontageQcResponse" }
+              }
+            }
+          },
+          "409": { "$ref": "#/components/responses/MontageRevisionConflict" },
+          "422": { "$ref": "#/components/responses/MontageValidation" }
+        }
+      }
+    },
     "/montage-projects/{id}/exports": {
       "post": {
         "tags": [
@@ -31657,6 +31691,19 @@
           }
         },
         "additionalProperties": false
+      },
+      "MontageQcResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["ready", "revisionNumber"],
+            "properties": {
+              "ready": { "type": "boolean" },
+              "revisionNumber": { "type": "integer", "minimum": 1 }
+            }
+          }
+        ]
       },
       "MontageExportStateError": {
         "allOf": [

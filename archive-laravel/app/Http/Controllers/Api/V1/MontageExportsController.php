@@ -63,6 +63,44 @@ class MontageExportsController extends Controller
         return response()->json($this->present($export), 201);
     }
 
+    /** Check an active revision with the same policy and storage gates as export. */
+    public function qc(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
+        $project = MontageProject::query()->find($id);
+        if (! $project) {
+            return $this->notFound();
+        }
+        $actor = $this->archiveUser($request);
+        if ($actor === null || Gate::forUser($actor)->denies('requestExport', $project)) {
+            return response()->json(ApiError::envelope('Forbidden.', 403), 403);
+        }
+        $data = $request->validate([
+            'expectedRevision' => ['required', 'integer', 'min:1'],
+            'preset' => ['required', 'string'],
+        ]);
+
+        try {
+            $this->exports->assertReady($project, (int) $data['expectedRevision'], (string) $data['preset'], $actor);
+        } catch (MontageRevisionConflict $e) {
+            return response()->json([
+                ...ApiError::envelope('Revision conflict.', 409),
+                'currentRevision' => $e->currentRevision,
+                'expectedRevision' => $e->expectedRevision,
+            ], 409);
+        } catch (MontageValidationException $e) {
+            return response()->json([
+                ...ApiError::envelope('Montage validation failed.', 422),
+                'errors' => $e->errors,
+            ], 422);
+        }
+
+        return response()->json(['ok' => true, 'ready' => true, 'revisionNumber' => (int) $data['expectedRevision']]);
+    }
+
     /** Cancel is allowed for the requester or the project owner. */
     public function cancel(Request $request, string $id, string $exportId): JsonResponse
     {

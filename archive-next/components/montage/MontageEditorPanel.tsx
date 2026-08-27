@@ -168,8 +168,16 @@ export default function MontageEditorPanel({
       && clip.sourceOut > clip.sourceIn
       && state.timeline.tracks.some((track) => track.id === clip.trackId),
     );
-    setQcReady(hasTrack && hasValidClip);
-  }, [state.timeline]);
+    if (!hasTrack || !hasValidClip) {
+      setQcReady(false);
+      return;
+    }
+    const response = await api.montageExportQc(projectId, {
+      expectedRevision: state.revisionNumber,
+      preset: "web-1080p",
+    });
+    setQcReady(response.ok && response.ready === true);
+  }, [api, projectId, state.revisionNumber, state.timeline]);
 
   const addMaterial = useCallback((item: MaterialBinItem) => {
     const selectedClip = selectedClipId === null
