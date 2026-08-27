@@ -9,6 +9,7 @@ use App\Support\ApiToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -230,6 +231,8 @@ class MontageAuthorizationApiTest extends TestCase
 
     public function test_requester_owner_and_admin_may_cancel_or_retry_but_unrelated_editor_may_not(): void
     {
+        Queue::fake();
+
         $owner = $this->user('editor');
         $requester = $this->user('editor');
         $other = $this->user('editor');
