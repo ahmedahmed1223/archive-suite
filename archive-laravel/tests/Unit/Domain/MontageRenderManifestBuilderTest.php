@@ -123,7 +123,7 @@ class MontageRenderManifestBuilderTest extends TestCase
             revisionId: 'rev-1',
             clips: [[
                 'id' => 'c1',
-                'source' => ['recordId' => 'r1', 'sourceVersionToken' => 'sha256:a'],
+                'source' => ['recordId' => 'r1', 'sourceVersionToken' => 'record:a'],
                 'timelineStart' => 0,
                 'sourceIn' => 2,
                 'sourceOut' => 10,
