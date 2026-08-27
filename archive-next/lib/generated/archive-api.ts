@@ -1571,6 +1571,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/montage-projects/{id}/materials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List source-pinned materials available to a montage project */
+        get: operations["listMontageMaterials"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/montage-projects/{id}/revision": {
         parameters: {
             query?: never;
@@ -5748,6 +5765,15 @@ export interface components {
             code: "VALIDATION_FAILED";
             /** @enum {string} */
             status: "queued" | "processing" | "completed" | "failed" | "cancelled";
+        };
+        MontageMaterial: {
+            durationSeconds: number;
+            id: string;
+            name: string;
+            source: components["schemas"]["MontageSource"];
+        };
+        MontageMaterialsResponse: components["schemas"]["OkEnvelope"] & {
+            materials: components["schemas"]["MontageMaterial"][];
         };
         MontageProject: {
             /** Format: uuid */
@@ -10896,6 +10922,30 @@ export interface operations {
             403: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["MontageExportState"];
+        };
+    };
+    listMontageMaterials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Available montage materials */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MontageMaterialsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     saveMontageRevision: {

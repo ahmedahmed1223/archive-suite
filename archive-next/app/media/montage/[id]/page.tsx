@@ -30,9 +30,10 @@ export default function MontageEditorPage() {
 
   const loadData = useCallback(async () => {
     setLoad({ status: "loading" });
-    const [projectRes, revRes] = await Promise.all([
+    const [projectRes, revRes, materialsRes] = await Promise.all([
       api.montageProject(projectId),
       api.montageActiveRevision(projectId),
+      api.montageMaterials(projectId),
     ]);
 
     if (!projectRes.ok) {
@@ -54,7 +55,7 @@ export default function MontageEditorPage() {
           past: [],
           future: [],
         },
-        materials: deriveMontageMaterials(project.clips ?? []),
+        materials: materialsRes.ok ? materialsRes.materials : deriveMontageMaterials(project.clips ?? []),
       });
       return;
     }
@@ -75,7 +76,7 @@ export default function MontageEditorPage() {
         past: [],
         future: [],
       },
-      materials: deriveMontageMaterials(rev.clips ?? project.clips ?? []),
+      materials: materialsRes.ok ? materialsRes.materials : deriveMontageMaterials(rev.clips ?? project.clips ?? []),
     });
   }, [api, projectId]);
 

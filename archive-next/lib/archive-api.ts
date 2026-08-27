@@ -1575,6 +1575,10 @@ export interface ArchiveApiClient {
     projectId: string,
     options?: AuthRequestOptions,
   ): Promise<ApiEnvelope<{ id: string; name: string; ownerId: string | null; revision: number; activeRevisionId: string | null; status: string }>>;
+  montageMaterials(
+    projectId: string,
+    options?: AuthRequestOptions,
+  ): Promise<ApiEnvelope<{ materials: Array<{ id: string; name: string; durationSeconds: number; source: { recordId: string; sourceVersionToken: string; attachmentId?: string | null } }> }>>;
   montageActiveRevision(
     projectId: string,
     options?: AuthRequestOptions,
@@ -2761,5 +2765,10 @@ export function createArchiveApiClient({
         `/montage-projects/${encodeURIComponent(projectId)}`,
         options,
       ),
-};
+    montageMaterials: (projectId, options?: AuthRequestOptions) =>
+      get<{ materials: Array<{ id: string; name: string; durationSeconds: number; source: { recordId: string; sourceVersionToken: string; attachmentId?: string | null } }> }>(
+        `/montage-projects/${encodeURIComponent(projectId)}/materials`,
+        options,
+      ),
+  };
 }

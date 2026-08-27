@@ -10332,6 +10332,32 @@
         }
       }
     },
+    "/montage-projects/{id}/materials": {
+      "get": {
+        "tags": ["Montage"],
+        "summary": "List source-pinned materials available to a montage project",
+        "operationId": "listMontageMaterials",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" }
+        }],
+        "responses": {
+          "200": {
+            "description": "Available montage materials",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MontageMaterialsResponse" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/montage-projects/{id}/revision": {
       "post": {
         "tags": [
@@ -31252,6 +31278,32 @@
           }
         },
         "additionalProperties": false
+      },
+      "MontageMaterial": {
+        "type": "object",
+        "required": ["id", "name", "durationSeconds", "source"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "durationSeconds": { "type": "number", "exclusiveMinimum": 0 },
+          "source": { "$ref": "#/components/schemas/MontageSource" }
+        },
+        "additionalProperties": false
+      },
+      "MontageMaterialsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["materials"],
+            "properties": {
+              "materials": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/MontageMaterial" }
+              }
+            }
+          }
+        ]
       },
       "MontageRevisionSaveRequest": {
         "type": "object",

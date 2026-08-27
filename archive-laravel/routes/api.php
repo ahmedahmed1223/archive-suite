@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\V1\MetadataTemplatesController;
 use App\Http\Controllers\Api\V1\MontageProjectsController;
 use App\Http\Controllers\Api\V1\MontageRevisionsController;
 use App\Http\Controllers\Api\V1\MontageExportsController;
+use App\Http\Controllers\Api\V1\MontageMaterialsController;
 use App\Http\Controllers\Api\V1\NamingRulesController;
 use App\Http\Controllers\Api\V1\NotificationsController;
 use App\Http\Controllers\Api\V1\OnboardingProgressController;
@@ -444,6 +445,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/montage-projects/{id}', [MontageProjectsController::class, 'show']);
         Route::put('/montage-projects/{id}', [MontageProjectsController::class, 'update']);
         Route::delete('/montage-projects/{id}', [MontageProjectsController::class, 'destroy']);
+        Route::get('/montage-projects/{id}/materials', [MontageMaterialsController::class, 'index']);
         Route::get('/montage-projects/{id}/revisions', [MontageRevisionsController::class, 'index']);
         Route::get('/montage-projects/{id}/revision', [MontageRevisionsController::class, 'show']);
 Route::post('/montage-projects/{id}/revision', [MontageRevisionsController::class, 'store']);
