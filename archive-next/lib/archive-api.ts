@@ -1571,6 +1571,16 @@ export interface ArchiveApiClient {
     payload: { expectedRevision: number; preset: "web-1080p" | "web-4k" | "archive-master" },
     options?: AuthRequestOptions,
   ): Promise<ApiEnvelope<{ id: string; projectId: string; revisionId: string; preset: string; status: string; progress: number }>>;
+  montageCancelExport(
+    projectId: string,
+    exportId: string,
+    options?: AuthRequestOptions,
+  ): Promise<ApiEnvelope<{ id: string; status: string }>>;
+  montageRetryExport(
+    projectId: string,
+    exportId: string,
+    options?: AuthRequestOptions,
+  ): Promise<ApiEnvelope<{ id: string; status: string }>>;
   montageProject(
     projectId: string,
     options?: AuthRequestOptions,
@@ -2753,6 +2763,18 @@ export function createArchiveApiClient({
       post<{ id: string; projectId: string; revisionId: string; preset: string; status: string; progress: number }>(
         `/montage-projects/${encodeURIComponent(projectId)}/exports`,
         payload,
+        options,
+      ),
+    montageCancelExport: (projectId, exportId, options?: AuthRequestOptions) =>
+      post<{ id: string; status: string }>(
+        `/montage-projects/${encodeURIComponent(projectId)}/exports/${encodeURIComponent(exportId)}/cancel`,
+        undefined,
+        options,
+      ),
+    montageRetryExport: (projectId, exportId, options?: AuthRequestOptions) =>
+      post<{ id: string; status: string }>(
+        `/montage-projects/${encodeURIComponent(projectId)}/exports/${encodeURIComponent(exportId)}/retry`,
+        undefined,
         options,
       ),
     montageActiveRevision: (projectId, options?: AuthRequestOptions) =>

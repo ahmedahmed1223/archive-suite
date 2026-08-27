@@ -6,11 +6,13 @@ import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import type { WorkInboxCounts, WorkInboxItem } from "@/lib/archive-api";
 
 const workInbox = vi.fn();
+const montageRetryExport = vi.fn();
+const montageCancelExport = vi.fn();
 let contextRecordingEnabled = true;
 
 vi.mock("@/lib/archive-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
-  return { ...actual, createArchiveApiClient: () => ({ workInbox }) };
+  return { ...actual, createArchiveApiClient: () => ({ workInbox, montageRetryExport, montageCancelExport }) };
 });
 vi.mock("@/components/AppShell", () => ({ default: ({ children }: { children: ReactNode }) => <main>{children}</main> }));
 vi.mock("@/components/PageToolbar", () => ({
@@ -52,6 +54,8 @@ function makeCounts(overrides: Partial<WorkInboxCounts> = {}): WorkInboxCounts {
 afterEach(cleanup);
 beforeEach(() => {
   workInbox.mockReset();
+  montageRetryExport.mockReset();
+  montageCancelExport.mockReset();
   contextRecordingEnabled = true;
   window.localStorage.clear();
 });
@@ -68,8 +72,38 @@ test("renders aggregated items with their source-type badge and links back to th
 
   await screen.findByText("Caption the segment");
   expect(screen.getByText("Backup finished")).toBeTruthy();
-  const link = screen.getByText("Caption the segment").closest("a");
+  const link = screen.getAllByRole("link", { name: "Open" })[0];
   expect(link?.getAttribute("href")).toBe("/project-tasks?projectId=project-1");
+});
+
+test("retries a failed montage export only when the server grants that action", async () => {
+  workInbox
+    .mockResolvedValueOnce({
+      ok: true,
+      items: [makeItem({
+        id: "export:e1",
+        type: "export",
+        title: "Web export",
+        status: "failed",
+        href: "/media/montage/project-1",
+        meta: { projectId: "project-1", exportId: "e1", allowedActions: ["retry"] } as never,
+      })],
+      pagination: { total: 1, page: 1, limit: 20, hasMore: false },
+      counts: makeCounts({ export: 1 }),
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      items: [],
+      pagination: { total: 0, page: 1, limit: 20, hasMore: false },
+      counts: makeCounts(),
+    });
+  montageRetryExport.mockResolvedValue({ ok: true });
+
+  renderPage();
+  await screen.findByText("Web export");
+  fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+  await waitFor(() => expect(montageRetryExport).toHaveBeenCalledWith("project-1", "e1"));
 });
 
 test("filter chips narrow the list to a single source type without re-fetching", async () => {

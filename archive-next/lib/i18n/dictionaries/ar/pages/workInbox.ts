@@ -37,6 +37,8 @@ export const workInbox = {
     due: "الاستحقاق {date}",
     noDue: "بلا موعد استحقاق",
     open: "فتح",
+    retry: "إعادة المحاولة",
+    cancel: "إلغاء",
   },
   groups: {
     overdue: "متأخر",

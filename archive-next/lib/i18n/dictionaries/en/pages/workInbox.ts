@@ -37,6 +37,8 @@ export const workInbox = {
     due: "Due {date}",
     noDue: "No due date",
     open: "Open",
+    retry: "Retry",
+    cancel: "Cancel",
   },
   groups: {
     overdue: "Overdue",

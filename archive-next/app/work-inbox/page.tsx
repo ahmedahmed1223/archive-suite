@@ -100,6 +100,15 @@ export default function WorkInboxPage() {
       : current));
   }, [api, loadingMore, state]);
 
+  const runExportAction = useCallback(async (item: WorkInboxItem, action: "retry" | "cancel") => {
+    const meta = item.meta as { projectId?: string; exportId?: string } | undefined;
+    if (!meta?.projectId || !meta.exportId) return;
+    const response = action === "retry"
+      ? await api.montageRetryExport(meta.projectId, meta.exportId)
+      : await api.montageCancelExport(meta.projectId, meta.exportId);
+    if (response.ok) await load();
+  }, [api, load]);
+
   const items = state.status === "ready" ? state.items : [];
   const counts = state.status === "ready"
     ? state.counts
@@ -165,8 +174,11 @@ export default function WorkInboxPage() {
             <section key={group.key} aria-label={groupLabels[group.key]}>
               <h2 className="work-inbox-group-title">{groupLabels[group.key]} <span className="badge">{group.items.length}</span></h2>
               <div className="dense-grid">
-                {group.items.map((item) => (
-                  <a className="local-list-card" href={item.href} key={item.id}>
+                {group.items.map((item) => {
+                  const meta = item.meta as { allowedActions?: string[] } | undefined;
+                  const allowedActions = meta?.allowedActions ?? [];
+                  return (
+                  <article className="local-list-card" key={item.id}>
                     <div className="local-list-card__main">
                       <div>
                         <span className="badge">{copy.types[item.type]}</span>
@@ -177,8 +189,18 @@ export default function WorkInboxPage() {
                     <dl className="mobile-field-list">
                       <div><dt>{copy.types[item.type]}</dt><dd dir="auto">{item.status}</dd></div>
                     </dl>
-                  </a>
-                ))}
+                    <div className="button-row">
+                      <a className="button button-secondary button-sm" href={item.href}>{copy.item.open}</a>
+                      {item.type === "export" && allowedActions.includes("retry") ? (
+                        <button type="button" className="button button-secondary button-sm" onClick={() => void runExportAction(item, "retry")}>{copy.item.retry}</button>
+                      ) : null}
+                      {item.type === "export" && allowedActions.includes("cancel") ? (
+                        <button type="button" className="button button-secondary button-sm" onClick={() => void runExportAction(item, "cancel")}>{copy.item.cancel}</button>
+                      ) : null}
+                    </div>
+                  </article>
+                  );
+                })}
               </div>
             </section>
           ))}
