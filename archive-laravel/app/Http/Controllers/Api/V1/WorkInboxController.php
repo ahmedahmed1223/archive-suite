@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\MediaJob;
+use App\Models\MontageExport;
 use App\Models\Notification;
 use App\Models\ReviewSession;
 use App\Models\RightsRecord;
@@ -17,7 +19,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 /**
- * V3-WORK-001: the unified work inbox. Aggregates FOUR existing data
+ * V3-WORK-001: the unified work inbox. Aggregates operational sources into
  * sources into one paginated, filterable feed for the current user — it is
  * a read/query surface, not a new store: nothing here is copied or
  * denormalized, every item links back to its real source record.
@@ -37,7 +39,7 @@ use Illuminate\Validation\Rule;
  */
 final class WorkInboxController extends Controller
 {
-    private const TYPES = ['task', 'review', 'rights', 'notification'];
+    private const TYPES = ['task', 'review', 'rights', 'notification', 'processing', 'export'];
 
     private const SOURCE_LIMIT = 200;
 
@@ -69,6 +71,12 @@ final class WorkInboxController extends Controller
         if (in_array('notification', $types, true)) {
             $items = $items->concat($this->unreadNotifications($user));
         }
+        if (in_array('processing', $types, true)) {
+            $items = $items->concat($this->mediaOperations($user));
+        }
+        if (in_array('export', $types, true)) {
+            $items = $items->concat($this->montageExports($user));
+        }
 
         $counts = $items->countBy('type');
         $sorted = $this->sortByUrgency($items);
@@ -92,6 +100,8 @@ final class WorkInboxController extends Controller
                 'review' => $counts->get('review', 0),
                 'rights' => $counts->get('rights', 0),
                 'notification' => $counts->get('notification', 0),
+                'processing' => $counts->get('processing', 0),
+                'export' => $counts->get('export', 0),
             ],
         ]);
     }
@@ -253,6 +263,61 @@ final class WorkInboxController extends Controller
                 'createdAt' => $notification->created_at?->toISOString(),
                 'href' => '/notifications',
                 'meta' => ['notificationId' => $notification->id],
+            ])
+            ->all();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function mediaOperations(User $user): array
+    {
+        return MediaJob::query()
+            ->where('created_by', $user->id)
+            ->where('operation', '!=', 'montage_export')
+            ->whereIn('status', ['queued', 'processing', 'failed'])
+            ->orderByDesc('updated_at')
+            ->limit(self::SOURCE_LIMIT)
+            ->get()
+            ->map(fn (MediaJob $job): array => [
+                'id' => "processing:{$job->id}",
+                'type' => 'processing',
+                'title' => $job->operation,
+                'status' => $job->status,
+                'dueAt' => null,
+                'createdAt' => $job->created_at?->toISOString(),
+                'href' => '/media/jobs/'.rawurlencode((string) $job->id),
+                'meta' => [
+                    'mediaJobId' => $job->id,
+                    'operation' => $job->operation,
+                    'progress' => $job->progress_percent,
+                    'allowedActions' => $job->status === 'failed' ? ['retry'] : [],
+                ],
+            ])
+            ->all();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function montageExports(User $user): array
+    {
+        return MontageExport::query()
+            ->where('requested_by', $user->id)
+            ->whereIn('status', ['queued', 'processing', 'failed'])
+            ->orderByDesc('updated_at')
+            ->limit(self::SOURCE_LIMIT)
+            ->get()
+            ->map(fn (MontageExport $export): array => [
+                'id' => "export:{$export->id}",
+                'type' => 'export',
+                'title' => $export->preset,
+                'status' => $export->status,
+                'dueAt' => null,
+                'createdAt' => $export->created_at?->toISOString(),
+                'href' => '/media/montage/'.rawurlencode((string) $export->montage_project_id),
+                'meta' => [
+                    'exportId' => $export->id,
+                    'projectId' => $export->montage_project_id,
+                    'progress' => $export->progress,
+                    'allowedActions' => $export->status === 'failed' ? ['retry'] : ($export->status === 'queued' ? ['cancel'] : []),
+                ],
             ])
             ->all();
     }

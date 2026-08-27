@@ -46,7 +46,7 @@ function makeItem(overrides: Partial<WorkInboxItem> = {}): WorkInboxItem {
 }
 
 function makeCounts(overrides: Partial<WorkInboxCounts> = {}): WorkInboxCounts {
-  return { task: 0, review: 0, rights: 0, notification: 0, ...overrides };
+  return { task: 0, review: 0, rights: 0, notification: 0, processing: 0, export: 0, ...overrides };
 }
 
 afterEach(cleanup);

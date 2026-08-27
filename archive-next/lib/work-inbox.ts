@@ -2,7 +2,7 @@
 // urgent and near-due items surface first regardless of arrival order.
 export type WorkInboxSortItem = {
   id: string;
-  type: "review" | "rights" | "task" | "notification";
+  type: "review" | "rights" | "task" | "notification" | "processing" | "export";
   dueAt: string | null;
 };
 
@@ -11,6 +11,8 @@ const TYPE_WEIGHT: Record<WorkInboxSortItem["type"], number> = {
   rights: 1,
   task: 2,
   notification: 3,
+  processing: 4,
+  export: 5,
 };
 
 export function sortWorkInboxItems<T extends WorkInboxSortItem>(

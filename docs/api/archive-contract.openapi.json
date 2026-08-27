@@ -20991,7 +20991,9 @@
           "task",
           "review",
           "rights",
-          "notification"
+          "notification",
+          "processing",
+          "export"
         ]
       },
       "WorkInboxItem": {
@@ -21051,7 +21053,9 @@
           "task",
           "review",
           "rights",
-          "notification"
+          "notification",
+          "processing",
+          "export"
         ],
         "properties": {
           "task": {
@@ -21064,6 +21068,12 @@
             "type": "integer"
           },
           "notification": {
+            "type": "integer"
+          },
+          "processing": {
+            "type": "integer"
+          },
+          "export": {
             "type": "integer"
           }
         }

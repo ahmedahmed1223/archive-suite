@@ -7644,7 +7644,9 @@ export interface components {
             webhooks: components["schemas"]["Webhook"][];
         };
         WorkInboxCounts: {
+            export: number;
             notification: number;
+            processing: number;
             review: number;
             rights: number;
             task: number;
@@ -7667,7 +7669,7 @@ export interface components {
             type: components["schemas"]["WorkInboxItemType"];
         };
         /** @enum {string} */
-        WorkInboxItemType: "task" | "review" | "rights" | "notification";
+        WorkInboxItemType: "task" | "review" | "rights" | "notification" | "processing" | "export";
         WorkInboxResponse: components["schemas"]["OkEnvelope"] & {
             counts: components["schemas"]["WorkInboxCounts"];
             items: components["schemas"]["WorkInboxItem"][];

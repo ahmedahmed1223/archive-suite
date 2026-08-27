@@ -13,6 +13,8 @@ export const workInbox = {
     review: "Reviews · {count}",
     rights: "Rights · {count}",
     notification: "Notifications · {count}",
+    processing: "Processing · {count}",
+    export: "Exports · {count}",
     clear: "Clear filter",
   },
   types: {
@@ -20,6 +22,8 @@ export const workInbox = {
     review: "Review",
     rights: "Rights",
     notification: "Notification",
+    processing: "Media processing",
+    export: "Montage export",
   },
   states: {
     loading: "Loading your work inbox...",

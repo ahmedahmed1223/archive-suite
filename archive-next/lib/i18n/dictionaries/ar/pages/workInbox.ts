@@ -13,6 +13,8 @@ export const workInbox = {
     review: "المراجعات · {count}",
     rights: "الحقوق · {count}",
     notification: "الإشعارات · {count}",
+    processing: "المعالجة · {count}",
+    export: "التصدير · {count}",
     clear: "مسح التصفية",
   },
   types: {
@@ -20,6 +22,8 @@ export const workInbox = {
     review: "مراجعة",
     rights: "حقوق",
     notification: "إشعار",
+    processing: "معالجة وسائط",
+    export: "تصدير مونتاج",
   },
   states: {
     loading: "جارٍ تحميل صندوق العمل...",

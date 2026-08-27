@@ -128,7 +128,8 @@ export default function MontageEditorPanel({
       if (res.ok) {
         const saved = res as { revisionNumber?: number };
         if (typeof saved.revisionNumber === "number") {
-          setState((current) => ({ ...current, revisionNumber: saved.revisionNumber }));
+          const revisionNumber = saved.revisionNumber;
+          setState((current) => ({ ...current, revisionNumber }));
         }
         setSaveStatus(copy.savedNewRevision);
         return;

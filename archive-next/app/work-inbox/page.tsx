@@ -22,7 +22,7 @@ type WorkInboxState =
 
 type FilterValue = WorkInboxItemType | "all";
 
-const FILTER_VALUES: FilterValue[] = ["all", "task", "review", "rights", "notification"];
+const FILTER_VALUES: FilterValue[] = ["all", "task", "review", "rights", "notification", "processing", "export"];
 
 export default function WorkInboxPage() {
   const { locale, t } = useLocale();
@@ -101,8 +101,10 @@ export default function WorkInboxPage() {
   }, [api, loadingMore, state]);
 
   const items = state.status === "ready" ? state.items : [];
-  const counts = state.status === "ready" ? state.counts : { task: 0, review: 0, rights: 0, notification: 0 };
-  const total = counts.task + counts.review + counts.rights + counts.notification;
+  const counts = state.status === "ready"
+    ? state.counts
+    : { task: 0, review: 0, rights: 0, notification: 0, processing: 0, export: 0 };
+  const total = counts.task + counts.review + counts.rights + counts.notification + counts.processing + counts.export;
   // V14-UX-003: the daily list is ordered by urgency (soonest/overdue due
   // date first) with a stable tiebreak — not by arrival order.
   const visibleItems = sortWorkInboxItems(filter === "all" ? items : items.filter((item) => item.type === filter));
