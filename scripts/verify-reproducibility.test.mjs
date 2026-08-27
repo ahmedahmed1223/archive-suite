@@ -104,6 +104,7 @@ test("the Laravel image excludes local runtime storage from its build context", 
   const dockerignore = read("archive-laravel/.dockerignore");
 
   assert.match(dockerignore, /^storage\/app$/m);
+  assert.match(dockerignore, /^storage\/framework\/testing$/m);
 });
 
 test("the canonical FPM service consumes the deploy-time CORS origin", () => {
