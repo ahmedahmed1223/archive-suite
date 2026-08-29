@@ -8,12 +8,29 @@
 
 ## حزمة Docker
 
-1. نزّل الحزمة وملف `SHA256SUMS` من الإصدار نفسه.
-2. تحقق من البصمات قبل فك الحزمة باستخدام `sha256sum --check SHA256SUMS` على
-   Linux أو `Get-FileHash` على Windows.
-3. انقل المجلد كاملًا إلى الجهاز المعزول.
-4. شغّل `sh install.sh` على Linux أو `.\install.ps1` في Windows PowerShell.
-5. راجع ملف `.env` المحمي، وشغّل `compose.v1.yml` المرفق، ثم تحقق من صحة الخدمات.
+1. نزّل جميع أجزاء الحزمة وملفي `SHA256SUMS` و`OFFLINE-BUNDLE-SHA256` من
+   الإصدار نفسه. لا تبدأ إذا كان جزء مثل `.part-00` أو `.part-01` مفقودًا.
+2. تحقق من الأصول التي نزّلتها باستخدام `sha256sum --check SHA256SUMS` على
+   Linux أو قارن ناتج `Get-FileHash` على Windows مع السطر المطابق في الملف.
+3. اجمع الأجزاء بالترتيب قبل فك الضغط. على Linux أو macOS:
+
+   ```bash
+   cat archive-suite-offline-v1.5.1.tar.gz.part-* > archive-suite-offline-v1.5.1.tar.gz
+   sha256sum --check OFFLINE-BUNDLE-SHA256
+   ```
+
+   على Windows في موجه الأوامر (CMD):
+
+   ```cmd
+   copy /b "archive-suite-offline-v1.5.1.tar.gz.part-00"+"archive-suite-offline-v1.5.1.tar.gz.part-01" "archive-suite-offline-v1.5.1.tar.gz"
+   ```
+
+   ثم احسب `Get-FileHash .\archive-suite-offline-v1.5.1.tar.gz -Algorithm SHA256`
+   وقارنه بقيمة `OFFLINE-BUNDLE-SHA256`. أضف أي أجزاء لاحقة بالترتيب نفسه.
+4. فك الحزمة بعد نجاح التحقق، مثل: `tar -xzf archive-suite-offline-v1.5.1.tar.gz`.
+5. انقل المجلد المستخرج كاملًا إلى الجهاز المعزول، ثم شغّل `sh install.sh` على
+   Linux أو `.\install.ps1` في Windows PowerShell.
+6. راجع ملف `.env` المحمي، وشغّل `compose.v1.yml` المرفق، ثم تحقق من صحة الخدمات.
 
 يتحقق المثبت من جميع الملفات والصور قبل تشغيل `docker load`، ولا يحتاج إلى
 اتصال بسجل صور.
