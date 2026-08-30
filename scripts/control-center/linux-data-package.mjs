@@ -11,7 +11,7 @@ function sha256(path) {
 }
 
 function resolveBundleFile(root, item) {
-  if (typeof item?.path !== "string" || !/^[a-z0-9][a-z0-9._/-]*$/i.test(item.path)
+  if (typeof item?.path !== "string" || !/^[a-z0-9][a-z0-9._/+\-]*$/i.test(item.path)
     || item.path.includes("..") || isAbsolute(item.path)) {
     throw new Error("Linux data package contains an invalid artifact path.");
   }
