@@ -34,7 +34,7 @@ RUN tar -xzf valkey-9.1.0.tar.gz \
   && make -j"$(nproc)" MALLOC=libc BUILD_TLS=no
 
 RUN mkdir -p /release/postgres /release/pgvector/lib /release/pgvector/share/extension /release/redis/bin /release/assets \
-  && cp -a /opt/archive-postgres/. /release/postgres/ \
+  && cp -aL /opt/archive-postgres/. /release/postgres/ \
   && cp /opt/archive-postgres/lib/vector.so /release/pgvector/lib/vector.so \
   && cp /opt/archive-postgres/share/extension/vector* /release/pgvector/share/extension/ \
   && cp valkey-9.1.0/src/valkey-server /release/redis/bin/redis-server \
