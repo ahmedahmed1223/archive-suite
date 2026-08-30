@@ -70,8 +70,10 @@ function defaultExtractArchive({ archive, destination, format, label }) {
   if (listing.status !== 0) throw new Error(`${label} archive listing failed with exit code ${listing.status}.`);
   for (const entry of String(listing.stdout || "").split(/\r?\n/).filter(Boolean)) {
     const normalized = entry.replaceAll("\\", "/");
-    if (!normalized || normalized.startsWith("/") || /^[A-Za-z]:\//u.test(normalized)
-        || normalized.split("/").some((segment) => segment === ".." || segment === "" && normalized !== `${normalized}/`)) {
+    if (normalized === "." || normalized === "./") continue;
+    const path = normalized.replace(/^\.\//, "").replace(/\/+$/, "");
+    if (!path || normalized.startsWith("/") || /^[A-Za-z]:\//u.test(normalized)
+        || path.split("/").some((segment) => segment === ".." || segment === "")) {
       throw new Error(`${label} archive contains an unsafe path: ${entry}`);
     }
   }

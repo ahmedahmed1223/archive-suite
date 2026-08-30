@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fetchLinuxReleaseInputs, fetchWindowsReleaseInputs, validateLinuxReleaseInputEnvironment, validateWindowsReleaseInputEnvironment } from "./fetch-native-release-inputs.mjs";
@@ -118,5 +119,31 @@ test("downloads and extracts verified Linux Native data-service archives", async
     assert.equal(readFileSync(join(result.redis, "redis.bin"), "utf8"), "verified");
   } finally {
     rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test("extracts a verified Linux archive with tar root and directory entries", async () => {
+  const outDir = mkdtempSync(join(tmpdir(), "native-linux-root-"));
+  const sourceDir = mkdtempSync(join(tmpdir(), "native-linux-source-"));
+  const archivePath = join(tmpdir(), `native-linux-${Date.now()}.tar.gz`);
+  mkdirSync(join(sourceDir, "bin"));
+  writeFileSync(join(sourceDir, "bin", "payload"), "verified");
+  execFileSync("tar", ["-czf", archivePath, "-C", sourceDir, "."]);
+  const archive = readFileSync(archivePath);
+  const env = Object.fromEntries(["POSTGRES", "PGVECTOR", "REDIS"].flatMap((name) => [
+    [`${name}_URL`, `https://example.test/${name.toLowerCase()}.tar.gz`],
+    [`${name}_SHA256`, digest(archive)],
+  ]));
+  try {
+    const result = await fetchLinuxReleaseInputs({
+      outDir,
+      env,
+      fetchBytes: async () => archive,
+    });
+    assert.equal(readFileSync(join(result.postgres, "bin", "payload"), "utf8"), "verified");
+  } finally {
+    rmSync(outDir, { recursive: true, force: true });
+    rmSync(sourceDir, { recursive: true, force: true });
+    rmSync(archivePath, { force: true });
   }
 });
