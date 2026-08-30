@@ -13,7 +13,7 @@ function bundleFixture() {
   return root;
 }
 
-test("Linux acceptance always installs, verifies six services and HTTP, uninstalls, and proves Docker cleanup", async () => {
+test("Linux acceptance installs bundled data plus six services and proves Docker cleanup", async () => {
   const calls = [];
   const removed = new Set();
   const docker = (args) => {
@@ -42,14 +42,15 @@ test("Linux acceptance always installs, verifies six services and HTTP, uninstal
 
   assert.equal(result.ok, true);
   const flattened = calls.map((args) => args.join(" ")).join("\n");
-  assert.match(flattened, /network create --label archive\.acceptance\.run=unit1234 archive-native-net-unit1234/);
+  assert.match(flattened, /run -d --name archive-native-systemd-unit1234/);
   assert.match(flattened, /control-center\.mjs install --config=\/tmp\/setup\.json --skip-disk-check --json/);
   for (const service of ["archive-http", "archive-next", "archive-php-fpm", "archive-worker", "archive-reverb", "archive-scheduler"]) {
     assert.match(flattened, new RegExp(`systemctl is-active ${service}`));
   }
+  for (const service of ["archive-postgres", "archive-redis"]) assert.match(flattened, new RegExp(`systemctl is-active ${service}`));
   assert.match(flattened, /curl -fsS http:\/\/127\.0\.0\.1:8443\//);
   assert.match(flattened, /control-center\.mjs uninstall --yes --json/);
-  assert.match(flattened, /network rm archive-native-net-unit1234/);
+  assert.match(flattened, /rm -f archive-native-systemd-unit1234/);
   assert.equal(evidence.length, 1);
   assert.equal(evidence[0].platform, "linux-native");
   assert.equal(evidence[0].cleanup.ok, true);
@@ -63,8 +64,7 @@ test("Linux acceptance reports bounded service diagnostics without exposing its 
     calls.push(args);
     const command = args.join(" ");
     if (args[0] === "rm") args.filter((value) => value.startsWith("archive-native-")).forEach((value) => removed.add(value));
-    if (args[0] === "network" && args[1] === "rm") removed.add(args[2]);
-    if ((args[0] === "inspect" || (args[0] === "network" && args[1] === "inspect")) && removed.has(args.at(-1))) return { status: 1, stdout: "", stderr: "not found" };
+    if (args[0] === "inspect" && removed.has(args.at(-1))) return { status: 1, stdout: "", stderr: "not found" };
     if (command.includes("systemctl is-active archive-scheduler")) return { status: 3, stdout: "inactive\n", stderr: "" };
     if (command.includes("journalctl")) return { status: 0, stdout: "scheduler failed near ephemeral-test-value\n", stderr: "" };
     if (command.includes("systemctl show archive-scheduler")) return { status: 0, stdout: "Result=exit-code\nExecMainStatus=1\n", stderr: "" };
@@ -87,5 +87,5 @@ test("Linux acceptance reports bounded service diagnostics without exposing its 
     (error) => /ExecMainStatus=1/.test(error.message) && !/ephemeral-test-value/.test(error.message),
   );
   assert.ok(calls.some((args) => args.join(" ").includes("journalctl")));
-  assert.ok(calls.some((args) => args[0] === "network" && args[1] === "rm"));
+  assert.ok(calls.some((args) => args[0] === "rm" && args.includes("archive-native-systemd-fail1234")));
 });

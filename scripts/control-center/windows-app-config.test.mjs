@@ -52,9 +52,11 @@ test("renderLaravelEnv adds Redis settings only when the plan enables it", () =>
     storagePath: "/srv/archive-suite/data",
     dbUsername: "archive",
     dbPassword: "s3cret",
+    redisPassword: "cache-secret",
   });
   assert.match(env, /REDIS_HOST=cache\.internal/);
   assert.match(env, /REDIS_PORT=6379/);
+  assert.match(env, /REDIS_PASSWORD=cache-secret/);
   assert.match(env, /QUEUE_CONNECTION=redis/);
 });
 

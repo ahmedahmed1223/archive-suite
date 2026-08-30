@@ -21,9 +21,44 @@ export function nativePlatformFamily(platformId) {
   return null;
 }
 
-export function nativeServiceIds(platformId) {
+export function nativeServiceIds(platformId, dataPlan) {
   const family = nativePlatformFamily(platformId);
-  return (family === "windows" ? WINDOWS_SERVICES : LINUX_SERVICES).map((service) => service.id);
+  const services = (family === "windows" ? WINDOWS_SERVICES : LINUX_SERVICES).map((service) => service.id);
+  if (dataPlan?.postgres?.kind === "managed") services.push("archive-postgres");
+  if (dataPlan?.redis?.kind === "managed") services.push("archive-redis");
+  return services;
+}
+
+function withManagedDataLifecycle(adapter, serviceControl, dataPlan) {
+  const dataServices = nativeServiceIds("windows-native", dataPlan)
+    .filter((id) => id === "archive-postgres" || id === "archive-redis");
+  const each = (action, ids = dataServices) => {
+    for (const id of ids) {
+      const result = serviceControl[action](id);
+      if ((result?.status ?? 1) !== 0) return result;
+    }
+    return { status: 0 };
+  };
+  return {
+    ...adapter,
+    start: () => {
+      const data = each("start");
+      return (data.status ?? 1) === 0 ? adapter.start() : data;
+    },
+    stop: () => {
+      const app = adapter.stop();
+      if ((app.status ?? 1) !== 0) return app;
+      return each("stop", [...dataServices].reverse());
+    },
+    restart: () => {
+      const data = each("restart");
+      return (data.status ?? 1) === 0 ? adapter.restart() : data;
+    },
+    status: () => {
+      const data = each("query");
+      return (data.status ?? 1) === 0 ? adapter.status() : data;
+    },
+  };
 }
 
 const DEFAULT_INSTALL_ROOT = { windows: "C:\\Program Files\\ArchiveSuite", linux: LINUX_SERVICE_USER.home };
@@ -35,7 +70,7 @@ export function nativeInstallRoot(platformId, override) {
 
 // The installation manifest input for a Native install. `services` are the
 // native service ids so uninstall/remove iterate exactly what was created.
-export function nativeManifestInput(configuration, { version, installRoot }) {
+export function nativeManifestInput(configuration, { version, installRoot, dataPlan } = {}) {
   return {
     version,
     source: configuration.source,
@@ -44,17 +79,17 @@ export function nativeManifestInput(configuration, { version, installRoot }) {
     runtimeProfiles: configuration.runtimeProfiles,
     capabilities: configuration.capabilities,
     artifacts: [],
-    services: nativeServiceIds(configuration.platform),
+    services: nativeServiceIds(configuration.platform, dataPlan),
     dataPaths: { storage: configuration.storage.path },
+    ...(dataPlan ? { dataPlan } : {}),
     ownedPaths: [nativeInstallRoot(configuration.platform, installRoot)],
   };
 }
 
 // The Native data plan is derived from the normalized declarative setup
-// configuration. An explicit environment override is retained for existing
-// unattended external-database deployments and takes precedence when present.
-// Configurations created before the managed-data choice existed retain their
-// local-managed PostgreSQL fallback.
+// configuration. An explicit environment override is retained for unattended
+// external-database deployments and takes precedence when present. A release
+// bundle without that override uses its verified managed data payload.
 export function resolveNativeSetupDataPlan(configuration, dataPlanOverride) {
   const selected = dataPlanOverride
     ? resolveNativeDataPlan(dataPlanOverride)
@@ -65,16 +100,12 @@ export function resolveNativeSetupDataPlan(configuration, dataPlanOverride) {
       })
       : resolveNativeDataPlan({ postgres: { kind: "local-managed" } });
   if (!selected.ok) return selected;
-  return { ...selected, plan: { ...selected.plan, pgAdmin: true } };
+  return { ...selected, plan: { ...selected.plan, pgAdmin: configuration?.platform === "windows-native" } };
 }
 
-// This plan scopes Native installs to an external PostgreSQL/Redis endpoint
-// only (no bundled managed instance -- see the release plan's Global
-// Constraints), but nothing previously read the operator's endpoint from the
-// CLI environment. Every real `install --mode=native` fell back to the
-// unbundled local-managed plan and always failed with
-// LOCAL_POSTGRES_UNAVAILABLE. Returns undefined (preserving the local-managed
-// default) unless ARCHIVE_NATIVE_POSTGRES_HOST is set.
+// Existing unattended deployments can opt into external PostgreSQL/Redis by
+// supplying their endpoints through the environment. Without that override,
+// the normalized Native configuration selects the bundled managed services.
 export function nativeDataPlanOverrideFromEnv(env = {}) {
   const host = env.ARCHIVE_NATIVE_POSTGRES_HOST;
   if (!host) return undefined;
@@ -92,8 +123,8 @@ export function nativeDataPlanOverrideFromEnv(env = {}) {
 
 // Build the live Native runtime + its manifest-owned service remover. Callers
 // inject the host seams (run/writeFile), the manifest store, preflight, the
-// resolved data plan, probes, and — when the build bundles it — the managed
-// PostgreSQL starter.
+// resolved data plan, probes, and — for a release bundle — its managed-data
+// secrets and verified payload reader.
 export function buildNativeRuntime({
   configuration,
   installRoot,
@@ -127,8 +158,9 @@ export function buildNativeRuntime({
       : { ok: false, code: "DATA_PROBES_UNAVAILABLE", message: "External data endpoints cannot be verified without probes wired into this build.", details: {}, nextActions: ["Use a build with data probes wired, or run a Docker install."] });
 
   if (family === "windows") {
-    const effects = createWindowsHostEffects({ installRoot: root, storagePath: configuration.storage.path, run, writeFile, ensureDirectory, copyFile, readDataPackage });
-    const managedProvisioner = managedDataSecrets
+    const managedServiceIds = nativeServiceIds(configuration.platform, dataPlan).filter((id) => id === "archive-postgres" || id === "archive-redis");
+    const effects = createWindowsHostEffects({ installRoot: root, storagePath: configuration.storage.path, run, writeFile, ensureDirectory, copyFile, readDataPackage, managedServiceIds });
+    const managedProvisioner = managedDataSecrets && probes?.pgvector
       ? createManagedDataProvisioner({ platform: configuration.platform, effects, probes, secrets: managedDataSecrets })
       : startManagedData;
     const windowsDataGate = probes
@@ -144,7 +176,7 @@ export function buildNativeRuntime({
       // then no-ops (see createWindowsNativeRuntimeAdapter), same pattern as
       // applyFirewallRules above.
       writeAppConfig: appConfig
-        ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, storagePath: configuration.storage.path, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword })
+        ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, storagePath: configuration.storage.path, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword, redisPassword: appConfig.redisPassword })
         : undefined,
       migrateDatabase: () => effects.exec(["migrate", "--force"]),
       health,
@@ -156,16 +188,22 @@ export function buildNativeRuntime({
       dataGate: windowsDataGate,
       dataPlan,
     });
-    return { adapter, removeServices: createWindowsServiceRemover({ serviceControl: effects.serviceControl, removeFirewallRules: effects.removeFirewallRules }) };
+    return { adapter: withManagedDataLifecycle(adapter, effects.serviceControl, dataPlan), removeServices: createWindowsServiceRemover({ serviceControl: effects.serviceControl, removeFirewallRules: effects.removeFirewallRules }) };
   }
 
-  const effects = createLinuxHostEffects({ installRoot: root, storagePath: configuration.storage.path, run, writeFile });
+  const effects = createLinuxHostEffects({ installRoot: root, storagePath: configuration.storage.path, run, writeFile, ensureDirectory, copyFile, readDataPackage });
+  const managedProvisioner = managedDataSecrets && probes?.pgvector
+    ? createManagedDataProvisioner({ platform: configuration.platform, effects, probes, secrets: managedDataSecrets })
+    : startManagedData;
+  const linuxDataGate = probes
+    ? createNativeDataGate({ probes, startLocalPostgres, startManagedData: managedProvisioner })
+    : dataGate;
   const adapter = createLinuxNativeRuntimeAdapter({
     serviceControl: effects.serviceControl,
     applyOwnership: effects.applyOwnership,
     applyLogrotate: effects.applyLogrotate,
     writeAppConfig: appConfig
-      ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, storagePath: configuration.storage.path, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword })
+      ? () => effects.writeAppConfig({ access: configuration.access, domain: appConfig.domain, dataPlan, storagePath: configuration.storage.path, appKey: appConfig.appKey, appUrl: appConfig.appUrl, dbUsername: appConfig.dbUsername, dbPassword: appConfig.dbPassword, redisPassword: appConfig.redisPassword })
       : undefined,
     migrateDatabase: () => effects.exec(["migrate", "--force"]),
     // Linux firewall stays opt-in per the platform contract; the default
@@ -176,10 +214,10 @@ export function buildNativeRuntime({
     manifestStore,
     manifestRequest,
     preflight,
-    dataGate,
+    dataGate: linuxDataGate,
     dataPlan,
   });
-  return { adapter, removeServices: createLinuxServiceRemover({ serviceControl: effects.serviceControl }) };
+  return { adapter: withManagedDataLifecycle(adapter, effects.serviceControl, dataPlan), removeServices: createLinuxServiceRemover({ serviceControl: effects.serviceControl }) };
 }
 
 export function buildNativeServiceRemover({ platform, installRoot, run, writeFile } = {}) {

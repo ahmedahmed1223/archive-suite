@@ -41,7 +41,8 @@ import { createReleaseRollback } from "./control-center/rollback-release.mjs";
 import { createInstalledServiceRemover, createReconnectData, createUninstall, removeOwnedPathsWithRetries, scheduleOwnedPathsAfterExit } from "./control-center/uninstall.mjs";
 import { createRoleSmoke } from "./control-center/role-smoke.mjs";
 import { buildNativeRuntime, buildNativeServiceRemover, nativeDataPlanOverrideFromEnv, nativeInstallRoot, nativeManifestInput, nativePlatformFamily, resolveNativeSetupDataPlan } from "./control-center/native-setup.mjs";
-import { createExternalOnlyProbes } from "./control-center/native-probes.mjs";
+import { createExternalOnlyProbes, createManagedNativeProbes } from "./control-center/native-probes.mjs";
+import { createNativeSecretStore } from "./control-center/native-secrets.mjs";
 import { generateAppKey, nativeDbCredentialsFromEnv } from "./control-center/windows-app-config.mjs";
 
 // ─── Paths ──────────────────────────────────────────────────────────────────
@@ -258,7 +259,6 @@ function nativeHostPreflightFor(configuration, { skipDiskCheck = false } = {}) {
 async function nativeSetupInstallOrRepair(operation, configuration, { skipDiskCheck = false } = {}) {
   const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
   const installRoot = process.env.ARCHIVE_NATIVE_INSTALL_ROOT || nativeInstallRoot(configuration.platform);
-  const request = { path: INSTALLATION_MANIFEST_PATH, input: nativeManifestInput(configuration, { version, installRoot }) };
   const planned = resolveNativeSetupDataPlan(configuration, nativeDataPlanOverrideFromEnv(process.env));
   if (!planned.ok) {
     return renderSetupResult({ ok: false, code: planned.code, message: planned.message, details: planned.details, nextActions: planned.nextActions });
@@ -272,7 +272,24 @@ async function nativeSetupInstallOrRepair(operation, configuration, { skipDiskCh
     return renderSetupResult({ ok: false, code: "DATA_POSTGRES_CREDENTIALS_REQUIRED", message: "An external PostgreSQL endpoint needs ARCHIVE_NATIVE_POSTGRES_USERNAME and ARCHIVE_NATIVE_POSTGRES_PASSWORD to configure the app.", details: {}, nextActions: ["Set ARCHIVE_NATIVE_POSTGRES_USERNAME and ARCHIVE_NATIVE_POSTGRES_PASSWORD and retry."] });
   }
   try {
+    const isManaged = planned.plan.postgres.kind === "managed" || planned.plan.redis.kind === "managed";
+    const nativeFamily = nativePlatformFamily(configuration.platform);
+    const secretStore = isManaged ? createNativeSecretStore({
+      platform: configuration.platform,
+      installRoot,
+      protect: (path) => nativeFamily === "windows"
+        ? spawnSync("icacls", [path, "/inheritance:r", "/grant:r", "*S-1-5-18:(F)", "/grant:r", "*S-1-5-32-544:(F)"], { stdio: "pipe" })
+        : spawnSync("chmod", ["600", path], { stdio: "pipe" }),
+    }) : null;
+    const managedSecrets = secretStore?.ensure();
     const externalProbes = createExternalOnlyProbes();
+    const probes = isManaged
+      ? createManagedNativeProbes({ platform: configuration.platform, installRoot, secrets: () => secretStore.ensure() })
+      : { postgres: () => externalProbes.postgres(planned.plan.postgres), redis: () => externalProbes.redis(planned.plan.redis), pgvector: async () => ({ ok: true, code: "PGVECTOR_NOT_REQUIRED" }) };
+    const request = {
+      path: INSTALLATION_MANIFEST_PATH,
+      input: nativeManifestInput(configuration, { version, installRoot, dataPlan: planned.plan }),
+    };
     const domain = process.env.ARCHIVE_NATIVE_DOMAIN;
     const appUrl = configuration.access === "public" ? `https://${domain}` : "http://localhost:8443";
     const { adapter } = buildNativeRuntime({
@@ -283,11 +300,16 @@ async function nativeSetupInstallOrRepair(operation, configuration, { skipDiskCh
       manifestRequest: request,
       preflight: nativeHostPreflightFor(configuration, { skipDiskCheck }),
       dataPlan: planned.plan,
-      probes: {
-        postgres: () => externalProbes.postgres(planned.plan.postgres),
-        redis: () => externalProbes.redis(planned.plan.redis),
+      probes,
+      managedDataSecrets: managedSecrets,
+      appConfig: {
+        domain,
+        appUrl,
+        appKey: managedSecrets?.appKey || generateAppKey(),
+        dbUsername: managedSecrets ? "archive_app" : credentials?.username,
+        dbPassword: managedSecrets?.dbAppPassword || credentials?.password,
+        redisPassword: managedSecrets?.redisPassword,
       },
-      appConfig: { domain, appUrl, appKey: generateAppKey(), dbUsername: credentials?.username, dbPassword: credentials?.password },
     });
     const result = operation === "install" ? await adapter.install(request) : await adapter.repair(request);
     if (!result.ok) {
@@ -398,11 +420,43 @@ function releaseConfigurationFromManifest() {
     runtimeProfiles: manifest.runtimeProfiles,
     capabilities: manifest.capabilities,
     storage: { driver: "local", path: manifest.dataPaths.storage },
+    ...(manifest.dataPlan ? { dataPlan: manifest.dataPlan } : {}),
   };
+}
+
+function nativeRuntimeForLifecycle() {
+  const manifest = installationManifest.readInstallationManifest(INSTALLATION_MANIFEST_PATH);
+  const configuration = releaseConfigurationFromManifest();
+  const installRoot = manifest.ownedPaths?.[0] || nativeInstallRoot(configuration.platform);
+  const plan = manifest.dataPlan || resolveNativeSetupDataPlan(configuration).plan;
+  const managed = plan.postgres?.kind === "managed" || plan.redis?.kind === "managed";
+  const secretStore = managed ? createNativeSecretStore({
+    platform: configuration.platform,
+    installRoot,
+    protect: () => ({ status: 0 }),
+  }) : null;
+  const secrets = secretStore ? secretStore.load() : null;
+  const externalProbes = createExternalOnlyProbes();
+  const probes = managed
+    ? createManagedNativeProbes({ platform: configuration.platform, installRoot, secrets: () => secretStore.load() })
+    : { postgres: () => externalProbes.postgres(plan.postgres), redis: () => externalProbes.redis(plan.redis), pgvector: async () => ({ ok: true, code: "PGVECTOR_NOT_REQUIRED" }) };
+  const { adapter } = buildNativeRuntime({
+    configuration,
+    installRoot,
+    health: healthProbe,
+    manifestStore: installationManifest,
+    manifestRequest: { path: INSTALLATION_MANIFEST_PATH, input: manifest },
+    dataPlan: plan,
+    probes,
+    managedDataSecrets: secrets,
+    appConfig: secrets ? { appKey: secrets.appKey, appUrl: "http://localhost:8443", dbUsername: "archive_app", dbPassword: secrets.dbAppPassword, redisPassword: secrets.redisPassword } : undefined,
+  });
+  return adapter;
 }
 
 function releaseRuntimeForLifecycle() {
   const configuration = releaseConfigurationFromManifest();
+  if (configuration.mode === "native") return nativeRuntimeForLifecycle();
   if (configuration.source === "local") {
     return createDockerRuntimeAdapter({ compose: localComposeFor(configuration), health: healthProbe });
   }

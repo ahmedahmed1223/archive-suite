@@ -10,6 +10,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createCli } from "../cli.mjs";
 import { assembleLinuxBundle as defaultAssembleLinuxBundle } from "./assemble.mjs";
+import { stageLinuxDataServices } from "./stage-data-services.mjs";
 
 const ROOT = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
 const VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
@@ -80,6 +81,16 @@ export async function runBundleCli(argv, {
   const { flagValue } = createCli(argv);
   const outDir = flagValue("out");
   if (!outDir) throw new Error("runBundleCli requires --out=<directory>.");
+  const postgresDirectory = flagValue("postgres-dir");
+  const pgvectorDirectory = flagValue("pgvector-dir");
+  const redisDirectory = flagValue("redis-dir");
+  const hasDataInputs = postgresDirectory || pgvectorDirectory || redisDirectory;
+  if (process.env.ARCHIVE_NATIVE_RELEASE === "1" && !hasDataInputs) {
+    throw new Error("Release Linux Native bundles require --postgres-dir, --pgvector-dir, and --redis-dir.");
+  }
+  if (hasDataInputs && (!postgresDirectory || !pgvectorDirectory || !redisDirectory)) {
+    throw new Error("runBundleCli requires --postgres-dir, --pgvector-dir, and --redis-dir together.");
+  }
 
   const buildLaravel = async ({ destDir }) => {
     runAndCheck(runCommand, "docker", [
@@ -108,7 +119,13 @@ export async function runBundleCli(argv, {
     if (pathExists(publicDir)) copyTree(publicDir, join(destDir, "public"));
   };
 
-  return assembleLinuxBundle({ outDir, version: VERSION, buildLaravel, buildNext });
+  return assembleLinuxBundle({
+    outDir,
+    version: VERSION,
+    buildLaravel,
+    buildNext,
+    ...(hasDataInputs ? { stageDataServices: stageLinuxDataServices, dataServices: { postgresDirectory, pgvectorDirectory, redisDirectory } } : {}),
+  });
 }
 
 // pathToFileURL handles platform URL rules correctly (Windows needs

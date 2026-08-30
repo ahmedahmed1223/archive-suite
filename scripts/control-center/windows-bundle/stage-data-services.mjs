@@ -18,8 +18,8 @@ function requireRegularFile(path, label) {
 }
 
 function listRegularFiles(root, directory = root) {
-  if (!existsSync(directory) || !statSync(directory).isDirectory() || lstatSync(directory).isSymbolicLink()) {
-    throw new Error("pgvectorDirectory must be an existing non-symlink directory.");
+  if (typeof directory !== "string" || !directory.trim() || !existsSync(directory) || !statSync(directory).isDirectory() || lstatSync(directory).isSymbolicLink()) {
+    throw new Error("Windows data-service directories must be existing non-symlink directories.");
   }
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
@@ -30,17 +30,21 @@ function listRegularFiles(root, directory = root) {
   });
 }
 
-export function stageWindowsDataServices({ destDir, postgresInstaller, pgvectorDirectory } = {}) {
+export function stageWindowsDataServices({ destDir, postgresInstaller, pgvectorDirectory, redisDirectory } = {}) {
   if (typeof destDir !== "string" || !destDir.trim()) throw new Error("stageWindowsDataServices requires destDir.");
   const installer = requireRegularFile(postgresInstaller, "postgresInstaller");
   const pgvectorFiles = listRegularFiles(pgvectorDirectory);
+  const redisFiles = listRegularFiles(redisDirectory);
   if (!pgvectorFiles.length) throw new Error("pgvectorDirectory must not be empty.");
+  if (!redisFiles.length) throw new Error("redisDirectory must not be empty.");
 
   mkdirSync(destDir, { recursive: true });
   const stagedInstaller = join(destDir, "postgresql-installer.exe");
   const stagedPgvector = join(destDir, "pgvector");
+  const stagedRedis = join(destDir, "redis");
   cpSync(installer, stagedInstaller, { force: true, dereference: false });
   cpSync(pgvectorDirectory, stagedPgvector, { recursive: true, force: true, dereference: false });
+  cpSync(redisDirectory, stagedRedis, { recursive: true, force: true, dereference: false });
 
   const manifest = {
     schemaVersion: "1.0",
@@ -48,6 +52,11 @@ export function stageWindowsDataServices({ destDir, postgresInstaller, pgvectorD
       postgres: { installer: "postgresql-installer.exe", sha256: sha256(stagedInstaller) },
       pgvector: {
         files: listRegularFiles(stagedPgvector)
+          .map((path) => ({ path: relative(destDir, path).split(sep).join("/"), sha256: sha256(path) }))
+          .sort((left, right) => left.path.localeCompare(right.path)),
+      },
+      redis: {
+        files: listRegularFiles(stagedRedis)
           .map((path) => ({ path: relative(destDir, path).split(sep).join("/"), sha256: sha256(path) }))
           .sort((left, right) => left.path.localeCompare(right.path)),
       },

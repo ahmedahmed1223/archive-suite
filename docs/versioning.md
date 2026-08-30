@@ -30,3 +30,8 @@ release notes provide an explicit upgrade procedure.
 Read the release notes before updating, create and verify a backup, and retain
 the previous version's compatible backup until health checks pass. Use Control
 Center for updates and recovery.
+
+For a Native Standalone install, read the installed version and UTC build time
+from `RELEASE.json` at the bundle root. The matching `CHANGELOG.md` contains
+the release history shipped with that bundle; the signed GitHub Release notes
+remain the canonical public history.

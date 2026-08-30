@@ -139,5 +139,6 @@ test("service remover removes only manifest-owned services and their firewall ru
 
   const failing = okControl();
   failing.remove = () => ({ status: 1 });
-  assert.deepEqual(await createWindowsServiceRemover({ serviceControl: failing })({ manifest }), { ok: false });
+  const failed = await createWindowsServiceRemover({ serviceControl: failing })({ manifest });
+  assert.equal(failed.ok, false);
 });

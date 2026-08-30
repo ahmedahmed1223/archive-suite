@@ -4,7 +4,7 @@
 // host; the default runner is spawnSync. Requires a staged install root
 // (services\<id>.exe = pinned WinSW copy, per the package manifest).
 import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { WINDOWS_SERVICES, renderServiceDefinition } from "./windows-services.mjs";
 import { renderCaddyfile, renderLaravelEnv } from "./windows-app-config.mjs";
@@ -47,7 +47,7 @@ function sqlLiteral(value) {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
-export function createWindowsHostEffects({ installRoot, storagePath, services = WINDOWS_SERVICES, run = defaultRun, writeFile = defaultWriteFile, ensureDirectory = (path) => mkdirSync(path, { recursive: true }), copyFile = defaultCopyFile, readDataPackage = readWindowsDataPackage, readLogTail } = {}) {
+export function createWindowsHostEffects({ installRoot, storagePath, services = WINDOWS_SERVICES, managedServiceIds = [], run = defaultRun, writeFile = defaultWriteFile, ensureDirectory = (path) => mkdirSync(path, { recursive: true }), copyFile = defaultCopyFile, readDataPackage = readWindowsDataPackage, readLogTail, pathExists = existsSync } = {}) {
   if (typeof installRoot !== "string" || !installRoot.trim()) throw new Error("Windows host effects require an install root.");
   const servicesDir = join(installRoot, "services");
   const writablePaths = [...new Set([
@@ -64,8 +64,12 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
   const dataServicesPath = join(installRoot, "data-services");
   const installerOptionsPath = join(installRoot, "config", "postgresql-installer.options");
   const databaseBootstrapPath = join(installRoot, "config", "archive-database-bootstrap.sql");
+  const redisConfigPath = join(installRoot, "config", "redis.conf");
+  const redisServiceId = "archive-redis";
+  const postgresServiceId = "archive-postgres";
   let verifiedDataPackage;
   const dataPackage = () => verifiedDataPackage ??= readDataPackage({ dataServicesPath });
+  const aclServices = [...services, ...managedServiceIds.map((id) => ({ id }))];
 
   // The PostgreSQL installer reads its superuser secret from an option file,
   // never from the process command line. This DACL permits only SYSTEM and
@@ -116,6 +120,47 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
   const installPgAdmin = () => {
     if (!dataPackage().includesPgAdmin) throw new Error("Windows data package does not include pgAdmin.");
     return { status: 0 };
+  };
+
+  const renderRedisService = () => [
+    "<service>",
+    `  <id>${redisServiceId}</id>`,
+    `  <name>${redisServiceId}</name>`,
+    "  <description>Archive Suite bundled Redis-compatible data service</description>",
+    "  <executable>%BASE%\\..\\data-services\\redis\\redis-server.exe</executable>",
+    "  <arguments>config\\redis.conf</arguments>",
+    "  <workingdirectory>%BASE%\\..</workingdirectory>",
+    "  <logpath>%BASE%\\..\\logs</logpath>",
+    "  <autoRefresh>false</autoRefresh>",
+    "  <onfailure action=\"restart\" delay=\"10 sec\"/>",
+    "  <log mode=\"roll-by-size\"><sizeThreshold>10240</sizeThreshold><keepFiles>8</keepFiles></log>",
+    "</service>",
+  ].join("\n");
+
+  const installRedisCompatible = ({ secrets } = {}) => {
+    const password = requireSingleLineSecret(secrets?.redisPassword, "Redis password");
+    const payload = dataPackage();
+    ensureDirectory(join(storagePath || join(installRoot, "storage"), "redis"));
+    writeFile(redisConfigPath, [
+      "bind 127.0.0.1",
+      "protected-mode yes",
+      "port 6379",
+      `requirepass ${password}`,
+      `dir "${(storagePath || join(installRoot, "storage")).replace(/[\\]+/g, "\\\\")}\\redis"`,
+      "appendonly yes",
+      "",
+    ].join("\n"));
+    const protectedFile = protectSensitiveFile(redisConfigPath);
+    if (protectedFile.status !== 0) return protectedFile;
+    const wrapper = join(servicesDir, "archive-http.exe");
+    if (!pathExists(wrapper)) throw new Error("Windows Native bundle is missing the WinSW service wrapper.");
+    copyFile(wrapper, join(servicesDir, `${redisServiceId}.exe`));
+    writeFile(join(servicesDir, `${redisServiceId}.xml`), renderRedisService());
+    const installed = run([join(servicesDir, `${redisServiceId}.exe`), "install"]);
+    if (installed.status !== 0) return installed;
+    const account = run(["sc", "config", redisServiceId, "obj=", `NT SERVICE\\${redisServiceId}`]);
+    if (account.status !== 0) return account;
+    return run(["icacls", redisConfigPath, "/grant", `NT SERVICE\\${redisServiceId}:(R)`]);
   };
 
   const createArchiveRoles = ({ secrets } = {}) => {
@@ -170,18 +215,20 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
       // for the real WinSW error this avoids).
       return run(["sc", "config", service.id, "obj=", `NT SERVICE\\${service.id}`]);
     },
-    remove: (id) => run([exeFor(id), "uninstall"]),
-    start: (id) => run([exeFor(id), "start"]),
-    stop: (id) => run([exeFor(id), "stop"]),
-    restart: (id) => run([exeFor(id), "restart"]),
-    query: (id) => run([exeFor(id), "status"]),
+    remove: (id) => id === postgresServiceId
+      ? firstFailure([run(["sc", "stop", id]), run(["sc", "delete", id])])
+      : run([exeFor(id), "uninstall"]),
+    start: (id) => id === postgresServiceId ? run(["sc", "start", id]) : run([exeFor(id), "start"]),
+    stop: (id) => id === postgresServiceId ? run(["sc", "stop", id]) : run([exeFor(id), "stop"]),
+    restart: (id) => id === postgresServiceId ? firstFailure([run(["sc", "stop", id]), run(["sc", "start", id])]) : run([exeFor(id), "restart"]),
+    query: (id) => id === postgresServiceId ? run(["sc", "query", id]) : run([exeFor(id), "status"]),
   };
 
   // Install-root ACLs for the per-service virtual accounts: read/execute on
   // the tree, modify only on storage and logs.
   const applyAcls = () => {
     writablePaths.forEach((path) => ensureDirectory(path));
-    return firstFailure(services.flatMap((service) => [
+    return firstFailure(aclServices.flatMap((service) => [
       run(["icacls", installRoot, "/grant", `NT SERVICE\\${service.id}:(OI)(CI)RX`]),
       ...writablePaths.map((path) => run(["icacls", path, "/grant", `NT SERVICE\\${service.id}:(OI)(CI)M`])),
     ]));
@@ -213,11 +260,11 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
   // assemble.mjs stages an empty config/ directory; the actual Caddyfile and
   // Laravel .env can only be rendered here, at install time, once the
   // resolved data plan and access mode are known.
-  const writeAppConfig = ({ access, domain, dataPlan, storagePath, appKey, appUrl, dbUsername, dbPassword }) => {
+  const writeAppConfig = ({ access, domain, dataPlan, storagePath, appKey, appUrl, dbUsername, dbPassword, redisPassword }) => {
     writeFile(join(installRoot, "config", "Caddyfile"), renderCaddyfile({ installRoot, access, domain }));
-    writeFile(join(installRoot, "app", "laravel", ".env"), renderLaravelEnv({ appKey, appUrl, dataPlan, storagePath, dbUsername, dbPassword }));
+    writeFile(join(installRoot, "app", "laravel", ".env"), renderLaravelEnv({ appKey, appUrl, dataPlan, storagePath, dbUsername, dbPassword, redisPassword }));
     return { status: 0 };
   };
 
-  return { serviceControl, applyAcls, applyFirewallRules, removeFirewallRules, writeAppConfig, logs, exec, installPostgres, installPgvector, createArchiveRoles, installPgAdmin };
+  return { serviceControl, applyAcls, applyFirewallRules, removeFirewallRules, writeAppConfig, logs, exec, installPostgres, installPgvector, createArchiveRoles, installRedisCompatible, installPgAdmin };
 }

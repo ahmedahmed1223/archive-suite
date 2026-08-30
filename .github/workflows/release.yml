@@ -73,9 +73,13 @@ jobs:
           POSTGRES_SHA256: ${{ vars.WINDOWS_POSTGRES_SHA256 }}
           PGVECTOR_URL: ${{ vars.WINDOWS_PGVECTOR_URL }}
           PGVECTOR_SHA256: ${{ vars.WINDOWS_PGVECTOR_SHA256 }}
+          REDIS_URL: ${{ vars.WINDOWS_REDIS_URL }}
+          REDIS_SHA256: ${{ vars.WINDOWS_REDIS_SHA256 }}
         run: node scripts/fetch-native-release-inputs.mjs windows --out native-inputs
       - name: Build Windows Native package
-        run: pnpm bundle:windows-native -- --out native-windows --postgres-installer native-inputs/postgresql-installer.exe --pgvector-dir native-inputs/pgvector
+        env:
+          ARCHIVE_NATIVE_RELEASE: "1"
+        run: pnpm bundle:windows-native -- --out native-windows --postgres-installer native-inputs/postgresql-installer.exe --pgvector-dir native-inputs/pgvector --redis-dir native-inputs/redis
       - name: Verify and archive Windows Native package
         shell: powershell
         run: |
@@ -139,8 +143,19 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Validate Linux data-service inputs
+        env:
+          POSTGRES_URL: ${{ vars.LINUX_POSTGRES_URL }}
+          POSTGRES_SHA256: ${{ vars.LINUX_POSTGRES_SHA256 }}
+          PGVECTOR_URL: ${{ vars.LINUX_PGVECTOR_URL }}
+          PGVECTOR_SHA256: ${{ vars.LINUX_PGVECTOR_SHA256 }}
+          REDIS_URL: ${{ vars.LINUX_REDIS_URL }}
+          REDIS_SHA256: ${{ vars.LINUX_REDIS_SHA256 }}
+        run: node scripts/fetch-native-release-inputs.mjs linux --out native-inputs
       - name: Build Linux Native package
-        run: pnpm bundle:linux-native -- --out native-linux
+        env:
+          ARCHIVE_NATIVE_RELEASE: "1"
+        run: pnpm bundle:linux-native -- --out native-linux --postgres-dir native-inputs/postgres --pgvector-dir native-inputs/pgvector --redis-dir native-inputs/redis
       - name: Run Linux Native acceptance
         run: node scripts/native-acceptance.mjs linux --bundle native-linux --run-id "lnx-${GITHUB_RUN_ID}" --evidence-out native-evidence
       - name: Archive accepted Linux package
@@ -409,8 +424,9 @@ jobs:
             > OFFLINE-BUNDLE-README.txt
           cp "release-offline/${evidence_asset}" "${evidence_asset}"
           node scripts/build-release-notes.mjs "${GITHUB_REF_NAME#v}" release-notes.md
+          node scripts/build-native-release-metadata.mjs "${GITHUB_REF_NAME#v}" RELEASE.json native-release-assets
           mapfile -t native_assets < <(find native-release-assets -type f -print | sort)
-          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json OFFLINE-BUNDLE-README.txt OFFLINE-BUNDLE-SHA256 "${offline_parts[@]}" "${evidence_asset}" "${native_assets[@]}")
+          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json OFFLINE-BUNDLE-README.txt OFFLINE-BUNDLE-SHA256 RELEASE.json "${offline_parts[@]}" "${evidence_asset}" "${native_assets[@]}")
           sha256sum "${artifacts[@]}" > SHA256SUMS
           sha256sum --check SHA256SUMS
           flags=(--title "${GITHUB_REF_NAME}" --notes-file release-notes.md)

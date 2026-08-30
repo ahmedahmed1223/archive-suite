@@ -124,3 +124,39 @@ test("exec invokes the staged php binary with artisan and the given arguments", 
     "queue:work", "--once",
   ]);
 });
+
+test("managed Linux data effects stage the verified payload and register PostgreSQL and Redis systemd units", () => {
+  const { run, calls } = fakeRun();
+  const written = [];
+  const copied = [];
+  const effects = createLinuxHostEffects({
+    installRoot: INSTALL_ROOT,
+    storagePath: "/srv/archive",
+    run,
+    writeFile: (path, content) => written.push({ path, content }),
+    ensureDirectory: () => {},
+    copyFile: (source, destination) => copied.push({ source, destination }),
+    chmodFile: () => {},
+    readDataPackage: () => ({
+      postgresFiles: [
+        { path: "postgres/bin/initdb", absolute: "/bundle/data-services/postgres/bin/initdb" },
+        { path: "postgres/bin/pg_ctl", absolute: "/bundle/data-services/postgres/bin/pg_ctl" },
+        { path: "postgres/bin/psql", absolute: "/bundle/data-services/postgres/bin/psql" },
+      ],
+      initdb: "/bundle/data-services/postgres/bin/initdb",
+      pgCtl: "/bundle/data-services/postgres/bin/pg_ctl",
+      psql: "/bundle/data-services/postgres/bin/psql",
+      pgvectorFiles: ["/bundle/data-services/pgvector/vector.so", "/bundle/data-services/pgvector/vector.control"],
+      redisServer: "/bundle/data-services/redis/bin/redis-server",
+    }),
+  });
+
+  assert.equal(effects.installPostgres({ secrets: { dbOwnerPassword: "owner" } }).status, 0);
+  assert.equal(effects.installPgvector().status, 0);
+  assert.equal(effects.createArchiveRoles({ secrets: { dbOwnerPassword: "owner", dbAppPassword: "app" } }).status, 0);
+  assert.equal(effects.installRedisCompatible({ secrets: { redisPassword: "cache" } }).status, 0);
+  assert.ok(copied.some(({ destination }) => destination.endsWith("runtime\\postgres\\bin\\initdb") || destination.endsWith("runtime/postgres/bin/initdb")));
+  assert.ok(written.some(({ path, content }) => path === "/etc/systemd/system/archive-postgres.service" && content.includes("bundled PostgreSQL")));
+  assert.ok(written.some(({ path, content }) => path === "/etc/systemd/system/archive-redis.service" && content.includes("redis-server")));
+  assert.ok(calls.some(([command, name]) => command === "systemctl" && name === "start"));
+});

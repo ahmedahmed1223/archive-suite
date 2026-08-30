@@ -138,3 +138,27 @@ test("createWindowsHostEffects throws without a non-empty installRoot", () => {
   assert.throws(() => createWindowsHostEffects({ installRoot: "" }), /install root/i);
   assert.throws(() => createWindowsHostEffects({}), /install root/i);
 });
+
+test("installRedisCompatible writes a protected config and registers the bundled Redis service without putting the password in XML", () => {
+  const { run, calls } = fakeRun();
+  const written = [];
+  const copied = [];
+  const effects = createWindowsHostEffects({
+    installRoot: INSTALL_ROOT,
+    run,
+    writeFile: (path, content) => written.push({ path, content }),
+    ensureDirectory: () => {},
+    copyFile: (source, destination) => copied.push({ source, destination }),
+    pathExists: () => true,
+    readDataPackage: () => ({ redisServer: "C:\\App\\data-services\\redis\\redis-server.exe" }),
+  });
+
+  const result = effects.installRedisCompatible({ secrets: { redisPassword: "cache-secret" } });
+
+  assert.equal(result.status, 0);
+  assert.match(written.find(({ path }) => path.endsWith("redis.conf")).content, /requirepass cache-secret/);
+  assert.doesNotMatch(written.find(({ path }) => path.endsWith("archive-redis.xml")).content, /cache-secret/);
+  assert.deepEqual(copied[0], { source: `${INSTALL_ROOT}\\services\\archive-http.exe`, destination: `${INSTALL_ROOT}\\services\\archive-redis.exe` });
+  assert.ok(calls.some(([command, verb]) => command.endsWith("archive-redis.exe") && verb === "install"));
+  assert.ok(calls.some(([command, verb, id]) => command === "sc" && verb === "config" && id === "archive-redis"));
+});

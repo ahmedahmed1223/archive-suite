@@ -1,5 +1,6 @@
 import { randomBytes as defaultRandomBytes } from "node:crypto";
-import { writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { posix, win32 } from "node:path";
 
 function requirePlatform(platform) {
@@ -19,6 +20,7 @@ function secretPath(platform, installRoot) {
 }
 
 function defaultWriteFile(path, content, options) {
+  mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, content, { encoding: "utf8", ...options });
 }
 
@@ -26,7 +28,25 @@ function statusOk(outcome) {
   return outcome === undefined || outcome?.status === 0;
 }
 
-export function createNativeSecretStore({ platform, installRoot, randomBytes = defaultRandomBytes, writeFile = defaultWriteFile, protect = () => ({ status: 0 }) } = {}) {
+function parseSecrets(content) {
+  const values = {};
+  for (const line of String(content).split(/\r?\n/)) {
+    const match = line.match(/^(APP_KEY|ARCHIVE_DB_OWNER_PASSWORD|ARCHIVE_DB_APP_PASSWORD|ARCHIVE_REDIS_PASSWORD)=(.*)$/);
+    if (match) values[match[1]] = match[2];
+  }
+  const secrets = {
+    appKey: values.APP_KEY,
+    dbOwnerPassword: values.ARCHIVE_DB_OWNER_PASSWORD,
+    dbAppPassword: values.ARCHIVE_DB_APP_PASSWORD,
+    redisPassword: values.ARCHIVE_REDIS_PASSWORD,
+  };
+  if (Object.values(secrets).some((value) => typeof value !== "string" || !value || /[\r\n]/.test(value))) {
+    throw new Error("Native secret store contains incomplete or unsafe values.");
+  }
+  return secrets;
+}
+
+export function createNativeSecretStore({ platform, installRoot, randomBytes = defaultRandomBytes, writeFile = defaultWriteFile, protect = () => ({ status: 0 }), exists = existsSync, readFile = readFileSync } = {}) {
   requirePlatform(platform);
   const root = requireInstallRoot(installRoot);
   const path = secretPath(platform, root);
@@ -50,6 +70,17 @@ export function createNativeSecretStore({ platform, installRoot, randomBytes = d
       const protectedPath = protect(path, { platform });
       if (!statusOk(protectedPath)) throw new Error("Native secret protection could not be applied.");
       return secrets;
+    },
+    load() {
+      if (!exists(path)) throw new Error("Native secret store does not exist.");
+      return parseSecrets(readFile(path, "utf8"));
+    },
+    ensure() {
+      try { return this.load(); }
+      catch (error) {
+        if (error?.message !== "Native secret store does not exist.") throw error;
+        return this.create();
+      }
     },
     manifestReference() {
       return { path };

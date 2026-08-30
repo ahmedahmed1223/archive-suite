@@ -159,6 +159,11 @@ async function checkReleaseWorkflow() {
   for (const [label, pattern] of requiredDistributionPatterns) {
     assert.match(text, pattern, `${file}: missing required ${label}.`);
   }
+  assert.match(text, /WINDOWS_REDIS_URL[\s\S]*WINDOWS_REDIS_SHA256/i, `${file}: Windows Native release is missing its Redis input contract.`);
+  assert.match(text, /LINUX_POSTGRES_URL[\s\S]*LINUX_PGVECTOR_URL[\s\S]*LINUX_REDIS_URL/i, `${file}: Linux Native release is missing its three data-service input contract.`);
+  assert.match(text, /fetch-native-release-inputs\.mjs linux[\s\S]*bundle:linux-native[\s\S]*--postgres-dir[\s\S]*--pgvector-dir[\s\S]*--redis-dir/i, `${file}: Linux Native assembly must consume the verified data-service inputs.`);
+  assert.match(text, /build-native-release-metadata\.mjs[\s\S]*RELEASE\.json/i, `${file}: release packaging must publish aggregate Native RELEASE.json metadata.`);
+  assert.match(text, /artifacts=.*RELEASE\.json/i, `${file}: RELEASE.json must be covered by the release artifact list.`);
   assert.match(text, /download-artifact@v4/i, `${file}: publish job must download verified distribution artifacts.`);
   assert.match(text, /sha256sum\s+--check\s+SHA256SUMS/i, `${file}: publish job must verify SHA256SUMS before release creation.`);
   assert.match(text, /node scripts\/build-release-notes\.mjs/i, `${file}: publish job must build bilingual GitHub Release notes from the canonical files.`);

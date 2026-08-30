@@ -20,8 +20,7 @@ test("assembleLinuxBundle lays out runtime/app/config and writes SHA256SUMS", as
     const buildLaravel = async ({ destDir }) => { mkdirSync(destDir, { recursive: true }); writeFileSync(join(destDir, "artisan"), "#!/usr/bin/env php\n"); };
     const buildNext = async ({ destDir }) => { mkdirSync(destDir, { recursive: true }); writeFileSync(join(destDir, "server.js"), "// standalone server\n"); };
 
-    const stageControlCenter = async ({ destDir }) => { mkdirSync(destDir, { recursive: true }); writeFileSync(join(destDir, "control-center.mjs"), "// bundled control center\n"); };
-    const result = await assembleLinuxBundle({ outDir, version: "1.5.1", builtAt: "2026-08-30T12:00:00Z", stagePhp, stageNode, stageCaddy, stageControlCenter, buildLaravel, buildNext });
+    const result = await assembleLinuxBundle({ outDir, version: "1.5.1", builtAt: "2026-08-30T12:00:00Z", stagePhp, stageNode, stageCaddy, buildLaravel, buildNext });
 
     assert.equal(result.ok, true);
     assert.ok(existsSync(join(outDir, "runtime", "php", "bin", "php")));
@@ -32,6 +31,8 @@ test("assembleLinuxBundle lays out runtime/app/config and writes SHA256SUMS", as
     assert.ok(existsSync(join(outDir, "install.sh")));
     assert.ok(existsSync(join(outDir, "manage.sh")));
     assert.ok(existsSync(join(outDir, "scripts", "control-center.mjs")));
+    assert.ok(existsSync(join(outDir, "README.ar.md")));
+    assert.ok(existsSync(join(outDir, "CHANGELOG.md")));
     assert.equal(JSON.parse(readFileSync(join(outDir, "RELEASE.json"), "utf8")).platform, "linux-x64");
     assert.ok(existsSync(result.shasumsPath));
     const shasums = readFileSync(result.shasumsPath, "utf8");

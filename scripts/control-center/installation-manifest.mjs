@@ -69,6 +69,35 @@ function normalizeDataPaths(value) {
   return normalized;
 }
 
+function normalizeNativeDataPlan(value) {
+  if (value === undefined) return undefined;
+  if (!value || typeof value !== "object" || Array.isArray(value)) fail("dataPlan must be an object.");
+  const postgres = value.postgres;
+  if (!postgres || typeof postgres !== "object" || !["managed", "local-managed", "external"].includes(postgres.kind)) fail("dataPlan.postgres is invalid.");
+  const normalizedPostgres = { kind: postgres.kind };
+  if (postgres.kind !== "local-managed") {
+    if (typeof postgres.host !== "string" || !postgres.host.trim() || !Number.isInteger(postgres.port) || postgres.port < 1 || postgres.port > 65535) fail("dataPlan.postgres endpoint is invalid.");
+    normalizedPostgres.host = postgres.host.trim();
+    normalizedPostgres.port = postgres.port;
+  }
+  if (postgres.kind !== "local-managed" && (typeof postgres.database !== "string" || !postgres.database.trim())) fail("dataPlan.postgres.database is invalid.");
+  if (postgres.database !== undefined) normalizedPostgres.database = postgres.database.trim();
+  const redis = value.redis;
+  if (!redis || typeof redis !== "object" || typeof redis.enabled !== "boolean") fail("dataPlan.redis is invalid.");
+  const normalizedRedis = { enabled: redis.enabled };
+  if (redis.enabled) {
+    if (!["managed", "external"].includes(redis.kind)) fail("dataPlan.redis.kind is invalid.");
+    normalizedRedis.kind = redis.kind;
+    if (redis.kind === "external") {
+      if (typeof redis.host !== "string" || !redis.host.trim() || !Number.isInteger(redis.port) || redis.port < 1 || redis.port > 65535) fail("dataPlan.redis endpoint is invalid.");
+      normalizedRedis.host = redis.host.trim();
+      normalizedRedis.port = redis.port;
+    }
+  }
+  if (!["redis", "database"].includes(value.queue) || !["redis", "database"].includes(value.cache)) fail("dataPlan queue/cache mode is invalid.");
+  return { postgres: normalizedPostgres, queue: value.queue, cache: value.cache, redis: normalizedRedis, ...(value.pgAdmin === true ? { pgAdmin: true } : {}) };
+}
+
 function normalizeOwnedPaths(value) {
   if (value === undefined) return [];
   const paths = requireStrings(value, "ownedPaths");
@@ -133,20 +162,22 @@ function normalizeInput(input) {
     dataPaths: normalizeDataPaths(input.dataPaths),
     ownedPaths: normalizeOwnedPaths(input.ownedPaths),
   };
+  const normalizedDataPlan = normalizeNativeDataPlan(input.dataPlan);
+  if (normalizedDataPlan) normalized.dataPlan = normalizedDataPlan;
   const normalizedEnvironment = normalizeReleaseEnvironment(releaseEnvironment);
   if (normalizedEnvironment) normalized.releaseEnvironment = normalizedEnvironment;
   return normalized;
 }
 
 function releaseReference(input) {
-  const { version, source, mode, platform, runtimeProfiles, capabilities, artifacts, services, dataPaths, ownedPaths, releaseEnvironment } = input || {};
-  return normalizeInput({ version, source, mode, platform, runtimeProfiles, capabilities, artifacts, services, dataPaths, ownedPaths, releaseEnvironment });
+  const { version, source, mode, platform, runtimeProfiles, capabilities, artifacts, services, dataPaths, ownedPaths, releaseEnvironment, dataPlan } = input || {};
+  return normalizeInput({ version, source, mode, platform, runtimeProfiles, capabilities, artifacts, services, dataPaths, ownedPaths, releaseEnvironment, dataPlan });
 }
 
 function validateManifest(manifest) {
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) fail("must be a JSON object.");
   const keys = ["schemaVersion", "version", "source", "mode", "platform", "runtimeProfiles", "capabilities", "artifacts", "services", "dataPaths", "lastSuccessfulStep", "previousVersion", "operation"];
-  const optionalKeys = ["ownedPaths", "releaseEnvironment", "previousRelease"];
+  const optionalKeys = ["ownedPaths", "releaseEnvironment", "dataPlan", "previousRelease"];
   if (keys.some((key) => !(key in manifest)) || Object.keys(manifest).some((key) => !keys.includes(key) && !optionalKeys.includes(key))) {
     fail("has an invalid field set.");
   }
@@ -172,6 +203,7 @@ function validateManifest(manifest) {
     operation: { type: operation.type, status: operation.status, failedStep: operation.failedStep, nextActions },
   };
   if (input.releaseEnvironment) result.releaseEnvironment = input.releaseEnvironment;
+  if (input.dataPlan) result.dataPlan = input.dataPlan;
   if (previousRelease !== undefined) result.previousRelease = releaseReference(previousRelease);
   if (target !== undefined) result.operation.target = releaseReference(target);
   return result;

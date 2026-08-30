@@ -6,6 +6,7 @@ test("renders a Windows installer that invokes only the bundled runtime", () => 
   const script = renderWindowsLauncher({ command: "install" });
   assert.match(script, /%ROOT%runtime\\node\\node\.exe/);
   assert.match(script, /scripts\\control-center\.mjs" install %\*/);
+  assert.match(script, /scripts\\control-center\.mjs" wizard/);
   assert.doesNotMatch(script, /powershell -Command|cmd \/c/);
 });
 

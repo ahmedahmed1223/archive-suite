@@ -17,10 +17,32 @@ export function validateWindowsReleaseInputEnvironment(env) {
     postgresSha256: env.POSTGRES_SHA256,
     pgvectorUrl: env.PGVECTOR_URL,
     pgvectorSha256: env.PGVECTOR_SHA256,
+    redisUrl: env.REDIS_URL,
+    redisSha256: env.REDIS_SHA256,
   };
   if (!validHttps(values.postgresUrl) || !validHttps(values.pgvectorUrl)
-      || !SHA256.test(values.postgresSha256 || "") || !SHA256.test(values.pgvectorSha256 || "")) {
-    throw new Error("Windows Native release inputs require HTTPS sources and exact SHA-256 values.");
+      || !validHttps(values.redisUrl)
+      || !SHA256.test(values.postgresSha256 || "") || !SHA256.test(values.pgvectorSha256 || "")
+      || !SHA256.test(values.redisSha256 || "")) {
+    throw new Error("Windows Native release inputs require three HTTPS sources and exact SHA-256 values.");
+  }
+  return values;
+}
+
+export function validateLinuxReleaseInputEnvironment(env) {
+  const values = {
+    postgresUrl: env.POSTGRES_URL,
+    postgresSha256: env.POSTGRES_SHA256,
+    pgvectorUrl: env.PGVECTOR_URL,
+    pgvectorSha256: env.PGVECTOR_SHA256,
+    redisUrl: env.REDIS_URL,
+    redisSha256: env.REDIS_SHA256,
+  };
+  if (!validHttps(values.postgresUrl) || !validHttps(values.pgvectorUrl)
+      || !validHttps(values.redisUrl)
+      || !SHA256.test(values.postgresSha256 || "") || !SHA256.test(values.pgvectorSha256 || "")
+      || !SHA256.test(values.redisSha256 || "")) {
+    throw new Error("Linux Native release inputs require three HTTPS sources and exact SHA-256 values.");
   }
   return values;
 }
@@ -37,16 +59,41 @@ function verify(bytes, expected, label) {
 }
 
 function defaultExtractPgvector({ archive, destination }) {
+  return defaultExtractArchive({ archive, destination, format: "zip", label: "pgvector" });
+}
+
+function defaultExtractArchive({ archive, destination, format, label }) {
   mkdirSync(destination, { recursive: true });
-  // The release input is a ZIP archive. GNU tar on ubuntu-latest does not
-  // support ZIP, even though Windows bsdtar often does, so use the format's
-  // canonical extractor on the Linux build runner.
-  const command = process.platform === "win32" ? "tar" : "unzip";
-  const args = process.platform === "win32"
-    ? ["-xf", archive, "-C", destination]
-    : ["-q", archive, "-d", destination];
+  const listing = format === "zip" && process.platform !== "win32"
+    ? spawnSync("unzip", ["-Z1", archive], { encoding: "utf8", shell: false })
+    : spawnSync("tar", ["-tzf", archive], { encoding: "utf8", shell: false });
+  if (listing.status !== 0) throw new Error(`${label} archive listing failed with exit code ${listing.status}.`);
+  for (const entry of String(listing.stdout || "").split(/\r?\n/).filter(Boolean)) {
+    const normalized = entry.replaceAll("\\", "/");
+    if (!normalized || normalized.startsWith("/") || /^[A-Za-z]:\//u.test(normalized)
+        || normalized.split("/").some((segment) => segment === ".." || segment === "" && normalized !== `${normalized}/`)) {
+      throw new Error(`${label} archive contains an unsafe path: ${entry}`);
+    }
+  }
+  const command = format === "zip" && process.platform !== "win32" ? "unzip" : "tar";
+  const args = command === "unzip" ? ["-q", archive, "-d", destination] : ["--no-same-owner", "--no-same-permissions", "-xf", archive, "-C", destination];
   const result = spawnSync(command, args, { stdio: "inherit", shell: false });
-  if (result.status !== 0) throw new Error(`pgvector archive extraction failed with exit code ${result.status}.`);
+  if (result.status !== 0) throw new Error(`${label} archive extraction failed with exit code ${result.status}.`);
+}
+
+function archiveFormat(url, fallback = "tar.gz") {
+  const pathname = new URL(url).pathname.toLowerCase();
+  return pathname.endsWith(".zip") ? "zip" : fallback;
+}
+
+async function fetchAndExtract({ input, urlKey, shaKey, outDir, name, format, fetchBytes, extractArchive }) {
+  const archive = join(outDir, `${name}.${format === "zip" ? "zip" : "tar.gz"}`);
+  const destination = join(outDir, name);
+  const bytes = await fetchBytes(input[urlKey]);
+  verify(bytes, input[shaKey], `${name} archive`);
+  writeFileSync(archive, bytes);
+  await extractArchive({ archive, destination, format, label: name });
+  return destination;
 }
 
 export async function fetchWindowsReleaseInputs({
@@ -54,6 +101,7 @@ export async function fetchWindowsReleaseInputs({
   env = process.env,
   fetchBytes = defaultFetchBytes,
   extractPgvector = defaultExtractPgvector,
+  extractArchive = defaultExtractArchive,
 } = {}) {
   if (!outDir) throw new Error("Windows Native release input output directory is required.");
   const input = validateWindowsReleaseInputEnvironment(env);
@@ -71,7 +119,43 @@ export async function fetchWindowsReleaseInputs({
   verify(pgvectorBytes, input.pgvectorSha256, "pgvector archive");
   writeFileSync(pgvectorArchive, pgvectorBytes);
   await extractPgvector({ archive: pgvectorArchive, destination: pgvectorDirectory });
-  return { postgresInstaller, pgvectorDirectory };
+  const redisDirectory = await fetchAndExtract({
+    input,
+    urlKey: "redisUrl",
+    shaKey: "redisSha256",
+    outDir: root,
+    name: "redis",
+    format: archiveFormat(input.redisUrl, "zip"),
+    fetchBytes,
+    extractArchive,
+  });
+  return { postgresInstaller, pgvectorDirectory, redisDirectory };
+}
+
+export async function fetchLinuxReleaseInputs({
+  outDir,
+  env = process.env,
+  fetchBytes = defaultFetchBytes,
+  extractArchive = defaultExtractArchive,
+} = {}) {
+  if (!outDir) throw new Error("Linux Native release input output directory is required.");
+  const input = validateLinuxReleaseInputEnvironment(env);
+  const root = resolve(outDir);
+  mkdirSync(root, { recursive: true });
+  const directories = {};
+  for (const name of ["postgres", "pgvector", "redis"]) {
+    directories[name] = await fetchAndExtract({
+      input,
+      urlKey: `${name === "postgres" ? "postgres" : name}Url`,
+      shaKey: `${name === "postgres" ? "postgres" : name}Sha256`,
+      outDir: root,
+      name,
+      format: archiveFormat(input[`${name === "postgres" ? "postgres" : name}Url`]),
+      fetchBytes,
+      extractArchive,
+    });
+  }
+  return directories;
 }
 
 async function main(argv) {
@@ -79,8 +163,10 @@ async function main(argv) {
   const outIndex = args.indexOf("--out");
   const inline = args.find((value) => value.startsWith("--out="));
   const outDir = inline?.slice("--out=".length) || (outIndex >= 0 ? args[outIndex + 1] : null);
-  if (platform !== "windows" || !outDir) throw new Error("Usage: node scripts/fetch-native-release-inputs.mjs windows --out <directory>");
-  const result = await fetchWindowsReleaseInputs({ outDir });
+  if (!["windows", "linux"].includes(platform) || !outDir) throw new Error("Usage: node scripts/fetch-native-release-inputs.mjs <windows|linux> --out <directory>");
+  const result = platform === "windows"
+    ? await fetchWindowsReleaseInputs({ outDir })
+    : await fetchLinuxReleaseInputs({ outDir });
   console.log(JSON.stringify({ ok: true, platform, ...result }));
 }
 

@@ -72,4 +72,25 @@ ARCHIVE_COMPOSE_PROFILES=media node scripts/control-center.mjs start
 المستخدمين وأدوارهم من صفحة **المستخدمون** داخل التطبيق، بينما يغطي Control
 Center بيانات اعتماد المشرف والصيانة التشغيلية.
 
+## أوامر Native Standalone
+
+عند التشغيل من حزمة Native الإصدار 1.5.1، استخدم `manage.bat` في Windows أو
+`manage.sh` في Linux. يستدعي الملفان وقت تشغيل Node.js المرفق ومسار Control
+Center نفسه لتنفيذ دورة الإدارة:
+
+```text
+doctor | status | start | stop | restart | logs | health
+backup | restore | update | uninstall
+```
+
+ملف التثبيت هو `install.bat` أو `install.sh`. يتحقق من `SHA256SUMS`، ويسجل
+خدمات المنصة التي يملكها التثبيت فقط، ويحافظ على البيانات عند إلغاء التثبيت
+ما لم يقدّم المشغل تأكيد حذف صريحًا. يسجل `RELEASE.json` إصدار الحزمة ووقت
+بنائها بتوقيت UTC، ويحتوي `CHANGELOG.md` على سجل التغييرات المرفق.
+
+تدير خطة Native الافتراضية خدمتي البيانات المضمّنتين `archive-postgres` و
+`archive-redis` إلى جانب خدمات التطبيق الست. يتحقق المثبت من بيان payload قبل
+التثبيت، وتشملهما أوامر دورة الحياة نفسها. يظل اختيار خدمات البيانات الخارجية
+متاحًا للمشغل الذي يدير PostgreSQL أو خدمة متوافقة مع Redis مسبقًا.
+
 راجع [دليل النشر](../DEPLOYMENT.ar.md) و[دليل الدعم](ops/support.ar.md).

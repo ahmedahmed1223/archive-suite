@@ -91,6 +91,29 @@ ARCHIVE_COMPOSE_PROFILES=media node scripts/control-center.mjs start  # core + O
   Laravel + Next.js stack).
 - Backups live in `infra/backups/archive-<timestamp>.sql`.
 
+## Native Standalone commands
+
+When running from a v1.5.1 Native bundle, use `manage.bat` on Windows or
+`manage.sh` on Linux. These launchers invoke the bundled Node.js runtime and
+the same Control Center lifecycle:
+
+```text
+doctor | status | start | stop | restart | logs | health
+backup | restore | update | uninstall
+```
+
+The Native installer is `install.bat` or `install.sh`. It verifies
+`SHA256SUMS`, registers only the platform services owned by the installation,
+and keeps data on uninstall unless explicit deletion confirmation is supplied.
+`RELEASE.json` records the bundle version and UTC build time; `CHANGELOG.md`
+contains the shipped release history.
+
+The default Native plan manages the bundled `archive-postgres` and
+`archive-redis` services in addition to the six application services. Their
+payload manifest is verified before installation, and the same lifecycle
+commands include them. An external data plan remains available for operators
+who already run PostgreSQL or Redis-compatible infrastructure.
+
 ## Notes
 
 - Cross-platform: the `.bat`/`.sh` are thin launchers around one Node core

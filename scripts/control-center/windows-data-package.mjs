@@ -29,6 +29,13 @@ function resolveBundleFile(root, item) {
   return path;
 }
 
+function findRedisServer(root, entries) {
+  if (!Array.isArray(entries) || entries.length === 0) throw new Error("Windows data package does not include Redis-compatible files.");
+  const server = entries.find((item) => typeof item?.path === "string" && /(?:^|\/)redis-server\.exe$/i.test(item.path));
+  if (!server) throw new Error("Windows data package does not include redis-server.exe.");
+  return resolveBundleFile(root, server);
+}
+
 export function readWindowsDataPackage({ dataServicesPath } = {}) {
   const root = resolve(dataServicesPath || "");
   const manifestPath = resolve(root, "manifest.json");
@@ -45,9 +52,11 @@ export function readWindowsDataPackage({ dataServicesPath } = {}) {
   });
   const pgvectorEntries = manifest.components?.pgvector?.files;
   if (!Array.isArray(pgvectorEntries) || pgvectorEntries.length === 0) throw new Error("Windows data package does not include pgvector files.");
+  const redisServer = findRedisServer(root, manifest.components?.redis?.files);
   return {
     postgresInstaller,
     pgvectorFiles: pgvectorEntries.map((item) => resolveBundleFile(root, item)),
+    redisServer,
     includesPgAdmin: true,
   };
 }

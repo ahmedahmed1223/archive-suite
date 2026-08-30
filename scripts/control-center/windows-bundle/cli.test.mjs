@@ -20,7 +20,7 @@ function fakeCopyTree() {
 test("runBundleCli requires --out and passes it through as outDir", async () => {
   const calls = [];
   const assembleWindowsBundle = async (options) => { calls.push(options); return { ok: true, shasumsPath: "X" }; };
-  const result = await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector"], { assembleWindowsBundle });
+  const result = await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector", "--redis-dir=D:\\redis"], { assembleWindowsBundle });
   assert.equal(result.ok, true);
   assert.equal(calls[0].outDir, "D:\\bundle-test");
   assert.equal(typeof calls[0].buildLaravel, "function");
@@ -31,7 +31,7 @@ test("runBundleCli refuses a Windows bundle without both required data-service a
   const assembleWindowsBundle = async () => ({ ok: true });
   await assert.rejects(
     () => runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test"], { assembleWindowsBundle }),
-    /postgres-installer.*pgvector-dir/i,
+    /postgres-installer.*pgvector-dir.*redis-dir/i,
   );
 });
 
@@ -51,11 +51,13 @@ test("runBundleCli passes the verified PostgreSQL installer and pgvector directo
     "node", "cli.mjs", "--out=D:\\bundle-test",
     "--postgres-installer=D:\\supply\\postgresql-18.exe",
     "--pgvector-dir=D:\\supply\\pgvector",
+    "--redis-dir=D:\\supply\\redis",
   ], { assembleWindowsBundle });
 
   assert.deepEqual(calls[0].dataServices, {
     postgresInstaller: "D:\\supply\\postgresql-18.exe",
     pgvectorDirectory: "D:\\supply\\pgvector",
+    redisDirectory: "D:\\supply\\redis",
   });
 });
 
@@ -63,7 +65,7 @@ test("runBundleCli's default buildLaravel builds+runs composer via docker, then 
   const assembleWindowsBundle = async (options) => { await options.buildLaravel({ destDir: "D:\\out\\app\\laravel" }); return { ok: true }; };
   const { runCommand, calls } = fakeRunCommand();
   const { copyTree, calls: copyCalls } = fakeCopyTree();
-  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector"], { assembleWindowsBundle, runCommand, copyTree });
+  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector", "--redis-dir=D:\\redis"], { assembleWindowsBundle, runCommand, copyTree });
 
   assert.equal(calls[0].command, "docker");
   assert.deepEqual(calls[0].args.slice(0, 2), ["build", "--quiet"]);
@@ -82,7 +84,7 @@ test("runBundleCli's default buildNext builds the pnpm workspace and copies stan
   const assembleWindowsBundle = async (options) => { await options.buildNext({ destDir: "D:\\out\\app\\next" }); return { ok: true }; };
   const { runCommand, calls } = fakeRunCommand();
   const { copyTree, calls: copyCalls } = fakeCopyTree();
-  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector"], {
+  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector", "--redis-dir=D:\\redis"], {
     assembleWindowsBundle, runCommand, copyTree, pathExists: () => true,
   });
 
@@ -101,7 +103,7 @@ test("runBundleCli's buildNext skips optional node_modules/public copies when th
   const assembleWindowsBundle = async (options) => { await options.buildNext({ destDir: "D:\\out\\app\\next" }); return { ok: true }; };
   const { runCommand } = fakeRunCommand();
   const { copyTree, calls: copyCalls } = fakeCopyTree();
-  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector"], {
+  await runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector", "--redis-dir=D:\\redis"], {
     assembleWindowsBundle, runCommand, copyTree, pathExists: () => false,
   });
 
@@ -114,7 +116,7 @@ test("runBundleCli surfaces a non-zero build exit code instead of continuing sil
   const assembleWindowsBundle = async (options) => { await options.buildLaravel({ destDir: "D:\\out\\app\\laravel" }); return { ok: true }; };
   const runCommand = () => ({ status: 1, stderr: "docker build failed" });
   await assert.rejects(
-    () => runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector"], { assembleWindowsBundle, runCommand }),
+    () => runBundleCli(["node", "cli.mjs", "--out=D:\\bundle-test", "--postgres-installer=D:\\postgres.exe", "--pgvector-dir=D:\\pgvector", "--redis-dir=D:\\redis"], { assembleWindowsBundle, runCommand }),
     /docker build failed|exit code 1/i
   );
 });

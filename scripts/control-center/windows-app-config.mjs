@@ -59,7 +59,7 @@ export function generateAppKey(randomBytesFn = randomBytes) {
   return `base64:${randomBytesFn(32).toString("base64")}`;
 }
 
-export function renderLaravelEnv({ appKey, appUrl, dataPlan, storagePath, dbUsername, dbPassword } = {}) {
+export function renderLaravelEnv({ appKey, appUrl, dataPlan, storagePath, dbUsername, dbPassword, redisPassword } = {}) {
   if (!dataPlan?.postgres) throw new Error("renderLaravelEnv requires a resolved data plan.");
   if (typeof storagePath !== "string" || !storagePath.trim() || /[\r\n\0]/.test(storagePath)) {
     throw new Error("renderLaravelEnv requires a storage path without line breaks.");
@@ -85,7 +85,7 @@ export function renderLaravelEnv({ appKey, appUrl, dataPlan, storagePath, dbUser
     `CACHE_STORE=${dataPlan.cache}`,
   ];
   if (dataPlan.redis?.enabled) {
-    lines.push("REDIS_CLIENT=phpredis", `REDIS_HOST=${dataPlan.redis.host}`, `REDIS_PORT=${dataPlan.redis.port}`);
+    lines.push("REDIS_CLIENT=phpredis", `REDIS_HOST=${dataPlan.redis.host}`, `REDIS_PORT=${dataPlan.redis.port}`, ...(redisPassword ? [`REDIS_PASSWORD=${redisPassword}`] : []));
   }
   return lines.join("\n") + "\n";
 }

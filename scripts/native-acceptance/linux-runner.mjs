@@ -6,7 +6,9 @@ import { join } from "node:path";
 
 import { writeAcceptanceEvidence } from "./evidence.mjs";
 
+const DATA_SERVICES = ["archive-postgres", "archive-redis"];
 const SERVICES = ["archive-http", "archive-next", "archive-php-fpm", "archive-worker", "archive-reverb", "archive-scheduler"];
+const ALL_SERVICES = [...DATA_SERVICES, ...SERVICES];
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 function defaultDocker(args) {
@@ -33,7 +35,7 @@ function execArgs(container, command, env = {}) {
   return ["exec", ...Object.entries(env).flatMap(([key, value]) => ["-e", `${key}=${value}`]), container, ...command];
 }
 
-function setupConfiguration(names) {
+function setupConfiguration() {
   return {
     schemaVersion: "1.0",
     mode: "native",
@@ -44,16 +46,16 @@ function setupConfiguration(names) {
     runtimeProfiles: ["core"],
     capabilities: [],
     dataServices: {
-      postgres: { enabled: true, kind: "external", host: names.postgres, port: 5432, database: "archive" },
-      redis: { enabled: true, kind: "external", host: names.redis, port: 6379 },
+      postgres: { enabled: true, kind: "managed" },
+      redis: { enabled: true, kind: "managed" },
     },
     storage: { driver: "local", path: "/srv/archive" },
   };
 }
 
 function safeServiceDiagnostic(value, secret) {
-  return String(value || "")
-    .replaceAll(secret, "[redacted]")
+  const raw = String(value || "");
+  return (secret ? raw.replaceAll(secret, "[redacted]") : raw)
     .replace(/([a-z][a-z\d+.-]*:\/\/)[^/\s:@]+:[^/\s@]+@/gi, "$1[redacted]@")
     .replace(/(password\s*[=:]\s*)\S+/gi, "$1[redacted]")
     .slice(-2_000)
@@ -72,22 +74,17 @@ export async function runLinuxNativeAcceptance({
   version,
   passwordFactory = () => randomBytes(24).toString("base64url"),
   systemdImage = "archive-native-systemd-acceptance:bookworm",
-  postgresImage = "pgvector/pgvector:0.8.5-pg18@sha256:12a379b47ad65289572ea0756efc11b7c241a6662833e8af7038cd3b73d647e0",
-  redisImage = "redis:8.8.0-alpine@sha256:9d317178eceac8454a2284a9e6df2466b93c745529947f0cd42a0fa9609d7005",
   serviceAttempts = 90,
   progress = () => {},
 } = {}) {
   if (!bundlePath || !runId || !repoRoot) throw new Error("Linux Native acceptance requires bundlePath, runId, and repoRoot.");
   const names = {
-    network: `archive-native-net-${runId}`,
-    postgres: `archive-native-postgres-${runId}`,
-    redis: `archive-native-redis-${runId}`,
     systemd: `archive-native-systemd-${runId}`,
   };
   const scratch = mkdtempSync(join(tmpdir(), `archive-native-${runId}-`));
   const configPath = join(scratch, "setup.json");
-  writeFileSync(configPath, `${JSON.stringify(setupConfiguration(names), null, 2)}\n`, { mode: 0o600 });
-  const dbPassword = passwordFactory();
+  writeFileSync(configPath, `${JSON.stringify(setupConfiguration(), null, 2)}\n`, { mode: 0o600 });
+  const diagnosticSecret = passwordFactory();
   const label = `archive.acceptance.run=${runId}`;
   const scenarios = [];
   let failure;
@@ -96,13 +93,7 @@ export async function runLinuxNativeAcceptance({
     progress("Building the isolated systemd acceptance image.");
     const imageContext = join(repoRoot, "scripts", "native-acceptance");
     requireOk(docker, ["build", "-f", join(imageContext, "Dockerfile.systemd"), "-t", systemdImage, imageContext], "systemd image build");
-    requireOk(docker, ["network", "create", "--label", label, names.network], "network creation");
-    requireOk(docker, ["run", "-d", "--name", names.postgres, "--network", names.network, "--label", label, "-e", "POSTGRES_DB=archive", "-e", "POSTGRES_USER=archive", "-e", `POSTGRES_PASSWORD=${dbPassword}`, postgresImage], "PostgreSQL start");
-    requireOk(docker, ["run", "-d", "--name", names.redis, "--network", names.network, "--label", label, redisImage, "redis-server", "--appendonly", "no"], "Redis start");
-    await waitFor(() => docker(["exec", names.postgres, "pg_isready", "-U", "archive", "-d", "archive"]), "PostgreSQL readiness");
-    await waitFor(() => docker(["exec", names.redis, "redis-cli", "ping"]), "Redis readiness");
-
-    requireOk(docker, ["run", "-d", "--name", names.systemd, "--network", names.network, "--label", label, "--privileged", "--cgroupns=host", "--tmpfs", "/run", "--tmpfs", "/run/lock", "--mount", "type=bind,source=/sys/fs/cgroup,target=/sys/fs/cgroup", systemdImage], "systemd container start");
+    requireOk(docker, ["run", "-d", "--name", names.systemd, "--label", label, "--privileged", "--cgroupns=host", "--tmpfs", "/run", "--tmpfs", "/run/lock", "--mount", "type=bind,source=/sys/fs/cgroup,target=/sys/fs/cgroup", systemdImage], "systemd container start");
     await waitFor(() => docker(["exec", names.systemd, "systemctl", "show", "--property=Version"]), "systemd readiness");
     requireOk(docker, ["exec", names.systemd, "mkdir", "-p", "/opt/archive-suite", "/opt/archive-control", "/srv/archive/private", "/srv/archive/public"], "target directory creation");
     progress("Copying the verified self-contained bundle into the systemd target.");
@@ -118,42 +109,37 @@ export async function runLinuxNativeAcceptance({
     const installEnv = {
       ARCHIVE_NATIVE_INSTALL_ROOT: "/opt/archive-suite",
       ARCHIVE_INSTALLATION_MANIFEST_PATH: "/opt/archive-control/installation-manifest.json",
-      ARCHIVE_NATIVE_POSTGRES_HOST: names.postgres,
-      ARCHIVE_NATIVE_POSTGRES_DATABASE: "archive",
-      ARCHIVE_NATIVE_POSTGRES_USERNAME: "archive",
-      ARCHIVE_NATIVE_POSTGRES_PASSWORD: dbPassword,
-      ARCHIVE_NATIVE_REDIS_HOST: names.redis,
     };
-    progress("Installing the six Native services through the production Control Center path.");
+    progress("Installing the bundled data services and six Native services through the production Control Center path.");
     const installResult = docker(execArgs(names.systemd, ["/opt/archive-suite/runtime/node/bin/node", "/opt/archive-control/scripts/control-center.mjs", "install", "--config=/tmp/setup.json", "--skip-disk-check", "--json"], installEnv));
     if (installResult.status !== 0) {
       const migration = docker(execArgs(names.systemd, ["/opt/archive-suite/runtime/php/bin/php", "/opt/archive-suite/app/laravel/artisan", "migrate", "--force"], installEnv));
-      throw new Error(`Linux Native acceptance failed during Native install. ${safeServiceDiagnostic(`${installResult.stdout}\n${installResult.stderr}\n${migration.stdout}\n${migration.stderr}`, dbPassword)}`);
+      throw new Error(`Linux Native acceptance failed during Native install. ${safeServiceDiagnostic(`${installResult.stdout}\n${installResult.stderr}\n${migration.stdout}\n${migration.stderr}`, diagnosticSecret)}`);
     }
     scenarios.push({ name: "install", ok: true });
 
     const systemdState = docker(["exec", names.systemd, "systemctl", "is-system-running", "--wait"]);
     if (systemdState.status !== 0 && !["running", "degraded"].includes(systemdState.stdout.trim())) throw new Error("Linux Native acceptance did not reach a stable systemd state.");
     scenarios.push({ name: "systemd-pid1", ok: true });
-    for (const service of SERVICES) {
+    for (const service of ALL_SERVICES) {
       try {
         await waitFor(() => docker(["exec", names.systemd, "systemctl", "is-active", service]), `${service} health`, { attempts: serviceAttempts });
       } catch {
         const state = docker(["exec", names.systemd, "systemctl", "show", service, "--property=Result,ExecMainStatus,ExecMainCode,ActiveState,SubState", "--no-pager"]);
         const journal = docker(["exec", names.systemd, "journalctl", "-u", service, "-n", "30", "--no-pager", "--output=cat"]);
-        const diagnostic = safeServiceDiagnostic(`${state.stdout}\n${journal.stdout}`, dbPassword);
+        const diagnostic = safeServiceDiagnostic(`${state.stdout}\n${journal.stdout}`, diagnosticSecret);
         throw new Error(`Linux Native acceptance timed out during ${service} health.${diagnostic ? ` ${diagnostic}` : ""}`);
       }
     }
-    scenarios.push({ name: "six-services-active", ok: true });
+    scenarios.push({ name: "bundled-data-and-six-services-active", ok: true });
     try {
       await waitFor(() => docker(["exec", names.systemd, "curl", "-fsS", "http://127.0.0.1:8443/"]), "HTTP health", { attempts: 90 });
     } catch {
       const proxy = docker(["exec", names.systemd, "curl", "-sS", "-D", "-", "-o", "/dev/null", "http://127.0.0.1:8443/"]);
       const next = docker(["exec", names.systemd, "curl", "-sS", "-D", "-", "-o", "/dev/null", "http://127.0.0.1:3000/"]);
-      const state = docker(["exec", names.systemd, "systemctl", "show", ...SERVICES, "--property=Id,Result,ExecMainStatus,ExecMainCode,ActiveState,SubState", "--no-pager"]);
-      const journal = docker(["exec", names.systemd, "journalctl", ...SERVICES.flatMap((service) => ["-u", service]), "-n", "80", "--no-pager", "--output=cat"]);
-      throw new Error(`Linux Native acceptance timed out during HTTP health. ${safeServiceDiagnostic(`${proxy.stdout}\n${proxy.stderr}\n${next.stdout}\n${next.stderr}\n${state.stdout}\n${journal.stdout}`, dbPassword)}`);
+      const state = docker(["exec", names.systemd, "systemctl", "show", ...ALL_SERVICES, "--property=Id,Result,ExecMainStatus,ExecMainCode,ActiveState,SubState", "--no-pager"]);
+      const journal = docker(["exec", names.systemd, "journalctl", ...ALL_SERVICES.flatMap((service) => ["-u", service]), "-n", "80", "--no-pager", "--output=cat"]);
+      throw new Error(`Linux Native acceptance timed out during HTTP health. ${safeServiceDiagnostic(`${proxy.stdout}\n${proxy.stderr}\n${next.stdout}\n${next.stderr}\n${state.stdout}\n${journal.stdout}`, diagnosticSecret)}`);
     }
     scenarios.push({ name: "http-health", ok: true });
 
@@ -163,7 +149,7 @@ export async function runLinuxNativeAcceptance({
     }), "Native uninstall");
     requireOk(docker, ["exec", names.systemd, "test", "!", "-e", "/opt/archive-suite"], "application cleanup proof");
     requireOk(docker, ["exec", names.systemd, "test", "!", "-e", "/opt/archive-control/installation-manifest.json"], "manifest cleanup proof");
-    for (const service of SERVICES) requireOk(docker, ["exec", names.systemd, "test", "!", "-e", `/etc/systemd/system/${service}.service`], `${service} unit cleanup proof`);
+    for (const service of ALL_SERVICES) requireOk(docker, ["exec", names.systemd, "test", "!", "-e", `/etc/systemd/system/${service}.service`], `${service} unit cleanup proof`);
     scenarios.push({ name: "uninstall", ok: true });
   } catch (error) {
     failure = error;
@@ -177,13 +163,11 @@ export async function runLinuxNativeAcceptance({
     // disposable by definition, so stop it with a zero-second timeout before
     // removing the three run-scoped containers.
     docker(["stop", "--timeout", "0", names.systemd]);
-    docker(["rm", "-f", names.systemd, names.postgres, names.redis]);
-    docker(["network", "rm", names.network]);
+    docker(["rm", "-f", names.systemd]);
     rmSync(scratch, { recursive: true, force: true });
   }
 
-  const resourcesAbsent = [names.systemd, names.postgres, names.redis].every((name) => docker(["inspect", name]).status !== 0)
-    && docker(["network", "inspect", names.network]).status !== 0;
+  const resourcesAbsent = docker(["inspect", names.systemd]).status !== 0;
   const cleanup = { ok: resourcesAbsent, dockerResourcesAbsent: resourcesAbsent };
   if (failure) throw failure;
   if (!cleanup.ok) throw new Error("Linux Native acceptance could not prove Docker resource cleanup.");
@@ -194,7 +178,7 @@ export async function runLinuxNativeAcceptance({
     commit,
     version,
     bundleDigest,
-    environment: { isolation: "docker", init: "systemd-pid1", cgroupNamespace: "host", privileged: true },
+    environment: { isolation: "docker", init: "systemd-pid1", cgroupNamespace: "host", privileged: true, dataServices: "bundled" },
     scenarios,
     cleanup,
     createdAt: new Date().toISOString(),

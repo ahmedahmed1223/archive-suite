@@ -25,9 +25,9 @@ test("Windows acceptance installs, probes, uninstalls, and proves scoped cleanup
   const evidence = [];
   const effects = {
     assertServicesAbsent: async () => calls.push("services-absent"),
-    startDependencies: async () => { calls.push("dependencies-start"); return { postgresPort: 55432, redisPort: 56379 }; },
-    install: async ({ environment }) => { calls.push("install"); assert.equal(environment.ARCHIVE_NATIVE_POSTGRES_PORT, "55432"); },
-    waitForServices: async () => calls.push("six-services-active"),
+    startDependencies: async () => { calls.push("dependencies-start"); return { bundled: true }; },
+    install: async ({ environment }) => { calls.push("install"); assert.equal(environment.ARCHIVE_NATIVE_POSTGRES_HOST, undefined); },
+    waitForServices: async () => calls.push("bundled-data-and-six-services-active"),
     waitForHttp: async () => calls.push("http-health"),
     uninstall: async () => calls.push("uninstall"),
     proveApplicationCleanup: async () => calls.push("application-clean"),
@@ -51,7 +51,7 @@ test("Windows acceptance installs, probes, uninstalls, and proves scoped cleanup
   });
 
   assert.equal(result.ok, true);
-  assert.deepEqual(calls, ["services-absent", "dependencies-start", "install", "six-services-active", "http-health", "uninstall", "application-clean", "services-absent", "dependencies-stop", "dependencies-absent", "run-data-removed"]);
+  assert.deepEqual(calls, ["services-absent", "dependencies-start", "install", "bundled-data-and-six-services-active", "http-health", "uninstall", "application-clean", "services-absent", "dependencies-stop", "dependencies-absent", "run-data-removed"]);
   assert.equal(evidence[0].platform, "windows-native");
   assert.equal(evidence[0].cleanup.ok, true);
   assert.doesNotMatch(JSON.stringify(evidence[0]), /never-record-this/);

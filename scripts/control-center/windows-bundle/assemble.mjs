@@ -2,7 +2,7 @@
 // windows-services.mjs already assume. Mirrors the existing offline-bundle
 // pattern (infra/offline/install.ps1 + SHA256SUMS).
 import { createHash } from "node:crypto";
-import { chmodSync, cpSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { stagePhpRuntime } from "./stage-php.mjs";
@@ -25,12 +25,30 @@ function listFilesRecursive(dir) {
   return out;
 }
 
-function stageControlCenterFiles({ destDir, rootDir }) {
+function copyIfPresent(source, destination) {
+  if (existsSync(source)) {
+    mkdirSync(dirname(destination), { recursive: true });
+    cpSync(source, destination, { recursive: true, force: true });
+  }
+}
+
+function stageControlCenterFiles({ destDir, rootDir, version }) {
   cpSync(join(ROOT, "scripts"), destDir, { recursive: true, filter: (source) => !source.endsWith(".test.mjs") });
   for (const directory of ["platform", "setup"]) {
     cpSync(join(ROOT, "infra", directory), join(rootDir, "infra", directory), { recursive: true });
   }
   cpSync(join(ROOT, "infra", ".env.example"), join(rootDir, "infra", ".env.example"), { force: true });
+  copyIfPresent(join(ROOT, "README.md"), join(rootDir, "README.md"));
+  copyIfPresent(join(ROOT, "README.ar.md"), join(rootDir, "README.ar.md"));
+  copyIfPresent(join(ROOT, "docs", "native-installation.md"), join(rootDir, "docs", "native-installation.md"));
+  copyIfPresent(join(ROOT, "docs", "native-installation.ar.md"), join(rootDir, "docs", "native-installation.ar.md"));
+  copyIfPresent(join(ROOT, "docs", "control-center.md"), join(rootDir, "docs", "control-center.md"));
+  copyIfPresent(join(ROOT, "docs", "control-center.ar.md"), join(rootDir, "docs", "control-center.ar.md"));
+  const releaseNotes = join(ROOT, "docs", "release-notes", `v${version}.md`);
+  const releaseNotesArabic = join(ROOT, "docs", "release-notes", `v${version}.ar.md`);
+  copyIfPresent(releaseNotes, join(rootDir, "CHANGELOG.md"));
+  copyIfPresent(releaseNotes, join(rootDir, "docs", "release-notes", `v${version}.md`));
+  copyIfPresent(releaseNotesArabic, join(rootDir, "docs", "release-notes", `v${version}.ar.md`));
 }
 
 function writeChecksums(outDir) {
@@ -68,7 +86,7 @@ export async function assembleWindowsBundle({
   await stageDataServices({ destDir: join(outDir, "data-services"), ...dataServices });
   await buildLaravel({ destDir: join(outDir, "app", "laravel") });
   await buildNext({ destDir: join(outDir, "app", "next") });
-  await stageControlCenter({ destDir: join(outDir, "scripts"), rootDir: outDir });
+  await stageControlCenter({ destDir: join(outDir, "scripts"), rootDir: outDir, version });
   writeFileSync(join(outDir, "install.bat"), renderWindowsLauncher({ command: "install" }), "utf8");
   writeFileSync(join(outDir, "manage.bat"), renderWindowsLauncher({ command: "manage" }), "utf8");
   writeFileSync(join(outDir, "install.sh"), renderLinuxLauncher({ command: "install" }), "utf8");
