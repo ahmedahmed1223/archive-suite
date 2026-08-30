@@ -5,13 +5,14 @@
 // buildLaravel/buildNext, copying each build's real output into destDir.
 // Mirrors scripts/control-center/windows-bundle/cli.mjs.
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readlinkSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, readlinkSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createCli } from "../cli.mjs";
 import { assembleLinuxBundle as defaultAssembleLinuxBundle } from "./assemble.mjs";
 
 const ROOT = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
+const VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
 const LARAVEL_RUNTIME_IMAGE = "archive-laravel-runtime-bundle";
 const LARAVEL_EXCLUDE_NAMES = new Set(["tests", "docker", "Dockerfile.worker", "Dockerfile.odbc-acceptance"]);
 
@@ -107,7 +108,7 @@ export async function runBundleCli(argv, {
     if (pathExists(publicDir)) copyTree(publicDir, join(destDir, "public"));
   };
 
-  return assembleLinuxBundle({ outDir, buildLaravel, buildNext });
+  return assembleLinuxBundle({ outDir, version: VERSION, buildLaravel, buildNext });
 }
 
 // pathToFileURL handles platform URL rules correctly (Windows needs

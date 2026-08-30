@@ -4,13 +4,14 @@
 // docker, per repo convention) and @archive/next standalone build as
 // buildLaravel/buildNext, copying each build's real output into destDir.
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readlinkSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createCli } from "../cli.mjs";
 import { assembleWindowsBundle as defaultAssembleWindowsBundle } from "./assemble.mjs";
 
 const ROOT = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
+const VERSION = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
 const LARAVEL_RUNTIME_IMAGE = "archive-laravel-runtime-bundle";
 const LARAVEL_EXCLUDE_NAMES = new Set(["tests", "docker", "Dockerfile.worker", "Dockerfile.odbc-acceptance"]);
 
@@ -129,7 +130,7 @@ export async function runBundleCli(argv, {
     if (pathExists(publicDir)) copyTree(publicDir, join(destDir, "public"));
   };
 
-  return assembleWindowsBundle({ outDir, buildLaravel, buildNext, dataServices: { postgresInstaller, pgvectorDirectory } });
+  return assembleWindowsBundle({ outDir, version: VERSION, buildLaravel, buildNext, dataServices: { postgresInstaller, pgvectorDirectory } });
 }
 
 // pathToFileURL handles platform URL rules correctly (Windows needs

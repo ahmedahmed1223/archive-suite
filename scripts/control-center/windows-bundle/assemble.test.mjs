@@ -16,7 +16,8 @@ test("assembleWindowsBundle lays out runtime/app/services/config and writes SHA2
     const buildLaravel = async ({ destDir }) => { mkdirSync(destDir, { recursive: true }); writeFileSync(join(destDir, "artisan"), "#!/usr/bin/env php\n"); };
     const buildNext = async ({ destDir }) => { mkdirSync(destDir, { recursive: true }); writeFileSync(join(destDir, "server.js"), "// standalone server\n"); };
 
-    const result = await assembleWindowsBundle({ outDir, stagePhp, stageNode, stageCaddy, stageWinsw, stageDataServices, buildLaravel, buildNext });
+    const stageControlCenter = async ({ destDir }) => { mkdirSync(destDir, { recursive: true }); writeFileSync(join(destDir, "control-center.mjs"), "// bundled control center\n"); };
+    const result = await assembleWindowsBundle({ outDir, version: "1.5.1", builtAt: "2026-08-30T12:00:00Z", stagePhp, stageNode, stageCaddy, stageWinsw, stageDataServices, stageControlCenter, buildLaravel, buildNext });
 
     assert.equal(result.ok, true);
     assert.ok(existsSync(join(outDir, "runtime", "php", "php.exe")));
@@ -26,6 +27,10 @@ test("assembleWindowsBundle lays out runtime/app/services/config and writes SHA2
     assert.ok(existsSync(join(outDir, "data-services", "manifest.json")));
     assert.ok(existsSync(join(outDir, "app", "laravel", "artisan")));
     assert.ok(existsSync(join(outDir, "app", "next", "server.js")));
+    assert.ok(existsSync(join(outDir, "install.bat")));
+    assert.ok(existsSync(join(outDir, "manage.bat")));
+    assert.ok(existsSync(join(outDir, "scripts", "control-center.mjs")));
+    assert.equal(JSON.parse(readFileSync(join(outDir, "RELEASE.json"), "utf8")).platform, "windows-x64");
     assert.ok(existsSync(result.shasumsPath));
     const shasums = readFileSync(result.shasumsPath, "utf8");
     assert.match(shasums, /runtime\\php\\php\.exe/);
