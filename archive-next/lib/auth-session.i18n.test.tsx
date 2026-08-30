@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthGate, AuthProvider } from "./auth-session";
@@ -59,6 +59,8 @@ describe("localized authentication gate", () => {
     // V14-UX-REVIEW: bootstrap now retries transient 401s (~3.2s) before going
     // guest, so the redirect copy appears after the retry window.
     expect(await screen.findByText("Taking you to the sign-in page…", {}, { timeout: 6000 })).toBeInTheDocument();
-    expect(mocks.replace).toHaveBeenCalledWith("/login?next=%2Farchive");
+    await waitFor(() => {
+      expect(mocks.replace).toHaveBeenCalledWith("/login?next=%2Farchive");
+    });
   }, 7_000);
 });
