@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "1.0",
+  "sources": [
+    {
+      "id": "windows-postgres",
+      "platform": "windows",
+      "version": "18.4-1",
+      "license": "PostgreSQL",
+      "url": "https://get.enterprisedb.com/postgresql/postgresql-18.4-1-windows-x64.exe",
+      "sha256": "44b8187d2db7e866495952d8260a1d7252cbb5125843142e1f0bf30115d23279",
+      "archive": "postgresql-18.4-1-windows-x64.exe"
+    },
+    {
+      "id": "windows-pgvector",
+      "platform": "windows",
+      "version": "0.8.6-pg18",
+      "license": "PostgreSQL",
+      "url": "https://github.com/andreiramani/pgvector_pgsql_windows/releases/download/0.8.6_18/vector.v0.8.6-pg18.zip",
+      "sha256": "bda17eb97d9e687e3da701adbf4b65a342943b3e0cdc81935ccf0b9833a1ed62",
+      "archive": "vector.v0.8.6-pg18.zip"
+    },
+    {
+      "id": "windows-redis",
+      "platform": "windows",
+      "version": "8.10.1-msys2",
+      "license": "Apache-2.0",
+      "url": "https://github.com/redis-windows/redis-windows/releases/download/8.10.1/Redis-8.10.1-Windows-x64-msys2.zip",
+      "sha256": "4e8f2f956ed92feadf3f64b4e137ed34026438821e692e7ae22c9bba5976607a",
+      "archive": "Redis-8.10.1-Windows-x64-msys2.zip"
+    },
+    {
+      "id": "linux-postgres",
+      "platform": "linux",
+      "version": "18.4",
+      "license": "PostgreSQL",
+      "url": "https://ftp.postgresql.org/pub/source/v18.4/postgresql-18.4.tar.bz2",
+      "sha256": "81a81ec695fb0c7901407defaa1d2f7973617154cf27ba74e3a7ab8e64436094",
+      "archive": "postgresql-18.4.tar.bz2"
+    },
+    {
+      "id": "linux-pgvector",
+      "platform": "linux",
+      "version": "0.8.6",
+      "license": "PostgreSQL",
+      "url": "https://github.com/pgvector/pgvector/archive/refs/tags/v0.8.6.tar.gz",
+      "sha256": "10bf9938906e5d643bbc4a7eea104b6f57ba4898e5b76b20e60484ea1d5a7f8f",
+      "archive": "pgvector-v0.8.6.tar.gz"
+    },
+    {
+      "id": "linux-redis",
+      "platform": "linux",
+      "version": "9.1.0",
+      "license": "BSD-3-Clause",
+      "url": "https://github.com/valkey-io/valkey/archive/refs/tags/9.1.0.tar.gz",
+      "sha256": "7789fe1df257774457bafb4c1d56c9f7020c3879a7f5b4234af9030b2bd82dfd",
+      "archive": "valkey-9.1.0.tar.gz"
+    }
+  ]
+}
