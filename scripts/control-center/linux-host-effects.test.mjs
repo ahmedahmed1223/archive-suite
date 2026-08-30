@@ -160,3 +160,35 @@ test("managed Linux data effects stage the verified payload and register Postgre
   assert.ok(written.some(({ path, content }) => path === "/etc/systemd/system/archive-redis.service" && content.includes("redis-server")));
   assert.ok(calls.some(([command, name]) => command === "systemctl" && name === "start"));
 });
+
+test("managed PostgreSQL initializes as the archive service user", () => {
+  const { run, calls } = fakeRun();
+  const effects = createLinuxHostEffects({
+    installRoot: INSTALL_ROOT,
+    storagePath: "/srv/archive",
+    run,
+    writeFile: () => {},
+    ensureDirectory: () => {},
+    copyFile: () => {},
+    chmodFile: () => {},
+    readDataPackage: () => ({
+      postgresFiles: [
+        { path: "postgres/bin/initdb", absolute: "/bundle/data-services/postgres/bin/initdb" },
+        { path: "postgres/bin/pg_ctl", absolute: "/bundle/data-services/postgres/bin/pg_ctl" },
+        { path: "postgres/bin/psql", absolute: "/bundle/data-services/postgres/bin/psql" },
+      ],
+      initdb: "/bundle/data-services/postgres/bin/initdb",
+      pgCtl: "/bundle/data-services/postgres/bin/pg_ctl",
+      psql: "/bundle/data-services/postgres/bin/psql",
+    }),
+  });
+
+  assert.equal(effects.installPostgres({ secrets: { dbOwnerPassword: "owner" } }).status, 0);
+  const initdbIndex = calls.findIndex(([command]) => command === "runuser");
+  const ownershipIndex = calls.findIndex(([command, , , path]) => command === "chown" && path === "/srv/archive/postgresql");
+  assert.ok(ownershipIndex >= 0 && ownershipIndex < initdbIndex);
+  assert.deepEqual(calls[initdbIndex], [
+    "runuser", "--user", "archive", "--", "/opt/archive-suite/runtime/postgres/bin/initdb",
+    "-D", "/srv/archive/postgresql", "-U", "archive_owner", "--pwfile=/opt/archive-suite/config/postgresql-password", "--auth-host=scram-sha-256",
+  ]);
+});

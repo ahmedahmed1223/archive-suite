@@ -121,9 +121,13 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
     const psql = runtimePostgresBinary(payload.psql.split(/[\\/]/).at(-1));
     writeFile(postgresPasswordPath, `${ownerPassword}\n`, { mode: 0o600 });
     chmodFile(postgresPasswordPath, 0o600);
+    const ownership = run(["chown", "-R", `${LINUX_SERVICE_USER.name}:${LINUX_SERVICE_USER.name}`, postgresDataPath]);
+    if ((ownership?.status ?? 1) !== 0) return ownership;
+    const logsOwnership = run(["chown", "-R", `${LINUX_SERVICE_USER.name}:${LINUX_SERVICE_USER.name}`, join(installRoot, "logs")]);
+    if ((logsOwnership?.status ?? 1) !== 0) return logsOwnership;
     const initialized = existsSync(join(postgresDataPath, "PG_VERSION"))
       ? { status: 0 }
-      : run([initdb, "-D", postgresDataPath, "-U", "archive_owner", `--pwfile=${postgresPasswordPath}`, "--auth-host=scram-sha-256"]);
+      : run(["runuser", "--user", LINUX_SERVICE_USER.name, "--", initdb, "-D", postgresDataPath, "-U", "archive_owner", `--pwfile=${postgresPasswordPath}`, "--auth-host=scram-sha-256"]);
     if ((initialized?.status ?? 1) !== 0) return initialized;
     writeFile(postgresUnitPath, systemdDataUnit({
       id: "archive-postgres",
@@ -133,10 +137,6 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
       execStop: `${pgCtl} -D ${postgresDataPath} stop -m fast`,
       readWritePaths: [postgresDataPath, join(installRoot, "logs")],
     }));
-    const ownership = run(["chown", "-R", `${LINUX_SERVICE_USER.name}:${LINUX_SERVICE_USER.name}`, postgresDataPath]);
-    if ((ownership?.status ?? 1) !== 0) return ownership;
-    const logsOwnership = run(["chown", "-R", `${LINUX_SERVICE_USER.name}:${LINUX_SERVICE_USER.name}`, join(installRoot, "logs")]);
-    if ((logsOwnership?.status ?? 1) !== 0) return logsOwnership;
     return firstFailure([run(["systemctl", "daemon-reload"]), run(["systemctl", "enable", "archive-postgres"]), run(["systemctl", "start", "archive-postgres"]) ]);
   };
 
