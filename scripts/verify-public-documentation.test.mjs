@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { validateDocumentation } from "./verify-public-documentation.mjs";
+import { loadPublicManifest, validateDocumentation } from "./verify-public-documentation.mjs";
 
 test("reports a missing paired language file", () => {
   const result = validateDocumentation({
@@ -24,6 +24,19 @@ test("accepts paired documents with reciprocal language links", () => {
   });
 
   assert.deepEqual(result.errors, []);
+});
+
+test("classifies the v1.5.1 release notes as a public bilingual release record", () => {
+  const releaseNotes = loadPublicManifest().documents.find((document) => document.id === "release-v1-5-1");
+
+  assert.deepEqual(releaseNotes, {
+    id: "release-v1-5-1",
+    audience: ["user", "operator", "developer"],
+    lifecycle: "release-history",
+    english: "docs/release-notes/v1.5.1.md",
+    arabic: "docs/release-notes/v1.5.1.ar.md",
+    sourceOfTruth: ["package.json", ".github/workflows/release.yml"],
+  });
 });
 
 test("reports a missing relative Markdown target", () => {
