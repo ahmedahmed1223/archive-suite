@@ -98,6 +98,8 @@ archive-next/e2e/.auth/
 output/
 .fallow/
 .agents/
+native-dependency-build-output/
+native-dependency-source-cache/
 
 # Operating-system and editor metadata.
 .DS_Store
