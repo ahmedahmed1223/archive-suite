@@ -56,6 +56,26 @@ test("a failing pgvector probe blocks success after data provisioning", async ()
   assert.equal(result.code, "PGVECTOR_UNHEALTHY");
 });
 
+test("a managed installer failure returns a bounded diagnostic without credentials", async () => {
+  const provision = createManagedDataProvisioner({
+    platform: "linux-native",
+    effects: {
+      ...effects([]),
+      installPostgres: async () => ({ status: 1, stderr: "initdb: failed with password owner-secret" }),
+    },
+    probes: readyProbes,
+    secrets: { dbOwnerPassword: "owner-secret", dbAppPassword: "app-secret", redisPassword: "cache-secret" },
+  });
+
+  const result = await provision(managedPlan());
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "MANAGED_POSTGRES_INSTALL_FAILED");
+  assert.equal(result.details.step, "installPostgres");
+  assert.match(result.details.installerDiagnostic, /initdb: failed/);
+  assert.doesNotMatch(result.details.installerDiagnostic, /owner-secret|app-secret|cache-secret/);
+});
+
 test("external data performs probes without installing managed dependencies", async () => {
   const calls = [];
   const provision = createManagedDataProvisioner({

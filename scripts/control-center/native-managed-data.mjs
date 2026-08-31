@@ -7,8 +7,19 @@ const STEP_CODES = Object.freeze({
   installPgAdmin: "MANAGED_PGADMIN_INSTALL_FAILED",
 });
 
-function fail(code, message, nextActions = []) {
-  return { ok: false, code, message, details: {}, nextActions };
+function fail(code, message, nextActions = [], details = {}) {
+  return { ok: false, code, message, details, nextActions };
+}
+
+function safeInstallerDiagnostic(result, secrets) {
+  let diagnostic = `${result?.stderr || ""}\n${result?.stdout || ""}`.trim();
+  for (const secret of Object.values(secrets || {})) {
+    if (typeof secret === "string" && secret) diagnostic = diagnostic.replaceAll(secret, "[redacted]");
+  }
+  return diagnostic
+    .replace(/(password\s*[=:]\s*)\S+/gi, "$1[redacted]")
+    .slice(0, 800)
+    .trim();
 }
 
 function requireFunction(value, name) {
@@ -55,8 +66,13 @@ export function createManagedDataProvisioner({ platform, effects, probes, secret
     if (plan.pgAdmin === true) requiredSteps.push("installPgAdmin");
     for (const name of requiredSteps) {
       const operation = requireFunction(effects[name], `effects.${name}`);
-      if (!successful(await operation(request))) {
-        return fail(STEP_CODES[name], "Managed data setup did not complete.", ["Review the protected installer logs and retry the setup operation."]);
+      const result = await operation(request);
+      if (!successful(result)) {
+        const installerDiagnostic = safeInstallerDiagnostic(result, managedSecrets);
+        return fail(STEP_CODES[name], "Managed data setup did not complete.", ["Review the protected installer logs and retry the setup operation."], {
+          step: name,
+          ...(installerDiagnostic ? { installerDiagnostic } : {}),
+        });
       }
     }
 
