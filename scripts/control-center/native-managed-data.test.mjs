@@ -76,6 +76,28 @@ test("a managed installer failure returns a bounded diagnostic without credentia
   assert.doesNotMatch(result.details.installerDiagnostic, /owner-secret|app-secret|cache-secret/);
 });
 
+test("managed Redis probe tolerates its bounded service startup window", async () => {
+  let attempts = 0;
+  let waits = 0;
+  const provision = createManagedDataProvisioner({
+    platform: "linux-native",
+    effects: effects([]),
+    probes: {
+      ...readyProbes,
+      redis: async () => ({ ok: ++attempts === 3 }),
+    },
+    secrets: { dbOwnerPassword: "owner", dbAppPassword: "app", redisPassword: "cache" },
+    wait: async () => { waits += 1; },
+    redisProbeAttempts: 3,
+  });
+
+  const result = await provision(managedPlan());
+
+  assert.equal(result.ok, true);
+  assert.equal(attempts, 3);
+  assert.equal(waits, 2);
+});
+
 test("external data performs probes without installing managed dependencies", async () => {
   const calls = [];
   const provision = createManagedDataProvisioner({

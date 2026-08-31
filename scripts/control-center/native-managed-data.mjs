@@ -35,6 +35,14 @@ function healthy(result) {
   return result?.ok === true;
 }
 
+async function eventuallyHealthy(probe, { attempts, wait, delayMs }) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (healthy(await probe())) return true;
+    if (attempt + 1 < attempts) await wait(delayMs);
+  }
+  return false;
+}
+
 function resolveSecrets(secrets) {
   const resolved = typeof secrets === "function" ? secrets() : secrets;
   for (const name of ["dbOwnerPassword", "dbAppPassword", "redisPassword"]) {
@@ -43,7 +51,15 @@ function resolveSecrets(secrets) {
   return resolved;
 }
 
-export function createManagedDataProvisioner({ platform, effects, probes, secrets } = {}) {
+export function createManagedDataProvisioner({
+  platform,
+  effects,
+  probes,
+  secrets,
+  wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+  redisProbeAttempts = 12,
+  redisProbeDelayMs = 250,
+} = {}) {
   if (!NATIVE_PLATFORMS.has(platform)) throw new Error("Managed data provisioner requires a Native platform.");
   if (!effects || !probes || !secrets) throw new Error("Managed data provisioner requires effects, probes, and secrets.");
   for (const name of ["postgres", "pgvector", "redis"]) requireFunction(probes[name], `probes.${name}`);
@@ -78,7 +94,9 @@ export function createManagedDataProvisioner({ platform, effects, probes, secret
 
     if (!healthy(await probes.postgres())) return fail("POSTGRES_UNHEALTHY", "PostgreSQL did not pass its functional probe.", ["Verify PostgreSQL and retry setup."]);
     if (!healthy(await probes.pgvector())) return fail("PGVECTOR_UNHEALTHY", "The pgvector extension did not pass its functional probe.", ["Install or repair pgvector, then retry setup."]);
-    if (redisEnabled && !healthy(await probes.redis())) return fail("REDIS_UNHEALTHY", "The Redis-compatible service did not pass its functional probe.", ["Verify the cache service and retry setup."]);
+    if (redisEnabled && !(await eventuallyHealthy(probes.redis, { attempts: redisProbeAttempts, wait, delayMs: redisProbeDelayMs }))) {
+      return fail("REDIS_UNHEALTHY", "The Redis-compatible service did not pass its functional probe.", ["Verify the cache service and retry setup."]);
+    }
 
     return {
       ok: true,
