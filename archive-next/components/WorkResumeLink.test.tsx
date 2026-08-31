@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import WorkResumeLink from "./WorkResumeLink";
+
+afterEach(() => cleanup());
 
 describe("WorkResumeLink", () => {
   const label = "متابعة العمل: {name}";
