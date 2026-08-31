@@ -140,7 +140,8 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
   const installRedisCompatible = ({ secrets } = {}) => {
     const password = requireSingleLineSecret(secrets?.redisPassword, "Redis password");
     const payload = dataPackage();
-    ensureDirectory(join(storagePath || join(installRoot, "storage"), "redis"));
+    const redisDataPath = join(storagePath || join(installRoot, "storage"), "redis");
+    ensureDirectory(redisDataPath);
     writeFile(redisConfigPath, [
       "bind 127.0.0.1",
       "protected-mode yes",
@@ -156,11 +157,16 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
     if (!pathExists(wrapper)) throw new Error("Windows Native bundle is missing the WinSW service wrapper.");
     copyFile(wrapper, join(servicesDir, `${redisServiceId}.exe`));
     writeFile(join(servicesDir, `${redisServiceId}.xml`), renderRedisService());
-    const installed = run([join(servicesDir, `${redisServiceId}.exe`), "install"]);
+    const serviceExecutable = join(servicesDir, `${redisServiceId}.exe`);
+    const installed = run([serviceExecutable, "install"]);
     if (installed.status !== 0) return installed;
     const account = run(["sc", "config", redisServiceId, "obj=", `NT SERVICE\\${redisServiceId}`]);
     if (account.status !== 0) return account;
-    return run(["icacls", redisConfigPath, "/grant", `NT SERVICE\\${redisServiceId}:(R)`]);
+    const configGrant = run(["icacls", redisConfigPath, "/grant", `NT SERVICE\\${redisServiceId}:(R)`]);
+    if (configGrant.status !== 0) return configGrant;
+    const storageGrant = run(["icacls", redisDataPath, "/grant", `NT SERVICE\\${redisServiceId}:(OI)(CI)M`]);
+    if (storageGrant.status !== 0) return storageGrant;
+    return run([serviceExecutable, "start"]);
   };
 
   const createArchiveRoles = ({ secrets } = {}) => {

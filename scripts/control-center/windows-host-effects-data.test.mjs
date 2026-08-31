@@ -75,6 +75,24 @@ test("managed pgvector setup copies verified extension artifacts to the PostgreS
   ]);
 });
 
+test("managed Redis grants its service account storage access and starts before the readiness probe", () => {
+  const rec = recorder();
+  const effects = createWindowsHostEffects({
+    installRoot: "C:\\Archive Suite",
+    storagePath: "D:\\ArchiveData",
+    run: rec.run,
+    writeFile: rec.writeFile,
+    ensureDirectory: () => {},
+    copyFile: rec.copyFile,
+    pathExists: () => true,
+    readDataPackage: () => ({ redisServer: "C:\\Archive Suite\\data-services\\redis\\redis-server.exe" }),
+  });
+
+  assert.equal(effects.installRedisCompatible({ secrets: { redisPassword: "cache-secret" } }).status, 0);
+  assert.ok(rec.commands.some(({ args }) => args.join(" ") === "icacls D:\\ArchiveData\\redis /grant NT SERVICE\\archive-redis:(OI)(CI)M"));
+  assert.ok(rec.commands.some(({ args }) => args.join(" ") === "C:\\Archive Suite\\services\\archive-redis.exe start"));
+});
+
 test("managed database bootstrap keeps both account passwords out of psql arguments and grants the application account ownership", () => {
   const rec = recorder();
   const effects = createWindowsHostEffects({
