@@ -147,7 +147,7 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
       "protected-mode yes",
       "port 6379",
       `requirepass ${password}`,
-      `dir "${(storagePath || join(installRoot, "storage")).replace(/[\\]+/g, "\\\\")}\\redis"`,
+      `dir "${redisDataPath.replace(/\\/g, "\\\\")}"`,
       "appendonly yes",
       "",
     ].join("\n"));
