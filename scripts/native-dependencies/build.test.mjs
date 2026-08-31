@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -7,6 +8,11 @@ import {
   validateLinuxPostgres,
   validateLinuxRedis,
 } from "./build.mjs";
+
+test("Linux Native dependencies target the Bookworm runtime ABI", () => {
+  const dockerfile = readFileSync(new URL("../../infra/native-dependencies/linux/Dockerfile", import.meta.url), "utf8");
+  assert.match(dockerfile, /^FROM debian:bookworm AS build$/m);
+});
 
 test("rejects a traversal member before publishing", () => {
   assert.throws(
