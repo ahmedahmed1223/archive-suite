@@ -168,7 +168,13 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
     if (configGrant.status !== 0) return configGrant;
     const storageGrant = run(["icacls", redisDataPath, "/grant", `NT SERVICE\\${redisServiceId}:(OI)(CI)M`]);
     if (storageGrant.status !== 0) return storageGrant;
-    return run([serviceExecutable, "start"]);
+    const started = run([serviceExecutable, "start"]);
+    if (started.status === 0) return started;
+    const diagnostic = logs();
+    return {
+      ...started,
+      stderr: [started.stderr, diagnostic?.stdout].filter(Boolean).join("\n"),
+    };
   };
 
   const createArchiveRoles = ({ secrets } = {}) => {

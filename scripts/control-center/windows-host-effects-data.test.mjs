@@ -94,6 +94,26 @@ test("managed Redis grants its service account storage access and starts before 
   assert.ok(rec.commands.some(({ args }) => args.join(" ") === "C:\\Archive Suite\\services\\archive-redis.exe start"));
 });
 
+test("managed Redis returns its protected service log when startup fails", () => {
+  const rec = recorder();
+  rec.run = (args, options) => {
+    rec.commands.push({ args, options });
+    return args.at(-1) === "start" ? { status: 1, stderr: "WinSW start failed" } : { status: 0 };
+  };
+  const effects = createWindowsHostEffects({
+    installRoot: "C:\\Archive Suite", storagePath: "D:\\ArchiveData", run: rec.run,
+    writeFile: rec.writeFile, ensureDirectory: () => {}, copyFile: rec.copyFile, pathExists: () => true,
+    readLogTail: () => "redis wrapper startup detail",
+    readDataPackage: () => ({ redisServer: "C:\\Archive Suite\\data-services\\redis\\redis-server.exe" }),
+  });
+
+  const result = effects.installRedisCompatible({ secrets: { redisPassword: "cache-secret" } });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /WinSW start failed/);
+  assert.match(result.stderr, /redis wrapper startup detail/);
+});
+
 test("managed database bootstrap keeps both account passwords out of psql arguments and grants the application account ownership", () => {
   const rec = recorder();
   const effects = createWindowsHostEffects({
