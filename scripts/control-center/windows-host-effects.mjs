@@ -122,12 +122,12 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
     return { status: 0 };
   };
 
-  const renderRedisService = () => [
+  const renderRedisService = (redisServer) => [
     "<service>",
     `  <id>${redisServiceId}</id>`,
     `  <name>${redisServiceId}</name>`,
     "  <description>Archive Suite bundled Redis-compatible data service</description>",
-    "  <executable>%BASE%\\..\\data-services\\redis\\redis-server.exe</executable>",
+    `  <executable>${redisServer}</executable>`,
     "  <arguments>config\\redis.conf</arguments>",
     "  <workingdirectory>%BASE%\\..</workingdirectory>",
     "  <logpath>%BASE%\\..\\logs</logpath>",
@@ -156,7 +156,7 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
     const wrapper = join(servicesDir, "archive-http.exe");
     if (!pathExists(wrapper)) throw new Error("Windows Native bundle is missing the WinSW service wrapper.");
     copyFile(wrapper, join(servicesDir, `${redisServiceId}.exe`));
-    writeFile(join(servicesDir, `${redisServiceId}.xml`), renderRedisService());
+    writeFile(join(servicesDir, `${redisServiceId}.xml`), renderRedisService(payload.redisServer));
     const serviceExecutable = join(servicesDir, `${redisServiceId}.exe`);
     const installed = run([serviceExecutable, "install"]);
     if (installed.status !== 0) return installed;
