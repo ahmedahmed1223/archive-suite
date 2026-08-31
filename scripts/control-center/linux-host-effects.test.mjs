@@ -163,11 +163,12 @@ test("managed Linux data effects stage the verified payload and register Postgre
 
 test("managed PostgreSQL initializes as the archive service user", () => {
   const { run, calls } = fakeRun();
+  const written = [];
   const effects = createLinuxHostEffects({
     installRoot: INSTALL_ROOT,
     storagePath: "/srv/archive",
     run,
-    writeFile: () => {},
+    writeFile: (path, content) => written.push({ path, content }),
     ensureDirectory: () => {},
     copyFile: () => {},
     chmodFile: () => {},
@@ -190,7 +191,8 @@ test("managed PostgreSQL initializes as the archive service user", () => {
   assert.ok(ownershipIndex >= 0 && ownershipIndex < initdbIndex);
   assert.ok(passwordOwnershipIndex >= 0 && passwordOwnershipIndex < initdbIndex);
   assert.deepEqual(calls[initdbIndex], [
-    "runuser", "--user", "archive", "--", "/opt/archive-suite/runtime/postgres/bin/initdb",
+    "runuser", "--user", "archive", "--", "env", "LD_LIBRARY_PATH=/opt/archive-suite/runtime/postgres/lib", "/opt/archive-suite/runtime/postgres/bin/initdb",
     "-D", "/srv/archive/postgresql", "-U", "archive_owner", "--pwfile=/opt/archive-suite/config/postgresql-password", "--auth-host=scram-sha-256",
   ]);
+  assert.match(written.find(({ path }) => path === "/etc/systemd/system/archive-postgres.service").content, /Environment=LD_LIBRARY_PATH=\/opt\/archive-suite\/runtime\/postgres\/lib/);
 });

@@ -4,6 +4,7 @@
 import { connect } from "node:net";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { join as joinPosix } from "node:path/posix";
 
 async function defaultTcpConnect(host, port, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
@@ -36,7 +37,13 @@ export function createExternalOnlyProbes({ tcpConnect = defaultTcpConnect } = {}
 }
 
 function defaultRun(args, options = {}) {
-  const result = spawnSync(args[0], args.slice(1), { stdio: "pipe", encoding: "utf8", ...options });
+  const { env, ...spawnOptions } = options;
+  const result = spawnSync(args[0], args.slice(1), {
+    stdio: "pipe",
+    encoding: "utf8",
+    ...spawnOptions,
+    ...(env ? { env: { ...process.env, ...env } } : {}),
+  });
   return { status: result.status ?? 1, stdout: result.stdout, stderr: result.stderr };
 }
 
@@ -48,14 +55,19 @@ export function createManagedNativeProbes({ platform, installRoot, secrets, tcpC
   if (platform !== "windows-native" && platform !== "linux-native") throw new Error("Managed Native probes require a Native platform.");
   if (typeof installRoot !== "string" || !installRoot.trim()) throw new Error("Managed Native probes require an install root.");
   const resolvedSecrets = typeof secrets === "function" ? secrets() : secrets;
-  const postgresBin = platform === "windows-native" ? join(installRoot, "runtime", "postgres", "bin") : join(installRoot, "runtime", "postgres", "bin");
-  const executable = (name) => join(postgresBin, platform === "windows-native" ? `${name}.exe` : name);
+  const pathJoin = platform === "linux-native" ? joinPosix : join;
+  const postgresBin = pathJoin(installRoot, "runtime", "postgres", "bin");
+  const postgresEnvironment = {
+    PGPASSWORD: resolvedSecrets?.dbOwnerPassword,
+    ...(platform === "linux-native" ? { LD_LIBRARY_PATH: pathJoin(installRoot, "runtime", "postgres", "lib") } : {}),
+  };
+  const executable = (name) => pathJoin(postgresBin, platform === "windows-native" ? `${name}.exe` : name);
   const postgres = async () => {
-    const result = run([executable("psql"), "-h", "127.0.0.1", "-p", "5432", "-U", "archive_owner", "-d", "postgres", "-tAc", "SELECT 1"], { env: { PGPASSWORD: resolvedSecrets?.dbOwnerPassword } });
+    const result = run([executable("psql"), "-h", "127.0.0.1", "-p", "5432", "-U", "archive_owner", "-d", "postgres", "-tAc", "SELECT 1"], { env: postgresEnvironment });
     return result.status === 0 ? { ok: true, code: "POSTGRES_READY" } : { ok: false, code: "POSTGRES_QUERY_FAILED", message: "Bundled PostgreSQL did not answer a readiness query." };
   };
   const pgvector = async () => {
-    const result = run([executable("psql"), "-h", "127.0.0.1", "-p", "5432", "-U", "archive_owner", "-d", "archive", "-tAc", "SELECT extversion FROM pg_extension WHERE extname = 'vector'"], { env: { PGPASSWORD: resolvedSecrets?.dbOwnerPassword } });
+    const result = run([executable("psql"), "-h", "127.0.0.1", "-p", "5432", "-U", "archive_owner", "-d", "archive", "-tAc", "SELECT extversion FROM pg_extension WHERE extname = 'vector'"], { env: postgresEnvironment });
     return result.status === 0 && String(result.stdout || "").trim() ? { ok: true, code: "PGVECTOR_READY" } : { ok: false, code: "PGVECTOR_QUERY_FAILED", message: "The bundled pgvector extension is not available in PostgreSQL." };
   };
   const redis = async () => {

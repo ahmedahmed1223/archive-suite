@@ -18,8 +18,14 @@ import { ensureServiceUser } from "./linux-bundle/stage-service-user.mjs";
 const UNIT_DIR = "/etc/systemd/system";
 const LOGROTATE_PATH = "/etc/logrotate.d/archive-suite";
 
-function defaultRun(args) {
-  const result = spawnSync(args[0], args.slice(1), { stdio: "pipe", encoding: "utf8" });
+function defaultRun(args, options = {}) {
+  const { env, ...spawnOptions } = options;
+  const result = spawnSync(args[0], args.slice(1), {
+    stdio: "pipe",
+    encoding: "utf8",
+    ...spawnOptions,
+    ...(env ? { env: { ...process.env, ...env } } : {}),
+  });
   return { status: result.status ?? 1, stdout: result.stdout, stderr: result.stderr };
 }
 
@@ -46,7 +52,7 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
     if (typeof value !== "string" || !value || /[\r\n]/.test(value)) throw new Error(`Linux managed ${label} must be a non-empty single-line secret.`);
     return value;
   };
-  const systemdDataUnit = ({ id, description, type = "simple", execStart, execStop, readWritePaths }) => [
+  const systemdDataUnit = ({ id, description, type = "simple", execStart, execStop, readWritePaths, environment = [] }) => [
     "[Unit]",
     `Description=${description}`,
     "After=network-online.target",
@@ -56,6 +62,7 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
     `Type=${type}`,
     `User=${LINUX_SERVICE_USER.name}`,
     `Group=${LINUX_SERVICE_USER.name}`,
+    ...environment.map((value) => `Environment=${value}`),
     `ExecStart=${execStart}`,
     `ExecStop=${execStop}`,
     "Restart=on-failure",
@@ -118,7 +125,7 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
     }
     const initdb = runtimePostgresBinary(payload.initdb.split(/[\\/]/).at(-1));
     const pgCtl = runtimePostgresBinary(payload.pgCtl.split(/[\\/]/).at(-1));
-    const psql = runtimePostgresBinary(payload.psql.split(/[\\/]/).at(-1));
+    const postgresLibraryPath = join(runtimePostgresRoot, "lib");
     writeFile(postgresPasswordPath, `${ownerPassword}\n`, { mode: 0o600 });
     chmodFile(postgresPasswordPath, 0o600);
     const passwordOwnership = run(["chown", `${LINUX_SERVICE_USER.name}:${LINUX_SERVICE_USER.name}`, postgresPasswordPath]);
@@ -129,7 +136,7 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
     if ((logsOwnership?.status ?? 1) !== 0) return logsOwnership;
     const initialized = existsSync(join(postgresDataPath, "PG_VERSION"))
       ? { status: 0 }
-      : run(["runuser", "--user", LINUX_SERVICE_USER.name, "--", initdb, "-D", postgresDataPath, "-U", "archive_owner", `--pwfile=${postgresPasswordPath}`, "--auth-host=scram-sha-256"]);
+      : run(["runuser", "--user", LINUX_SERVICE_USER.name, "--", "env", `LD_LIBRARY_PATH=${postgresLibraryPath}`, initdb, "-D", postgresDataPath, "-U", "archive_owner", `--pwfile=${postgresPasswordPath}`, "--auth-host=scram-sha-256"]);
     if ((initialized?.status ?? 1) !== 0) return initialized;
     writeFile(postgresUnitPath, systemdDataUnit({
       id: "archive-postgres",
@@ -138,6 +145,7 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
       execStart: `${pgCtl} -D ${postgresDataPath} -l ${join(installRoot, "logs", "postgresql.log")} -o "-p 5432" start`,
       execStop: `${pgCtl} -D ${postgresDataPath} stop -m fast`,
       readWritePaths: [postgresDataPath, join(installRoot, "logs")],
+      environment: [`LD_LIBRARY_PATH=${postgresLibraryPath}`],
     }));
     return firstFailure([run(["systemctl", "daemon-reload"]), run(["systemctl", "enable", "archive-postgres"]), run(["systemctl", "start", "archive-postgres"]) ]);
   };
@@ -158,6 +166,7 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
   const createArchiveRoles = ({ secrets } = {}) => {
     const ownerPassword = singleLineSecret(secrets?.dbOwnerPassword, "PostgreSQL owner password");
     const appPassword = singleLineSecret(secrets?.dbAppPassword, "PostgreSQL application password");
+    const psql = runtimePostgresBinary(dataPackage().psql.split(/[\\/]/).at(-1));
     const literal = (value) => `'${value.replaceAll("'", "''")}'`;
     writeFile(databaseBootstrapPath, [
       `ALTER ROLE archive_owner WITH LOGIN SUPERUSER PASSWORD ${literal(ownerPassword)};`,
@@ -180,7 +189,7 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
       "",
     ].join("\n"), { mode: 0o600 });
     chmodFile(databaseBootstrapPath, 0o600);
-    return run([runtimePostgresBinary(dataPackage().psql.split(/[\\/]/).at(-1)), "-h", "127.0.0.1", "-p", "5432", "-U", "archive_owner", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-f", databaseBootstrapPath], { env: { PGPASSWORD: ownerPassword } });
+    return run([psql, "-h", "127.0.0.1", "-p", "5432", "-U", "archive_owner", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-f", databaseBootstrapPath], { env: { PGPASSWORD: ownerPassword, LD_LIBRARY_PATH: join(runtimePostgresRoot, "lib") } });
   };
 
   const installRedisCompatible = ({ secrets } = {}) => {
