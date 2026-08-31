@@ -36,11 +36,13 @@ function healthy(result) {
 }
 
 async function eventuallyHealthy(probe, { attempts, wait, delayMs }) {
+  let latest;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    if (healthy(await probe())) return true;
+    latest = await probe();
+    if (healthy(latest)) return { ok: true, latest };
     if (attempt + 1 < attempts) await wait(delayMs);
   }
-  return false;
+  return { ok: false, latest };
 }
 
 function resolveSecrets(secrets) {
@@ -94,8 +96,19 @@ export function createManagedDataProvisioner({
 
     if (!healthy(await probes.postgres())) return fail("POSTGRES_UNHEALTHY", "PostgreSQL did not pass its functional probe.", ["Verify PostgreSQL and retry setup."]);
     if (!healthy(await probes.pgvector())) return fail("PGVECTOR_UNHEALTHY", "The pgvector extension did not pass its functional probe.", ["Install or repair pgvector, then retry setup."]);
-    if (redisEnabled && !(await eventuallyHealthy(probes.redis, { attempts: redisProbeAttempts, wait, delayMs: redisProbeDelayMs }))) {
-      return fail("REDIS_UNHEALTHY", "The Redis-compatible service did not pass its functional probe.", ["Verify the cache service and retry setup."]);
+    const redisHealth = redisEnabled
+      ? await eventuallyHealthy(probes.redis, { attempts: redisProbeAttempts, wait, delayMs: redisProbeDelayMs })
+      : { ok: true };
+    if (!redisHealth.ok) {
+      let installerDiagnostic = "";
+      try {
+        if (typeof effects.logs === "function") installerDiagnostic = safeInstallerDiagnostic(effects.logs(), managedSecrets);
+      } catch { /* Diagnostic collection must not hide the health verdict. */ }
+      return fail("REDIS_UNHEALTHY", "The Redis-compatible service did not pass its functional probe.", ["Verify the cache service and retry setup."], {
+        backend: "redis",
+        ...(redisHealth.latest?.code ? { probe: redisHealth.latest.code } : {}),
+        ...(installerDiagnostic ? { installerDiagnostic } : {}),
+      });
     }
 
     return {

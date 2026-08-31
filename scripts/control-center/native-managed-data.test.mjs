@@ -98,6 +98,31 @@ test("managed Redis probe tolerates its bounded service startup window", async (
   assert.equal(waits, 2);
 });
 
+test("an unhealthy managed Redis probe returns its final result and a redacted service diagnostic", async () => {
+  const provision = createManagedDataProvisioner({
+    platform: "windows-native",
+    effects: {
+      ...effects([]),
+      logs: () => ({ status: 0, stdout: "archive-redis exited while reading cache-secret" }),
+    },
+    probes: {
+      ...readyProbes,
+      redis: async () => ({ ok: false, code: "REDIS_UNREACHABLE", message: "connection refused" }),
+    },
+    secrets: { dbOwnerPassword: "owner-secret", dbAppPassword: "app-secret", redisPassword: "cache-secret" },
+    redisProbeAttempts: 1,
+  });
+
+  const result = await provision(managedPlan());
+
+  assert.equal(result.ok, false);
+  assert.equal(result.code, "REDIS_UNHEALTHY");
+  assert.equal(result.details.backend, "redis");
+  assert.equal(result.details.probe, "REDIS_UNREACHABLE");
+  assert.match(result.details.installerDiagnostic, /archive-redis exited/);
+  assert.doesNotMatch(result.details.installerDiagnostic, /owner-secret|app-secret|cache-secret/);
+});
+
 test("external data performs probes without installing managed dependencies", async () => {
   const calls = [];
   const provision = createManagedDataProvisioner({
