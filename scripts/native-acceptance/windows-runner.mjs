@@ -32,6 +32,15 @@ async function waitFor(check, operation, attempts = 90) {
   throw new Error(`Windows Native acceptance timed out during ${operation}.`);
 }
 
+export async function removeStaleWindowsServices({ run: command = run, serviceNames = ALL_SERVICES } = {}) {
+  for (const service of serviceNames) {
+    if (command("sc.exe", ["query", service]).status !== 0) continue;
+    command("sc.exe", ["stop", service]);
+    command("sc.exe", ["delete", service]);
+  }
+  await waitFor(() => serviceNames.every((service) => command("sc.exe", ["query", service]).status !== 0), "service-name cleanup", 30);
+}
+
 function setupConfiguration(storagePath) {
   return {
     schemaVersion: "1.0",
@@ -67,6 +76,9 @@ export function createWindowsAcceptanceEffects({ bundlePath, repoRoot, runId, pr
   });
 
   return {
+    async removeStaleServices() {
+      await removeStaleWindowsServices();
+    },
     async assertServicesAbsent() {
       await waitFor(() => ALL_SERVICES.every((service) => !serviceExists(service)), "service-name cleanup", 30);
     },
@@ -148,6 +160,7 @@ export async function runWindowsNativeAcceptance({
   let dependencyCleanup = false;
 
   try {
+    if (typeof host.removeStaleServices === "function") await host.removeStaleServices();
     await host.assertServicesAbsent();
     await host.startDependencies();
     const environment = {

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
 
-import { runWindowsNativeAcceptance } from "./windows-runner.mjs";
+import { removeStaleWindowsServices, runWindowsNativeAcceptance } from "./windows-runner.mjs";
 
 test("Windows acceptance refuses host mutation unless the process is elevated", async () => {
   let touched = false;
@@ -18,6 +18,25 @@ test("Windows acceptance refuses host mutation unless the process is elevated", 
     /WINDOWS_ELEVATION_REQUIRED/,
   );
   assert.equal(touched, false);
+});
+
+test("Windows acceptance removes only stale Archive Suite service names before installation", async () => {
+  const calls = [];
+  const existing = new Set(["archive-http", "archive-postgres"]);
+  const run = (command, args) => {
+    calls.push([command, args]);
+    const service = args[args.length - 1];
+    if (args[0] === "query") return { status: existing.has(service) ? 0 : 1060 };
+    if (args[0] === "delete") existing.delete(service);
+    return { status: 0 };
+  };
+
+  await removeStaleWindowsServices({ run });
+
+  assert.equal(existing.size, 0);
+  assert.deepEqual(calls.filter(([, args]) => args[0] === "stop").map(([, args]) => args[1]), ["archive-postgres", "archive-http"]);
+  assert.deepEqual(calls.filter(([, args]) => args[0] === "delete").map(([, args]) => args[1]), ["archive-postgres", "archive-http"]);
+  assert.equal(calls.some(([, args]) => args[0] === "delete" && args[1] === "unrelated-service"), false);
 });
 
 test("Windows acceptance installs, probes, uninstalls, and proves scoped cleanup", async () => {
