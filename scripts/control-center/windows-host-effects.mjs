@@ -162,6 +162,8 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
     if (installed.status !== 0) return installed;
     const account = run(["sc", "config", redisServiceId, "obj=", `NT SERVICE\\${redisServiceId}`]);
     if (account.status !== 0) return account;
+    const runtimeGrant = run(["icacls", installRoot, "/grant", `NT SERVICE\\${redisServiceId}:(OI)(CI)RX`]);
+    if (runtimeGrant.status !== 0) return runtimeGrant;
     const configGrant = run(["icacls", redisConfigPath, "/grant", `NT SERVICE\\${redisServiceId}:(R)`]);
     if (configGrant.status !== 0) return configGrant;
     const storageGrant = run(["icacls", redisDataPath, "/grant", `NT SERVICE\\${redisServiceId}:(OI)(CI)M`]);
