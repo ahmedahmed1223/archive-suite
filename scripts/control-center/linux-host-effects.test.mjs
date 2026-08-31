@@ -186,7 +186,9 @@ test("managed PostgreSQL initializes as the archive service user", () => {
   assert.equal(effects.installPostgres({ secrets: { dbOwnerPassword: "owner" } }).status, 0);
   const initdbIndex = calls.findIndex(([command]) => command === "runuser");
   const ownershipIndex = calls.findIndex(([command, , , path]) => command === "chown" && path === "/srv/archive/postgresql");
+  const passwordOwnershipIndex = calls.findIndex((args) => args[0] === "chown" && args.at(-1) === "/opt/archive-suite/config/postgresql-password");
   assert.ok(ownershipIndex >= 0 && ownershipIndex < initdbIndex);
+  assert.ok(passwordOwnershipIndex >= 0 && passwordOwnershipIndex < initdbIndex);
   assert.deepEqual(calls[initdbIndex], [
     "runuser", "--user", "archive", "--", "/opt/archive-suite/runtime/postgres/bin/initdb",
     "-D", "/srv/archive/postgresql", "-U", "archive_owner", "--pwfile=/opt/archive-suite/config/postgresql-password", "--auth-host=scram-sha-256",

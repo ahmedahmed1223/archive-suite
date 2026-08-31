@@ -121,6 +121,8 @@ export function createLinuxHostEffects({ installRoot = LINUX_SERVICE_USER.home, 
     const psql = runtimePostgresBinary(payload.psql.split(/[\\/]/).at(-1));
     writeFile(postgresPasswordPath, `${ownerPassword}\n`, { mode: 0o600 });
     chmodFile(postgresPasswordPath, 0o600);
+    const passwordOwnership = run(["chown", `${LINUX_SERVICE_USER.name}:${LINUX_SERVICE_USER.name}`, postgresPasswordPath]);
+    if ((passwordOwnership?.status ?? 1) !== 0) return passwordOwnership;
     const ownership = run(["chown", "-R", `${LINUX_SERVICE_USER.name}:${LINUX_SERVICE_USER.name}`, postgresDataPath]);
     if ((ownership?.status ?? 1) !== 0) return ownership;
     const logsOwnership = run(["chown", "-R", `${LINUX_SERVICE_USER.name}:${LINUX_SERVICE_USER.name}`, join(installRoot, "logs")]);
