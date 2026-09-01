@@ -55,7 +55,13 @@ jobs:
         id: next_image
         run: |
           docker compose --env-file infra/.env.example -f infra/docker-compose.yml build next
-          echo "tag=$(docker compose --env-file infra/.env.example -f infra/docker-compose.yml config --images next)" >> "${GITHUB_OUTPUT}"
+          # `config --images next` also lists next's dependency images (postgres,
+          # redis, laravel, ...), breaking the single-line GITHUB_OUTPUT write.
+          # `next` has no explicit `image:`, so Compose names the built image
+          # `<project>-next` -- read the project name back from `config` instead
+          # of hardcoding it.
+          project="$(docker compose --env-file infra/.env.example -f infra/docker-compose.yml config --format json | jq -r '.name')"
+          echo "tag=${project}-next" >> "${GITHUB_OUTPUT}"
 
       - name: Build Laravel worker image
         run: docker build -f archive-laravel/Dockerfile.worker -t masar-laravel:pr archive-laravel
