@@ -1,5 +1,7 @@
 # أداة تثبيت Archive Suite وإدارته
 
+[English](installer-manager.md)
+
 نزّل `Archive-Suite-Installer-Windows.zip` على Windows أو `archive-suite-installer-linux.tar.gz` على Linux x64 من أصول الإصدار. تتضمن الحزمة Node.js ولا تحتاج تثبيته على الجهاز. تحقق من SHA256SUMS المنشور مع الأصول، ثم فك ضغط الحزمة في مجلد مستقل.
 
 ## بدء التشغيل
