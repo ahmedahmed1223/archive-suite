@@ -38,7 +38,13 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-RUN groupadd --system --gid 1001 nodejs \
+# The pinned node:26.5.0-slim base carries Debian security patches only up to
+# its own build date; apt-get upgrade here pulls in later trixie-security
+# fixes (e.g. util-linux, openssl) without moving off the pinned Node version.
+RUN apt-get update \
+  && apt-get upgrade -y \
+  && apt-get clean && rm -rf /var/lib/apt/lists/* \
+  && groupadd --system --gid 1001 nodejs \
   && useradd --system --uid 1001 --gid nodejs nextjs \
   && rm -rf /usr/local/lib/node_modules/npm \
   && rm -f /usr/local/bin/npm /usr/local/bin/npx

@@ -5,6 +5,10 @@
 .env.*
 !.env.example
 
+# Locally-generated Passport keys (gitignored, same as .env above) — a dev
+# machine's storage/oauth-*.key must never end up baked into a shipped image.
+storage/*.key
+
 # Rebuilt inside the image by composer install
 vendor
 
