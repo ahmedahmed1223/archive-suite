@@ -90,17 +90,16 @@ test("managed Redis grants its service account storage access and starts before 
 
   assert.equal(effects.installRedisCompatible({ secrets: { redisPassword: "cache-secret" } }).status, 0);
   assert.match(rec.files.find(({ path }) => path.endsWith("archive-redis.xml")).content, /Redis-8\.10\.1\\redis-server\.exe/);
+  assert.match(rec.files.find(({ path }) => path.endsWith("redis.conf")).content, /^dir "D:\/ArchiveData\/redis"$/m);
   assert.ok(rec.commands.some(({ args }) => args.join(" ") === "icacls C:\\Archive Suite /grant NT SERVICE\\archive-redis:(OI)(CI)RX"));
   assert.ok(rec.commands.some(({ args }) => args.join(" ") === "icacls D:\\ArchiveData\\redis /grant NT SERVICE\\archive-redis:(OI)(CI)M"));
   assert.ok(rec.commands.some(({ args }) => args.join(" ") === "C:\\Archive Suite\\services\\archive-redis.exe start"));
-  // Redis's own config parser treats a lone `\r` inside a quoted value as a
-  // carriage-return escape (confirmed against a real "FATAL CONFIG FILE
-  // ERROR ... 'dir "..."' No such file or directory" from Windows Native
-  // acceptance): every backslash in the `dir` value must be doubled, with no
-  // unescaped backslash left over from a manually appended path suffix.
+  // Redis on Windows accepts forward slashes in paths, avoiding the escape
+  // processing that made doubled backslashes point at a non-existent folder
+  // during clean-host acceptance.
   const configFile = rec.files.find(({ path }) => path.endsWith("redis.conf"));
   const dirLine = configFile.content.split("\n").find((line) => line.startsWith("dir "));
-  assert.equal(dirLine, `dir "D:\\\\ArchiveData\\\\redis"`);
+  assert.equal(dirLine, `dir "D:/ArchiveData/redis"`);
 });
 
 test("managed Redis returns its protected service log when startup fails", () => {
