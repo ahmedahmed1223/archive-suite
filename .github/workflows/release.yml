@@ -64,6 +64,9 @@ jobs:
             & sc.exe stop $serviceId 2>$null | Out-Null
             & sc.exe delete $serviceId 2>$null | Out-Null
           }
+          # A missing service is an acceptable clean state; do not leak sc.exe's
+          # non-zero status to GitHub Actions after the best-effort cleanup.
+          $global:LASTEXITCODE = 0
           $bundlePath = Join-Path $env:GITHUB_WORKSPACE "native-windows"
           for ($attempt = 1; $attempt -le 30 -and (Test-Path -LiteralPath $bundlePath); $attempt += 1) {
             Remove-Item -LiteralPath $bundlePath -Recurse -Force -ErrorAction SilentlyContinue
@@ -123,6 +126,9 @@ jobs:
             & sc.exe stop $serviceId 2>$null | Out-Null
             & sc.exe delete $serviceId 2>$null | Out-Null
           }
+          # A missing service is an acceptable clean state; do not leak sc.exe's
+          # non-zero status to GitHub Actions after the best-effort cleanup.
+          $global:LASTEXITCODE = 0
           $bundlePath = Join-Path $env:GITHUB_WORKSPACE "native-windows"
           for ($attempt = 1; $attempt -le 30 -and (Test-Path -LiteralPath $bundlePath); $attempt += 1) {
             Remove-Item -LiteralPath $bundlePath -Recurse -Force -ErrorAction SilentlyContinue
