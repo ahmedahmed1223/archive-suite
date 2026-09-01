@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -157,7 +158,7 @@ class CheckTaskEscalationsCommandTest extends TestCase
         );
     }
 
-    private function createTask(string $assigneeEmail, \Illuminate\Support\Carbon $targetDeadlineAt, string $status = 'todo'): string
+    private function createTask(string $assigneeEmail, Carbon $targetDeadlineAt, string $status = 'todo'): string
     {
         $projectId = (string) Str::uuid();
         DB::table('projects')->insert(['id' => $projectId, 'name' => 'Project', 'created_at' => now(), 'updated_at' => now()]);

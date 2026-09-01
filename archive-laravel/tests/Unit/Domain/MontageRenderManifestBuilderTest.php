@@ -16,6 +16,7 @@ class MontageRenderManifestBuilderTest extends TestCase
     use RefreshDatabase;
 
     private MontageRenderManifestBuilder $builder;
+
     private User $actor;
 
     protected function setUp(): void

@@ -2,8 +2,6 @@
 
 namespace App\Domain\Montage;
 
-use App\Models\MontageProjectRevision;
-
 /**
  * Pure timeline validation. No I/O, no Eloquent — takes a payload array and
  * either accepts it or throws a MontageValidationException listing every

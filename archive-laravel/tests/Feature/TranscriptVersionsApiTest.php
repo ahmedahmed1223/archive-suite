@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -213,10 +215,10 @@ class TranscriptVersionsApiTest extends TestCase
      */
     private function viewerHeaders(): array
     {
-        $viewer = \App\Models\User::query()->create([
+        $viewer = User::query()->create([
             'name' => 'Transcript Viewer',
             'email' => 'transcript-versions-viewer@example.test',
-            'password' => \Illuminate\Support\Facades\Hash::make('secret-password'),
+            'password' => Hash::make('secret-password'),
             'role' => 'viewer',
         ]);
 

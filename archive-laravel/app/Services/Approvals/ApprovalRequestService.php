@@ -44,7 +44,7 @@ final class ApprovalRequestService
      * @param  array<int, array<string, mixed>>  $targets
      *
      * @throws RuntimeException when no step in the macro is currently flagged
-     *                           sensitive (nothing to approve).
+     *                          sensitive (nothing to approve).
      */
     public function submit(User $requester, BulkMacro $macro, array $targets): ApprovalRequest
     {

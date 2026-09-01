@@ -120,7 +120,6 @@ class AuthApiTest extends TestCase
         $this->assertSame(1, ApiSession::query()->count());
     }
 
-
     public function test_a_parallel_refresh_with_the_just_rotated_cookie_recovers_within_grace(): void
     {
         // V14-UX-REVIEW: two racing tabs share one va_refresh cookie. The loser

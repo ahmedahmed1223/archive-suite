@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Api;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use LogicException;
 use App\Models\MontageProject;
 use App\Models\MontageProjectRevision;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use LogicException;
 use Tests\TestCase;
 
 class MontageContractShapeTest extends TestCase

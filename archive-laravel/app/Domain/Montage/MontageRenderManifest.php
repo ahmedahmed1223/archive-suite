@@ -10,8 +10,8 @@ namespace App\Domain\Montage;
 class MontageRenderManifest
 {
     /**
-     * @param array<int, array<string, mixed>> $clips
-     * @param array<int, array<string, mixed>> $sources
+     * @param  array<int, array<string, mixed>>  $clips
+     * @param  array<int, array<string, mixed>>  $sources
      */
     public function __construct(
         public readonly string $revisionId,
@@ -23,8 +23,7 @@ class MontageRenderManifest
         public readonly ?int $videoBitrateKbps,
         public readonly array $clips,
         public readonly array $sources,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

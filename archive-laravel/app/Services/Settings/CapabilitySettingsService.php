@@ -30,9 +30,9 @@ class CapabilitySettingsService
     /**
      * @param  array<string, bool>  $values
      * @param  array<string, int>  $expectedVersions  Optional per-key optimistic-concurrency
-     *   check: when a key is present, the update is rejected with a
-     *   CapabilityVersionConflictException if the stored version has moved on since the
-     *   caller read it (e.g. another admin changed it first).
+     *                                                check: when a key is present, the update is rejected with a
+     *                                                CapabilityVersionConflictException if the stored version has moved on since the
+     *                                                caller read it (e.g. another admin changed it first).
      */
     public function update(array $values, User $actor, array $expectedVersions = []): void
     {

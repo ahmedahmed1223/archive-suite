@@ -110,6 +110,7 @@ class AuthenticateArchiveApiRequest
         // session rotated away from moments ago — honor it inside the same
         // short grace window instead of 401-ing it into a forced logout.
         $graceSeconds = (int) config('archive.auth.refresh_grace_seconds', 30);
+
         return ApiSession::query()
             ->where('previous_access_token_hash', $hash)
             ->where('rotated_at', '>=', now()->subSeconds($graceSeconds))

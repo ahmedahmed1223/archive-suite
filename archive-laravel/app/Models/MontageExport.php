@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class MontageExport extends Model
 {
@@ -14,7 +16,7 @@ class MontageExport extends Model
     {
         static::creating(function (self $export): void {
             if ($export->id === null) {
-                $export->id = (string) \Illuminate\Support\Str::uuid();
+                $export->id = (string) Str::uuid();
             }
         });
     }
@@ -49,17 +51,17 @@ class MontageExport extends Model
         ];
     }
 
-    public function project(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function project(): BelongsTo
     {
         return $this->belongsTo(MontageProject::class, 'montage_project_id');
     }
 
-    public function revision(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function revision(): BelongsTo
     {
         return $this->belongsTo(MontageProjectRevision::class, 'montage_project_revision_id');
     }
 
-    public function requester(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function requester(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requested_by');
     }

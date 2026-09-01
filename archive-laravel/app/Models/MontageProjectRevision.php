@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 use LogicException;
 
 /**
@@ -21,7 +22,7 @@ class MontageProjectRevision extends Model
     {
         static::creating(function (self $revision): void {
             if ($revision->id === null) {
-                $revision->id = (string) \Illuminate\Support\Str::uuid();
+                $revision->id = (string) Str::uuid();
             }
             // Pin the source version from the first clip that carries one, so
             // exports can verify media has not changed underneath a revision.
@@ -75,12 +76,12 @@ class MontageProjectRevision extends Model
         ];
     }
 
-    public function project(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function project(): BelongsTo
     {
         return $this->belongsTo(MontageProject::class, 'montage_project_id');
     }
 
-    public function author(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
