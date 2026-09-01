@@ -56,6 +56,20 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Clear stale Windows Native state
+        shell: powershell
+        run: |
+          $serviceIds = @("archive-postgres", "archive-redis", "archive-http", "archive-next", "archive-php-fcgi", "archive-worker", "archive-reverb", "archive-scheduler")
+          foreach ($serviceId in $serviceIds) {
+            & sc.exe stop $serviceId 2>$null | Out-Null
+            & sc.exe delete $serviceId 2>$null | Out-Null
+          }
+          $bundlePath = Join-Path $env:GITHUB_WORKSPACE "native-windows"
+          for ($attempt = 1; $attempt -le 30 -and (Test-Path -LiteralPath $bundlePath); $attempt += 1) {
+            Remove-Item -LiteralPath $bundlePath -Recurse -Force -ErrorAction SilentlyContinue
+            if (Test-Path -LiteralPath $bundlePath) { Start-Sleep -Seconds 1 }
+          }
+          if (Test-Path -LiteralPath $bundlePath) { throw "Could not remove stale Windows Native bundle state." }
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup pnpm
@@ -101,6 +115,20 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Clear stale Windows Native state
+        shell: powershell
+        run: |
+          $serviceIds = @("archive-postgres", "archive-redis", "archive-http", "archive-next", "archive-php-fcgi", "archive-worker", "archive-reverb", "archive-scheduler")
+          foreach ($serviceId in $serviceIds) {
+            & sc.exe stop $serviceId 2>$null | Out-Null
+            & sc.exe delete $serviceId 2>$null | Out-Null
+          }
+          $bundlePath = Join-Path $env:GITHUB_WORKSPACE "native-windows"
+          for ($attempt = 1; $attempt -le 30 -and (Test-Path -LiteralPath $bundlePath); $attempt += 1) {
+            Remove-Item -LiteralPath $bundlePath -Recurse -Force -ErrorAction SilentlyContinue
+            if (Test-Path -LiteralPath $bundlePath) { Start-Sleep -Seconds 1 }
+          }
+          if (Test-Path -LiteralPath $bundlePath) { throw "Could not remove stale Windows Native bundle state." }
       - name: Checkout
         uses: actions/checkout@v4
       - name: Download Windows Native candidate
