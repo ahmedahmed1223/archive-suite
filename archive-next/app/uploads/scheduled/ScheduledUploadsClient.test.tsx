@@ -58,6 +58,20 @@ function schedule(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+function futureLocalScheduleValue(timeZone = "Europe/Istanbul") {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).formatToParts(new Date(Date.now() + 2 * 60 * 60 * 1000));
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}T${value.hour}:${value.minute}`;
+}
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -193,7 +207,7 @@ describe("ScheduledUploadsClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "إعادة الجدولة" }));
 
     const input = await screen.findByLabelText("موعد المعالجة الجديد");
-    fireEvent.change(input, { target: { value: "2026-09-01T09:00" } });
+    fireEvent.change(input, { target: { value: futureLocalScheduleValue() } });
     fireEvent.click(screen.getByRole("button", { name: "حفظ الموعد الجديد" }));
 
     await waitFor(() => expect(rescheduleScheduledUpload).toHaveBeenCalled());
