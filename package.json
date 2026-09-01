@@ -1,6 +1,6 @@
 {
   "name": "archive-suite",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "license": "MIT",
   "private": true,
   "engines": {
@@ -62,7 +62,8 @@
     "acceptance:extended:x01": "node scripts/extended-live-x01.mjs",
     "docker:config": "docker compose --env-file infra/.env.example -f infra/docker-compose.yml config",
     "docker:config:laravel-next": "docker compose --env-file infra/.env.example -f infra/docker-compose.laravel-next.yml config",
-    "release:verify": "pnpm run verify:laravel-next && pnpm run security:baseline && pnpm run security:audit && node scripts/verify-release-readiness.mjs",
+    "test:installer": "node --test scripts/installer/*.test.mjs scripts/build-installer.test.mjs",
+    "release:verify": "pnpm run test:installer && pnpm run verify:laravel-next && pnpm run security:baseline && pnpm run security:audit && node scripts/verify-release-readiness.mjs",
     "offline:test": "node --test scripts/offline-bundle.test.mjs",
     "offline:bundle": "node scripts/offline-bundle.mjs build",
     "offline:verify": "node scripts/offline-bundle.mjs verify",

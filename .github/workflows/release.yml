@@ -48,6 +48,35 @@ jobs:
       - name: Release gate (verify + security + readiness)
         run: pnpm run release:verify
 
+  installer-smoke:
+    name: Installer kit smoke (${{ matrix.platform }})
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            runtime: runtime/node/node.exe
+          - os: ubuntu-latest
+            platform: linux
+            runtime: runtime/node/bin/node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "26.5.0"
+      - name: Build self-contained installer kit
+        run: node scripts/build-installer.mjs ${{ matrix.platform }} installer-kit --smoke
+      - name: Run bundled runtime without a global Node dependency
+        shell: bash
+        run: |
+          ./installer-kit/${{ matrix.runtime }} installer-kit/scripts/installer/cli.mjs help
+          ./installer-kit/${{ matrix.runtime }} installer-kit/scripts/installer/cli.mjs doctor --json
+
   windows-native-build:
     name: Build Windows Native package
     runs-on: [self-hosted, windows, x64, archive-native-release]
@@ -228,7 +257,7 @@ jobs:
     name: Publish images + GitHub Release
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs: [verify, windows-native-acceptance, linux-native, whisper]
+    needs: [verify, installer-smoke, windows-native-acceptance, linux-native, whisper]
     permissions:
       contents: write
       packages: write
@@ -351,6 +380,14 @@ jobs:
           node scripts/offline-bundle.mjs rehearse "release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}" release-offline/v1-206-rehearsal-evidence.json
           node scripts/offline-bundle.mjs verify-evidence "release-offline/archive-suite-offline-${{ steps.meta.outputs.version }}" release-offline/v1-206-rehearsal-evidence.json
 
+      - name: Build installer assets from verified release images
+        shell: bash
+        run: |
+          manifest="release-offline/archive-suite-offline-${GITHUB_REF_NAME}/manifest.json"
+          node scripts/build-installer.mjs windows release-installers/windows "$manifest"
+          node scripts/build-installer.mjs linux release-installers/linux "$manifest"
+          node release-installers/linux/scripts/installer/cli.mjs help
+
       - name: Export Next image SBOM
         uses: anchore/sbom-action@v0
         with:
@@ -460,7 +497,7 @@ jobs:
           node scripts/build-release-notes.mjs "${GITHUB_REF_NAME#v}" release-notes.md
           node scripts/build-native-release-metadata.mjs "${GITHUB_REF_NAME#v}" RELEASE.json native-release-assets
           mapfile -t native_assets < <(find native-release-assets -type f -print | sort)
-          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json OFFLINE-BUNDLE-README.txt OFFLINE-BUNDLE-SHA256 RELEASE.json "${offline_parts[@]}" "${evidence_asset}" "${native_assets[@]}")
+          artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json OFFLINE-BUNDLE-README.txt OFFLINE-BUNDLE-SHA256 RELEASE.json release-installers/Archive-Suite-Installer-Windows.zip release-installers/archive-suite-installer-linux.tar.gz "${offline_parts[@]}" "${evidence_asset}" "${native_assets[@]}")
           sha256sum "${artifacts[@]}" > SHA256SUMS
           sha256sum --check SHA256SUMS
           flags=(--title "${GITHUB_REF_NAME}" --notes-file release-notes.md)
