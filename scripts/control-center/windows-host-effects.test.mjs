@@ -50,6 +50,23 @@ test("serviceControl start/stop/restart/remove/query call the right WinSW verb",
   ]);
 });
 
+test("managed PostgreSQL removal deletes the service without issuing a duplicate stop", () => {
+  const calls = [];
+  const effects = createWindowsHostEffects({
+    installRoot: INSTALL_ROOT,
+    run: (args) => {
+      calls.push(args);
+      return args[1] === "stop" ? { status: 1061 } : { status: 0 };
+    },
+    writeFile: () => {},
+  });
+
+  const result = effects.serviceControl.remove("archive-postgres");
+
+  assert.equal(result.status, 0);
+  assert.deepEqual(calls, [["sc", "delete", "archive-postgres"]]);
+});
+
 test("applyAcls grants read/execute on the tree and modify on every runtime and external storage path", () => {
   const { run, calls } = fakeRun();
   const services = [{ id: "svc-a" }, { id: "svc-b" }];

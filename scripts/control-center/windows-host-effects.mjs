@@ -230,7 +230,7 @@ export function createWindowsHostEffects({ installRoot, storagePath, services = 
       return run(["sc", "config", service.id, "obj=", `NT SERVICE\\${service.id}`]);
     },
     remove: (id) => id === postgresServiceId
-      ? firstFailure([run(["sc", "stop", id]), run(["sc", "delete", id])])
+      ? run(["sc", "delete", id])
       : run([exeFor(id), "uninstall"]),
     start: (id) => id === postgresServiceId ? run(["sc", "start", id]) : run([exeFor(id), "start"]),
     stop: (id) => id === postgresServiceId ? run(["sc", "stop", id]) : run([exeFor(id), "stop"]),
