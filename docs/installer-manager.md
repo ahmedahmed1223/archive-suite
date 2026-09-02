@@ -13,7 +13,7 @@ On Windows, run `Archive-Suite-Installer.bat` or `Archive-Suite-Installer.ps1`. 
 ./archive-suite-installer install --root /opt/archive-suite
 ```
 
-The Arabic wizard checks x64 architecture, at least 8 GiB RAM and 100 GiB free disk, write access, runtime availability and required ports. Docker needs Compose and a running Linux-container daemon accessible to your account. Native needs administrator privileges on Windows, or root and systemd on Linux. The tool does not install Docker or change system permissions automatically.
+The English terminal wizard uses numbered menus, validates responses before continuing, and enables colors only on interactive terminals. Set `NO_COLOR=1` to disable colors. It checks x64 architecture, at least 8 GiB RAM and 100 GiB free disk, write access, runtime availability and required ports. Docker needs Compose and a running Linux-container daemon accessible to your account. Native needs administrator privileges on Windows, or root and systemd on Linux. The tool does not install Docker or change system permissions automatically.
 
 ## Choose a runtime
 

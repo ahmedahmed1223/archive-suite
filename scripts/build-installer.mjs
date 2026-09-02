@@ -47,6 +47,7 @@ export async function buildInstaller({ platform, out, manifestPath, stageNode, a
   const launcher = join(out, 'archive-suite-installer');
   writeFileSync(launcher, '#!/bin/sh\nset -eu\nROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$ROOT/runtime/node/bin/node" "$ROOT/scripts/installer/cli.mjs" "$@"\n');
   chmodSync(launcher, 0o755);
+  cpSync(join(ROOT, 'docs/installer-manager.md'), join(out, 'README.md'));
   cpSync(join(ROOT, 'docs/installer-manager.ar.md'), join(out, 'README.ar.md'));
   const files = directory => readdirSync(directory, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? files(join(directory, entry.name)) : [join(directory, entry.name)]);
   const { relative } = await import('node:path');

@@ -15,6 +15,8 @@ test('installer kits carry their controller, runtime launchers and read-only hel
     assert.ok(existsSync(join(out, 'scripts/control-center.mjs')));
     assert.ok(existsSync(join(out, 'infra/offline/verify-bundle.mjs')));
     assert.equal(existsSync(join(out, 'infra/setup/installation-manifest.json')), false);
+    assert.ok(existsSync(join(out, 'README.md')));
+    assert.ok(existsSync(join(out, 'README.ar.md')));
     assert.ok(readFileSync(join(out, 'SHA256SUMS'), 'utf8').includes('scripts/installer/cli.mjs'));
     const help = spawnSync(process.execPath, [join(out, 'scripts/installer/cli.mjs'), 'help'], { encoding: 'utf8' });
     assert.equal(help.status, 0, help.stderr);

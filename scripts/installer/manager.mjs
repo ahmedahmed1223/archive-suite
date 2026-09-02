@@ -7,12 +7,12 @@ import { acquireBundle, extractBundle, portFree, probeHost, run } from './io.mjs
 const statePath = root => join(root, 'installation.json');
 export function readState(root) {
   const state = JSON.parse(readFileSync(statePath(root), 'utf8'));
-  if (state.schemaVersion !== 1 || !['docker', 'native', 'offline'].includes(state.mode) || !/^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$/.test(state.version)) throw new Error('ملف حالة التثبيت غير صالح.');
+  if (state.schemaVersion !== 1 || !['docker', 'native', 'offline'].includes(state.mode) || !/^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$/.test(state.version)) throw new Error('The installation state file is invalid.');
   return state;
 }
 function saveState(root, state) { writeFileSync(statePath(root), JSON.stringify(state, null, 2) + '\n', { mode: 0o600 }); }
 export function controllerRequest(root, state, command) {
-  if (!['install', 'repair', 'status', 'start', 'stop', 'restart', 'logs', 'health', 'backup'].includes(command)) throw new Error('أمر إدارة غير مدعوم.');
+  if (!['install', 'repair', 'status', 'start', 'stop', 'restart', 'logs', 'health', 'backup'].includes(command)) throw new Error('Unsupported management command.');
   const payload = join(resolve(root), 'payload');
   const args = [join(payload, 'scripts/control-center.mjs'), ...(command === 'backup' ? ['exec', 'php', 'artisan', 'archive:backup-run'] : [command])];
   if (['install', 'repair'].includes(command)) args.push(`--config=${join(root, 'setup.json')}`);
@@ -52,21 +52,21 @@ function envText(input) {
 export function protect(path, invoke = run) {
   if (process.platform === 'win32') {
     const sid = invoke('whoami.exe', ['/user', '/fo', 'csv', '/nh']).match(/S-1-5-(?:\d+-)*\d+/)?.[0];
-    if (!sid) throw new Error('تعذر تحديد صلاحيات ملف الإعدادات.');
+    if (!sid) throw new Error('Could not determine permissions for the configuration file.');
     invoke('icacls.exe', [path, '/inheritance:r', '/grant:r', `*${sid}:(F)`, '*S-1-5-18:(F)', '*S-1-5-32-544:(F)']);
   } else invoke('chmod', ['600', path]);
 }
 export async function install(input, { kit, confirmed = false, invoke = run, probe = probeHost, acquire = acquireBundle, extract = extractBundle, isPortFree = portFree } = {}) {
-  if (!confirmed) throw new Error('راجع الاختيارات وأكد التثبيت أولًا.');
+  if (!confirmed) throw new Error('Review your selections and confirm the installation first.');
   validateSetup(input);
-  if (input.port > 65534) throw new Error('يلزم منفذ إضافي لخدمة الاتصال اللحظي.');
+  if (input.port > 65534) throw new Error('The realtime service requires one additional port.');
   const root = resolve(input.root);
-  if (existsSync(root) && readdirSync(root).length) throw new Error('المجلد غير فارغ؛ استخدم repair للتثبيت الموجود أو اختر مجلدًا جديدًا.');
+  if (existsSync(root) && readdirSync(root).length) throw new Error('The directory is not empty. Use repair for an existing installation or choose a new directory.');
   const host = probe(root);
   const runtime = input.mode === 'native' ? 'native' : 'docker';
-  if (!host.available.includes(runtime)) throw new Error([...host.errors, runtime === 'docker' ? 'شغّل Docker مع Linux containers وCompose أولًا.' : 'شغّل بصلاحية مسؤول، وعلى Linux يلزم systemd.'].join('\n'));
+  if (!host.available.includes(runtime)) throw new Error([...host.errors, runtime === 'docker' ? 'Start Docker with Linux containers and Compose first.' : 'Run as an administrator; Linux Native also requires systemd.'].join('\n'));
   const ports = runtime === 'native' ? [3000, 8443, 9000, 5432] : [input.port, input.port + 1];
-  for (const port of ports) if (!await isPortFree(port)) throw new Error(`المنفذ ${port} غير متاح. أوقف الخدمة المتعارضة أو اختر منفذًا آخر.`);
+  for (const port of ports) if (!await isPortFree(port)) throw new Error(`Port ${port} is unavailable. Stop the conflicting service or choose another port.`);
   mkdirSync(root, { recursive: true, mode: 0o700 });
   // The limited Native service user must be able to traverse the parent of
   // its installation; individual credential files remain owner-restricted.
@@ -78,12 +78,12 @@ export async function install(input, { kit, confirmed = false, invoke = run, pro
     if (runtime === 'native') {
       const archive = await acquire({ version: input.version, mode: 'native', platform: process.platform, source: input.source, cache: join(root, 'downloads') });
       extract(archive, payload);
-      if (!existsSync(join(payload, 'scripts/control-center.mjs')) || !existsSync(join(payload, 'runtime/node'))) throw new Error('حزمة Native ناقصة.');
+      if (!existsSync(join(payload, 'scripts/control-center.mjs')) || !existsSync(join(payload, 'runtime/node'))) throw new Error('The Native package is incomplete.');
     } else {
       mkdirSync(payload);
       for (const file of ['scripts', 'infra', 'package.json']) cpSync(join(kit, file), join(payload, file), { recursive: true, filter: path => !['.env', 'installation-manifest.json'].includes(basename(path)) && !basename(path).startsWith('.env.bak-') });
       if (input.mode === 'offline') {
-        if (!input.source) throw new Error('حدد مجلد ملفات Offline باستخدام --source.');
+        if (!input.source) throw new Error('Specify the Offline assets folder with --source.');
         const archive = await acquire({ version: input.version, mode: 'offline', platform: process.platform, source: input.source, cache: join(root, 'downloads') });
         extract(archive, join(root, 'offline'));
       }
@@ -95,7 +95,7 @@ export async function install(input, { kit, confirmed = false, invoke = run, pro
       // driver_opts.device would instead resolve inside the Linux daemon VM.
       const mount = JSON.stringify(`${storage.replaceAll('\\', '/')}:/app/storage/app`);
       const source = readFileSync(composePath, 'utf8');
-      if (!source.includes('volumes: [storage:/app/storage/app]')) throw new Error('تعذر تحديد إعداد التخزين في حزمة Docker.');
+      if (!source.includes('volumes: [storage:/app/storage/app]')) throw new Error('Could not locate the Docker storage configuration.');
       const compose = source.replaceAll('volumes: [storage:/app/storage/app]', `volumes: [${mount}]`);
       writeFileSync(composePath, compose);
     }
@@ -121,7 +121,7 @@ function bootstrapNativeAdmin(root, invoke) {
 }
 export function manage(root, command, invoke = run) {
   const state = readState(root);
-  if (state.phase === 'preparing') throw new Error('توقف تجهيز الحزمة قبل الإعداد. احتفظ بهذا المجلد للتشخيص واختر مجلدًا جديدًا لإعادة التثبيت.');
+  if (state.phase === 'preparing') throw new Error('Package preparation stopped before configuration. Keep this directory for diagnostics and choose a new directory to retry.');
   dispatch(root, state, command, invoke);
   if (command === 'repair') {
     if (state.mode === 'native') bootstrapNativeAdmin(root, invoke);

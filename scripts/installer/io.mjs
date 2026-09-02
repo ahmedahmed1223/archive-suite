@@ -10,7 +10,7 @@ import { assessHost, parseChecksums, selectArtifacts, validateArchiveListing } f
 
 export function run(command, args, options = {}) {
   const result = spawnSync(command, args, { shell: false, encoding: 'utf8', stdio: 'pipe', timeout: 300_000, maxBuffer: 32 * 1024 ** 2, ...options });
-  if (result.error || result.status !== 0) throw new Error(`تعذر تنفيذ ${command}; رمز الخروج ${result.status ?? 'غير متاح'}.`);
+  if (result.error || result.status !== 0) throw new Error(`Could not run ${command}; exit code ${result.status ?? 'unavailable'}.`);
   return result.stdout || '';
 }
 export async function portFree(port) {
@@ -40,13 +40,13 @@ export async function checksum(path) {
   return hash.digest('hex');
 }
 export async function verifyFile(path, expected) {
-  if (!/^[a-f0-9]{64}$/.test(expected || '') || await checksum(path) !== expected) throw new Error('فشل التحقق من SHA256؛ أعد تنزيل الحزمة.');
+  if (!/^[a-f0-9]{64}$/.test(expected || '') || await checksum(path) !== expected) throw new Error('SHA256 verification failed. Download the package again.');
 }
 const REPO = 'ahmedahmed1223/archive-suite';
 export async function fetchReleaseFile(version, name, target) {
   if (!/^[A-Za-z0-9._-]+$/.test(name) || !/^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$/.test(version)) throw new Error('Invalid release asset.');
   const response = await fetch(`https://github.com/${REPO}/releases/download/v${version}/${name}`, { signal: AbortSignal.timeout(30 * 60_000) });
-  if (!response.ok || !response.body) throw new Error(`تعذر تنزيل أصل الإصدار: HTTP ${response.status}.`);
+  if (!response.ok || !response.body) throw new Error(`Could not download the release asset: HTTP ${response.status}.`);
   const partial = `${target}.download`;
   const fd = openSync(partial, 'wx', 0o600);
   try {
@@ -78,7 +78,7 @@ export async function acquireBundle({ version, mode, platform, source, cache, do
   return merged;
 }
 export function extractBundle(archive, destination) {
-  if (existsSync(destination)) throw new Error('مجلد الاستخراج موجود مسبقًا. اختر تثبيتًا جديدًا أو أمر repair.');
+  if (existsSync(destination)) throw new Error('The extraction directory already exists. Choose a new installation or use repair.');
   const options = { cwd: dirname(resolve(archive)) };
   const file = resolve(archive);
   const names = run('tar', ['-tzf', file], options);

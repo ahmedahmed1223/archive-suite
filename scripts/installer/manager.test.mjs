@@ -13,7 +13,7 @@ test('unconfirmed and failed preflight installs never create the destination', a
   const parent = mkdtempSync(join(tmpdir(), 'archive-installer-test-'));
   const root = join(parent, 'install');
   const input = { root, mode: 'docker', email: 'owner@example.org', password: 'Secure-password-12345', port: 3000, version: '1.5.2' };
-  await assert.rejects(install(input), /أكد/);
+  await assert.rejects(install(input), /confirm/);
   assert.equal(existsSync(root), false);
   await assert.rejects(install(input, { confirmed: true, probe: () => ({ available: [], errors: ['disk unavailable'] }) }), /disk unavailable/);
   assert.equal(existsSync(root), false);

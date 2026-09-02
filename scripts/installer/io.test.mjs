@@ -23,5 +23,5 @@ test('verified split archives are merged in order and extracted with real tar', 
   const destination = join(root, 'extracted');
   extractBundle(merged, destination);
   assert.equal(readFileSync(join(destination, 'hello.txt'), 'utf8'), 'verified payload');
-  assert.throws(() => extractBundle(merged, destination), /موجود/);
+  assert.throws(() => extractBundle(merged, destination), /already exists/);
 });

@@ -5,10 +5,10 @@ const contract = JSON.parse(readFileSync(new URL('../../infra/platform/compatibi
 export const REQUIREMENTS = { disk: contract.resources.core.diskBytes, memory: 8 * 1024 ** 3 };
 export function assessHost(host) {
   const errors = [];
-  if (!['win32', 'linux'].includes(host.platform) || host.arch !== 'x64') errors.push('تدعم هذه الحزمة Windows وLinux بمعمارية x64 فقط.');
-  if (!(host.memory >= REQUIREMENTS.memory)) errors.push('الذاكرة المطلوبة 8 GiB على الأقل.');
-  if (!(host.free >= REQUIREMENTS.disk)) errors.push('يلزم توفير 100 GiB على الأقل في قرص التثبيت.');
-  if (!host.writable) errors.push('مسار التثبيت غير قابل للكتابة؛ اختر مسارًا آخر أو شغّل الأداة بصلاحية مناسبة.');
+  if (!['win32', 'linux'].includes(host.platform) || host.arch !== 'x64') errors.push('This package supports Windows and Linux on x64 only.');
+  if (!(host.memory >= REQUIREMENTS.memory)) errors.push('At least 8 GiB of memory is required.');
+  if (!(host.free >= REQUIREMENTS.disk)) errors.push('At least 100 GiB of free disk space is required.');
+  if (!host.writable) errors.push('The installation path is not writable. Choose another path or use an account with sufficient privileges.');
   const available = errors.length ? [] : [host.docker && 'docker', host.native && 'native'].filter(Boolean);
   return { ...host, errors, available, recommended: available[0] || null };
 }
@@ -81,9 +81,9 @@ export function validateArchiveListing(names, verbose) {
   }
 }
 export function validateSetup(input) {
-  if (!['docker', 'native', 'offline'].includes(input.mode)) throw new Error('اختر docker أو native أو offline.');
-  if (!/^[^\s@'"$]+@[^\s@'"$]+\.[^\s@'"$]+$/.test(input.email) || input.email === 'test@example.com') throw new Error('أدخل بريدًا صالحًا للمدير.');
-  if (typeof input.password !== 'string' || input.password.length < 12 || /[\r\n\0'"$\\]/.test(input.password) || /CHANGE_ME/i.test(input.password)) throw new Error('كلمة المرور: 12 حرفًا على الأقل، دون أسطر جديدة أو علامات اقتباس أو $ أو \\.');
-  if (!Number.isInteger(input.port) || input.port < 1024 || input.port > 65535) throw new Error('اختر منفذًا بين 1024 و65535.');
+  if (!['docker', 'native', 'offline'].includes(input.mode)) throw new Error('Choose docker, native, or offline.');
+  if (!/^[^\s@'"$]+@[^\s@'"$]+\.[^\s@'"$]+$/.test(input.email) || input.email === 'test@example.com') throw new Error('Enter a valid administrator email address.');
+  if (typeof input.password !== 'string' || input.password.length < 12 || /[\r\n\0'"$\\]/.test(input.password) || /CHANGE_ME/i.test(input.password)) throw new Error('The password must contain at least 12 characters and must not include newlines, quotes, $, or backslashes.');
+  if (!Number.isInteger(input.port) || input.port < 1024 || input.port > 65535) throw new Error('Choose a port from 1024 to 65535.');
   return input;
 }
