@@ -21,6 +21,7 @@ function operationLabel(operation: MediaOperation, copy: DerivativesCopy): strin
     transcode: copy.operationTranscode,
     transcription: copy.operationTranscription,
     ocr: copy.operationOcr,
+    media_probe: copy.operationMediaProbe,
     montage_export: copy.operationMontageExport
   };
 

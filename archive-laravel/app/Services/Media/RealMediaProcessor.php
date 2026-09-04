@@ -55,10 +55,27 @@ class RealMediaProcessor implements MediaProcessor
             'transcode' => $this->processTranscode($job),
             'transcription' => $this->processTranscription($job),
             'ocr' => $this->processOcr($job),
+            'media_probe' => $this->processMediaProbe($job),
             'montage_export' => $this->processMontageExport($job),
             'derivative' => $this->processDerivative($job),
             default => [],
         };
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function processMediaProbe(MediaJob $job): array
+    {
+        $this->updateProgress($job, ['progress_stage' => 'probing', 'progress_percent' => 10]);
+        $report = (new MediaProbeService($this->runner, $this->pathGuard, $this->ffprobePath))
+            ->inspect((string) $job->source_path, fn (): bool => $this->isCanceled($job));
+        $this->updateProgress($job, ['progress_stage' => 'probe_complete', 'progress_percent' => 100]);
+
+        return [[
+            'kind' => 'media_probe_report',
+            'key' => null,
+            'url' => null,
+            'report' => $report,
+        ]];
     }
 
     /**

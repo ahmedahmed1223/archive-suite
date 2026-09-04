@@ -4,6 +4,7 @@ export const mediaJobs = {
     transcode: "Transcode",
     transcription: "Transcription",
     ocr: "OCR text extraction",
+    mediaProbe: "Technical file probe",
     montageExport: "Montage export"
   },
   statuses: {
@@ -23,6 +24,7 @@ export const mediaJobs = {
     marginMaximum: "The maximum margin is 512.",
     operationUnsupported: "Choose a supported operation.",
     watermarkPathRequired: "Enter the watermark image path.",
+    sourcePathRequired: "Enter the path of the file to inspect.",
     reviewFields: "Review the job fields."
   },
   positions: {
@@ -55,6 +57,7 @@ export const mediaJobs = {
     operationPlaceholder: "Choose an operation...",
     sourcePathLabel: "Source file path",
     sourcePathPlaceholder: "media/source.mp4",
+    mediaProbeHint: "Reads the container, streams, codecs, duration, and size without modifying the source file.",
     whisperHint: "The Whisper processor is selected in system settings and applies to all new transcription jobs.",
     outputFormats: "Output formats",
     srtOption: "SRT (timestamped text)",
@@ -71,6 +74,19 @@ export const mediaJobs = {
     creating: "Creating...",
     submit: "Create job",
     success: "The job was created. Current status: {status}."
+  },
+  probe: {
+    ariaLabel: "Technical file probe result",
+    title: "Technical report",
+    unknown: "Unknown format",
+    duration: "Duration",
+    size: "Size",
+    bitRate: "Bit rate",
+    streamCount: "Streams",
+    streamDetails: "Video, audio, and subtitle stream details",
+    codec: "Codec",
+    dimensions: "Dimensions",
+    language: "Language"
   },
   ingest: {
     title: "Scan ingest",

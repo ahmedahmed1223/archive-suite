@@ -7,9 +7,10 @@ import { z } from "zod";
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import { FieldError } from "@/components/ui/Form";
-import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation, type MediaQueueStatus, type PaginationMeta } from "@/lib/archive-api";
+import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation, type MediaProbeReport, type MediaQueueStatus, type PaginationMeta } from "@/lib/archive-api";
 import { getEchoClient, onConnectionStateChange, type EchoConnectionState } from "@/lib/echo";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { formatBytes, formatDuration, mediaProbeReportFromJobResult } from "@/lib/media-probe";
 import type { mediaJobs } from "@/lib/i18n/dictionaries/ar/pages/mediaJobs";
 import "../media.css";
 
@@ -40,7 +41,7 @@ type IngestState =
 /** V3-PERF-005: matches StudioTimelinePanel's poll-when-disconnected fallback cadence. */
 const QUEUE_STATUS_POLL_INTERVAL_MS = 8000;
 
-const OPERATIONS: readonly MediaOperation[] = ["thumbnail", "transcode", "transcription"];
+const OPERATIONS: readonly MediaOperation[] = ["media_probe", "thumbnail", "transcode", "transcription"];
 function createMediaJobFormSchema(copy: MediaJobsCopy) {
   return z
     .object({
@@ -65,6 +66,10 @@ function createMediaJobFormSchema(copy: MediaJobsCopy) {
       if (value.operation === "transcode" && value.watermarkEnabled && !value.watermarkPath) {
         ctx.addIssue({ code: "custom", path: ["watermarkPath"], message: copy.validation.watermarkPathRequired });
       }
+
+      if (value.operation === "media_probe" && !value.sourcePath) {
+        ctx.addIssue({ code: "custom", path: ["sourcePath"], message: copy.validation.sourcePathRequired });
+      }
     });
 }
 
@@ -84,10 +89,41 @@ function operationLabel(operation: MediaOperation, copy: MediaJobsCopy) {
     transcode: copy.operations.transcode,
     transcription: copy.operations.transcription,
     ocr: copy.operations.ocr,
+    media_probe: copy.operations.mediaProbe,
     montage_export: copy.operations.montageExport
   };
 
   return labels[operation] || operation;
+}
+
+function MediaProbeSummary({ report, locale, copy }: { report: MediaProbeReport; locale: string; copy: MediaJobsCopy }) {
+  return (
+    <section className="state-banner" aria-label={copy.probe.ariaLabel}>
+      <div className="helper-row">
+        <strong>{copy.probe.title}</strong>
+        <span className="badge">{report.formatNames.join(", ") || copy.probe.unknown}</span>
+      </div>
+      <div className="kv-grid">
+        <div className="kv-item"><strong>{copy.probe.duration}</strong><span dir="ltr">{formatDuration(report.durationSeconds)}</span></div>
+        <div className="kv-item"><strong>{copy.probe.size}</strong><span dir="ltr">{formatBytes(report.sizeBytes, locale)}</span></div>
+        <div className="kv-item"><strong>{copy.probe.bitRate}</strong><span dir="ltr">{report.bitRate ? `${Math.round(report.bitRate / 1000).toLocaleString(locale)} kb/s` : "—"}</span></div>
+        <div className="kv-item"><strong>{copy.probe.streamCount}</strong><span>{report.streams.length.toLocaleString(locale)}</span></div>
+      </div>
+      <details className="section-divider">
+        <summary className="field-note">{copy.probe.streamDetails}</summary>
+        <div className="stack">
+          {report.streams.map((stream) => (
+            <div className="kv-grid" key={stream.index}>
+              <div className="kv-item"><strong>#{stream.index}</strong><span>{stream.type}</span></div>
+              <div className="kv-item"><strong>{copy.probe.codec}</strong><span dir="ltr">{stream.codec}</span></div>
+              {(stream.width || stream.height) && <div className="kv-item"><strong>{copy.probe.dimensions}</strong><span dir="ltr">{stream.width ?? "?"} × {stream.height ?? "?"}</span></div>}
+              {stream.language && <div className="kv-item"><strong>{copy.probe.language}</strong><span>{stream.language}</span></div>}
+            </div>
+          ))}
+        </div>
+      </details>
+    </section>
+  );
 }
 
 function statusLabel(status: MediaJobStatus, copy: MediaJobsCopy) {
@@ -485,7 +521,10 @@ export function MediaJobsList() {
           <label>
             {copy.create.sourcePathLabel}
             <input type="text" placeholder={copy.create.sourcePathPlaceholder} {...createForm.register("sourcePath")} />
+            <FieldError>{formErrors.sourcePath?.message}</FieldError>
           </label>
+
+          {selectedOperation === "media_probe" && <p className="field-note">{copy.create.mediaProbeHint}</p>}
 
           {selectedOperation === "transcription" && (
             <div className="state-banner">
@@ -660,7 +699,9 @@ export function MediaJobsList() {
 
         {listState.status === "loaded" && (
           <div className="stack">
-            {listState.jobs.map((job) => (
+            {listState.jobs.map((job) => {
+              const probeReport = mediaProbeReportFromJobResult(job.result);
+              return (
               <article className="media-job-card" data-status={job.status} key={job.id}>
                 <div className="toolbar-row">
                   <h3>{operationLabel(job.operation, copy)}</h3>
@@ -712,8 +753,10 @@ export function MediaJobsList() {
                     <pre className="token-preview">{JSON.stringify(job.options, null, 2)}</pre>
                   </details>
                 )}
+                {probeReport && <MediaProbeSummary report={probeReport} locale={locale === "en" ? "en-US" : "ar-SA"} copy={copy} />}
               </article>
-            ))}
+              );
+            })}
             {listState.pagination?.hasMore ? (
               <div className="button-row" style={{ justifyContent: "center" }}>
                 <button type="button" className="button button-secondary" onClick={() => void loadMoreJobs()} disabled={loadingMore}>

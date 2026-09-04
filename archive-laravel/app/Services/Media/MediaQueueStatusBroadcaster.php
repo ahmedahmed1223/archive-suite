@@ -7,6 +7,8 @@ namespace App\Services\Media;
 use App\Events\MediaQueueStatusUpdated;
 use App\Models\MediaJob;
 use App\Services\Security\SecuritySettingsService;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * RT-802: single choke point for the media-queue-status broadcast —
@@ -63,10 +65,16 @@ class MediaQueueStatusBroadcaster
 
     public function notify(?string $resourceFailure = null): void
     {
-        MediaQueueStatusUpdated::dispatch([
-            ...$this->counts(),
-            'device' => $this->securitySettings->getSettings()['whisperDevice'],
-            'resourceFailure' => $resourceFailure,
-        ]);
+        try {
+            MediaQueueStatusUpdated::dispatch([
+                ...$this->counts(),
+                'device' => $this->securitySettings->getSettings()['whisperDevice'],
+                'resourceFailure' => $resourceFailure,
+            ]);
+        } catch (Throwable $exception) {
+            Log::warning('Media queue realtime notification failed; clients will use polling.', [
+                'exception' => $exception::class,
+            ]);
+        }
     }
 }

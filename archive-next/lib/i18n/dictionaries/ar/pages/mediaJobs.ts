@@ -4,6 +4,7 @@ export const mediaJobs = {
     transcode: "تحويل صيغة",
     transcription: "تفريغ نصي",
     ocr: "استخراج نص OCR",
+    mediaProbe: "فحص الملف الفني",
     montageExport: "تصدير مونتاج"
   },
   statuses: {
@@ -23,6 +24,7 @@ export const mediaJobs = {
     marginMaximum: "الهامش الأقصى 512.",
     operationUnsupported: "اختر عملية مدعومة.",
     watermarkPathRequired: "أدخل مسار صورة العلامة المائية.",
+    sourcePathRequired: "أدخل مسار الملف المراد فحصه.",
     reviewFields: "راجع حقول المهمة."
   },
   positions: {
@@ -55,6 +57,7 @@ export const mediaJobs = {
     operationPlaceholder: "اختر عملية...",
     sourcePathLabel: "مسار الملف المصدر",
     sourcePathPlaceholder: "media/source.mp4",
+    mediaProbeHint: "يقرأ الفحص الحاوية والمسارات والترميزات والمدة والحجم دون تعديل الملف الأصلي.",
     whisperHint: "يُختار معالج Whisper من إعدادات النظام ويُطبّق على جميع مهام التفريغ الجديدة.",
     outputFormats: "صيغ الإخراج",
     srtOption: "SRT (نص مع طوابع زمنية)",
@@ -71,6 +74,19 @@ export const mediaJobs = {
     creating: "جارٍ الإنشاء...",
     submit: "إنشاء المهمة",
     success: "تم إنشاء المهمة بنجاح. الحالة الحالية: {status}."
+  },
+  probe: {
+    ariaLabel: "نتيجة الفحص الفني للملف",
+    title: "التقرير الفني",
+    unknown: "صيغة غير معروفة",
+    duration: "المدة",
+    size: "الحجم",
+    bitRate: "معدل البت",
+    streamCount: "عدد المسارات",
+    streamDetails: "تفاصيل مسارات الفيديو والصوت والترجمة",
+    codec: "الترميز",
+    dimensions: "الأبعاد",
+    language: "اللغة"
   },
   ingest: {
     title: "مسح الإدخال",

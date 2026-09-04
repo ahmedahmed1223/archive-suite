@@ -2,19 +2,44 @@
 
 namespace Tests\Feature;
 
+use App\Events\MediaJobProgressUpdated;
 use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaJob;
 use App\Models\User;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Security\SecuritySettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use RuntimeException;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class MediaJobsApiTest extends TestCase
 {
     use AuthenticatesArchiveRequests, RefreshDatabase;
+
+    public function test_media_job_creation_survives_broadcast_failure(): void
+    {
+        Queue::fake();
+        Event::listen(MediaJobProgressUpdated::class, static function (): never {
+            throw new RuntimeException('Realtime transport unavailable.');
+        });
+
+        $response = $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-realtime-down',
+            'operation' => 'thumbnail',
+            'sourcePath' => 'archive/media-record-realtime-down.mov',
+        ], $this->authHeaders())->assertAccepted();
+
+        $this->assertDatabaseHas('media_jobs', [
+            'id' => $response->json('job.id'),
+            'record_id' => 'media-record-realtime-down',
+            'status' => 'queued',
+        ]);
+
+        Queue::assertPushed(ProcessMediaWorkflow::class);
+    }
 
     public function test_it_queues_a_media_workflow_job(): void
     {
@@ -468,6 +493,35 @@ class MediaJobsApiTest extends TestCase
             'operation' => 'ocr',
             'status' => 'queued',
         ]);
+    }
+
+    public function test_store_accepts_media_probe_with_a_source_path(): void
+    {
+        Queue::fake();
+
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-probe',
+            'operation' => 'media_probe',
+            'sourcePath' => 'archive/media-record-probe.mov',
+        ], $this->authHeaders())->assertAccepted();
+
+        $this->assertDatabaseHas('media_jobs', [
+            'record_id' => 'media-record-probe',
+            'operation' => 'media_probe',
+            'source_path' => 'archive/media-record-probe.mov',
+        ]);
+    }
+
+    public function test_store_requires_a_source_path_for_media_probe(): void
+    {
+        Queue::fake();
+
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-probe',
+            'operation' => 'media_probe',
+        ], $this->authHeaders())
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['sourcePath']);
     }
 
     public function test_store_accepts_montage_export_operation(): void

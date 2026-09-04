@@ -36,6 +36,21 @@ class FakeMediaProcessor implements MediaProcessor
                     'url' => null,
                 ],
             ],
+            'media_probe' => [[
+                'kind' => 'media_probe_report',
+                'key' => null,
+                'url' => null,
+                'report' => [
+                    'formatNames' => ['mov', 'mp4'],
+                    'formatLongName' => 'QuickTime / MOV',
+                    'durationSeconds' => 62.52,
+                    'startTimeSeconds' => 0.0,
+                    'sizeBytes' => 1048576,
+                    'bitRate' => 134174,
+                    'tags' => [],
+                    'streams' => [],
+                ],
+            ]],
             'montage_export' => [
                 [
                     'kind' => 'montage_mp4',

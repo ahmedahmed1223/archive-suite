@@ -5599,6 +5599,8 @@ export interface components {
             options?: {
                 [key: string]: unknown;
             };
+            progressPercent?: number | null;
+            progressStage?: string | null;
             /** Format: date-time */
             queuedAt?: string | null;
             recordId: string;
@@ -5609,7 +5611,7 @@ export interface components {
             /** Format: date-time */
             startedAt?: string | null;
             /** @enum {string} */
-            status: "queued" | "processing" | "completed" | "failed";
+            status: "queued" | "processing" | "completed" | "failed" | "canceled";
         };
         MediaJobRequest: {
             operation: components["schemas"]["MediaOperation"];
@@ -5623,7 +5625,38 @@ export interface components {
             job: components["schemas"]["MediaJob"];
         };
         /** @enum {string} */
-        MediaOperation: "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
+        MediaOperation: "media_probe" | "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
+        MediaProbeReport: {
+            bitRate: number | null;
+            durationSeconds: number | null;
+            formatLongName?: string | null;
+            formatNames: string[];
+            sizeBytes: number | null;
+            startTimeSeconds?: number | null;
+            streams: components["schemas"]["MediaProbeStream"][];
+            tags?: {
+                [key: string]: string;
+            };
+        };
+        MediaProbeStream: {
+            bitRate?: number | null;
+            channelLayout?: string | null;
+            channels?: number | null;
+            codec: string;
+            codecLongName?: string | null;
+            default?: boolean;
+            durationSeconds?: number | null;
+            forced?: boolean;
+            frameRate?: components["schemas"]["RationalFrameRate"] | null;
+            height?: number | null;
+            index: number;
+            language?: string | null;
+            pixelAspectRatio?: string | null;
+            sampleRate?: number | null;
+            /** @enum {string} */
+            type: "video" | "audio" | "subtitle" | "data" | "attachment" | "unknown";
+            width?: number | null;
+        };
         MediaReviewComment: {
             /** Format: uuid */
             attachmentId: string | null;
@@ -6138,6 +6171,10 @@ export interface components {
         PublicCatalogResponse: components["schemas"]["OkEnvelope"] & {
             nextCursor?: string | null;
             records: components["schemas"]["PublicCatalogRecord"][];
+        };
+        RationalFrameRate: {
+            denominator: number;
+            numerator: number;
         };
         RecordAiAssistResponse: components["schemas"]["OkEnvelope"] & {
             changesApplied: unknown[];

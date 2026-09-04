@@ -893,30 +893,11 @@ export type WatchedIngestRule = GeneratedSchemas["WatchedIngestRule"];
 export type WatchedIngestBatch = GeneratedSchemas["WatchedIngestBatch"];
 
 export type MediaOperation = GeneratedSchemas["MediaOperation"];
-// ponytail: the generated MediaJob.status enum only has queued/processing/
-// completed/failed -- the contract hasn't caught up to cancelMediaJob's
-// "canceled" outcome or the progressStage/progressPercent fields below.
-// Aliasing MediaJobStatus/MediaJob to the generated schema would silently
-// drop both; leave them hand-written until the contract is updated to match.
-export type MediaJobStatus = "queued" | "processing" | "completed" | "failed" | "canceled";
-
-export interface MediaJob {
-  id: string;
-  recordId: string;
-  operation: MediaOperation;
-  status: MediaJobStatus;
-  executor?: string;
-  contractVersion?: number;
-  sourcePath?: string | null;
-  options?: Record<string, unknown>;
-  result?: Record<string, unknown> | null;
-  error?: string | null;
-  progressStage?: string | null;
-  progressPercent?: number | null;
-  queuedAt?: string | null;
-  startedAt?: string | null;
-  completedAt?: string | null;
-}
+export type MediaJob = GeneratedSchemas["MediaJob"];
+export type MediaJobStatus = MediaJob["status"];
+export type MediaProbeReport = GeneratedSchemas["MediaProbeReport"];
+export type MediaProbeStream = GeneratedSchemas["MediaProbeStream"];
+export type RationalFrameRate = GeneratedSchemas["RationalFrameRate"];
 
 export interface CreateMediaJobPayload {
   recordId: string;

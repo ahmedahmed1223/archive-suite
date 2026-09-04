@@ -31,8 +31,8 @@ class MediaJobsController extends Controller
 
         $validated = $request->validate([
             'recordId' => ['required', 'string', 'max:255', $safePathRule],
-            'operation' => ['required', 'string', Rule::in(['thumbnail', 'transcode', 'transcription', 'ocr', 'montage_export'])],
-            'sourcePath' => ['nullable', 'string', 'max:2048', $safePathRule],
+            'operation' => ['required', 'string', Rule::in(['thumbnail', 'transcode', 'transcription', 'ocr', 'media_probe', 'montage_export'])],
+            'sourcePath' => [Rule::requiredIf(fn (): bool => $request->input('operation') === 'media_probe'), 'nullable', 'string', 'max:2048', $safePathRule],
             'options' => ['nullable', 'array'],
             'options.clips' => ['nullable', 'array'],
             'options.clips.*.path' => ['nullable', 'string', 'max:2048', $safePathRule],

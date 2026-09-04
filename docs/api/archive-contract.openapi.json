@@ -19463,6 +19463,7 @@
       "MediaOperation": {
         "type": "string",
         "enum": [
+          "media_probe",
           "thumbnail",
           "transcode",
           "transcription",
@@ -19519,8 +19520,23 @@
               "queued",
               "processing",
               "completed",
-              "failed"
+              "failed",
+              "canceled"
             ]
+          },
+          "progressStage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "progressPercent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100
           },
           "executor": {
             "type": "string",
@@ -19576,6 +19592,198 @@
             "format": "date-time"
           }
         }
+      },
+      "RationalFrameRate": {
+        "type": "object",
+        "required": [
+          "numerator",
+          "denominator"
+        ],
+        "properties": {
+          "numerator": {
+            "type": "integer"
+          },
+          "denominator": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaProbeStream": {
+        "type": "object",
+        "required": [
+          "index",
+          "type",
+          "codec"
+        ],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "video",
+              "audio",
+              "subtitle",
+              "data",
+              "attachment",
+              "unknown"
+            ]
+          },
+          "codec": {
+            "type": "string"
+          },
+          "codecLongName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "durationSeconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "bitRate": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "width": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "height": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "frameRate": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RationalFrameRate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pixelAspectRatio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "channels": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "channelLayout": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sampleRate": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "language": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "forced": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaProbeReport": {
+        "type": "object",
+        "required": [
+          "formatNames",
+          "durationSeconds",
+          "sizeBytes",
+          "bitRate",
+          "streams"
+        ],
+        "properties": {
+          "formatNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "formatLongName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "durationSeconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "startTimeSeconds": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "sizeBytes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "bitRate": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "streams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaProbeStream"
+            }
+          }
+        },
+        "additionalProperties": false
       },
       "MediaJobResponse": {
         "allOf": [

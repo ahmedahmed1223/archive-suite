@@ -3,6 +3,7 @@ export const mediaDerivativesTree = {
   operationTranscode: "Transcode",
   operationTranscription: "Transcription",
   operationOcr: "OCR text extraction",
+  operationMediaProbe: "Technical file probe",
   operationMontageExport: "Montage export",
   statusQueued: "Queued",
   statusProcessing: "Processing",

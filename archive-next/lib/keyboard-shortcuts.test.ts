@@ -55,4 +55,10 @@ describe("keyboard shortcuts (V1-832)", () => {
     expect(matchesKeyEvent(new KeyboardEvent("keydown", { key: "Enter", metaKey: true }), save)).toBe(true);
     expect(matchesKeyEvent(new KeyboardEvent("keydown", { key: "Enter" }), save)).toBe(false);
   });
+
+  test("ignores incomplete synthetic key events without throwing", () => {
+    const incompleteEvent = { ctrlKey: false, metaKey: false, shiftKey: false, altKey: false } as KeyboardEvent;
+    expect(() => matchesKeyEvent(incompleteEvent, getShortcut("focusSearch"))).not.toThrow();
+    expect(matchesKeyEvent(incompleteEvent, getShortcut("focusSearch"))).toBe(false);
+  });
 });

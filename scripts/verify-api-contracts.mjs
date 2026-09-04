@@ -22,6 +22,15 @@ for (const generatedAsset of [
 assert.equal(contract.openapi, "3.1.0", "API contract should use OpenAPI 3.1.0");
 assert.equal(contract.info?.title, "Archive Suite API Contract", "API contract title should be stable");
 
+const mediaOperationValues = contract.components?.schemas?.MediaOperation?.enum ?? [];
+assert.ok(mediaOperationValues.includes("media_probe"), "MediaOperation should include media_probe");
+assert.ok(contract.components?.schemas?.MediaProbeReport, "API contract should define MediaProbeReport");
+assert.ok(contract.components?.schemas?.MediaProbeStream, "API contract should define MediaProbeStream");
+assert.ok(contract.components?.schemas?.RationalFrameRate, "API contract should define RationalFrameRate");
+assert.ok(contract.components?.schemas?.MediaJob?.properties?.status?.enum?.includes("canceled"), "MediaJob status should include canceled");
+assert.ok(contract.components?.schemas?.MediaJob?.properties?.progressStage, "MediaJob should define progressStage");
+assert.ok(contract.components?.schemas?.MediaJob?.properties?.progressPercent, "MediaJob should define progressPercent");
+
 for (const pathName of [
   "/health",
   "/auth/login",

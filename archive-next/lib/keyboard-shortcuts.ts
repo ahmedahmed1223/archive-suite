@@ -119,6 +119,8 @@ export function formatShortcutDisplay(binding: ShortcutBinding): string {
 }
 
 export function matchesKeyEvent(event: KeyboardEvent, binding: ShortcutBinding): boolean {
+  if (typeof event.key !== "string") return false;
+
   const matchesPrimaryModifier = binding.ctrlKey && binding.metaKey
     ? event.ctrlKey || event.metaKey
     : (binding.ctrlKey ? event.ctrlKey : !event.ctrlKey) &&
