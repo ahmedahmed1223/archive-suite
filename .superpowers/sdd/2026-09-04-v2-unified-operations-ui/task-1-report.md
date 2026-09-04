@@ -10,6 +10,10 @@
 - `archive-next/lib/i18n/dictionaries/en/nav.ts`
 - `archive-next/lib/i18n/dictionaries/ar/shell.ts`
 - `archive-next/lib/i18n/dictionaries/en/shell.ts`
+- `archive-next/lib/experience-presets.ts` (جولة الإصلاح 1)
+- `archive-next/lib/experience-presets.test.ts` (جولة الإصلاح 1)
+- `archive-next/app/settings/NavigationCustomizationSection.test.tsx` (جولة الإصلاح 1)
+- `archive-next/app/styles/06-widgets.css` (جولة الإصلاح 1)
 
 ## التغيير المنفذ
 
@@ -38,7 +42,26 @@
 
 ## الالتزام
 
-`HEAD` — للحصول على قيمة SHA الدقيقة للالتزام الذي يحتوي هذا التقرير، شغّل `git rev-parse HEAD` من جذر المستودع.
+التنفيذ الأصلي للمهمة: `67b8754b` — `feat: unify archive operations navigation`.
+
+## جولة الإصلاح 1
+
+- تُحوَّل تفضيلات ترتيب التنقل المحفوظة بالمفاتيح السابقة (`capture` و`library` وما شابهها) إلى المجالات التشغيلية المناسبة عند القراءة. عند الحفظ التالي، يرسل قسم التخصيص مفاتيح v2 القانونية فقط، فلا تضيع أولوية المستخدم المحفوظة.
+- تستعمل الإعدادات المسبقة مفاتيح المجالات التشغيلية الحالية فقط.
+- يعرض السياق التشغيلي في الرأس المجال النشط دائمًا؛ ويستعمل `navLabel` بديلًا للمسارات غير المطابقة فقط.
+- عُدّلت محددات التنقل في `06-widgets.css` لتستخدم أسماء أقسام v2.
+
+### اختبارات الجولة
+
+| الأمر | النتيجة |
+| --- | --- |
+| `pnpm --filter @archive/next exec vitest run lib/navigation.test.ts lib/experience-presets.test.ts app/settings/NavigationCustomizationSection.test.tsx components/AppHeader.test.tsx` (قبل الإصلاح) | فشل متوقع: 4 اختبارات تغطي المفاتيح القديمة والإعدادات المسبقة وأولوية السياق. |
+| `pnpm --filter @archive/next exec vitest run lib/navigation.test.ts lib/experience-presets.test.ts app/settings/NavigationCustomizationSection.test.tsx components/AppHeader.test.tsx` | نجح: 46 اختبارًا في 4 ملفات. |
+| `pnpm typecheck` | نجح: `tsc -p tsconfig.json --noEmit`. |
+
+### التزام جولة الإصلاح
+
+`HEAD` هو التزام جولة الإصلاح الذي يحتوي هذا التقرير؛ وهو مرجع Git دقيق لنفس الكائن ويمكن تحويله إلى SHA الفعلي عبر `git rev-parse HEAD` بعد إنشاء الالتزام. قيمة SHA تُذكر أيضًا في نتيجة التنفيذ لتفادي تخمين قيمة ذاتية قبل حسابها.
 
 ## مراجعة ذاتية
 

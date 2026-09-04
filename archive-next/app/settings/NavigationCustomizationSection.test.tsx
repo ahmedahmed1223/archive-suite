@@ -72,7 +72,25 @@ describe("NavigationCustomizationSection", () => {
     fireEvent.click(moveUpButtons[1]);
 
     expect(onUpdate).toHaveBeenCalledWith({
-      navigation: expect.objectContaining({ order: ["library", "capture", "organize", "collaborate", "insights", "system"] })
+      navigation: expect.objectContaining({ order: ["ingest", "dailyWork", "archiveDescription", "media", "searchKnowledge", "projectsCollaboration", "rightsSharing", "administrationReliability"] })
+    });
+  });
+
+  test("preserves a saved legacy group order and writes its canonical replacement", () => {
+    const onUpdate = vi.fn().mockResolvedValue({ ok: true });
+    const experience = experienceWith({ order: ["collaborate", "capture", "system"], hiddenModules: [] });
+
+    render(<NavigationCustomizationSection experience={experience} capabilities={DEFAULT_CAPABILITIES} onUpdate={onUpdate} />);
+
+    const labels = Array.from(document.querySelectorAll(".settings-hub__nav-order-row > span:first-child"))
+      .map((label) => label.textContent);
+    expect(labels.slice(0, 5)).toEqual(["العمل اليومي", "المشاريع والتعاون", "الحقوق والمشاركة", "الإدخال", "الوسائط"]);
+
+    fireEvent.click(screen.getByLabelText("كانبان"));
+    expect(onUpdate).toHaveBeenCalledWith({
+      navigation: expect.objectContaining({
+        order: ["dailyWork", "projectsCollaboration", "rightsSharing", "ingest", "media", "searchKnowledge", "administrationReliability", "archiveDescription"],
+      })
     });
   });
 });

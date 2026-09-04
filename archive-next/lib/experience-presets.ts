@@ -37,21 +37,21 @@ const PRESET_DEFINITIONS: Readonly<Record<PresetId, PresetDefinition>> = {
   archivist: {
     id: "archivist",
     homePage: "/work-inbox",
-    navigationOrder: ["capture", "organize", "library", "insights", "collaborate", "system"],
+    navigationOrder: ["dailyWork", "ingest", "media", "archiveDescription", "projectsCollaboration", "searchKnowledge", "administrationReliability", "rightsSharing"],
     hiddenModules: ["/kanban", "/projects", "/copilot"],
     archiveView: { mode: "table", columns: ["title", "store", "type", "updated"] }
   },
   reviewer: {
     id: "reviewer",
     homePage: "/daily",
-    navigationOrder: ["collaborate", "library", "insights", "organize", "capture", "system"],
+    navigationOrder: ["dailyWork", "projectsCollaboration", "rightsSharing", "archiveDescription", "searchKnowledge", "administrationReliability", "ingest", "media"],
     hiddenModules: ["/ingest", "/media/jobs", "/transcriber", "/kanban"],
     archiveView: { mode: "table", columns: ["title", "type", "updated"] }
   },
   "media-editor": {
     id: "media-editor",
     homePage: "/media/jobs",
-    navigationOrder: ["capture", "library", "collaborate", "organize", "insights", "system"],
+    navigationOrder: ["dailyWork", "ingest", "media", "archiveDescription", "searchKnowledge", "projectsCollaboration", "rightsSharing", "administrationReliability"],
     hiddenModules: ["/system/control", "/data-center", "/backup", "/kanban"],
     archiveView: { mode: "grid", columns: ["title", "type", "updated"] }
   },

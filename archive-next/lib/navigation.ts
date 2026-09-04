@@ -220,6 +220,19 @@ export const NAV_MODULE_CAPABILITY: Readonly<Partial<Record<string, CapabilityKe
 
 export const MANDATORY_NAV_HREFS: readonly string[] = ["/settings", "/safety-preview"];
 
+// V2 keeps saved navigation preferences from the former six-domain taxonomy
+// usable. Each former section covered more than one operational domain, so
+// the values expand in the same route-family order and are de-duplicated by
+// reorderNavigationSections before the remaining default domains are added.
+const LEGACY_NAVIGATION_SECTION_DOMAINS: Readonly<Record<string, readonly NavSection[]>> = {
+  capture: ["dailyWork", "ingest", "media"],
+  library: ["dailyWork", "archiveDescription", "searchKnowledge"],
+  organize: ["dailyWork", "archiveDescription", "projectsCollaboration"],
+  collaborate: ["dailyWork", "projectsCollaboration", "rightsSharing"],
+  insights: ["dailyWork", "administrationReliability"],
+  system: ["searchKnowledge", "administrationReliability"],
+};
+
 export function isMandatoryNavHref(href: string): boolean {
   return MANDATORY_NAV_HREFS.includes(href);
 }
@@ -272,11 +285,15 @@ export function reorderNavigationSections<S extends string>(
   const ordered: Array<[S, string]> = [];
   const seen = new Set<string>();
 
-  for (const key of order) {
-    const label = bySection.get(key);
-    if (label !== undefined && !seen.has(key)) {
-      ordered.push([key as S, label]);
-      seen.add(key);
+  for (const savedKey of order) {
+    const legacyDomains = LEGACY_NAVIGATION_SECTION_DOMAINS[savedKey];
+    const sectionKeys = legacyDomains?.some((key) => bySection.has(key)) ? legacyDomains : [savedKey];
+    for (const key of sectionKeys) {
+      const label = bySection.get(key);
+      if (label !== undefined && !seen.has(key)) {
+        ordered.push([key as S, label]);
+        seen.add(key);
+      }
     }
   }
 

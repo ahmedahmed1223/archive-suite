@@ -182,6 +182,23 @@ describe("V3-SET-006 navigation customization: group reordering", () => {
     const result = reorderNavigationSections(sections, ["organize", "not-a-real-section", "organize"]);
     expect(result.map(([key]) => key)).toEqual(["organize", "capture", "library"]);
   });
+
+  it("maps saved legacy section order to the equivalent operational domains", () => {
+    const { sections: operationalSections } = getLocalizedNavigation("ar");
+
+    const result = reorderNavigationSections(operationalSections, ["collaborate", "capture", "system"]);
+
+    expect(result.map(([key]) => key)).toEqual([
+      "dailyWork",
+      "projectsCollaboration",
+      "rightsSharing",
+      "ingest",
+      "media",
+      "searchKnowledge",
+      "administrationReliability",
+      "archiveDescription",
+    ]);
+  });
 });
 
 describe("mobile daily navigation respects a visible-hrefs filter", () => {

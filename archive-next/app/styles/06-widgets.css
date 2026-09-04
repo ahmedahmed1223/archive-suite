@@ -651,22 +651,23 @@
     background: var(--color-brand-primary);
   }
 
-  .app-nav-link[data-section="organize"],
-  .app-nav-link[data-section="collaborate"],
-  .app-nav-link[data-section="insights"],
-  .app-nav-link[data-section="system"] {
+  .app-nav-link[data-section="archiveDescription"],
+  .app-nav-link[data-section="projectsCollaboration"],
+  .app-nav-link[data-section="rightsSharing"],
+  .app-nav-link[data-section="administrationReliability"] {
     margin-inline-start: var(--space-2);
   }
 
-  .app-nav-link[data-section="organize"] {
+  .app-nav-link[data-section="archiveDescription"] {
     border-color: color-mix(in srgb, var(--color-accent-secondary) 32%, var(--color-border-secondary));
   }
 
-  .app-nav-link[data-section="collaborate"] {
+  .app-nav-link[data-section="projectsCollaboration"],
+  .app-nav-link[data-section="rightsSharing"] {
     border-color: color-mix(in srgb, var(--color-accent-tertiary) 34%, var(--color-border-secondary));
   }
 
-  .app-nav-link[data-section="insights"] {
+  .app-nav-link[data-section="administrationReliability"] {
     border-color: color-mix(in srgb, var(--color-status-info) 32%, var(--color-border-secondary));
   }
 

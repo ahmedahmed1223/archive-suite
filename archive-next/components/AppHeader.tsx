@@ -78,7 +78,7 @@ export default function AppHeader({
     label,
     items: visibleItems.filter((item) => item.section === section)
   })).filter((group) => group.items.length > 0);
-  const operationalContext = navLabel ?? (activeSection ? sections[activeSection] : t.shell.currentLocation);
+  const operationalContext = activeSection ? sections[activeSection] : (navLabel ?? t.shell.currentLocation);
   const breadcrumbItems: BreadcrumbItem[] = [{ label: t.shell.home, href: "/" }];
   const contextualGuide = getGuideChapterForPath(pathname, filterGuideChapters([
     { id: "viewer-search", title: "", audience: ["viewer", "editor", "admin"] as const, body: "", href: "/search" },

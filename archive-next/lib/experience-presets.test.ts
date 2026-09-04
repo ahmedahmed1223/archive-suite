@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPresetPatch, getPresetDefinition, PRESET_IDS } from "./experience-presets";
-import { MANDATORY_NAV_HREFS } from "./navigation";
+import { getLocalizedNavigation, MANDATORY_NAV_HREFS } from "./navigation";
 
 describe("experience presets", () => {
   it.each(PRESET_IDS)("%s produces a patch touching only homePage/navigation/views", (id) => {
@@ -57,5 +57,15 @@ describe("experience presets", () => {
     expect(PRESET_IDS).toEqual(["archivist", "reviewer", "media-editor", "simple"]);
     const homePages = new Set(PRESET_IDS.map((id) => buildPresetPatch(id).homePage));
     expect(homePages.size).toBe(PRESET_IDS.length);
+  });
+
+  it("writes only current operational navigation section keys in each preset", () => {
+    const currentSectionKeys = new Set(Object.keys(getLocalizedNavigation("ar").sections));
+
+    for (const id of PRESET_IDS) {
+      for (const section of buildPresetPatch(id).navigation?.order ?? []) {
+        expect(currentSectionKeys).toContain(section);
+      }
+    }
   });
 });

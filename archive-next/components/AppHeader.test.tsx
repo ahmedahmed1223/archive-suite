@@ -124,6 +124,21 @@ describe("AppHeader grouped navigation", () => {
     expect(screen.getByLabelText("السياق التشغيلي")).toHaveTextContent("البحث والمعرفة");
   });
 
+  test("keeps the active operational domain in context when navLabel is supplied", () => {
+    mockSession();
+    mockUsePathname.mockReturnValue("/search/saved");
+    mockMatchMedia("");
+
+    render(
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <AppHeader subtitle="البحث" navLabel="تسمية لا تستبدل المجال" />
+      </LocaleProvider>,
+    );
+
+    expect(screen.getByLabelText("السياق التشغيلي")).toHaveTextContent("البحث والمعرفة");
+    expect(screen.getByLabelText("السياق التشغيلي")).not.toHaveTextContent("تسمية لا تستبدل المجال");
+  });
+
   test("scrolls the desktop navigation from its explicit controls", () => {
     mockSession();
     mockMatchMedia("");
