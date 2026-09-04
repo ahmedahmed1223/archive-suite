@@ -30,4 +30,14 @@ describe("StateNotice", () => {
 
     expect(screen.getByRole("link", { name: "العودة إلى السجل" })).toHaveAttribute("href", "/archive");
   });
+
+  test.each(["loading", "empty", "error"] as const)("keeps caller-provided action content in the delegated %s notice", (state) => {
+    const { container } = render(
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <StateNotice state={state} title="حالة العملية" actions={<a href="/archive">العودة إلى السجل</a>} />
+      </LocaleProvider>
+    );
+
+    expect(within(container).getByRole("link", { name: "العودة إلى السجل" })).toHaveAttribute("href", "/archive");
+  });
 });

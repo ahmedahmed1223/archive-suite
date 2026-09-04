@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, test, vi } from "vitest";
 import { ContextPanel } from "./ContextPanel";
 
@@ -42,5 +43,27 @@ describe("ContextPanel", () => {
     );
 
     expect(screen.getByRole("button", { name: "Close context" })).toBeInTheDocument();
+  });
+
+  test("returns focus to the opening control after its parent closes the drawer", () => {
+    function DrawerExample() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpen(true)}>فتح السياق</button>
+          <ContextPanel title="سياق المهمة" presentation="drawer" open={open} onDismiss={() => setOpen(false)}>
+            تفاصيل المهمة
+          </ContextPanel>
+        </>
+      );
+    }
+
+    const { container } = render(<DrawerExample />);
+    const trigger = within(container).getByRole("button", { name: "فتح السياق" });
+    trigger.focus();
+    fireEvent.click(trigger);
+    expect(within(container).getByRole("dialog", { name: "سياق المهمة" })).toHaveFocus();
+    fireEvent.click(within(container).getByRole("button", { name: "إغلاق السياق" }));
+    expect(trigger).toHaveFocus();
   });
 });

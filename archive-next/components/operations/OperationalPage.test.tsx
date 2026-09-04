@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { OperationalPage } from "./OperationalPage";
 
@@ -49,5 +49,11 @@ describe("OperationalPage", () => {
     );
 
     expect(screen.getByRole("group", { name: "Archive actions" })).toHaveTextContent("Add record");
+  });
+
+  test("does not expose an unnamed content landmark when no content label is supplied", () => {
+    const { container } = render(<OperationalPage title="Archive records">Content</OperationalPage>);
+
+    expect(within(container).getAllByRole("region")).toHaveLength(1);
   });
 });

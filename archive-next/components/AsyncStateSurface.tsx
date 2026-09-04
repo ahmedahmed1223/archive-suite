@@ -11,6 +11,7 @@ export default function AsyncStateSurface({
   status,
   title,
   description,
+  actions: customActions,
   action,
   secondaryAction,
   onRetry,
@@ -21,6 +22,8 @@ export default function AsyncStateSurface({
   status: "loading" | "empty" | "error" | "success";
   title?: ReactNode;
   description?: ReactNode;
+  /** Caller-provided action content for an async state. */
+  actions?: ReactNode;
   action?: AsyncStateAction;
   /** V14-UX-004: an optional quieter companion to `action` (e.g. saved views). */
   secondaryAction?: AsyncStateAction;
@@ -37,7 +40,7 @@ export default function AsyncStateSurface({
 
   const defaultTitle = status === "loading" ? t.shared.feedback.loading : status === "error" ? t.shared.feedback.genericError : t.shared.feedback.noResults;
 
-  const actions = (
+  const defaultActions = action || onRetry || secondaryAction ? (
     <div className="button-row">
       {action ? (
         <button type="button" className="button primary" onClick={action.onClick}>
@@ -47,14 +50,14 @@ export default function AsyncStateSurface({
         <button type="button" className="button primary" onClick={onRetry}>
           {retryLabel ?? t.shared.actions.retry}
         </button>
-      ) : undefined}
+      ) : null}
       {secondaryAction ? (
         <button type="button" className="button button-secondary" onClick={secondaryAction.onClick}>
           {secondaryAction.label}
         </button>
       ) : null}
     </div>
-  );
+  ) : undefined;
 
   return (
     <section
@@ -67,7 +70,7 @@ export default function AsyncStateSurface({
       <EmptyState
         title={title ?? (status === "loading" && loadingLabel ? loadingLabel : defaultTitle)}
         description={description}
-        actions={actions}
+        actions={customActions ?? defaultActions}
       />
     </section>
   );

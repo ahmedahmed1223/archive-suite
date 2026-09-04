@@ -42,7 +42,10 @@ export function OperationalPage({
         {status ? <p className="operational-page__status" role="status" aria-live="polite">{status}</p> : null}
       </header>
       {children ? (
-        <div className="operational-page__content" role="region" aria-label={contentLabel}>
+        <div
+          className="operational-page__content"
+          {...(contentLabel ? { role: "region", "aria-label": contentLabel } : {})}
+        >
           {children}
         </div>
       ) : null}

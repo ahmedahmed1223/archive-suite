@@ -23,10 +23,31 @@ export function ContextPanel({
 }: Readonly<ContextPanelProps>) {
   const headingId = useId();
   const panelRef = useRef<HTMLElement>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+  const wasDrawerOpenRef = useRef(false);
   const isDrawer = presentation === "drawer";
 
   useEffect(() => {
-    if (isDrawer && open) panelRef.current?.focus();
+    if (!isDrawer) {
+      wasDrawerOpenRef.current = false;
+      return;
+    }
+
+    if (open && !wasDrawerOpenRef.current) {
+      const activeElement = document.activeElement;
+      previouslyFocusedElementRef.current = activeElement instanceof HTMLElement ? activeElement : null;
+      panelRef.current?.focus();
+    }
+
+    if (!open && wasDrawerOpenRef.current) {
+      const previouslyFocusedElement = previouslyFocusedElementRef.current;
+      if (previouslyFocusedElement?.isConnected && !previouslyFocusedElement.matches(":disabled")) {
+        previouslyFocusedElement.focus();
+      }
+      previouslyFocusedElementRef.current = null;
+    }
+
+    wasDrawerOpenRef.current = open;
   }, [isDrawer, open]);
 
   if (isDrawer && !open) return null;

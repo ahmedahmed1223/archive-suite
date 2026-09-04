@@ -13,7 +13,7 @@ export interface StateNoticeProps {
 
 export function StateNotice({ state, title, description, actions }: Readonly<StateNoticeProps>) {
   if (state === "loading" || state === "empty" || state === "error") {
-    return <AsyncStateSurface status={state} title={title} description={description} loadingLabel={title} />;
+    return <AsyncStateSurface status={state} title={title} description={description} loadingLabel={title} actions={actions} />;
   }
 
   const isConflict = state === "conflict";
