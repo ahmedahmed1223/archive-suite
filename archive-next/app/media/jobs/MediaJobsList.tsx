@@ -2,16 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { AlertTriangle, CheckCircle2, Clock3, FileScan, Loader2, PlusCircle, RefreshCw, ScanSearch } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Loader2, PlusCircle, RefreshCw, ScanSearch } from "lucide-react";
 import { z } from "zod";
-import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
+import { ContextPanel } from "@/components/operations/ContextPanel";
+import { StateNotice } from "@/components/operations/StateNotice";
 import { FieldError } from "@/components/ui/Form";
 import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation, type MediaProbeReport, type MediaQueueStatus, type PaginationMeta } from "@/lib/archive-api";
 import { getEchoClient, onConnectionStateChange, type EchoConnectionState } from "@/lib/echo";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { formatBytes, formatDuration, mediaProbeReportFromJobResult } from "@/lib/media-probe";
 import type { mediaJobs } from "@/lib/i18n/dictionaries/ar/pages/mediaJobs";
+import styles from "./jobs.module.css";
 import "../media.css";
 
 type LocalizedStrings<T> = {
@@ -37,6 +39,11 @@ type IngestState =
   | { status: "scanning" }
   | { status: "done"; ingested: number; skipped: number }
   | { status: "error"; message: string };
+
+type CancelState =
+  | { status: "idle" }
+  | { status: "canceling"; jobId: string }
+  | { status: "error"; jobId: string; message: string };
 
 /** V3-PERF-005: matches StudioTimelinePanel's poll-when-disconnected fallback cadence. */
 const QUEUE_STATUS_POLL_INTERVAL_MS = 8000;
@@ -98,7 +105,8 @@ function operationLabel(operation: MediaOperation, copy: MediaJobsCopy) {
 
 function MediaProbeSummary({ report, locale, copy }: { report: MediaProbeReport; locale: string; copy: MediaJobsCopy }) {
   return (
-    <section className="state-banner" aria-label={copy.probe.ariaLabel}>
+    <ContextPanel title={copy.probe.contextTitle} description={copy.probe.ariaLabel}>
+      <section className="state-banner" aria-label={copy.probe.ariaLabel}>
       <div className="helper-row">
         <strong>{copy.probe.title}</strong>
         <span className="badge">{report.formatNames.join(", ") || copy.probe.unknown}</span>
@@ -122,7 +130,8 @@ function MediaProbeSummary({ report, locale, copy }: { report: MediaProbeReport;
           ))}
         </div>
       </details>
-    </section>
+      </section>
+    </ContextPanel>
   );
 }
 
@@ -157,6 +166,7 @@ export function MediaJobsList() {
   const [listState, setListState] = useState<ListState>({ status: "loading" });
   const [createState, setCreateState] = useState<CreateState>({ status: "idle" });
   const [ingestState, setIngestState] = useState<IngestState>({ status: "idle" });
+  const [cancelState, setCancelState] = useState<CancelState>({ status: "idle" });
   const [statusFilter, setStatusFilter] = useState<MediaJobStatus | "">("");
   const [loadingMore, setLoadingMore] = useState(false);
   const [connectionState, setConnectionState] = useState<EchoConnectionState | null>(null);
@@ -186,6 +196,19 @@ export function MediaJobsList() {
   const processingCount = jobs.filter((job) => job.status === "processing").length;
   const completedCount = jobs.filter((job) => job.status === "completed").length;
   const failedCount = jobs.filter((job) => job.status === "failed").length;
+
+  const handleCancel = async (job: MediaJob) => {
+    setCancelState({ status: "canceling", jobId: job.id });
+    const response = await api.cancelMediaJob(job.id);
+
+    if (!response.ok) {
+      setCancelState({ status: "error", jobId: job.id, message: response.error });
+      return;
+    }
+
+    applyJobUpdate(response.job);
+    setCancelState({ status: "idle" });
+  };
 
   const loadJobs = useCallback(async (options?: { silent?: boolean }) => {
     if (!options?.silent) {
@@ -487,6 +510,14 @@ export function MediaJobsList() {
         </div>
       )}
 
+      {failedCount > 0 && (
+        <StateNotice
+          state="conflict"
+          title={copy.workflow.partialFailureTitle}
+          description={copy.workflow.partialFailureDescription}
+        />
+      )}
+
       <article className="workspace-panel">
         <div className="workspace-panel__header">
           <div>
@@ -665,20 +696,18 @@ export function MediaJobsList() {
         </div>
 
         {showReconnectBanner && (
-          <p className="form-status" role="status" aria-live="polite">
-            <Loader2 className="status-refresh-icon is-spinning" size={16} aria-hidden="true" />
-            {copy.list.reconnecting}
-          </p>
+          <StateNotice
+            state="offline"
+            title={copy.workflow.realtimeUnavailable}
+            description={copy.workflow.realtimeUnavailableDescription}
+          />
         )}
         {listState.status === "loading" && (
-          <p className="form-status" role="status" aria-live="polite" aria-busy="true">
-            <Loader2 className="status-refresh-icon is-spinning" size={16} aria-hidden="true" />
-            {copy.list.loading}
-          </p>
+          <StateNotice state="loading" title={copy.list.loading} />
         )}
         {listState.status === "empty" && (
-          <EmptyState
-            icon={<FileScan size={22} />}
+          <StateNotice
+            state="empty"
             title={statusFilter ? copy.list.emptyFiltered.replace("{status}", statusLabel(statusFilter, copy)) : copy.list.empty}
             description={statusFilter ? copy.list.emptyFilteredDescription : copy.list.emptyDescription}
             actions={statusFilter ? (
@@ -689,25 +718,53 @@ export function MediaJobsList() {
           />
         )}
         {listState.status === "error" && (
-          <div role="alert" className="form-status status-error">
-            <span>{copy.list.loadError.replace("{error}", listState.message)}</span>
-            <button className="button button-secondary button-sm" type="button" onClick={() => void loadJobs()}>
-              {copy.list.retry}
-            </button>
-          </div>
+          <StateNotice
+            state="error"
+            title={copy.list.loadError.replace("{error}", listState.message)}
+            actions={(
+              <button className="button button-secondary button-sm" type="button" onClick={() => void loadJobs()}>
+                {copy.list.retry}
+              </button>
+            )}
+          />
         )}
 
         {listState.status === "loaded" && (
           <div className="stack">
             {listState.jobs.map((job) => {
               const probeReport = mediaProbeReportFromJobResult(job.result);
+              const isActive = job.status === "queued" || job.status === "processing";
+              const processingState = job.status === "completed"
+                ? "complete"
+                : job.status === "failed" || job.status === "canceled"
+                  ? "blocked"
+                  : "current";
+              const reviewState = job.status === "completed" ? "current" : "pending";
               return (
               <article className="media-job-card" data-status={job.status} key={job.id}>
                 <div className="toolbar-row">
                   <h3>{operationLabel(job.operation, copy)}</h3>
                   <span className="badge">{statusLabel(job.status, copy)}</span>
                 </div>
-                {(job.status === "queued" || job.status === "processing") && job.progressPercent !== null && (
+                <ol className={styles.workflowStageList} aria-label={copy.workflow.ariaLabel}>
+                  <li data-state={job.sourcePath ? "complete" : "pending"}>
+                    <strong>{copy.workflow.source}</strong>
+                    <span>{job.sourcePath || copy.workflow.sourceMissing}</span>
+                  </li>
+                  <li data-state="complete">
+                    <strong>{copy.workflow.record}</strong>
+                    <span>{copy.workflow.recordLinked}</span>
+                  </li>
+                  <li data-state={processingState} aria-current={processingState === "current" ? "step" : undefined}>
+                    <strong>{copy.workflow.processing}</strong>
+                    <span>{statusLabel(job.status, copy)}</span>
+                  </li>
+                  <li data-state={reviewState} aria-current={reviewState === "current" ? "step" : undefined}>
+                    <strong>{copy.workflow.review}</strong>
+                    <span>{job.status === "completed" ? copy.metrics.readyForReview : copy.list.processingFallback}</span>
+                  </li>
+                </ol>
+                {isActive && job.progressPercent !== null && (
                   <div className="state-banner">
                     <div className="helper-row">
                       <span className="field-note">{job.progressStage || copy.list.processingFallback}</span>
@@ -753,7 +810,40 @@ export function MediaJobsList() {
                     <pre className="token-preview">{JSON.stringify(job.options, null, 2)}</pre>
                   </details>
                 )}
+                {job.status === "failed" && (
+                  <div className="state-banner state-banner-error" role="alert">
+                    <strong>{copy.workflow.failureLabel}</strong>
+                    <span className="helper-text">{job.error || copy.workflow.partialFailureDescription}</span>
+                    <div className="helper-row">
+                      <strong>{copy.workflow.retryGuidance}</strong>
+                      <span className="helper-text">{copy.workflow.retryGuidanceDescription}</span>
+                    </div>
+                  </div>
+                )}
                 {probeReport && <MediaProbeSummary report={probeReport} locale={locale === "en" ? "en-US" : "ar-SA"} copy={copy} />}
+                <div className="button-row" role="group" aria-label={copy.workflow.ariaLabel}>
+                  <a className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(job.recordId)}`}>
+                    {copy.workflow.recordLink}
+                  </a>
+                  <a className="button button-secondary button-sm" href={`/media/studio?recordId=${encodeURIComponent(job.recordId)}`}>
+                    {copy.workflow.reviewLink}
+                  </a>
+                  {isActive && (
+                    <button
+                      type="button"
+                      className="button button-secondary button-sm"
+                      onClick={() => void handleCancel(job)}
+                      disabled={cancelState.status === "canceling" && cancelState.jobId === job.id}
+                    >
+                      {cancelState.status === "canceling" && cancelState.jobId === job.id ? copy.workflow.canceling : copy.workflow.cancel}
+                    </button>
+                  )}
+                </div>
+                {cancelState.status === "error" && cancelState.jobId === job.id && (
+                  <p className="form-status status-error" role="alert">
+                    {copy.workflow.cancelError.replace("{error}", cancelState.message)}
+                  </p>
+                )}
               </article>
               );
             })}

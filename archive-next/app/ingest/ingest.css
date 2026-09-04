@@ -23,3 +23,40 @@
   border-radius: var(--radius-full);
   background: var(--color-brand-primary);
 }
+
+.ingest-workflow-stages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+}
+
+.ingest-workflow-stages li {
+  border-inline-start: 0.25rem solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+.ingest-workflow-stages li[data-state="complete"] {
+  border-color: var(--color-success, #16803c);
+}
+
+.ingest-workflow-stages li[data-state="current"] {
+  border-color: var(--color-brand-primary);
+}
+
+.ingest-workflow-stages li[data-state="blocked"] {
+  border-color: var(--color-danger, #b42318);
+}
+
+.ingest-workflow-stages span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}

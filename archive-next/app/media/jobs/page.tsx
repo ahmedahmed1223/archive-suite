@@ -1,8 +1,8 @@
 "use client";
 
 import AppShell from "@/components/AppShell";
-import PageToolbar from "@/components/PageToolbar";
-import { FileVideo, FolderSearch, ListChecks } from "lucide-react";
+import { OperationalPage } from "@/components/operations/OperationalPage";
+import { FolderSearch, ListChecks } from "lucide-react";
 import { MediaJobLookup } from "./MediaJobLookup";
 import { MediaJobsList } from "./MediaJobsList";
 import styles from "./jobs.module.css";
@@ -13,19 +13,18 @@ export default function MediaJobsPage() {
   const copy = t.pages.mediaJobsPage;
   return (
     <AppShell subtitle={t.pageTitles.mediaWorkflow} contentClassName={`stack ${styles.jobsContent}`} tipsPage="media-jobs">
-      <PageToolbar
-        icon={<FileVideo size={24} />}
+      <OperationalPage
+        eyebrow={<span className="badge">{copy.directInspectionBadge}</span>}
         title={copy.title}
         description={copy.description}
-        tone="accent"
-        meta={
+        status={
           <>
-            <span className="badge">{copy.directInspectionBadge}</span>
             <span className="badge">{copy.createJobsBadge}</span>
             <span className="badge">{copy.queueMonitoringBadge}</span>
           </>
         }
-        actions={(
+        contentLabel={copy.toolsAriaLabel}
+        secondaryActions={(
           <>
             <a className="button button-secondary" href="/files">
               <FolderSearch size={16} aria-hidden="true" />
@@ -37,16 +36,16 @@ export default function MediaJobsPage() {
             </a>
           </>
         )}
-      />
-
-      <div className={`split-layout ${styles.operationsConsole}`} aria-label={copy.toolsAriaLabel}>
-        <div className={styles.creationPanel}>
-          <MediaJobLookup />
+      >
+        <div className={`split-layout ${styles.operationsConsole}`}>
+          <div className={styles.creationPanel}>
+            <MediaJobLookup />
+          </div>
+          <div className={styles.jobsTablePanel}>
+            <MediaJobsList />
+          </div>
         </div>
-        <div className={styles.jobsTablePanel}>
-          <MediaJobsList />
-        </div>
-      </div>
+      </OperationalPage>
     </AppShell>
   );
 }

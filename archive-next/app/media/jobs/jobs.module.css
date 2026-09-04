@@ -17,6 +17,43 @@
   order: 2;
 }
 
+.workflowStageList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+}
+
+.workflowStageList li {
+  border-inline-start: 0.25rem solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  display: grid;
+  gap: var(--space-1);
+  min-inline-size: 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+.workflowStageList li[data-state="complete"] {
+  border-color: var(--color-success, #16803c);
+}
+
+.workflowStageList li[data-state="current"] {
+  border-color: var(--color-brand-primary);
+}
+
+.workflowStageList li[data-state="blocked"] {
+  border-color: var(--color-danger, #b42318);
+}
+
+.workflowStageList span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
 @media (min-width: 900px) {
   .operationsConsole {
     grid-template-columns: minmax(18rem, 0.35fr) minmax(0, 1fr);

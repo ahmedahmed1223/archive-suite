@@ -2,11 +2,12 @@
 
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { Cloud, FolderSearch, KeyRound, Network, RadioTower, Server, ShieldCheck } from "lucide-react";
+import { Cloud, FolderSearch, KeyRound, Network, Server, ShieldCheck } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
-import PageToolbar from "@/components/PageToolbar";
 import { useCapability } from "@/components/RoleGate";
+import { OperationalPage } from "@/components/operations/OperationalPage";
+import { StateNotice } from "@/components/operations/StateNotice";
 import { createArchiveApiClient, type WatchedIngestBatch } from "@/lib/archive-api";
 import type { AppDictionary } from "@/lib/i18n/dictionaries";
 import "./ingest.css";
@@ -53,10 +54,11 @@ function ResultBanner({
 
   if (state.status === "error") {
     return (
-      <div className="state-banner state-banner-error" role="alert">
-        <strong>{tt.failedLabel.replace("{label}", label)}</strong>
-        <span className="helper-text">{state.message}</span>
-      </div>
+      <StateNotice
+        state="error"
+        title={tt.failedLabel.replace("{label}", label)}
+        description={state.message}
+      />
     );
   }
 
@@ -182,22 +184,23 @@ export default function IngestPage() {
     smb: smbState,
     dropbox: dropboxState
   };
+  const activeSourceState = sourceStates[activeSource];
 
   return (
     <AppShell subtitle={t.pageTitles.importContent} navLabel={t.pageTitles.import} contentClassName="observability-content" tipsPage="ingest">
-      <PageToolbar
-        icon={<RadioTower size={24} />}
+      <OperationalPage
         eyebrow={<span className="badge">{ti.eyebrowLabel}</span>}
         title={ti.pageTitle}
         description={ti.pageDescription}
-        meta={(
+        status={<span className="badge">{isAnyRunning ? ti.operationInProgressLabel : ti.readyLabel}</span>}
+        actionsLabel={ti.workflow.actionsLabel}
+        secondaryActions={(
           <>
-            <span className="badge">{isAnyRunning ? ti.operationInProgressLabel : ti.readyLabel}</span>
+            <a className="button button-secondary" href="/files">{ti.filesBrowserLink}</a>
+            <a className="button button-secondary" href="/media/jobs">{ti.workflow.jobsLink}</a>
           </>
         )}
-        actions={(
-          <a className="button button-secondary" href="/files">{ti.filesBrowserLink}</a>
-        )}
+        contentLabel={ti.pageTitle}
       >
         <div className="ingest-source-tabs" role="group" aria-label={ti.sourceTabsAriaLabel}>
           {(Object.keys(ti.sourceLabels) as IngestSource[]).map((source) => (
@@ -213,7 +216,31 @@ export default function IngestPage() {
             </button>
           ))}
         </div>
-      </PageToolbar>
+
+        <ol className="ingest-workflow-stages" aria-label={ti.workflow.ariaLabel}>
+          <li data-state={activeSourceState.status === "error" ? "blocked" : activeSourceState.status === "success" ? "complete" : "current"}>
+            <strong>{ti.workflow.receive}</strong>
+            <span>{activeSourceState.status === "running"
+              ? ti.workflow.sourceRunning
+              : activeSourceState.status === "success"
+                ? ti.workflow.sourceCompleted
+                : activeSourceState.status === "error"
+                  ? ti.workflow.sourceNeedsReview
+                  : ti.workflow.sourceSelected.replace("{source}", ti.sourceLabels[activeSource])}</span>
+          </li>
+          <li data-state={activeSourceState.status === "success" ? "complete" : "pending"}>
+            <strong>{ti.workflow.record}</strong>
+            <span>{activeSourceState.status === "success" ? ti.workflow.recordCreated : ti.workflow.recordPending}</span>
+          </li>
+          <li data-state="pending">
+            <strong>{ti.workflow.technical}</strong>
+            <span>{ti.workflow.technicalPending}</span>
+          </li>
+          <li data-state="pending">
+            <strong>{ti.workflow.review}</strong>
+            <span>{ti.workflow.reviewPending}</span>
+          </li>
+        </ol>
 
       <section className="ingest-overview-grid" aria-label={ti.overviewAriaLabel}>
         <article className="health-metric" data-tone={operationTone(scanState)}>
@@ -295,12 +322,21 @@ export default function IngestPage() {
         {!canManageIngest && <p className="helper-text">{ti.watchedNoPermission}</p>}
         {watchedState.status === "error" && <p className="helper-text" role="alert">{watchedState.message}</p>}
         {watchedBatch && (
-          <div className="table-wrap" aria-live="polite">
-            <table>
-              <thead><tr><th>{ti.tableHeaders.file}</th><th>{ti.tableHeaders.status}</th><th>{ti.tableHeaders.routingRule}</th><th>{ti.tableHeaders.stagingDestination}</th><th>{ti.tableHeaders.reviewReason}</th></tr></thead>
-              <tbody>{watchedBatch.entries.map((entry) => <tr key={entry.id}><td>{entry.fileName}</td><td>{entry.status}</td><td>{entry.routing?.metadataTemplateId || ti.defaultValue}</td><td>{entry.routing?.stagingDirectory || "ingest/watched/accepted"}</td><td>{entry.reason || ti.readyLabel}</td></tr>)}</tbody>
-            </table>
-          </div>
+          <>
+            {watchedBatch.entries.length === 0 ? (
+              <StateNotice state="empty" title={ti.workflow.watchedEmptyTitle} description={ti.workflow.watchedEmptyDescription} />
+            ) : (
+              <div className="table-wrap" aria-live="polite">
+                <table>
+                  <thead><tr><th>{ti.tableHeaders.file}</th><th>{ti.tableHeaders.status}</th><th>{ti.tableHeaders.routingRule}</th><th>{ti.tableHeaders.stagingDestination}</th><th>{ti.tableHeaders.reviewReason}</th></tr></thead>
+                  <tbody>{watchedBatch.entries.map((entry) => <tr key={entry.id}><td>{entry.fileName}</td><td>{entry.status}</td><td>{entry.routing?.metadataTemplateId || ti.defaultValue}</td><td>{entry.routing?.stagingDirectory || "ingest/watched/accepted"}</td><td>{entry.reason || ti.readyLabel}</td></tr>)}</tbody>
+                </table>
+              </div>
+            )}
+            {watchedBatch.entries.some((entry) => entry.status === "deferred" || entry.status === "quarantined") && (
+              <StateNotice state="conflict" title={ti.workflow.watchedPartialTitle} description={ti.workflow.watchedPartialDescription} />
+            )}
+          </>
         )}
       </section>
 
@@ -417,6 +453,7 @@ export default function IngestPage() {
           <ResultBanner label={ti.dropboxPullButton} state={dropboxState} tt={ti} />
         </section>
       </div>
+      </OperationalPage>
     </AppShell>
   );
 }

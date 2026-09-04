@@ -77,6 +77,7 @@ export const mediaJobs = {
   },
   probe: {
     ariaLabel: "نتيجة الفحص الفني للملف",
+    contextTitle: "سياق التقرير الفني",
     title: "التقرير الفني",
     unknown: "صيغة غير معروفة",
     duration: "المدة",
@@ -121,6 +122,27 @@ export const mediaJobs = {
     loadingMore: "جارٍ التحميل...",
     loadMore: "تحميل المزيد",
     reconnecting: "انقطع الاتصال بالتحديثات المباشرة، يتم تحديث القائمة عبر التحديث الدوري في هذه الأثناء."
+  },
+  workflow: {
+    ariaLabel: "مسار معالجة الفيديو في الأرشيف",
+    source: "المادة المصدرية",
+    record: "سجل الأرشيف",
+    processing: "المعالجة الفنية",
+    review: "مراجعة الناتج",
+    sourceMissing: "لم يُرسل مسار المصدر",
+    recordLinked: "السجل مرتبط بالمهمة",
+    cancel: "إلغاء المهمة",
+    canceling: "جارٍ الإلغاء...",
+    cancelError: "تعذر إلغاء المهمة: {error}",
+    recordLink: "فتح سجل الأرشيف",
+    reviewLink: "فتح مساحة مراجعة الوسائط",
+    partialFailureTitle: "تحتاج بعض مهام الوسائط إلى متابعة",
+    partialFailureDescription: "تستمر المهام الأخرى. راجع الخطأ أدناه، صحح مصدر الملف أو الإعدادات، ثم أنشئ مهمة جديدة عند الحاجة.",
+    failureLabel: "تفاصيل الفشل",
+    retryGuidance: "إرشادات إعادة المحاولة",
+    retryGuidanceDescription: "لا تتوفر إعادة المحاولة المباشرة لهذه المهمة في الواجهة الحالية. صحح السبب ثم أنشئ مهمة معالجة جديدة للسجل نفسه.",
+    realtimeUnavailable: "التحديثات المباشرة غير متاحة",
+    realtimeUnavailableDescription: "تستمر القائمة في التحديث الدوري إلى أن يعود الاتصال بالتحديثات المباشرة."
   },
   queueStatus: {
     ariaLabel: "حالة طوابير المعالجة",

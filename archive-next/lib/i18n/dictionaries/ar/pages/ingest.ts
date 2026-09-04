@@ -76,5 +76,26 @@ export const ingest = {
   dropboxPanelDescription: "يسحب الملفات الجديدة من المجلد المتصل في الإعدادات. الملفات الكبيرة تُنزَّل على دفعات، وتستأنف من آخر جزء وصل بدل إعادة البدء عند انقطاع الاتصال.",
   dropboxPullButton: "سحب من Dropbox",
   connectionSettingsLink: "إعدادات الاتصال",
-  dropboxNoPermission: "لا تملك صلاحية السحب من Dropbox."
+  dropboxNoPermission: "لا تملك صلاحية السحب من Dropbox.",
+  workflow: {
+    ariaLabel: "مسار إدخال الفيديو إلى الأرشيف",
+    actionsLabel: "إجراءات مسار الإدخال",
+    receive: "استلام المادة",
+    record: "إنشاء سجل الأرشيف",
+    technical: "طلب الفحص الفني",
+    review: "مراجعة السجل",
+    sourceSelected: "المصدر المحدد: {source}",
+    sourceRunning: "العملية قيد التنفيذ",
+    sourceCompleted: "اكتملت العملية للمصدر المحدد",
+    sourceNeedsReview: "تتطلب العملية مراجعة",
+    recordPending: "يُنشأ السجل عند إدخال مادة جديدة",
+    recordCreated: "أنشأت العملية سجلات للمواد المدخلة",
+    technicalPending: "بعد ظهور السجل، اطلب الفحص الفني من مهام الوسائط",
+    reviewPending: "تابع إلى مساحة المراجعة عند اكتمال المعالجة",
+    jobsLink: "فتح مهام الوسائط",
+    watchedEmptyTitle: "لا توجد مواد ثابتة في الدفعة بعد",
+    watchedEmptyDescription: "انتظر حتى تستقر الملفات ثم أعد معاينة المجلد المراقَب.",
+    watchedPartialTitle: "تحتاج بعض ملفات الدفعة إلى متابعة",
+    watchedPartialDescription: "لن تُطبّق الملفات المؤجلة أو المعزولة حتى تُراجع سببها وقاعدة التوجيه."
+  }
 } as const;

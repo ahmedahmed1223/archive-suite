@@ -76,5 +76,26 @@ export const ingest = {
   dropboxPanelDescription: "Pulls new files from the folder connected in settings. Large files download in chunks and resume from the last part received instead of restarting after a connection drop.",
   dropboxPullButton: "Pull from Dropbox",
   connectionSettingsLink: "Connection settings",
-  dropboxNoPermission: "You do not have permission to pull from Dropbox."
+  dropboxNoPermission: "You do not have permission to pull from Dropbox.",
+  workflow: {
+    ariaLabel: "Ingest workflow",
+    actionsLabel: "Ingest workflow actions",
+    receive: "Receive source",
+    record: "Create archive record",
+    technical: "Request technical probe",
+    review: "Review record",
+    sourceSelected: "Selected source: {source}",
+    sourceRunning: "Operation is running",
+    sourceCompleted: "Operation completed for the selected source",
+    sourceNeedsReview: "Operation needs review",
+    recordPending: "A record is created when new material is ingested",
+    recordCreated: "The operation created records for ingested material",
+    technicalPending: "After the record appears, request a technical probe from Media jobs",
+    reviewPending: "Continue to the review workspace after processing finishes",
+    jobsLink: "Open media jobs",
+    watchedEmptyTitle: "No stable material is in this batch yet",
+    watchedEmptyDescription: "Wait for files to settle, then preview the watched folder again.",
+    watchedPartialTitle: "Some batch files need attention",
+    watchedPartialDescription: "Deferred or quarantined files will not be applied until you review their reason and routing rule."
+  }
 } as const;

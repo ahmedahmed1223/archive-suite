@@ -77,6 +77,7 @@ export const mediaJobs = {
   },
   probe: {
     ariaLabel: "Technical file probe result",
+    contextTitle: "Technical report context",
     title: "Technical report",
     unknown: "Unknown format",
     duration: "Duration",
@@ -121,6 +122,27 @@ export const mediaJobs = {
     loadingMore: "Loading...",
     loadMore: "Load more",
     reconnecting: "Live updates disconnected — the list is still refreshing periodically in the meantime."
+  },
+  workflow: {
+    ariaLabel: "Archive video workflow",
+    source: "Source material",
+    record: "Archive record",
+    processing: "Technical processing",
+    review: "Review output",
+    sourceMissing: "No source path was supplied",
+    recordLinked: "Record is linked to this job",
+    cancel: "Cancel job",
+    canceling: "Canceling...",
+    cancelError: "Could not cancel the job: {error}",
+    recordLink: "Open archive record",
+    reviewLink: "Open media review",
+    partialFailureTitle: "Some media work needs attention",
+    partialFailureDescription: "Other jobs continue. Review the error below, correct the source file or settings, then create a new job if needed.",
+    failureLabel: "Failure details",
+    retryGuidance: "Retry guidance",
+    retryGuidanceDescription: "Direct retry is not available for this job in the current interface. Correct the cause, then create a new processing job for the same record.",
+    realtimeUnavailable: "Realtime updates are unavailable",
+    realtimeUnavailableDescription: "The list continues to refresh periodically until the live update connection returns."
   },
   queueStatus: {
     ariaLabel: "Processing queue status",
