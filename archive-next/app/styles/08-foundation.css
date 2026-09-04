@@ -16,6 +16,124 @@
   --focus-row-min-height: 2.5rem;
 }
 
+/* Shared V2 operational page primitives. Logical properties deliberately
+   inherit document direction, allowing Arabic RTL and English LTR routes. */
+.operational-page {
+  display: grid;
+  gap: var(--space-5);
+  min-inline-size: 0;
+}
+
+.operational-page__header {
+  display: grid;
+  gap: var(--space-3);
+  border-block-end: 1px solid var(--color-border-secondary);
+  padding-block-end: var(--space-4);
+}
+
+.operational-page__eyebrow,
+.operational-page__description,
+.operational-page__status,
+.context-panel__header p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.operational-page__eyebrow {
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+}
+
+.operational-page__heading h1,
+.context-panel__header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.operational-page__heading {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.operational-page__actions,
+.operational-page__secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.operational-page__status {
+  font-size: var(--font-size-sm);
+}
+
+.operational-page__content {
+  min-inline-size: 0;
+}
+
+.context-panel {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: var(--color-bg-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.context-panel__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.context-panel__header > div,
+.context-panel__content {
+  min-inline-size: 0;
+}
+
+.context-panel[data-presentation="drawer"] {
+  position: fixed;
+  z-index: 60;
+  inset-block: var(--space-3);
+  inset-inline-end: var(--space-3);
+  inline-size: min(28rem, calc(100vw - 2 * var(--space-3)));
+  max-block-size: calc(100dvh - 2 * var(--space-3));
+  overflow-y: auto;
+  background: var(--color-bg-secondary);
+  box-shadow: var(--shadow-lg);
+}
+
+.state-notice {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+}
+
+.state-notice[data-state="conflict"] {
+  border-color: color-mix(in srgb, var(--color-status-error) 46%, var(--color-border-secondary));
+}
+
+@media (min-width: 48rem) {
+  .operational-page__header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+  }
+
+  .operational-page__eyebrow,
+  .operational-page__status {
+    grid-column: 1 / -1;
+  }
+
+  .operational-page__actions {
+    justify-content: flex-end;
+  }
+}
+
 /* Masar Command Workspace foundation */
 .app-shell {
   grid-template-columns: minmax(0, 1fr);
