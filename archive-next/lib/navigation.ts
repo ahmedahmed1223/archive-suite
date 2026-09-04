@@ -5,61 +5,63 @@ import type { components } from "./generated/archive-api";
 type NavigationExperienceSettings = components["schemas"]["NavigationExperienceSettings"];
 
 const navItemMeta = [
-  // ── الإدخال والمعالجة ──
-  { href: "/uploads", section: "capture", icon: "UploadCloud" },
-  { href: "/uploads/scheduled", section: "capture", icon: "CalendarClock" },
-  { href: "/work-inbox", section: "capture", icon: "ListChecks" },
-  { href: "/inbox", section: "capture", icon: "Inbox" },
-  { href: "/ingest", section: "capture", icon: "FileInput" },
-  { href: "/media/jobs", section: "capture", icon: "Film" },
-  { href: "/transcriber", section: "capture", icon: "Mic2" },
-  // ── المكتبة (البحث والتصفح) ──
-  { href: "/", section: "library", icon: "Home" },
-  { href: "/daily", section: "library", icon: "Sunrise" },
-  { href: "/archive", section: "library", icon: "Archive" },
-  { href: "/search", section: "library", icon: "Search" },
-  { href: "/discover", section: "library", icon: "Compass" },
-  { href: "/favorites", section: "library", icon: "Star" },
-  { href: "/reading-lists", section: "library", icon: "BookOpen" },
-  { href: "/timeline", section: "library", icon: "Clock3" },
-  { href: "/graph", section: "library", icon: "GitBranch" },
-  { href: "/map", section: "library", icon: "Map" },
-  { href: "/files", section: "library", icon: "Files" },
-  // ── التنظيم ──
-  { href: "/collections", section: "organize", icon: "FolderOpen" },
-  { href: "/types", section: "organize", icon: "FileType" },
-  { href: "/vocabulary", section: "organize", icon: "Library" },
-  { href: "/tags", section: "organize", icon: "Tags" },
-  { href: "/duplicates", section: "organize", icon: "CopyCheck" },
-  { href: "/trash", section: "organize", icon: "Trash2" },
-  { href: "/kanban", section: "organize", icon: "Columns3" },
-  { href: "/projects", section: "organize", icon: "BriefcaseBusiness" },
-  // ── المشاركة والتعاون ──
-  { href: "/shares", section: "collaborate", icon: "Share2" },
-  { href: "/shares/with-me", section: "collaborate", icon: "MailCheck" },
-  { href: "/collaboration", section: "collaborate", icon: "Users" },
-  { href: "/broadcast", section: "collaborate", icon: "Radio" },
-  { href: "/automation", section: "collaborate", icon: "Bot" },
-  { href: "/copilot", section: "collaborate", icon: "BotMessageSquare" },
-  { href: "/rights", section: "collaborate", icon: "ShieldCheck" },
-  { href: "/safety-preview", section: "collaborate", icon: "ShieldCheck" },
-  { href: "/approval-requests", section: "collaborate", icon: "UserCheck" },
-  // ── المؤشرات والمراقبة ──
-  { href: "/activity", section: "insights", icon: "Activity" },
-  { href: "/analytics", section: "insights", icon: "BarChart3" },
-  { href: "/reports", section: "insights", icon: "FileBarChart" },
-  { href: "/status", section: "insights", icon: "Gauge" },
-  { href: "/sync", section: "insights", icon: "RefreshCw" },
-  { href: "/errors", section: "insights", icon: "AlertTriangle" },
-  // ── النظام ──
-  { href: "/search/saved", section: "system", icon: "Bookmark" },
-  { href: "/plugins", section: "system", icon: "PlugZap" },
-  { href: "/backup", section: "system", icon: "HardDriveDownload" },
-  { href: "/data-center", section: "system", icon: "Database" },
-  { href: "/system/control", section: "system", icon: "MonitorCog" },
-  { href: "/first-run", section: "system", icon: "Sparkles" },
-  { href: "/settings", section: "system", icon: "Settings" },
-  { href: "/help", section: "system", icon: "HelpCircle" }
+  // ── العمل اليومي ──
+  { href: "/", section: "dailyWork", icon: "Home" },
+  { href: "/daily", section: "dailyWork", icon: "Sunrise" },
+  { href: "/work-inbox", section: "dailyWork", icon: "ListChecks" },
+  { href: "/inbox", section: "dailyWork", icon: "Inbox" },
+  { href: "/activity", section: "dailyWork", icon: "Activity" },
+  { href: "/kanban", section: "dailyWork", icon: "Columns3" },
+  { href: "/approval-requests", section: "dailyWork", icon: "UserCheck" },
+  // ── الإدخال ──
+  { href: "/uploads", section: "ingest", icon: "UploadCloud" },
+  { href: "/uploads/scheduled", section: "ingest", icon: "CalendarClock" },
+  { href: "/ingest", section: "ingest", icon: "FileInput" },
+  // ── الوصف الأرشيفي ──
+  { href: "/archive", section: "archiveDescription", icon: "Archive" },
+  { href: "/collections", section: "archiveDescription", icon: "FolderOpen" },
+  { href: "/types", section: "archiveDescription", icon: "FileType" },
+  { href: "/vocabulary", section: "archiveDescription", icon: "Library" },
+  { href: "/tags", section: "archiveDescription", icon: "Tags" },
+  { href: "/duplicates", section: "archiveDescription", icon: "CopyCheck" },
+  { href: "/trash", section: "archiveDescription", icon: "Trash2" },
+  // ── الوسائط ──
+  { href: "/media/jobs", section: "media", icon: "Film" },
+  { href: "/transcriber", section: "media", icon: "Mic2" },
+  // ── البحث والمعرفة ──
+  { href: "/search", section: "searchKnowledge", icon: "Search" },
+  { href: "/search/saved", section: "searchKnowledge", icon: "Bookmark" },
+  { href: "/discover", section: "searchKnowledge", icon: "Compass" },
+  { href: "/favorites", section: "searchKnowledge", icon: "Star" },
+  { href: "/reading-lists", section: "searchKnowledge", icon: "BookOpen" },
+  { href: "/timeline", section: "searchKnowledge", icon: "Clock3" },
+  { href: "/graph", section: "searchKnowledge", icon: "GitBranch" },
+  { href: "/map", section: "searchKnowledge", icon: "Map" },
+  { href: "/files", section: "searchKnowledge", icon: "Files" },
+  // ── المشاريع والتعاون ──
+  { href: "/projects", section: "projectsCollaboration", icon: "BriefcaseBusiness" },
+  { href: "/collaboration", section: "projectsCollaboration", icon: "Users" },
+  { href: "/broadcast", section: "projectsCollaboration", icon: "Radio" },
+  { href: "/automation", section: "projectsCollaboration", icon: "Bot" },
+  { href: "/copilot", section: "projectsCollaboration", icon: "BotMessageSquare" },
+  // ── الحقوق والمشاركة ──
+  { href: "/shares", section: "rightsSharing", icon: "Share2" },
+  { href: "/shares/with-me", section: "rightsSharing", icon: "MailCheck" },
+  { href: "/rights", section: "rightsSharing", icon: "ShieldCheck" },
+  { href: "/safety-preview", section: "rightsSharing", icon: "ShieldCheck" },
+  // ── الإدارة والموثوقية ──
+  { href: "/analytics", section: "administrationReliability", icon: "BarChart3" },
+  { href: "/reports", section: "administrationReliability", icon: "FileBarChart" },
+  { href: "/status", section: "administrationReliability", icon: "Gauge" },
+  { href: "/sync", section: "administrationReliability", icon: "RefreshCw" },
+  { href: "/errors", section: "administrationReliability", icon: "AlertTriangle" },
+  { href: "/plugins", section: "administrationReliability", icon: "PlugZap" },
+  { href: "/backup", section: "administrationReliability", icon: "HardDriveDownload" },
+  { href: "/data-center", section: "administrationReliability", icon: "Database" },
+  { href: "/system/control", section: "administrationReliability", icon: "MonitorCog" },
+  { href: "/first-run", section: "administrationReliability", icon: "Sparkles" },
+  { href: "/settings", section: "administrationReliability", icon: "Settings" },
+  { href: "/help", section: "administrationReliability", icon: "HelpCircle" }
 ] as const;
 
 export type NavSection = (typeof navItemMeta)[number]["section"];
@@ -81,18 +83,20 @@ export function getLocalizedNavigation(locale: "ar" | "en") {
 }
 
 const dailyRoutes: Record<NavSection, readonly string[]> = {
-  capture: ["/uploads", "/work-inbox", "/inbox", "/ingest", "/media/jobs"],
-  library: ["/", "/archive", "/search", "/favorites"],
-  organize: ["/collections", "/tags", "/duplicates", "/projects"],
-  collaborate: ["/shares", "/collaboration", "/broadcast", "/rights"],
-  insights: ["/activity", "/analytics", "/reports", "/status"],
-  system: ["/settings", "/system/control", "/backup", "/help"]
+  dailyWork: ["/", "/daily", "/work-inbox", "/inbox", "/activity", "/kanban", "/approval-requests"],
+  ingest: ["/uploads", "/uploads/scheduled", "/ingest"],
+  archiveDescription: ["/archive", "/collections", "/types", "/vocabulary", "/tags", "/duplicates", "/trash"],
+  media: ["/media/jobs", "/transcriber"],
+  searchKnowledge: ["/search", "/discover", "/favorites", "/reading-lists", "/timeline", "/graph", "/map", "/files", "/search/saved"],
+  projectsCollaboration: ["/projects", "/collaboration", "/broadcast", "/automation", "/copilot"],
+  rightsSharing: ["/shares", "/shares/with-me", "/rights", "/safety-preview"],
+  administrationReliability: ["/analytics", "/reports", "/status", "/sync", "/errors", "/plugins", "/backup", "/data-center", "/system/control", "/first-run", "/settings", "/help"]
 };
 
 const roleHomeSection: Record<NavigationRole, NavSection> = {
-  admin: "system",
-  editor: "capture",
-  viewer: "library"
+  admin: "administrationReliability",
+  editor: "ingest",
+  viewer: "searchKnowledge"
 };
 
 // V14-UX-001: stable per-role daily destinations. The mobile daily bar no

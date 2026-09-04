@@ -30,6 +30,7 @@ export const shell = {
   archiveManager: "Archive manager",
   workspace: "Workspace",
   currentLocation: "Current location",
+  operationalContext: "Operational context",
   commandSearch: "Search, open a page, or run a command",
   commandSearchPlaceholder: "Search, open a page, or run a command…",
   quickActions: "Quick actions",

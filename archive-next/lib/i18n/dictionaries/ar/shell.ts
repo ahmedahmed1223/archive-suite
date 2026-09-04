@@ -27,6 +27,7 @@ export const shell = {
   archiveManager: "مدير الأرشيف",
   workspace: "مساحة العمل",
   currentLocation: "الموقع الحالي",
+  operationalContext: "السياق التشغيلي",
   commandSearch: "بحث، فتح صفحة، أو تنفيذ أمر",
   commandSearchPlaceholder: "بحث، فتح صفحة، أو تنفيذ أمر…",
   quickActions: "أوامر سريعة",

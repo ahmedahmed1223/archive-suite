@@ -107,10 +107,21 @@ describe("AppHeader grouped navigation", () => {
 
     const groups = Array.from(document.querySelectorAll(".nav-group")) as HTMLDetailsElement[];
     expect(groups.length).toBeGreaterThan(2);
-    expect(screen.getByText("المكتبة").closest("details")?.open).toBe(true);
+    expect(screen.getByText("العمل اليومي").closest("details")?.open).toBe(true);
 
     fireEvent.click(screen.getByRole("button", { name: "فتح كل المجموعات" }));
     expect(groups.every((group) => group.open)).toBe(true);
+  });
+
+  test("expands the active Arabic operational domain and exposes its persistent context", () => {
+    mockSession();
+    mockUsePathname.mockReturnValue("/search/saved");
+    mockMatchMedia("");
+    renderHeader("البحث");
+
+    const activeGroup = document.querySelector<HTMLDetailsElement>('[data-section="searchKnowledge"]');
+    expect(activeGroup?.open).toBe(true);
+    expect(screen.getByLabelText("السياق التشغيلي")).toHaveTextContent("البحث والمعرفة");
   });
 
   test("scrolls the desktop navigation from its explicit controls", () => {

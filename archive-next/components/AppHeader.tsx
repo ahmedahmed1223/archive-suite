@@ -78,6 +78,7 @@ export default function AppHeader({
     label,
     items: visibleItems.filter((item) => item.section === section)
   })).filter((group) => group.items.length > 0);
+  const operationalContext = navLabel ?? (activeSection ? sections[activeSection] : t.shell.currentLocation);
   const breadcrumbItems: BreadcrumbItem[] = [{ label: t.shell.home, href: "/" }];
   const contextualGuide = getGuideChapterForPath(pathname, filterGuideChapters([
     { id: "viewer-search", title: "", audience: ["viewer", "editor", "admin"] as const, body: "", href: "/search" },
@@ -125,7 +126,12 @@ export default function AppHeader({
         onToggleTheme={() => theme.setPreset(isLightTheme ? DARK_PRESET : LIGHT_PRESET)}
       />
       <AppNavigationDrawer groups={navigationGroups} activeHref={activeLink?.href} open={isMenuOpen} onClose={() => closeNavigation()} />
-      <div className="app-breadcrumb"><Breadcrumb items={breadcrumbItems} /></div>
+      <div className="app-breadcrumb">
+        <span className="badge app-operational-context" aria-label={t.shell.operationalContext}>
+          {t.shell.operationalContext}: {operationalContext}
+        </span>
+        <Breadcrumb items={breadcrumbItems} />
+      </div>
     </header>
   );
 }

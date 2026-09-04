@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyNavigationVisibility,
   getDailyNavigation,
+  getLocalizedNavigation,
   isActivePath,
   isMandatoryNavHref,
   isNavHrefCapabilityLocked,
@@ -17,19 +18,57 @@ function withCapability(key: keyof Capabilities, status: Capabilities[keyof Capa
 
 describe("role-focused navigation", () => {
   it("prioritizes the current workflow and role in a compact daily list", () => {
-    const editorNavigation = getDailyNavigation("capture", "editor");
-    const viewerNavigation = getDailyNavigation("library", "viewer");
+    const editorNavigation = getDailyNavigation("ingest", "editor");
+    const viewerNavigation = getDailyNavigation("searchKnowledge", "viewer");
 
-    expect(editorNavigation.daily.map((item) => item.href)).toEqual(["/uploads", "/work-inbox", "/inbox", "/ingest", "/media/jobs"]);
-    expect(viewerNavigation.daily.map((item) => item.href)).toEqual(["/", "/archive", "/search", "/favorites"]);
+    expect(editorNavigation.daily.map((item) => item.href)).toEqual(["/uploads", "/uploads/scheduled", "/ingest"]);
+    expect(viewerNavigation.daily.map((item) => item.href)).toEqual(["/search", "/discover", "/favorites", "/reading-lists", "/timeline", "/graph", "/map", "/files", "/search/saved"]);
   });
 
   it("groups every non-daily route under more without losing command-palette routes", () => {
-    const navigation = getDailyNavigation("capture", "editor");
+    const navigation = getDailyNavigation("ingest", "editor");
     const exposedHrefs = [...navigation.daily, ...navigation.more.flatMap((group) => group.items)].map((item) => item.href);
 
     expect(new Set(exposedHrefs)).toEqual(new Set(primaryNav.map((item) => item.href)));
     expect(navigation.more.every((group) => group.items.length > 0)).toBe(true);
+  });
+});
+
+describe("V2 unified operations taxonomy", () => {
+  it("uses the eight operational domains in their prescribed Arabic order", () => {
+    const { sections } = getLocalizedNavigation("ar");
+
+    expect(Object.entries(sections)).toEqual([
+      ["dailyWork", "العمل اليومي"],
+      ["ingest", "الإدخال"],
+      ["archiveDescription", "الوصف الأرشيفي"],
+      ["media", "الوسائط"],
+      ["searchKnowledge", "البحث والمعرفة"],
+      ["projectsCollaboration", "المشاريع والتعاون"],
+      ["rightsSharing", "الحقوق والمشاركة"],
+      ["administrationReliability", "الإدارة والموثوقية"],
+    ]);
+  });
+
+  it("keeps every visible route while assigning it to an operational domain", () => {
+    const { items } = getLocalizedNavigation("ar");
+
+    const expectedHrefs = [
+      "/uploads", "/uploads/scheduled", "/work-inbox", "/inbox", "/ingest", "/media/jobs", "/transcriber",
+      "/", "/daily", "/archive", "/search", "/discover", "/favorites", "/reading-lists", "/timeline", "/graph", "/map", "/files",
+      "/collections", "/types", "/vocabulary", "/tags", "/duplicates", "/trash", "/kanban", "/projects",
+      "/shares", "/shares/with-me", "/collaboration", "/broadcast", "/automation", "/copilot", "/rights", "/safety-preview", "/approval-requests",
+      "/activity", "/analytics", "/reports", "/status", "/sync", "/errors",
+      "/search/saved", "/plugins", "/backup", "/data-center", "/system/control", "/first-run", "/settings", "/help",
+    ];
+    expect(items).toHaveLength(expectedHrefs.length);
+    expect(new Set(items.map((item) => item.href))).toEqual(new Set(expectedHrefs));
+    expect(items.filter((item) => item.section === "archiveDescription").map((item) => item.href)).toEqual([
+      "/archive", "/collections", "/types", "/vocabulary", "/tags", "/duplicates", "/trash",
+    ]);
+    expect(items.filter((item) => item.section === "rightsSharing").map((item) => item.href)).toEqual([
+      "/shares", "/shares/with-me", "/rights", "/safety-preview",
+    ]);
   });
 });
 
@@ -148,14 +187,14 @@ describe("V3-SET-006 navigation customization: group reordering", () => {
 describe("mobile daily navigation respects a visible-hrefs filter", () => {
   it("drops hidden/locked hrefs from both the daily bar and the more groups", () => {
     const visible = visibleNavHrefs(primaryNav, { hiddenModules: ["/inbox"], order: [] }, DEFAULT_CAPABILITIES);
-    const navigation = getDailyNavigation("capture", "editor", visible);
+    const navigation = getDailyNavigation("ingest", "editor", visible);
 
     expect(navigation.daily.map((item) => item.href)).not.toContain("/inbox");
     expect([...navigation.daily, ...navigation.more.flatMap((group) => group.items)].map((item) => item.href)).not.toContain("/inbox");
   });
 
   it("keeps full navigation when no filter is passed (existing callers untouched)", () => {
-    const navigation = getDailyNavigation("capture", "editor");
-    expect(navigation.daily.map((item) => item.href)).toEqual(["/uploads", "/work-inbox", "/inbox", "/ingest", "/media/jobs"]);
+    const navigation = getDailyNavigation("ingest", "editor");
+    expect(navigation.daily.map((item) => item.href)).toEqual(["/uploads", "/uploads/scheduled", "/ingest"]);
   });
 });
