@@ -79,6 +79,35 @@ export const ingest = {
   dropboxPullButton: "Pull from Dropbox",
   connectionSettingsLink: "Connection settings",
   dropboxNoPermission: "You do not have permission to pull from Dropbox.",
+  workspace: {
+    ariaLabel: "Ingest batch workspace",
+    currentStageAriaLabel: "Current ingest stage",
+    contextAriaLabel: "Batch context",
+    batchLabel: "Active batch",
+    noBatch: "No batch created yet",
+    sourceLabel: "Source",
+    materialsLabel: "Materials",
+    acceptedLabel: "Accepted",
+    reviewLabel: "Needs review",
+    materialCount: "{count} material",
+    acceptedCount: "{count} accepted",
+    reviewCount: "{count} needs review",
+    stages: {
+      source: "Source",
+      inventory: "Inventory and preview",
+      metadata: "Metadata and rights",
+      processing: "Processing",
+      review: "Review and decision"
+    },
+    stageDescriptions: {
+      source: "Choose a source and provide only the connection details required for this operation.",
+      inventory: "Review the discovered materials and isolate conflicts before creating archive records.",
+      inventoryReady: "The batch inventory is available below; deferred and quarantined materials remain excluded.",
+      metadata: "Metadata is completed on the archive record after material is received.",
+      processing: "Technical probe and derivative work continue in Media jobs without blocking this workspace.",
+      review: "Acceptance or quarantine is recorded per material after processing and rights review."
+    }
+  },
   workflow: {
     ariaLabel: "Ingest workflow",
     actionsLabel: "Ingest workflow actions",

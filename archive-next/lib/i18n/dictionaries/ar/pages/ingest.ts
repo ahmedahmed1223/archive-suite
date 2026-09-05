@@ -79,6 +79,35 @@ export const ingest = {
   dropboxPullButton: "سحب من Dropbox",
   connectionSettingsLink: "إعدادات الاتصال",
   dropboxNoPermission: "لا تملك صلاحية السحب من Dropbox.",
+  workspace: {
+    ariaLabel: "مساحة عمل دفعة الاستقبال",
+    currentStageAriaLabel: "مرحلة الاستقبال الحالية",
+    contextAriaLabel: "سياق الدفعة",
+    batchLabel: "الدفعة النشطة",
+    noBatch: "لم تُنشأ دفعة بعد",
+    sourceLabel: "المصدر",
+    materialsLabel: "المواد",
+    acceptedLabel: "المقبولة",
+    reviewLabel: "تحتاج مراجعة",
+    materialCount: "{count} مادة",
+    acceptedCount: "{count} مقبولة",
+    reviewCount: "{count} تحتاج مراجعة",
+    stages: {
+      source: "المصدر",
+      inventory: "الجرد والمعاينة",
+      metadata: "البيانات والحقوق",
+      processing: "المعالجة",
+      review: "المراجعة والقرار"
+    },
+    stageDescriptions: {
+      source: "اختر المصدر وأدخل بيانات الاتصال اللازمة لهذه العملية فقط.",
+      inventory: "راجع المواد المكتشفة واعزل التعارضات قبل إنشاء سجلات الأرشيف.",
+      inventoryReady: "جرد الدفعة ظاهر أدناه؛ تبقى المواد المؤجلة والمحجورة خارج التطبيق.",
+      metadata: "يُستكمل التوصيف والحقوق في سجل الأرشيف بعد استلام المادة.",
+      processing: "يستمر الفحص الفني وإنشاء المشتقات في مهام الوسائط دون تعطيل مساحة العمل.",
+      review: "يُسجّل القبول أو الحجر لكل مادة بعد المعالجة ومراجعة الحقوق."
+    }
+  },
   workflow: {
     ariaLabel: "مسار إدخال الفيديو إلى الأرشيف",
     actionsLabel: "إجراءات مسار الإدخال",

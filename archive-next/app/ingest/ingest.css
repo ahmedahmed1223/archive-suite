@@ -7,6 +7,76 @@
   position: relative;
 }
 
+.ingest-batch-workspace {
+  display: grid;
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+}
+
+.ingest-batch-workspace__main,
+.ingest-batch-context,
+.ingest-current-stage {
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+}
+
+.ingest-batch-workspace__main {
+  min-inline-size: 0;
+  padding: var(--space-3);
+}
+
+.ingest-batch-context {
+  align-content: start;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.ingest-batch-context > span,
+.ingest-batch-context dt {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.ingest-batch-context dl,
+.ingest-batch-context dl div {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.ingest-batch-context dl {
+  gap: var(--space-2);
+}
+
+.ingest-batch-context dl div {
+  border-block-start: 1px solid var(--color-border-secondary);
+  grid-template-columns: minmax(5rem, 1fr) auto;
+  padding-block-start: var(--space-2);
+}
+
+.ingest-batch-context dd {
+  margin: 0;
+  text-align: end;
+}
+
+.ingest-current-stage {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.ingest-current-stage p {
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-inline-size: 70ch;
+}
+
+.ingest-current-stage .button {
+  justify-self: start;
+}
+
 .ingest-operation-panel[data-active="true"] {
   border-color: color-mix(in srgb, var(--color-brand-primary) 42%, var(--color-border-secondary));
   background:
@@ -43,6 +113,22 @@
   padding: var(--space-2) var(--space-3);
 }
 
+.ingest-workflow-stages button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  min-block-size: 2.75rem;
+  padding: 0;
+  text-align: start;
+}
+
+.ingest-workflow-stages button:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 3px;
+}
+
 .ingest-workflow-stages li[data-state="complete"] {
   border-color: var(--color-success, #16803c);
 }
@@ -59,4 +145,10 @@
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
   overflow-wrap: anywhere;
+}
+
+@media (min-width: 64rem) {
+  .ingest-batch-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 19rem);
+  }
 }

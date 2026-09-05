@@ -21,6 +21,7 @@ type OperationState =
   | { status: "error"; message: string };
 
 type IngestSource = "scan" | "watched" | "ftp" | "smb" | "dropbox";
+type IngestStage = "source" | "inventory" | "metadata" | "processing" | "review";
 
 function operationStatusLabel(state: OperationState, tt: AppDictionary["pages"]["ingest"]) {
   if (state.status === "running") return tt.runningLabel;
@@ -79,6 +80,7 @@ export default function IngestPage() {
   const [watchedState, setWatchedState] = useState<OperationState>({ status: "idle" });
   const [watchedBatch, setWatchedBatch] = useState<WatchedIngestBatch | null>(null);
   const [activeSource, setActiveSource] = useState<IngestSource>("scan");
+  const [activeStage, setActiveStage] = useState<IngestStage>("source");
 
   // Connection params live in component state only — never persisted to localStorage.
   const [ftpState, setFtpState] = useState<OperationState>({ status: "idle" });
@@ -191,6 +193,16 @@ export default function IngestPage() {
   };
   const activeSourceState = sourceStates[activeSource];
   const activeSourceCreatedRecords = activeSourceState.status === "success" && activeSourceState.phase !== "preview" && activeSourceState.result.ingested > 0;
+  const batchMaterialCount = watchedBatch?.entries.length ?? 0;
+  const batchAcceptedCount = watchedBatch?.entries.filter((entry) => entry.status === "applied").length ?? 0;
+  const batchReviewCount = watchedBatch?.entries.filter((entry) => entry.status === "deferred" || entry.status === "quarantined").length ?? 0;
+  const stageDescriptions: Record<IngestStage, string> = {
+    source: ti.workspace.stageDescriptions.source,
+    inventory: watchedBatch ? ti.workspace.stageDescriptions.inventoryReady : ti.workspace.stageDescriptions.inventory,
+    metadata: ti.workspace.stageDescriptions.metadata,
+    processing: ti.workspace.stageDescriptions.processing,
+    review: ti.workspace.stageDescriptions.review
+  };
 
   return (
     <AppShell subtitle={t.pageTitles.importContent} navLabel={t.pageTitles.import} contentClassName="observability-content" tipsPage="ingest">
@@ -208,45 +220,71 @@ export default function IngestPage() {
         )}
         contentLabel={ti.pageTitle}
       >
-        <div className="ingest-source-tabs" role="group" aria-label={ti.sourceTabsAriaLabel}>
-          {(Object.keys(ti.sourceLabels) as IngestSource[]).map((source) => (
-            <button
-              key={source}
-              type="button"
-              className="badge"
-              data-active={activeSource === source ? "true" : "false"}
-              onClick={() => setActiveSource(source)}
-            >
-              {ti.sourceLabels[source]}
-              <span>{operationStatusLabel(sourceStates[source], ti)}</span>
-            </button>
-          ))}
-        </div>
+        <section className="ingest-batch-workspace" aria-label={ti.workspace.ariaLabel}>
+          <div className="ingest-batch-workspace__main">
+            <div className="ingest-source-tabs" role="group" aria-label={ti.sourceTabsAriaLabel}>
+              {(Object.keys(ti.sourceLabels) as IngestSource[]).map((source) => (
+                <button
+                  key={source}
+                  type="button"
+                  className="badge"
+                  data-active={activeSource === source ? "true" : "false"}
+                  onClick={() => { setActiveSource(source); setActiveStage("source"); }}
+                >
+                  {ti.sourceLabels[source]}
+                  <span>{operationStatusLabel(sourceStates[source], ti)}</span>
+                </button>
+              ))}
+            </div>
 
-        <ol className="ingest-workflow-stages" aria-label={ti.workflow.ariaLabel}>
-          <li data-state={activeSourceState.status === "error" ? "blocked" : activeSourceState.status === "success" ? "complete" : "current"}>
-            <strong>{ti.workflow.receive}</strong>
-            <span>{activeSourceState.status === "running"
-              ? ti.workflow.sourceRunning
-              : activeSourceState.status === "success"
-                ? ti.workflow.sourceCompleted
-                : activeSourceState.status === "error"
-                  ? ti.workflow.sourceNeedsReview
-                  : ti.workflow.sourceSelected.replace("{source}", ti.sourceLabels[activeSource])}</span>
-          </li>
-          <li data-state={activeSourceCreatedRecords ? "complete" : "pending"}>
-            <strong>{ti.workflow.record}</strong>
-            <span>{activeSourceCreatedRecords ? ti.workflow.recordCreated : ti.workflow.recordPending}</span>
-          </li>
-          <li data-state="pending">
-            <strong>{ti.workflow.technical}</strong>
-            <span>{ti.workflow.technicalPending}</span>
-          </li>
-          <li data-state="pending">
-            <strong>{ti.workflow.review}</strong>
-            <span>{ti.workflow.reviewPending}</span>
-          </li>
-        </ol>
+            <ol className="ingest-workflow-stages" aria-label={ti.workflow.ariaLabel}>
+              {(Object.keys(ti.workspace.stages) as IngestStage[]).map((stage) => {
+                const complete = stage === "source"
+                  ? activeSourceState.status === "success"
+                  : stage === "inventory"
+                    ? watchedBatch !== null
+                    : stage === "metadata"
+                      ? activeSourceCreatedRecords
+                      : false;
+                const blocked = stage === "source" && activeSourceState.status === "error";
+                return (
+                  <li key={stage} data-state={blocked ? "blocked" : complete ? "complete" : activeStage === stage ? "current" : "pending"}>
+                    <button type="button" onClick={() => setActiveStage(stage)} aria-current={activeStage === stage ? "step" : undefined}>
+                      <strong>{ti.workspace.stages[stage]}</strong>
+                    </button>
+                    {stage === "source" && <span>{ti.workflow.receive}: {activeSourceState.status === "running"
+                      ? ti.workflow.sourceRunning
+                      : activeSourceState.status === "success"
+                        ? ti.workflow.sourceCompleted
+                        : activeSourceState.status === "error"
+                          ? ti.workflow.sourceNeedsReview
+                          : ti.workflow.sourceSelected.replace("{source}", ti.sourceLabels[activeSource])}</span>}
+                    {stage === "inventory" && <span>{activeSourceCreatedRecords ? ti.workflow.recordCreated : ti.workflow.recordPending}</span>}
+                    {stage === "processing" && <span>{ti.workflow.technicalPending}</span>}
+                    {stage === "review" && <span>{ti.workflow.reviewPending}</span>}
+                  </li>
+                );
+              })}
+            </ol>
+
+            <div className="ingest-current-stage" role="region" aria-label={ti.workspace.currentStageAriaLabel}>
+              <strong>{ti.workspace.stages[activeStage]}</strong>
+              <p>{stageDescriptions[activeStage]}</p>
+              {activeStage === "processing" && <a className="button button-secondary" href="/media/jobs">{ti.workflow.jobsLink}</a>}
+            </div>
+          </div>
+
+          <aside className="ingest-batch-context" aria-label={ti.workspace.contextAriaLabel}>
+            <span>{ti.workspace.batchLabel}</span>
+            <strong>{watchedBatch?.id ?? ti.workspace.noBatch}</strong>
+            <dl>
+              <div><dt>{ti.workspace.sourceLabel}</dt><dd>{ti.sourceLabels[activeSource]}</dd></div>
+              <div><dt>{ti.workspace.materialsLabel}</dt><dd>{ti.workspace.materialCount.replace("{count}", String(batchMaterialCount))}</dd></div>
+              <div><dt>{ti.workspace.acceptedLabel}</dt><dd>{ti.workspace.acceptedCount.replace("{count}", String(batchAcceptedCount))}</dd></div>
+              <div><dt>{ti.workspace.reviewLabel}</dt><dd>{ti.workspace.reviewCount.replace("{count}", String(batchReviewCount))}</dd></div>
+            </dl>
+          </aside>
+        </section>
 
       <section className="ingest-overview-grid" aria-label={ti.overviewAriaLabel}>
         <article className="health-metric" data-tone={operationTone(scanState)}>

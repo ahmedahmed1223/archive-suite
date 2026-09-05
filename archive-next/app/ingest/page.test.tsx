@@ -59,6 +59,29 @@ describe("ingest workflow workspace", () => {
     expect(screen.getByRole("link", { name: "Open media jobs" })).toHaveAttribute("href", "/media/jobs");
   });
 
+  test("presents one flexible five-stage batch workspace", () => {
+    renderIngest();
+
+    const workspace = screen.getByRole("region", { name: "Ingest batch workspace" });
+    expect(workspace).toHaveTextContent("Source");
+    expect(workspace).toHaveTextContent("Inventory and preview");
+    expect(workspace).toHaveTextContent("Metadata and rights");
+    expect(workspace).toHaveTextContent("Processing");
+    expect(workspace).toHaveTextContent("Review and decision");
+    expect(workspace).toHaveTextContent("No batch created yet");
+  });
+
+  test("lets an operator revisit a reachable workflow stage without starting an operation", () => {
+    renderIngest();
+
+    fireEvent.click(screen.getByRole("button", { name: "Metadata and rights" }));
+
+    expect(screen.getByRole("region", { name: "Current ingest stage" })).toHaveTextContent(
+      "Metadata is completed on the archive record after material is received."
+    );
+    expect(mocks.ingestScan).not.toHaveBeenCalled();
+  });
+
   test("uses an explicit operation error state when an ingest scan fails", async () => {
     mocks.ingestScan.mockResolvedValue({ ok: false, error: "The ingest directory is unavailable." });
     renderIngest();
@@ -85,6 +108,8 @@ describe("ingest workflow workspace", () => {
     expect((await screen.findAllByText("Preview ready for approval")).length).toBeGreaterThan(0);
     expect(screen.getByRole("list", { name: "Ingest workflow" })).toHaveTextContent("A record is created when new material is ingested");
     expect(screen.getByRole("list", { name: "Ingest workflow" })).not.toHaveTextContent("The operation created records for ingested material");
+    expect(screen.getByRole("region", { name: "Ingest batch workspace" })).toHaveTextContent("1 material");
+    expect(screen.getByRole("region", { name: "Ingest batch workspace" })).toHaveTextContent("0 accepted");
   });
 
   test("marks records created only for applied watched entries", async () => {
