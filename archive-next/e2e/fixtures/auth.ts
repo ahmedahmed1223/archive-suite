@@ -101,6 +101,14 @@ export const test = base.extend<RoleFixtures>({
     for (const page of openedPages) {
       await page.close();
     }
+
+    // The application exchanges va_refresh on its first authenticated page
+    // load. Persist the context only after the test's pages have finished so
+    // a Playwright retry, which starts in a new worker, reads the rotated
+    // cookie instead of the now-invalid value written by auth.setup.
+    for (const [role, context] of roleContexts) {
+      await context.storageState({ path: storageStatePath(role) });
+    }
   },
 });
 

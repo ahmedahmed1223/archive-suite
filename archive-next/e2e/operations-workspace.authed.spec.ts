@@ -77,7 +77,7 @@ test.describe('ingest → media-probe workflow stages (Task 3)', () => {
     await ui(stages).toBeVisible();
     await ui(stages.getByText('استلام المادة')).toBeVisible();
     await ui(stages.getByText('إنشاء سجل الأرشيف')).toBeVisible();
-    await ui(stages.getByText('طلب الفحص الفني')).toBeVisible();
+    await ui(stages.getByText('طلب الفحص الفني', { exact: true })).toBeVisible();
     await ui(stages.getByText('مراجعة السجل')).toBeVisible();
 
     await ui(page.getByRole('link', { name: 'فتح مهام الوسائط' })).toHaveAttribute('href', '/media/jobs');
