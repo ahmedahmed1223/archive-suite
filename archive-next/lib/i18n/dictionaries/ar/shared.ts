@@ -8,6 +8,10 @@ export const shared = {
     accept: "موافق",
     close: "حسنًا",
   },
+  operational: {
+    pageActions: "إجراءات الصفحة",
+    closeContext: "إغلاق السياق",
+  },
   feedback: {
     loading: "جارٍ التحميل…",
     genericError: "تعذر إكمال العملية. حاول مرة أخرى.",

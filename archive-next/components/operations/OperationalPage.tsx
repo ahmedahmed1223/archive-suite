@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export interface OperationalPageProps {
   eyebrow?: ReactNode;
@@ -18,12 +19,14 @@ export function OperationalPage({
   description,
   primaryAction,
   secondaryActions,
-  actionsLabel = "إجراءات الصفحة",
+  actionsLabel,
   status,
   contentLabel,
   children
 }: Readonly<OperationalPageProps>) {
+  const { t } = useLocale();
   const headingId = useId();
+  const resolvedActionsLabel = actionsLabel ?? t.shared.operational.pageActions;
 
   return (
     <section className="operational-page" aria-labelledby={headingId}>
@@ -34,7 +37,7 @@ export function OperationalPage({
           {description ? <p className="operational-page__description">{description}</p> : null}
         </div>
         {primaryAction || secondaryActions ? (
-          <div className="operational-page__actions" role="group" aria-label={actionsLabel}>
+          <div className="operational-page__actions" role="group" aria-label={resolvedActionsLabel}>
             {primaryAction ? <div className="operational-page__primary-action">{primaryAction}</div> : null}
             {secondaryActions ? <div className="operational-page__secondary-actions">{secondaryActions}</div> : null}
           </div>

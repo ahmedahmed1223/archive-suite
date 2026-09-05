@@ -17,13 +17,14 @@ type PullResult = { ingested: number; skipped: number };
 type OperationState =
   | { status: "idle" }
   | { status: "running" }
-  | { status: "success"; result: PullResult }
+  | { status: "success"; result: PullResult; phase?: "preview" | "applied" }
   | { status: "error"; message: string };
 
 type IngestSource = "scan" | "watched" | "ftp" | "smb" | "dropbox";
 
 function operationStatusLabel(state: OperationState, tt: AppDictionary["pages"]["ingest"]) {
   if (state.status === "running") return tt.runningLabel;
+  if (state.status === "success" && state.phase === "preview") return tt.watchedPreviewReady;
   if (state.status === "success") return tt.ingestedCount.replace("{count}", String(state.result.ingested));
   if (state.status === "error") return tt.needsReviewLabel;
   return tt.readyLabel;
@@ -42,6 +43,9 @@ function ResultBanner({
   tt
 }: Readonly<{ label: string; state: OperationState; tt: AppDictionary["pages"]["ingest"] }>) {
   if (state.status === "success") {
+    if (state.phase === "preview") {
+      return <div className="state-banner state-banner-info" role="status"><strong>{tt.watchedPreviewReady}</strong></div>;
+    }
     return (
       <div className="state-banner state-banner-success" role="status">
         <strong>{tt.completedLabel.replace("{label}", label)}</strong>
@@ -113,14 +117,15 @@ export default function IngestPage() {
 
   const handleScan = () => void runOperation(setScanState, () => api.ingestScan());
 
-  const updateWatchedState = (batch: WatchedIngestBatch) => {
+  const updateWatchedState = (batch: WatchedIngestBatch, phase: "preview" | "applied") => {
     setWatchedBatch(batch);
     setWatchedState({
       status: "success",
       result: {
-        ingested: batch.entries.filter((entry) => entry.status === "pending" || entry.status === "applied").length,
+        ingested: batch.entries.filter((entry) => entry.status === "applied").length,
         skipped: batch.entries.filter((entry) => entry.status === "deferred" || entry.status === "quarantined").length
-      }
+      },
+      phase
     });
   };
 
@@ -129,7 +134,7 @@ export default function IngestPage() {
     try {
       const response = await api.previewWatchedIngest();
       if (!response.ok) return setWatchedState({ status: "error", message: response.error || ti.watchedPreviewError });
-      updateWatchedState(response.batch);
+      updateWatchedState(response.batch, "preview");
     } catch (error) {
       setWatchedState({ status: "error", message: error instanceof Error ? error.message : ti.watchedPreviewError });
     }
@@ -141,7 +146,7 @@ export default function IngestPage() {
     try {
       const response = await api.applyWatchedIngestBatch(watchedBatch.id);
       if (!response.ok) return setWatchedState({ status: "error", message: response.error || ti.watchedApplyError });
-      updateWatchedState(response.batch);
+      updateWatchedState(response.batch, "applied");
     } catch (error) {
       setWatchedState({ status: "error", message: error instanceof Error ? error.message : ti.watchedApplyError });
     }
@@ -185,6 +190,7 @@ export default function IngestPage() {
     dropbox: dropboxState
   };
   const activeSourceState = sourceStates[activeSource];
+  const activeSourceCreatedRecords = activeSourceState.status === "success" && activeSourceState.phase !== "preview" && activeSourceState.result.ingested > 0;
 
   return (
     <AppShell subtitle={t.pageTitles.importContent} navLabel={t.pageTitles.import} contentClassName="observability-content" tipsPage="ingest">
@@ -228,9 +234,9 @@ export default function IngestPage() {
                   ? ti.workflow.sourceNeedsReview
                   : ti.workflow.sourceSelected.replace("{source}", ti.sourceLabels[activeSource])}</span>
           </li>
-          <li data-state={activeSourceState.status === "success" ? "complete" : "pending"}>
+          <li data-state={activeSourceCreatedRecords ? "complete" : "pending"}>
             <strong>{ti.workflow.record}</strong>
-            <span>{activeSourceState.status === "success" ? ti.workflow.recordCreated : ti.workflow.recordPending}</span>
+            <span>{activeSourceCreatedRecords ? ti.workflow.recordCreated : ti.workflow.recordPending}</span>
           </li>
           <li data-state="pending">
             <strong>{ti.workflow.technical}</strong>
@@ -320,7 +326,8 @@ export default function IngestPage() {
           )}
         </div>
         {!canManageIngest && <p className="helper-text">{ti.watchedNoPermission}</p>}
-        {watchedState.status === "error" && <p className="helper-text" role="alert">{watchedState.message}</p>}
+        <ResultBanner label={ti.watchedPanelTitle} state={watchedState} tt={ti} />
+        {watchedState.status === "success" && watchedState.phase === "applied" && watchedState.result.ingested === 0 && <p className="helper-text" role="status">{ti.watchedAppliedEmpty}</p>}
         {watchedBatch && (
           <>
             {watchedBatch.entries.length === 0 ? (

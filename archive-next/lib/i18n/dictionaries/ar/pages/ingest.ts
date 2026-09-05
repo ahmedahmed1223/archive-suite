@@ -17,6 +17,8 @@ export const ingest = {
   genericOperationError: "فشلت العملية.",
   watchedPreviewError: "تعذرت معاينة المجلد المراقَب.",
   watchedApplyError: "تعذر تطبيق الدفعة.",
+  watchedPreviewReady: "المعاينة جاهزة للاعتماد",
+  watchedAppliedEmpty: "لم تُنشأ سجلات لأن الدفعة لا تحتوي على مواد",
   eyebrowLabel: "عمليات الاستيراد",
   pageTitle: "استيراد المحتوى للأرشيف",
   pageDescription: "فحص مجلد الاستيراد المحلي، أو سحب ملفات من مصادر FTP وSMB مباشرة إلى مخازن الأرشيف.",

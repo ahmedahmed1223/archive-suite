@@ -17,6 +17,8 @@ export const ingest = {
   genericOperationError: "The operation failed.",
   watchedPreviewError: "Could not preview the watched folder.",
   watchedApplyError: "Could not apply the batch.",
+  watchedPreviewReady: "Preview ready for approval",
+  watchedAppliedEmpty: "No records were created because this batch has no material",
   eyebrowLabel: "Ingest operations",
   pageTitle: "Import content into the archive",
   pageDescription: "Scan the local ingest folder, or pull files from FTP and SMB sources directly into archive storage.",

@@ -169,7 +169,7 @@ export function MediaJobsList() {
   const [cancelState, setCancelState] = useState<CancelState>({ status: "idle" });
   const [statusFilter, setStatusFilter] = useState<MediaJobStatus | "">("");
   const [loadingMore, setLoadingMore] = useState(false);
-  const [connectionState, setConnectionState] = useState<EchoConnectionState | null>(null);
+  const [connectionState, setConnectionState] = useState<EchoConnectionState | null>(() => getEchoClient() ? null : "unavailable");
   const [queueStatus, setQueueStatus] = useState<MediaQueueStatus | null>(null);
   const createForm = useForm<MediaJobFormValues>({
     defaultValues: {
@@ -305,7 +305,12 @@ export function MediaJobsList() {
   // paused instead of leaving it silent.
   useEffect(() => {
     if (activeJobIds.length === 0) {
-      setConnectionState(null);
+      setConnectionState(getEchoClient() ? null : "unavailable");
+      return;
+    }
+
+    if (!getEchoClient()) {
+      setConnectionState("unavailable");
       return;
     }
 

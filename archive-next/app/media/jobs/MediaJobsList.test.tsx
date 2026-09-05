@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { MediaJobsList } from "./MediaJobsList";
@@ -151,19 +151,13 @@ describe("MediaJobsList workflow workspace", () => {
     expect(await screen.findByText("No media jobs yet.")).toBeVisible();
   });
 
-  test("announces the polling fallback when live updates are unavailable", async () => {
+  test("announces the polling fallback when Echo is not configured without inventing a connection callback", async () => {
     mocks.mediaJobs.mockResolvedValue({ ok: true, jobs: [mediaJob({ status: "processing" })], pagination: { page: 1, limit: 20, total: 1, hasMore: false } });
-    let notifyConnection: ((state: "disconnected") => void) | undefined;
-    mocks.onConnectionStateChange.mockImplementation((listener) => {
-      notifyConnection = listener;
-      return () => undefined;
-    });
 
     renderJobs();
-    await screen.findByText(/^record-42$/);
-    await waitFor(() => expect(mocks.onConnectionStateChange).toHaveBeenCalled());
-    act(() => notifyConnection?.("disconnected"));
 
+    await screen.findByText(/^record-42$/);
     expect(await screen.findByText("Realtime updates are unavailable")).toBeVisible();
+    expect(mocks.onConnectionStateChange).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { cleanup, render as testingLibraryRender, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, test } from "vitest";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { OperationalPage } from "./OperationalPage";
+
+afterEach(cleanup);
+
+function render(ui: React.ReactNode) {
+  return testingLibraryRender(<LocaleProvider initialLocale="ar" hasLocaleCookie>{ui}</LocaleProvider>);
+}
 
 describe("OperationalPage", () => {
   test("exposes the page heading, action groups, status, and content region", () => {
@@ -49,6 +56,16 @@ describe("OperationalPage", () => {
     );
 
     expect(screen.getByRole("group", { name: "Archive actions" })).toHaveTextContent("Add record");
+  });
+
+  test("uses the active locale for the default actions accessible name", () => {
+    render(
+      <LocaleProvider initialLocale="en" hasLocaleCookie>
+        <OperationalPage title="Archive records" primaryAction={<button type="button">Add record</button>} />
+      </LocaleProvider>
+    );
+
+    expect(screen.getByRole("group", { name: "Page actions" })).toHaveTextContent("Add record");
   });
 
   test("does not expose an unnamed content landmark when no content label is supplied", () => {

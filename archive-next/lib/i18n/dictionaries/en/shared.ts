@@ -11,6 +11,10 @@ export const shared = {
     accept: "OK",
     close: "Close",
   },
+  operational: {
+    pageActions: "Page actions",
+    closeContext: "Close context",
+  },
   feedback: {
     loading: "Loading…",
     genericError: "The operation could not be completed. Try again.",

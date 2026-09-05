@@ -1,12 +1,19 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render as testingLibraryRender, screen, within } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { ContextPanel } from "./ContextPanel";
+
+afterEach(cleanup);
+
+function render(ui: React.ReactNode) {
+  return testingLibraryRender(<LocaleProvider initialLocale="ar" hasLocaleCookie>{ui}</LocaleProvider>);
+}
 
 describe("ContextPanel", () => {
   test("renders complementary record context with a labelled landmark", () => {
-    render(
+    const { container } = render(
       <ContextPanel title="بيانات القيد" description="المعلومات المرتبطة بالقيد">
         <dl><dt>المالك</dt><dd>فريق الأرشيف</dd></dl>
       </ContextPanel>
@@ -43,6 +50,18 @@ describe("ContextPanel", () => {
     );
 
     expect(screen.getByRole("button", { name: "Close context" })).toBeInTheDocument();
+  });
+
+  test("uses the active locale for the default drawer dismissal copy", () => {
+    const { container } = render(
+      <LocaleProvider initialLocale="en" hasLocaleCookie>
+        <ContextPanel title="Job context" presentation="drawer" open onDismiss={() => undefined}>
+          Details
+        </ContextPanel>
+      </LocaleProvider>
+    );
+
+    expect(within(container).getByRole("button", { name: "Close context" })).toBeInTheDocument();
   });
 
   test("returns focus to the opening control after its parent closes the drawer", () => {

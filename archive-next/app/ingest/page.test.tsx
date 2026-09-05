@@ -6,7 +6,9 @@ import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import IngestPage from "./page";
 
 const mocks = vi.hoisted(() => ({
-  ingestScan: vi.fn()
+  ingestScan: vi.fn(),
+  previewWatchedIngest: vi.fn(),
+  applyWatchedIngestBatch: vi.fn()
 }));
 
 vi.mock("@/components/AppShell", () => ({
@@ -23,8 +25,8 @@ vi.mock("@/lib/archive-api", async (importOriginal) => {
     ...original,
     createArchiveApiClient: () => ({
       ingestScan: mocks.ingestScan,
-      previewWatchedIngest: vi.fn(),
-      applyWatchedIngestBatch: vi.fn(),
+      previewWatchedIngest: mocks.previewWatchedIngest,
+      applyWatchedIngestBatch: mocks.applyWatchedIngestBatch,
       ingestFtpPull: vi.fn(),
       ingestSmbPull: vi.fn(),
       ingestDropboxPull: vi.fn()
@@ -64,5 +66,98 @@ describe("ingest workflow workspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start scan" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("The ingest directory is unavailable.");
+  });
+
+  test("keeps watched-folder preview separate from record creation", async () => {
+    mocks.previewWatchedIngest.mockResolvedValue({
+      ok: true,
+      batch: {
+        id: "batch-1",
+        status: "pending",
+        entries: [{ id: "entry-1", fileName: "reel.mov", status: "pending", routing: null, reason: null }]
+      }
+    });
+
+    renderIngest();
+    fireEvent.click(screen.getByRole("button", { name: /Watched folder/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Preview batch" }));
+
+    expect((await screen.findAllByText("Preview ready for approval")).length).toBeGreaterThan(0);
+    expect(screen.getByRole("list", { name: "Ingest workflow" })).toHaveTextContent("A record is created when new material is ingested");
+    expect(screen.getByRole("list", { name: "Ingest workflow" })).not.toHaveTextContent("The operation created records for ingested material");
+  });
+
+  test("marks records created only for applied watched entries", async () => {
+    mocks.previewWatchedIngest.mockResolvedValue({
+      ok: true,
+      batch: {
+        id: "batch-1",
+        status: "pending",
+        entries: [{ id: "entry-1", fileName: "reel.mov", status: "pending", routing: null, reason: null }]
+      }
+    });
+    mocks.applyWatchedIngestBatch.mockResolvedValue({
+      ok: true,
+      batch: {
+        id: "batch-1",
+        status: "applied",
+        entries: [{ id: "entry-1", fileName: "reel.mov", status: "applied", routing: null, reason: null }]
+      }
+    });
+
+    renderIngest();
+    fireEvent.click(screen.getByRole("button", { name: /Watched folder/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Preview batch" }));
+    await screen.findAllByText("Preview ready for approval");
+    fireEvent.click(screen.getByRole("button", { name: "Approve and ingest" }));
+
+    expect(await screen.findByText("The operation created records for ingested material")).toBeVisible();
+    expect((await screen.findAllByText("1 ingested")).length).toBeGreaterThan(0);
+  });
+
+  test("keeps record creation pending when an applied watched batch is empty", async () => {
+    mocks.previewWatchedIngest.mockResolvedValue({ ok: true, batch: { id: "batch-1", status: "pending", entries: [] } });
+    mocks.applyWatchedIngestBatch.mockResolvedValue({ ok: true, batch: { id: "batch-1", status: "applied", entries: [] } });
+
+    renderIngest();
+    fireEvent.click(screen.getByRole("button", { name: /Watched folder/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Preview batch" }));
+    await screen.findByText("No stable material is in this batch yet");
+    fireEvent.click(screen.getByRole("button", { name: "Approve and ingest" }));
+
+    expect(await screen.findByText("No records were created because this batch has no material")).toBeVisible();
+    expect(screen.getByRole("list", { name: "Ingest workflow" })).toHaveTextContent("A record is created when new material is ingested");
+  });
+
+  test("keeps the applied count honest when other watched entries need review", async () => {
+    mocks.previewWatchedIngest.mockResolvedValue({
+      ok: true,
+      batch: {
+        id: "batch-1", status: "pending",
+        entries: [
+          { id: "entry-1", fileName: "reel.mov", status: "pending", routing: null, reason: null },
+          { id: "entry-2", fileName: "bad.mov", status: "quarantined", routing: null, reason: "Unreadable" }
+        ]
+      }
+    });
+    mocks.applyWatchedIngestBatch.mockResolvedValue({
+      ok: true,
+      batch: {
+        id: "batch-1", status: "applied",
+        entries: [
+          { id: "entry-1", fileName: "reel.mov", status: "applied", routing: null, reason: null },
+          { id: "entry-2", fileName: "bad.mov", status: "quarantined", routing: null, reason: "Unreadable" }
+        ]
+      }
+    });
+
+    renderIngest();
+    fireEvent.click(screen.getByRole("button", { name: /Watched folder/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Preview batch" }));
+    await screen.findByText("Some batch files need attention");
+    fireEvent.click(screen.getByRole("button", { name: "Approve and ingest" }));
+
+    expect((await screen.findAllByText("1 ingested")).length).toBeGreaterThan(0);
+    expect(screen.getByText("Ingested 1 items and skipped 1.")).toBeVisible();
   });
 });

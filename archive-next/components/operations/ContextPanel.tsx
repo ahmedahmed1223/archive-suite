@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export interface ContextPanelProps {
   title: ReactNode;
@@ -18,10 +19,12 @@ export function ContextPanel({
   presentation = "inline",
   open = true,
   onDismiss,
-  dismissLabel = "إغلاق السياق",
+  dismissLabel,
   children
 }: Readonly<ContextPanelProps>) {
+  const { t } = useLocale();
   const headingId = useId();
+  const resolvedDismissLabel = dismissLabel ?? t.shared.operational.closeContext;
   const panelRef = useRef<HTMLElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const wasDrawerOpenRef = useRef(false);
@@ -67,8 +70,8 @@ export function ContextPanel({
           {description ? <p>{description}</p> : null}
         </div>
         {isDrawer && onDismiss ? (
-          <button className="button button-secondary" type="button" onClick={onDismiss} aria-label={dismissLabel}>
-            {dismissLabel}
+          <button className="button button-secondary" type="button" onClick={onDismiss} aria-label={resolvedDismissLabel}>
+            {resolvedDismissLabel}
           </button>
         ) : null}
       </div>
