@@ -50,6 +50,7 @@
     { "path": "docs/superpowers/", "lifecycle": "internal-design-record" }
   ],
   "excludedFiles": [
+    { "path": ".stitch/SYSTEM_COVERAGE.md", "lifecycle": "internal-design-record" },
     { "path": "archive-next/docs/v15-visual-baselines.md", "lifecycle": "internal-release-gate-evidence" },
     { "path": "docs/releases/1.5-ui-ux-acceptance.md", "lifecycle": "internal-release-gate-evidence" },
     { "path": "docs/release/v1.2.0-file-review.md", "lifecycle": "internal-release-review" },
