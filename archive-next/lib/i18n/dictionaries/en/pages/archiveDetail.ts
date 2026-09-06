@@ -12,6 +12,7 @@ export const archiveDetail = {
     askCopilot: "Ask the assistant about this record",
     playMedia: "Play media",
     openStudio: "Open in studio",
+    compareVersions: "Compare versions",
     addFavorite: "Add to favorites",
     removeFavorite: "Remove from favorites",
     addToBasketTitle: "Add to work basket",

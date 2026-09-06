@@ -49,6 +49,7 @@ import RecordSourceReplacementPanel from "@/components/RecordSourceReplacementPa
 import RecordChangeImpactPanel from "@/components/RecordChangeImpactPanel";
 import VocabularyLinkedText, { VocabularyLinkToggle } from "@/components/VocabularyLinkedText";
 import DisclosureToolbar from "@/components/DisclosureToolbar";
+import { mediaComparisonHref } from "./media-workspace-links";
 
 export { RecordDescribeForm, type RecordDescribePatch };
 
@@ -629,6 +630,11 @@ export default function ArchiveDetailPage() {
               {copy.askCopilot}
             </Link>
             {playerHref ? <Link href={playerHref} className="button button-secondary">{copy.playMedia}</Link> : null}
+            {playerHref && state.status === "ready" ? (
+              <Link href={mediaComparisonHref(id, state.record.store)} className="button button-secondary">
+                {copy.compareVersions}
+              </Link>
+            ) : null}
             {state.status === "ready" ? (
               <button
                 type="button"
