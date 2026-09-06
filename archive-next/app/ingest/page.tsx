@@ -2,7 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { Cloud, FolderSearch, KeyRound, Network, Server, ShieldCheck } from "lucide-react";
+import { KeyRound, ShieldCheck } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { useCapability } from "@/components/RoleGate";
@@ -29,13 +29,6 @@ function operationStatusLabel(state: OperationState, tt: AppDictionary["pages"][
   if (state.status === "success") return tt.ingestedCount.replace("{count}", String(state.result.ingested));
   if (state.status === "error") return tt.needsReviewLabel;
   return tt.readyLabel;
-}
-
-function operationTone(state: OperationState) {
-  if (state.status === "success") return "success";
-  if (state.status === "error") return "danger";
-  if (state.status === "running") return "warning";
-  return "info";
 }
 
 function ResultBanner({
@@ -285,54 +278,6 @@ export default function IngestPage() {
             </dl>
           </aside>
         </section>
-
-      <section className="ingest-overview-grid" aria-label={ti.overviewAriaLabel}>
-        <article className="health-metric" data-tone={operationTone(scanState)}>
-          <span className="health-metric__icon" aria-hidden="true"><FolderSearch size={20} /></span>
-          <div className="health-metric__body">
-            <span>{ti.sourceLabels.scan}</span>
-            <strong>{operationStatusLabel(scanState, ti)}</strong>
-            <small>{ti.scanHint}</small>
-          </div>
-        </article>
-        <article className="health-metric" data-tone={operationTone(watchedState)}>
-          <span className="health-metric__icon" aria-hidden="true"><FolderSearch size={20} /></span>
-          <div className="health-metric__body">
-            <span>{ti.sourceLabels.watched}</span>
-            <strong>{operationStatusLabel(watchedState, ti)}</strong>
-            <small>{ti.watchedHint}</small>
-          </div>
-        </article>
-        <article className="health-metric" data-tone={operationTone(ftpState)}>
-          <span className="health-metric__icon" aria-hidden="true"><Network size={20} /></span>
-          <div className="health-metric__body">
-            <span>{ti.sourceLabels.ftp}</span>
-            <strong>{operationStatusLabel(ftpState, ti)}</strong>
-            <small>{ti.ftpHint}</small>
-          </div>
-        </article>
-        <article className="health-metric" data-tone={operationTone(smbState)}>
-          <span className="health-metric__icon" aria-hidden="true"><Server size={20} /></span>
-          <div className="health-metric__body">
-            <span>{ti.sourceLabels.smb}</span>
-            <strong>{operationStatusLabel(smbState, ti)}</strong>
-            <small>{ti.smbHint}</small>
-          </div>
-        </article>
-        <article className="health-metric" data-tone={operationTone(dropboxState)}>
-          <span className="health-metric__icon" aria-hidden="true"><Cloud size={20} /></span>
-          <div className="health-metric__body">
-            <span>{ti.sourceLabels.dropbox}</span>
-            <strong>{operationStatusLabel(dropboxState, ti)}</strong>
-            <small>{ti.dropboxHint}</small>
-          </div>
-        </article>
-      </section>
-
-      <div className="state-banner state-banner-info" role="note">
-        <strong>{ti.preflightTitle}</strong>
-        <span className="helper-text">{ti.preflightDescription}</span>
-      </div>
 
       <section className="panel ingest-operation-panel" data-active={activeSource === "scan" ? "true" : "false"} aria-label={ti.scanPanelAriaLabel}>
         <div className="panel-title-row">
