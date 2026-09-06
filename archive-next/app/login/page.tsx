@@ -102,6 +102,10 @@ function LoginPageContent() {
               <h1 id="login-title">{t.auth.login.heading}</h1>
               <p>{t.auth.login.description}</p>
             </div>
+            <a className="login-hero__service-status" href="/status">
+              <span className="login-hero__service-status-dot" aria-hidden="true" />
+              {t.auth.login.checkServer}
+            </a>
           </section>
 
           <section className="login-card" aria-label={t.auth.login.form}>
