@@ -15,7 +15,7 @@ vi.mock("./MediaJobsList", () => ({ MediaJobsList: () => <div>Jobs workspace</di
 describe("media jobs operational shell", () => {
   afterEach(() => cleanup());
 
-  test("uses the operational page shell while keeping queue and review routes available", () => {
+  test("uses the operational page shell while keeping queue and studio routes available", () => {
     render(
       <LocaleProvider initialLocale="en" hasLocaleCookie>
         <MediaJobsPage />
@@ -23,7 +23,7 @@ describe("media jobs operational shell", () => {
     );
 
     expect(screen.getByRole("region", { name: "Media jobs" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Media review" })).toHaveAttribute("href", "/media/review");
+    expect(screen.getByRole("link", { name: "Media studio" })).toHaveAttribute("href", "/media/studio");
     expect(screen.getByText("Jobs workspace")).toBeVisible();
   });
 });

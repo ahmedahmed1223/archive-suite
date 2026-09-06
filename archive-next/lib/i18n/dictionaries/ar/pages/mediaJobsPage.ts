@@ -5,6 +5,6 @@ export const mediaJobsPage = {
   createJobsBadge: "إنشاء مهام",
   queueMonitoringBadge: "مراقبة قائمة الانتظار",
   filesLink: "الملفات",
-  mediaReviewLink: "مراجعة الوسائط",
+  mediaStudioLink: "استديو الوسائط",
   toolsAriaLabel: "أدوات إدارة مهام الوسائط"
 } as const;

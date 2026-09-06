@@ -2,7 +2,7 @@
 
 import AppShell from "@/components/AppShell";
 import { OperationalPage } from "@/components/operations/OperationalPage";
-import { FolderSearch, ListChecks } from "lucide-react";
+import { FolderSearch, MonitorPlay } from "lucide-react";
 import { MediaJobLookup } from "./MediaJobLookup";
 import { MediaJobsList } from "./MediaJobsList";
 import styles from "./jobs.module.css";
@@ -30,9 +30,9 @@ export default function MediaJobsPage() {
               <FolderSearch size={16} aria-hidden="true" />
               {copy.filesLink}
             </a>
-            <a className="button button-secondary" href="/media/review">
-              <ListChecks size={16} aria-hidden="true" />
-              {copy.mediaReviewLink}
+            <a className="button button-secondary" href="/media/studio">
+              <MonitorPlay size={16} aria-hidden="true" />
+              {copy.mediaStudioLink}
             </a>
           </>
         )}

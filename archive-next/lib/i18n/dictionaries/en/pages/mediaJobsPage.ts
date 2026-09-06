@@ -5,6 +5,6 @@ export const mediaJobsPage = {
   createJobsBadge: "Create jobs",
   queueMonitoringBadge: "Queue monitoring",
   filesLink: "Files",
-  mediaReviewLink: "Media review",
+  mediaStudioLink: "Media studio",
   toolsAriaLabel: "Media job management tools"
 } as const;

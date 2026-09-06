@@ -2,6 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import AnnotationCanvas from "@/components/AnnotationCanvas";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
@@ -64,7 +65,7 @@ export default function ReviewPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const playerRef = useRef<HTMLMediaElement | null>(null);
 
-  const [mediaUid, setMediaUid] = useState("media-123");
+  const searchParams = useSearchParams();
   const [comments, setComments] = useState<ReviewComment[]>([]);
   const [body, setBody] = useState("");
   const [timecode, setTimecode] = useState(0);
@@ -75,7 +76,8 @@ export default function ReviewPage() {
   const [drawMode, setDrawMode] = useState(false);
   const [draftRects, setDraftRects] = useState<ReviewRect[]>([]);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
-  const currentMediaUid = useMemo(() => mediaUid.trim(), [mediaUid]);
+  const currentMediaUid = searchParams.get("mediaUid")?.trim() ?? "";
+  const hasReviewContext = Boolean(currentMediaUid);
 
   const fetchComments = useCallback(async () => {
     if (!currentMediaUid) {
@@ -188,17 +190,17 @@ export default function ReviewPage() {
         eyebrow={<span className="badge">{copy.toolbar.eyebrow}</span>}
         title={copy.toolbar.title}
         description={copy.toolbar.description}
-        meta={(
+        meta={hasReviewContext ? (
           <>
             <span className="badge">{copy.toolbar.commentCount.replace("{count}", String(comments.length))}</span>
             <span className={`badge ${styles.statusIndicator}`} data-status={drawMode ? "editing" : "reviewing"}>
               {drawMode ? copy.toolbar.drawingMode : copy.toolbar.reviewMode}
             </span>
           </>
-        )}
+        ) : null}
       />
 
-      <OperationalSafetyPanel action={copy.safetyAction} confidence={88} auditHref="/activity" />
+      {hasReviewContext ? <OperationalSafetyPanel action={copy.safetyAction} confidence={88} auditHref="/activity" /> : null}
 
       {error && (
         <div className="state-banner state-banner-error" role="alert">
@@ -207,20 +209,32 @@ export default function ReviewPage() {
         </div>
       )}
 
-      <div className={`media-review-layout ${styles.mediaReviewLayout}`}>
+      {!hasReviewContext ? (
+        <EmptyState
+          title={copy.media.missingContextTitle}
+          description={copy.media.missingContextDescription}
+          actions={(
+            <>
+              <a className="button button-primary" href="/archive">{copy.media.openArchive}</a>
+              <a className="button button-secondary" href="/media/studio">{copy.media.openStudio}</a>
+            </>
+          )}
+        />
+      ) : null}
+
+      {hasReviewContext ? <div className={`media-review-layout ${styles.mediaReviewLayout}`}>
           <section className={`stack ${styles.playerSection}`} aria-label={copy.media.ariaLabel}>
             <article className="panel auth-form">
               <label>
-                {copy.media.sourceLabel}
+                {copy.media.contextLabel}
                 <input
                   type="text"
-                  value={mediaUid}
-                  onChange={(event) => setMediaUid(event.target.value)}
-                  placeholder={copy.media.sourcePlaceholder}
+                  value={currentMediaUid}
+                  readOnly
                   dir="ltr"
-                  aria-label={copy.media.sourceLabel}
+                  aria-label={copy.media.contextLabel}
                 />
-                <p className="helper-text">{copy.media.sourceDescription}</p>
+                <p className="helper-text">{copy.media.contextDescription}</p>
               </label>
             </article>
 
@@ -371,7 +385,7 @@ export default function ReviewPage() {
               ) : null}
             </div>
           </aside>
-        </div>
+        </div> : null}
     </AppShell>
   );
 }
