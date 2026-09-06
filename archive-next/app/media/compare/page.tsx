@@ -45,6 +45,7 @@ export default function ComparePage() {
   // UI before we know whether ?recordId= was actually given).
   const [recordId, setRecordId] = useState<string | null | undefined>(undefined);
   const [recordStore, setRecordStore] = useState("archive-items");
+  const [manualMode, setManualMode] = useState(false);
   const [pathA, setPathA] = useState("");
   const [pathB, setPathB] = useState("");
   const [syncMode, setSyncMode] = useState<SyncMode>("off");
@@ -54,6 +55,7 @@ export default function ComparePage() {
     const id = params.get("recordId")?.trim() ?? "";
     setRecordId(id || null);
     setRecordStore(params.get("store")?.trim() || "archive-items");
+    setManualMode(params.get("mode") === "manual");
   }, []);
 
   const playerARef = useRef<HTMLMediaElement | null>(null);
@@ -96,6 +98,24 @@ export default function ComparePage() {
       <AppShell subtitle={t.pageTitles.mediaComparison} contentClassName={styles.compareContent} tipsPage="media-compare">
         <PageToolbar eyebrow={<span className="badge">{copy.eyebrow}</span>} title={copy.versionCompare.title} description={copy.description} />
         <RecordVersionCompare recordId={recordId} store={recordStore} />
+      </AppShell>
+    );
+  }
+
+  if (!manualMode) {
+    return (
+      <AppShell subtitle={t.pageTitles.mediaComparison} contentClassName={styles.compareContent} tipsPage="media-compare">
+        <PageToolbar eyebrow={<span className="badge">{copy.eyebrow}</span>} title={copy.title} description={copy.description} />
+        <EmptyState
+          title={copy.chooseRecordTitle}
+          description={copy.chooseRecordDescription}
+          actions={(
+            <>
+              <a className="button button-primary" href="/archive">{copy.openArchive}</a>
+              <a className="button button-secondary" href="/media/compare?mode=manual">{copy.openManualMode}</a>
+            </>
+          )}
+        />
       </AppShell>
     );
   }

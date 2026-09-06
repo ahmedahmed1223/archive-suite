@@ -40,13 +40,23 @@ function renderPage() {
 }
 
 /**
- * V3-MEDIA-004: ?recordId= switches /media/compare into record-version
- * compare mode; without it, the page keeps its original manual two-path
- * comparison tool unchanged.
+ * Comparison is record-led by default. Manual paths stay available only from
+ * an explicit mode so the bare route never looks disconnected from archive
+ * records and their versions.
  */
 describe("media compare page mode switch", () => {
-  test("falls back to the manual path-comparison UI without recordId", async () => {
+  test("guides the operator to an archive record without recordId", async () => {
     window.history.replaceState(null, "", "/media/compare");
+    renderPage();
+    expect(await screen.findByText("اختر سجلاً لمقارنة نسخه")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "استعراض الأرشيف" })).toHaveAttribute("href", "/archive");
+    expect(screen.getByRole("link", { name: "استخدام مسارات يدوية" })).toHaveAttribute("href", "/media/compare?mode=manual");
+    expect(screen.queryByLabelText("مسار الملف أ")).toBeNull();
+    expect(screen.queryByTestId("record-version-compare")).toBeNull();
+  });
+
+  test("shows the manual path tool only in explicit manual mode", async () => {
+    window.history.replaceState(null, "", "/media/compare?mode=manual");
     renderPage();
     expect(await screen.findByLabelText("مسار الملف أ")).toBeTruthy();
     expect(screen.queryByTestId("record-version-compare")).toBeNull();
