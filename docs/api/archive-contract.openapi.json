@@ -5481,6 +5481,59 @@
         }
       }
     },
+    "/records/{id}/media-inspections": {
+      "get": {
+        "tags": [
+          "Media Inspections"
+        ],
+        "summary": "List persisted media-probe inspections for a record",
+        "operationId": "listMediaInspections",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "store",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Media inspections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaInspectionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/media-derivatives": {
       "post": {
         "tags": [
@@ -24935,6 +24988,96 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/MediaDerivative"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MediaInspectionType": {
+        "type": "string",
+        "enum": [
+          "probe"
+        ]
+      },
+      "MediaInspectionStatus": {
+        "type": "string",
+        "enum": [
+          "completed"
+        ]
+      },
+      "MediaInspection": {
+        "type": "object",
+        "required": [
+          "id",
+          "recordStore",
+          "recordUid",
+          "inspectionType",
+          "status",
+          "versionToken",
+          "isCurrentVersion",
+          "report",
+          "mediaJobId",
+          "completedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recordStore": {
+            "type": "string"
+          },
+          "recordUid": {
+            "type": "string"
+          },
+          "inspectionType": {
+            "$ref": "#/components/schemas/MediaInspectionType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MediaInspectionStatus"
+          },
+          "versionToken": {
+            "type": "string",
+            "description": "Same checksum-derived identity as ReviewSession.versionToken / MediaDerivative.versionToken -- pinned when this inspection was recorded."
+          },
+          "isCurrentVersion": {
+            "type": "boolean",
+            "description": "False once the record source has been replaced since this inspection ran -- it is still returned, but must not be treated as matching the current source."
+          },
+          "report": {
+            "$ref": "#/components/schemas/MediaProbeReport"
+          },
+          "mediaJobId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "MediaInspectionsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OkEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "inspections"
+            ],
+            "properties": {
+              "inspections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MediaInspection"
                 }
               }
             }

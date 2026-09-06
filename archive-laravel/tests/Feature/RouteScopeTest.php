@@ -223,6 +223,7 @@ class RouteScopeTest extends TestCase
         'GET api/v1/records/{id}/media-derivatives' => self::V1,
         'POST api/v1/media-derivatives' => self::V1,
         'GET api/v1/media-derivatives/{id}' => self::V1,
+        'GET api/v1/records/{id}/media-inspections' => self::V1,
         'GET api/v1/montage-projects' => self::V1,
         'POST api/v1/montage-projects' => self::V1,
         'GET api/v1/montage-projects/{id}' => self::V1,
@@ -643,6 +644,8 @@ class RouteScopeTest extends TestCase
         'GET api/v1/records/{id}/media-derivatives' => self::ROLE_ANY,
         'POST api/v1/media-derivatives' => self::ROLE_EDITOR,
         'GET api/v1/media-derivatives/{id}' => self::ROLE_ANY,
+        // Read-only: same bar as media-derivatives reads, auth only.
+        'GET api/v1/records/{id}/media-inspections' => self::ROLE_ANY,
         'GET api/v1/montage-projects' => self::ROLE_ANY,
         'POST api/v1/montage-projects' => self::ROLE_EDITOR,
         'GET api/v1/montage-projects/{id}' => self::ROLE_ANY,

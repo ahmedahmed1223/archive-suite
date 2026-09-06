@@ -8,6 +8,7 @@ use App\Models\MediaDerivative;
 use App\Models\MediaJob;
 use App\Models\MontageExport;
 use App\Services\Media\MediaDerivativeService;
+use App\Services\Media\MediaInspectionService;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaQueueStatusBroadcaster;
@@ -141,6 +142,7 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             ])->save();
             $broadcaster->notify($mediaJob);
             $this->syncDerivativeOnSuccess($mediaJob, $artifacts);
+            app(MediaInspectionService::class)->persistCompletedProbe($mediaJob, $artifacts);
             $this->syncMontageExport($mediaJob, 'completed', $artifacts);
         } catch (JobCanceledException) {
             // Intentional stop, not a failure: leave status as 'canceled'

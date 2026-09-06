@@ -2273,6 +2273,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/media-inspections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List persisted media-probe inspections for a record */
+        get: operations["listMediaInspections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/media-review-comments": {
         parameters: {
             query?: never;
@@ -5586,6 +5603,29 @@ export interface components {
         MediaDerivativeStatus: "pending" | "processing" | "ready" | "failed";
         /** @enum {string} */
         MediaDerivativeType: "thumbnail" | "waveform" | "proxy";
+        MediaInspection: {
+            /** Format: date-time */
+            completedAt: string | null;
+            /** Format: uuid */
+            id: string;
+            inspectionType: components["schemas"]["MediaInspectionType"];
+            /** @description False once the record source has been replaced since this inspection ran -- it is still returned, but must not be treated as matching the current source. */
+            isCurrentVersion: boolean;
+            mediaJobId: string | null;
+            recordStore: string;
+            recordUid: string;
+            report: components["schemas"]["MediaProbeReport"];
+            status: components["schemas"]["MediaInspectionStatus"];
+            /** @description Same checksum-derived identity as ReviewSession.versionToken / MediaDerivative.versionToken -- pinned when this inspection was recorded. */
+            versionToken: string;
+        };
+        MediaInspectionsResponse: components["schemas"]["OkEnvelope"] & {
+            inspections: components["schemas"]["MediaInspection"][];
+        };
+        /** @enum {string} */
+        MediaInspectionStatus: "completed";
+        /** @enum {string} */
+        MediaInspectionType: "probe";
         MediaJob: {
             /** Format: date-time */
             completedAt?: string | null;
@@ -12440,6 +12480,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaDerivativesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    listMediaInspections: {
+        parameters: {
+            query?: {
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media inspections */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaInspectionsResponse"];
                 };
             };
             401: components["responses"]["Error"];
