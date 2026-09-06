@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/EmptyState";
 import MediaPlayer from "@/components/MediaPlayer";
@@ -42,8 +43,9 @@ export default function BroadcastSimulationPage() {
   const copy = t.pages.broadcast;
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
-  const [mediaPath, setMediaPath] = useState("media-123");
-  const [roomKey, setRoomKey] = useState("broadcast-main");
+  const searchParams = useSearchParams();
+  const [mediaPath, setMediaPath] = useState(() => searchParams.get("resourceId")?.trim() ?? "");
+  const [roomKey, setRoomKey] = useState(() => searchParams.get("room")?.trim() || "broadcast-main");
   const [status, setStatus] = useState<"viewing" | "reviewing" | "editing">("reviewing");
   const [participants, setParticipants] = useState<CollaborationParticipant[]>([]);
   const [locks, setLocks] = useState<CollaborationLock[]>([]);
