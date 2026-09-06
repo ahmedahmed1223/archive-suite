@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import EmptyState from "@/components/EmptyState";
@@ -59,8 +60,9 @@ export default function CollaborationPage() {
   const timeLocale = locale === "ar" ? "ar-EG" : "en-US";
   const api = useMemo(() => createArchiveApiClient(), []);
   const dialogs = useConfirmDialog();
-  const [roomKey, setRoomKey] = useState("review-1");
-  const [resourceId, setResourceId] = useState("media-123");
+  const searchParams = useSearchParams();
+  const [roomKey, setRoomKey] = useState(() => searchParams.get("room")?.trim() || "review-1");
+  const [resourceId, setResourceId] = useState(() => searchParams.get("resourceId")?.trim() ?? "");
   const [status, setStatus] = useState<CollaborationStatus>("reviewing");
   const [participants, setParticipants] = useState<CollaborationParticipant[]>([]);
   const [locks, setLocks] = useState<CollaborationLock[]>([]);
