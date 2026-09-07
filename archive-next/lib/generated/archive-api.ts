@@ -4943,8 +4943,13 @@ export interface components {
             comments?: Record<string, never>[] | null;
             description?: string | null;
             fps?: number | null;
+            frameRateDenominator?: number | null;
+            frameRateNumerator?: number | null;
             markers?: Record<string, never>[] | null;
             name: string;
+            startTimecode?: string | null;
+            /** @enum {string|null} */
+            timecodeMode?: "non_drop" | "drop_frame" | null;
             tracks?: Record<string, never>[] | null;
             transitions?: Record<string, never>[] | null;
         };
@@ -5894,6 +5899,7 @@ export interface components {
             description?: string | null;
             /** @default 25 */
             fps: number;
+            frameRate: components["schemas"]["RationalFrameRate"];
             id: string;
             markers: Record<string, never>[];
             name: string;
@@ -5901,8 +5907,11 @@ export interface components {
             ownerId: string | null;
             /** @description Latest revision counter; 0 means no revisions yet. */
             revision?: number;
+            startTimecode: string | null;
             /** @enum {string} */
             status: "draft" | "finalized" | "archived";
+            /** @enum {string} */
+            timecodeMode: "non_drop" | "drop_frame";
             /** @description Timeline tracks; item shape is client-defined and stored as-is. */
             tracks: Record<string, never>[];
             transitions: Record<string, never>[];
@@ -7487,10 +7496,15 @@ export interface components {
             comments?: Record<string, never>[] | null;
             description?: string | null;
             fps?: number | null;
+            frameRateDenominator?: number | null;
+            frameRateNumerator?: number | null;
             markers?: Record<string, never>[] | null;
             name?: string | null;
+            startTimecode?: string | null;
             /** @enum {string|null} */
             status?: "draft" | "finalized" | "archived" | null;
+            /** @enum {string|null} */
+            timecodeMode?: "non_drop" | "drop_frame" | null;
             tracks?: Record<string, never>[] | null;
             transitions?: Record<string, never>[] | null;
         };

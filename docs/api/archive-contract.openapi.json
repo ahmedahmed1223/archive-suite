@@ -23532,6 +23532,9 @@
           "id",
           "name",
           "fps",
+          "frameRate",
+          "timecodeMode",
+          "startTimecode",
           "tracks",
           "clips",
           "markers",
@@ -23559,6 +23562,17 @@
             "minimum": 1,
             "maximum": 120,
             "default": 25
+          },
+          "frameRate": {
+            "$ref": "#/components/schemas/RationalFrameRate"
+          },
+          "timecodeMode": {
+            "type": "string",
+            "enum": ["non_drop", "drop_frame"]
+          },
+          "startTimecode": {
+            "type": ["string", "null"],
+            "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$"
           },
           "tracks": {
             "type": "array",
@@ -23659,6 +23673,10 @@
             "minimum": 1,
             "maximum": 120
           },
+          "frameRateNumerator": { "type": ["integer", "null"], "minimum": 1, "maximum": 120000 },
+          "frameRateDenominator": { "type": ["integer", "null"], "minimum": 1, "maximum": 10000 },
+          "timecodeMode": { "type": ["string", "null"], "enum": ["non_drop", "drop_frame", null] },
+          "startTimecode": { "type": ["string", "null"], "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$" },
           "tracks": {
             "type": [
               "array",
@@ -23731,6 +23749,10 @@
             "minimum": 1,
             "maximum": 120
           },
+          "frameRateNumerator": { "type": ["integer", "null"], "minimum": 1, "maximum": 120000 },
+          "frameRateDenominator": { "type": ["integer", "null"], "minimum": 1, "maximum": 10000 },
+          "timecodeMode": { "type": ["string", "null"], "enum": ["non_drop", "drop_frame", null] },
+          "startTimecode": { "type": ["string", "null"], "pattern": "^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$" },
           "tracks": {
             "type": [
               "array",

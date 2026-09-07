@@ -22,6 +22,18 @@ class MontageProjectsApiTest extends TestCase
         $this->actingAs($this->user);
     }
 
+    public function test_create_persists_a_rational_frame_rate_and_drop_frame_identity(): void
+    {
+        $this->postJson('/api/v1/montage-projects', [
+            'name' => '29.97 delivery', 'frameRateNumerator' => 30000, 'frameRateDenominator' => 1001,
+            'timecodeMode' => 'drop_frame', 'startTimecode' => '01:00:00;00',
+        ])->assertCreated()
+            ->assertJsonPath('project.frameRate.numerator', 30000)
+            ->assertJsonPath('project.frameRate.denominator', 1001)
+            ->assertJsonPath('project.timecodeMode', 'drop_frame')
+            ->assertJsonPath('project.startTimecode', '01:00:00;00');
+    }
+
     public function test_list_montage_projects(): void
     {
         MontageProject::query()->create([

@@ -80,6 +80,10 @@ class MontageProjectsController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'fps' => ['nullable', 'integer', 'min:1', 'max:120'],
+            'frameRateNumerator' => ['nullable', 'integer', 'min:1', 'max:120000'],
+            'frameRateDenominator' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            'timecodeMode' => ['nullable', 'string', 'in:non_drop,drop_frame'],
+            'startTimecode' => ['nullable', 'string', 'regex:/^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$/'],
             'tracks' => ['nullable', 'array'],
             'clips' => ['nullable', 'array'],
             'markers' => ['nullable', 'array'],
@@ -92,6 +96,10 @@ class MontageProjectsController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'fps' => $validated['fps'] ?? 25,
+            'frame_rate_numerator' => $validated['frameRateNumerator'] ?? ($validated['fps'] ?? 25),
+            'frame_rate_denominator' => $validated['frameRateDenominator'] ?? 1,
+            'timecode_mode' => $validated['timecodeMode'] ?? 'non_drop',
+            'start_timecode' => $validated['startTimecode'] ?? null,
             'tracks' => $validated['tracks'] ?? [],
             'clips' => $validated['clips'] ?? [],
             'markers' => $validated['markers'] ?? [],
@@ -128,6 +136,10 @@ class MontageProjectsController extends Controller
             'name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'fps' => ['nullable', 'integer', 'min:1', 'max:120'],
+            'frameRateNumerator' => ['nullable', 'integer', 'min:1', 'max:120000'],
+            'frameRateDenominator' => ['nullable', 'integer', 'min:1', 'max:10000'],
+            'timecodeMode' => ['nullable', 'string', 'in:non_drop,drop_frame'],
+            'startTimecode' => ['nullable', 'string', 'regex:/^\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}$/'],
             'tracks' => ['nullable', 'array'],
             'clips' => ['nullable', 'array'],
             'markers' => ['nullable', 'array'],
@@ -136,7 +148,11 @@ class MontageProjectsController extends Controller
             'status' => ['nullable', 'string', 'in:draft,finalized,archived'],
         ]);
 
-        $project->update(array_filter($validated, fn ($v) => $v !== null));
+        $attributes = array_filter($validated, fn ($v) => $v !== null);
+        foreach (['frameRateNumerator' => 'frame_rate_numerator', 'frameRateDenominator' => 'frame_rate_denominator', 'timecodeMode' => 'timecode_mode', 'startTimecode' => 'start_timecode'] as $input => $column) {
+            if (array_key_exists($input, $attributes)) { $attributes[$column] = $attributes[$input]; unset($attributes[$input]); }
+        }
+        $project->update($attributes);
 
         return response()->json([
             'ok' => true,
@@ -172,6 +188,9 @@ class MontageProjectsController extends Controller
             'name' => $project->name,
             'description' => $project->description,
             'fps' => $project->fps,
+            'frameRate' => ['numerator' => (int) ($project->frame_rate_numerator ?: $project->fps), 'denominator' => (int) ($project->frame_rate_denominator ?: 1)],
+            'timecodeMode' => $project->timecode_mode ?: 'non_drop',
+            'startTimecode' => $project->start_timecode,
             'tracks' => $project->tracks ?? [],
             'clips' => $project->clips ?? [],
             'markers' => $project->markers ?? [],
