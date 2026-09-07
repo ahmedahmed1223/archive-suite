@@ -4,17 +4,18 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import MontageEditorPanel from "./MontageEditorPanel";
 import { type EditorState } from "@/lib/montage-editor";
 
-const { montageExportQc, collaborationPresence, montagePreviewCmx } = vi.hoisted(() => ({
+const { montageExportQc, collaborationPresence, montagePreviewCmx, montageApplyCmx } = vi.hoisted(() => ({
   montageExportQc: vi.fn(),
   collaborationPresence: vi.fn(),
   montagePreviewCmx: vi.fn(),
+  montageApplyCmx: vi.fn(),
 }));
 
 vi.mock("@/lib/archive-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
   return {
     ...actual,
-    createArchiveApiClient: () => ({ montageExportQc, collaborationPresence, montagePreviewCmx }),
+    createArchiveApiClient: () => ({ montageExportQc, collaborationPresence, montagePreviewCmx, montageApplyCmx }),
   };
 });
 
@@ -55,6 +56,8 @@ const copy = {
   noOtherEditors: "No other editor",
   previewCmx: "Preview CMX 3600",
   interchangeTitle: "Interchange preview",
+  reelMapping: "Reel {reel}",
+  applyCmx: "Apply CMX to new revision",
   previewOnlyHint: "Preview only — it does not change the project.",
   previewAccepted: "Accepted",
   previewRejected: "Rejected",
@@ -80,8 +83,9 @@ beforeEach(() => {
   montagePreviewCmx.mockResolvedValue({
     ok: true,
     format: "cmx3600",
-    preview: { accepted: [{ event: 1 }], rejected: [{ event: 2, reason: "audio_track_unsupported" }] },
+    preview: { accepted: [{ event: 1, reel: "AX" }], rejected: [{ event: 2, reason: "audio_track_unsupported" }] },
   });
+  montageApplyCmx.mockResolvedValue({ ok: true, revisionNumber: 2, clips: [] });
 });
 
 describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
@@ -216,5 +220,31 @@ describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
     await waitFor(() => expect(montagePreviewCmx).toHaveBeenCalledWith("p1", expect.objectContaining({ edl: expect.stringContaining("001") })));
     expect(screen.getByText("Accepted: 1")).toBeInTheDocument();
     expect(screen.getByText("Rejected: 1")).toBeInTheDocument();
+  });
+
+  it("requires the editor to map every accepted reel to project material", async () => {
+    render(
+      <MontageEditorPanel
+        projectId="p1"
+        initialState={makeState()}
+        materials={[{ id: "m1", name: "Camera master", durationSeconds: 20, source: { recordId: "r1", sourceVersionToken: "sha256:a" } }]}
+        copy={copy}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("textbox", { name: copy.previewCmx }), { target: { value: "001  AX       V     C        00:00:00:00 00:00:02:00 00:00:00:00 00:00:02:00" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.previewCmx }));
+
+    expect(await screen.findByRole("combobox", { name: "Reel AX" })).toBeInTheDocument();
+  });
+
+  it("applies fully mapped reels as a new revision", async () => {
+    montagePreviewCmx.mockResolvedValueOnce({ ok: true, format: "cmx3600", preview: { accepted: [{ event: 1, reel: "AX" }], rejected: [] } });
+    render(<MontageEditorPanel projectId="p1" initialState={makeState()} materials={[{ id: "m1", name: "Camera master", durationSeconds: 20, source: { recordId: "r1", sourceVersionToken: "sha256:a" } }]} copy={copy} />);
+    fireEvent.change(screen.getByRole("textbox", { name: copy.previewCmx }), { target: { value: "001  AX       V     C        00:00:00:00 00:00:02:00 00:00:00:00 00:00:02:00" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.previewCmx }));
+    fireEvent.change(await screen.findByRole("combobox", { name: "Reel AX" }), { target: { value: "m1" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.applyCmx }));
+    await waitFor(() => expect(montageApplyCmx).toHaveBeenCalledWith("p1", expect.objectContaining({ expectedRevision: 1 })));
   });
 });

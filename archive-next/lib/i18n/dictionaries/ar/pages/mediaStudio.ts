@@ -108,6 +108,8 @@ export const mediaStudio = {
     previewAccepted: "المقاطع المقبولة",
     previewRejected: "المقاطع المرفوضة",
     previewFailed: "تعذرت معاينة القائمة. أعد المحاولة.",
+    reelMapping: "بكرة {reel}",
+    applyCmx: "تطبيق CMX في مراجعة جديدة",
     undoButton: "تراجع",
     redoButton: "إعادة",
     saveRevision: "حفظ مراجعة",

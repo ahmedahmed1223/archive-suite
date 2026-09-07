@@ -108,6 +108,8 @@ export const mediaStudio = {
     previewAccepted: "Accepted",
     previewRejected: "Rejected",
     previewFailed: "Could not preview the edit list. Try again.",
+    reelMapping: "Reel {reel}",
+    applyCmx: "Apply CMX to new revision",
     undoButton: "Undo",
     redoButton: "Redo",
     saveRevision: "Save revision",

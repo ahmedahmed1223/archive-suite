@@ -38,6 +38,8 @@ export type MontageEditorCopy = {
   previewAccepted: string;
   previewRejected: string;
   previewFailed: string;
+  reelMapping: string;
+  applyCmx: string;
 };
 
 type MontageEditorPanelProps = {
@@ -89,7 +91,8 @@ export default function MontageEditorPanel({
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string>("");
   const [cmxEdl, setCmxEdl] = useState("");
-  const [cmxPreview, setCmxPreview] = useState<{ accepted: unknown[]; rejected: unknown[] } | null>(null);
+  const [cmxPreview, setCmxPreview] = useState<{ accepted: Array<{ reel: string }>; rejected: unknown[] } | null>(null);
+  const [reelMappings, setReelMappings] = useState<Record<string, string>>({});
   const [cmxStatus, setCmxStatus] = useState("");
   const [qcReady, setQcReady] = useState(false);
   const [presence, setPresence] = useState<PresenceSnapshot>({ projectId, editors: [] });
@@ -203,11 +206,24 @@ export default function MontageEditorPanel({
         setCmxStatus(copy.previewFailed);
         return;
       }
-      setCmxPreview(response.preview);
+      const preview = response.preview as { accepted: Array<{ reel: string }>; rejected: unknown[] };
+      setCmxPreview(preview);
+      setReelMappings(Object.fromEntries(preview.accepted.map(({ reel }) => [reel, ""])));
     } catch {
       setCmxStatus(copy.previewFailed);
     }
   }, [api, cmxEdl, copy.previewFailed, projectId]);
+
+  const applyCmx = useCallback(async () => {
+    if (!cmxPreview || cmxPreview.rejected.length > 0 || cmxPreview.accepted.some(({ reel }) => !reelMappings[reel])) return;
+    const mappings = cmxPreview.accepted.map(({ reel }) => {
+      const material = materials.find((item) => item.id === reelMappings[reel]);
+      return material ? { reel, recordId: material.source.recordId, sourceVersionToken: material.source.sourceVersionToken } : null;
+    });
+    if (mappings.some((mapping) => mapping === null)) return;
+    const response = await api.montageApplyCmx(projectId, { expectedRevision: state.revisionNumber, edl: cmxEdl, mappings: mappings.filter((mapping): mapping is NonNullable<typeof mapping> => mapping !== null) });
+    if (response.ok) setState((current) => ({ ...current, revisionNumber: response.revisionNumber }));
+  }, [api, cmxEdl, cmxPreview, materials, projectId, reelMappings, state.revisionNumber]);
 
   const addMaterial = useCallback((item: MaterialBinItem) => {
     const selectedClip = selectedClipId === null
@@ -267,10 +283,29 @@ export default function MontageEditorPanel({
             <button type="button" className="btn btn-primary" onClick={() => void previewCmx()} disabled={!cmxEdl.trim()}>{copy.previewCmx}</button>
           </div>
           {cmxPreview ? (
-            <div role="status" className="alert alert-info alert-soft sm:alert-horizontal">
-              <span>{copy.previewAccepted}: {cmxPreview.accepted.length}</span>
-              <span>{copy.previewRejected}: {cmxPreview.rejected.length}</span>
-            </div>
+            <>
+              <div role="status" className="alert alert-info alert-soft sm:alert-horizontal">
+                <span>{copy.previewAccepted}: {cmxPreview.accepted.length}</span>
+                <span>{copy.previewRejected}: {cmxPreview.rejected.length}</span>
+              </div>
+              {cmxPreview.accepted.map(({ reel }) => (
+                <label key={reel} className="form-control gap-1">
+                  <span className="label-text">{copy.reelMapping.replace("{reel}", reel)}</span>
+                  <select
+                    className="select w-full"
+                    aria-label={copy.reelMapping.replace("{reel}", reel)}
+                    value={reelMappings[reel] ?? ""}
+                    onChange={(event) => setReelMappings((current) => ({ ...current, [reel]: event.target.value }))}
+                  >
+                    <option value="" />
+                    {materials.map((material) => <option key={material.id} value={material.id}>{material.name}</option>)}
+                  </select>
+                </label>
+              ))}
+              <div className="card-actions justify-start">
+                <button type="button" className="btn" onClick={() => void applyCmx()} disabled={cmxPreview.rejected.length > 0 || cmxPreview.accepted.some(({ reel }) => !reelMappings[reel])}>{copy.applyCmx}</button>
+              </div>
+            </>
           ) : null}
           {cmxStatus ? <p role="status" className="alert alert-error alert-soft">{cmxStatus}</p> : null}
         </div>

@@ -71,6 +71,27 @@ class MontageExportsApiTest extends TestCase
         $this->assertDatabaseCount('montage_project_revisions', 1);
     }
 
+    public function test_cmx_apply_creates_an_immutable_revision_from_explicit_reel_mappings(): void
+    {
+        $owner = User::factory()->create(['role' => 'editor']);
+        [$project] = $this->projectWithRevision($owner);
+
+        $this->actingAs($owner)->postJson("/api/v1/montage-projects/{$project->id}/interchange/cmx-apply", [
+            'expectedRevision' => 1,
+            'edl' => '001  AX       V     C        00:00:00:00 00:00:05:00 00:00:00:00 00:00:05:00',
+            'mappings' => [[
+                'reel' => 'AX',
+                'recordId' => 'record-export-source',
+                'sourceVersionToken' => 'record:source-checksum',
+            ]],
+        ])->assertCreated()
+            ->assertJsonPath('revisionNumber', 2)
+            ->assertJsonPath('clips.0.source.recordId', 'record-export-source')
+            ->assertJsonPath('clips.0.sourceOut', 5);
+
+        $this->assertDatabaseCount('montage_project_revisions', 2);
+    }
+
     public function test_export_is_blocked_by_a_current_failed_source_qc_until_it_is_overridden(): void
     {
         Queue::fake();

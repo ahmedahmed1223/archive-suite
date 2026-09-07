@@ -1588,6 +1588,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/montage-projects/{id}/interchange/cmx-apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a revision from CMX 3600 cuts and explicit reel mappings */
+        post: operations["applyCmx3600Interchange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/montage-projects/{id}/interchange/cmx-preview": {
         parameters: {
             query?: never;
@@ -11095,6 +11112,45 @@ export interface operations {
                     "application/json": components["schemas"]["MontageQcResponse"];
                 };
             };
+            409: components["responses"]["MontageRevisionConflict"];
+            422: components["responses"]["MontageValidation"];
+        };
+    };
+    applyCmx3600Interchange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    edl: string;
+                    expectedRevision: number;
+                    mappings: {
+                        recordId: string;
+                        reel: string;
+                        sourceVersionToken: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Immutable revision created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
             409: components["responses"]["MontageRevisionConflict"];
             422: components["responses"]["MontageValidation"];
         };

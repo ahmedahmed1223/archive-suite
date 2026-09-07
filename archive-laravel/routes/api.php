@@ -441,7 +441,8 @@ Route::prefix('v1')->group(function (): void {
         // by the derivative's own id.
         Route::get('/records/{id}/media-derivatives', [MediaDerivativesController::class, 'index']);
           Route::get('/records/{id}/media-inspections', [MediaInspectionsController::class, 'index']);
-          Route::post('/montage-projects/{id}/interchange/cmx-preview', [MontageInterchangeController::class, 'previewCmx']);
+        Route::post('/montage-projects/{id}/interchange/cmx-preview', [MontageInterchangeController::class, 'previewCmx']);
+        Route::post('/montage-projects/{id}/interchange/cmx-apply', [MontageInterchangeController::class, 'applyCmx']);
           Route::post('/media-inspections/{inspectionId}/override', [MediaQcOverridesController::class, 'store']);
         Route::post('/media-derivatives', [MediaDerivativesController::class, 'store']);
         Route::get('/media-derivatives/{id}', [MediaDerivativesController::class, 'show']);

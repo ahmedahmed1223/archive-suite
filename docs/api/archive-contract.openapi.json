@@ -10607,6 +10607,17 @@
         }
       }
     },
+    "/montage-projects/{id}/interchange/cmx-apply": {
+      "post": {
+        "tags": ["Montage"],
+        "summary": "Create a revision from CMX 3600 cuts and explicit reel mappings",
+        "operationId": "applyCmx3600Interchange",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["expectedRevision", "edl", "mappings"], "properties": { "expectedRevision": { "type": "integer", "minimum": 0 }, "edl": { "type": "string", "maxLength": 1048576 }, "mappings": { "type": "array", "items": { "type": "object", "required": ["reel", "recordId", "sourceVersionToken"], "properties": { "reel": { "type": "string" }, "recordId": { "type": "string" }, "sourceVersionToken": { "type": "string" } } } } } } } } },
+        "responses": { "201": { "description": "Immutable revision created", "content": { "application/json": { "schema": { "type": "object" } } } }, "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "409": { "$ref": "#/components/responses/MontageRevisionConflict" }, "422": { "$ref": "#/components/responses/MontageValidation" } }
+      }
+    },
     "/montage-projects/{id}/exports/qc": {
       "post": {
         "tags": ["Montage"],
