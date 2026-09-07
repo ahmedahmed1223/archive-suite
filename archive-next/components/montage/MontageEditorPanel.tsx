@@ -17,6 +17,7 @@ import {
   type EditorAction,
   type EditorState,
 } from "@/lib/montage-editor";
+import type { RationalFrameRate, TimecodeMode } from "@/lib/timecode";
 
 export type MontageEditorCopy = {
   panelAriaLabel: string;
@@ -37,6 +38,8 @@ type MontageEditorPanelProps = {
   projectId: string;
   initialState: EditorState;
   fps?: number;
+  frameRate?: RationalFrameRate;
+  timecodeMode?: TimecodeMode;
   materials: MaterialBinItem[];
   /** Poll interval (ms) for the collaboration presence surface. */
   presencePollMs?: number;
@@ -68,6 +71,8 @@ export default function MontageEditorPanel({
   projectId,
   initialState,
   fps = 25,
+  frameRate,
+  timecodeMode = "non_drop",
   materials,
   presencePollMs = 15_000,
   copy,
@@ -235,6 +240,8 @@ export default function MontageEditorPanel({
           state={state}
           dispatch={dispatch}
           fps={fps}
+          frameRate={frameRate}
+          timecodeMode={timecodeMode}
           selectedClipId={selectedClipId}
           onSelectClip={setSelectedClipId}
           copy={{
