@@ -4,6 +4,8 @@
  * in memory only; every operation returns a new state object.
  */
 
+import type { RationalFrameRate } from "./timecode";
+
 export type MontageSourceRef = {
   recordId: string;
   sourceVersionToken: string;
@@ -53,8 +55,9 @@ export type EditorAction =
 const FRAME_EPSILON = 1e-6;
 
 /** Normalize a time value onto frame boundaries for the project fps. */
-export function snapToFrame(seconds: number, fps: number): number {
-  const frame = 1 / Math.max(1, fps);
+export function snapToFrame(seconds: number, fps: number | RationalFrameRate): number {
+  const rate = typeof fps === "number" ? fps : fps.numerator / fps.denominator;
+  const frame = 1 / Math.max(1, rate);
   return Math.round(seconds / frame + FRAME_EPSILON) * frame;
 }
 

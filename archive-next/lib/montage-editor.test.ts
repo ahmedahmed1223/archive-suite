@@ -116,5 +116,6 @@ describe("montage editor reducer (Task 4)", () => {
   it("snaps times onto frame boundaries", () => {
     expect(snapToFrame(0.041, 25)).toBeCloseTo(0.04);
     expect(snapToFrame(1.999, 25)).toBeCloseTo(2);
+    expect(snapToFrame(10, { numerator: 30000, denominator: 1001 })).toBeCloseTo(10.01, 4);
   });
 });
