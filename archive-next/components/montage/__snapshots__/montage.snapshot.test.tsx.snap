@@ -158,6 +158,49 @@ exports[`Montage component visual baselines (T10 step 3 stand-in) > MontageEdito
     class="ui-visually-hidden montage-editor-panel__status"
     role="status"
   />
+  <section
+    aria-label="CMX interchange"
+    class="card card-border bg-base-200 shadow-sm"
+  >
+    <div
+      class="card-body gap-3 p-4"
+    >
+      <div>
+        <h2
+          class="card-title text-base"
+        >
+          CMX interchange
+        </h2>
+        <p
+          class="text-sm text-base-content/70"
+        >
+          Preview only — nothing is applied yet
+        </p>
+      </div>
+      <label
+        class="ui-visually-hidden"
+        for="cmx-edl"
+      >
+        Preview CMX interchange
+      </label>
+      <textarea
+        class="textarea w-full font-mono text-sm"
+        id="cmx-edl"
+        placeholder="Preview CMX interchange"
+      />
+      <div
+        class="card-actions justify-start"
+      >
+        <button
+          class="btn btn-primary"
+          disabled=""
+          type="button"
+        >
+          Preview CMX interchange
+        </button>
+      </div>
+    </div>
+  </section>
   <div
     class="montage-editor-panel__columns"
   >
@@ -208,7 +251,7 @@ exports[`Montage component visual baselines (T10 step 3 stand-in) > MontageEdito
                 class="timeline-canvas__timecode"
                 dir="ltr"
               >
-                10:00
+                00:00:10:00
               </span>
             </button>
           </div>
@@ -327,7 +370,7 @@ exports[`Montage component visual baselines (T10 step 3 stand-in) > TimelineCanv
             class="timeline-canvas__timecode"
             dir="ltr"
           >
-            10:00
+            00:00:10:00
           </span>
         </button>
       </div>

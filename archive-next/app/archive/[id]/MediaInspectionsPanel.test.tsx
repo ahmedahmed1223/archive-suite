@@ -27,6 +27,7 @@ function inspection(overrides: Partial<MediaInspection> = {}): MediaInspection {
     status: "completed",
     versionToken: "record:checksum-1",
     isCurrentVersion: true,
+    qcOverride: false,
     report: {
       formatNames: ["mov"],
       formatLongName: "QuickTime / MOV",
