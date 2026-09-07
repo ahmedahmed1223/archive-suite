@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\ActivityController;
 use App\Http\Controllers\Api\V1\AiAssistantController;
 use App\Http\Controllers\Api\V1\ApiKeysController;
 use App\Http\Controllers\Api\V1\ApprovalRequestsController;
+use App\Http\Controllers\Api\V1\ArchivalNodesController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AutomationRulesController;
 use App\Http\Controllers\Api\V1\AutomationRuleTemplatesController;
@@ -516,6 +517,14 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/collections/{id}/records', [CollectionsController::class, 'records']);
         Route::post('/collections/{id}/records/{recordId}', [CollectionsController::class, 'addRecord']);
         Route::delete('/collections/{id}/records/{recordId}', [CollectionsController::class, 'removeRecord']);
+
+        // V2: the institutional archival hierarchy is distinct from personal
+        // smart collections and editorial projects. Moving is preview-only in
+        // this first vertical slice, so a user sees the impact before any
+        // structural change can be committed.
+        Route::get('/archival-nodes', [ArchivalNodesController::class, 'index']);
+        Route::post('/archival-nodes', [ArchivalNodesController::class, 'store']);
+        Route::post('/archival-nodes/{id}/move-preview', [ArchivalNodesController::class, 'movePreview']);
 
         Route::get('/inbox', [InboxController::class, 'index']);
         Route::post('/inbox', [InboxController::class, 'store']);

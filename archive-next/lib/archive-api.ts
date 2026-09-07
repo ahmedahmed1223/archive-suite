@@ -484,6 +484,8 @@ export interface CreateSavedSearchPayload {
 }
 
 export type Collection = GeneratedSchemas["Collection"];
+export type ArchivalNode = GeneratedSchemas["ArchivalNode"];
+export type CreateArchivalNodePayload = GeneratedSchemas["ArchivalNodeCreateRequest"];
 
 export interface CreateCollectionPayload {
   name: string;
@@ -1501,6 +1503,9 @@ export interface ArchiveApiClient {
   collectionRecords(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[] }>>;
   addCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   removeCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
+  archivalNodes(options?: AuthRequestOptions): Promise<ApiEnvelope<{ nodes: ArchivalNode[] }>>;
+  createArchivalNode(payload: CreateArchivalNodePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ node: ArchivalNode }>>;
+  previewArchivalNodeMove(id: string, payload: { parentId?: string | null }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: GeneratedSchemas["ArchivalNodeMovePreview"] }>>;
   workInbox(
     params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
     options?: AuthRequestOptions
@@ -2667,6 +2672,11 @@ export function createArchiveApiClient({
       post<Record<string, never>>(`/collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     removeCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) =>
       del<Record<string, never>>(`/collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
+    archivalNodes: (options?: AuthRequestOptions) => get<{ nodes: ArchivalNode[] }>("/archival-nodes", options),
+    createArchivalNode: (payload: CreateArchivalNodePayload, options?: AuthRequestOptions) =>
+      post<{ node: ArchivalNode }>("/archival-nodes", payload, options),
+    previewArchivalNodeMove: (id: string, payload: { parentId?: string | null }, options?: AuthRequestOptions) =>
+      post<{ preview: GeneratedSchemas["ArchivalNodeMovePreview"] }>(`/archival-nodes/${encodeURIComponent(id)}/move-preview`, payload, options),
     workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.set("page", String(params.page));

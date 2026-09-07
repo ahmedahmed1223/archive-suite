@@ -8,7 +8,7 @@ import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import IconPicker from "@/components/IconPicker";
 import { useCapability } from "@/components/RoleGate";
-import { createArchiveApiClient, type ArchiveRecord, type Collection, type CreateCollectionPayload } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchivalNode, type ArchiveRecord, type Collection, type CreateCollectionPayload } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-utils";
@@ -37,6 +37,8 @@ export default function CollectionsPage() {
   const api = useMemo(() => createArchiveApiClient(), []);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [archivalNodes, setArchivalNodes] = useState<ArchivalNode[]>([]);
+  const [archivalNodesError, setArchivalNodesError] = useState("");
   const [collectionsState, setCollectionsState] = useState<CollectionsLoadState>({ status: "loading" });
   const [statusMessage, setStatusMessage] = useState("");
   const [name, setName] = useState("");
@@ -62,6 +64,10 @@ export default function CollectionsPage() {
 
   useEffect(() => {
     void refreshCollections();
+    void api.archivalNodes().then((response) => {
+      if (response.ok) setArchivalNodes(response.nodes);
+      else setArchivalNodesError(response.error || copy.hierarchyLoadFailed);
+    });
     void (async () => {
       const response = await api.search({ limit: 1000 });
       setState(response.ok ? { status: "ready", records: response.records } : { status: "error", message: response.error });
@@ -224,6 +230,29 @@ export default function CollectionsPage() {
         )}
         {statusMessage ? <p className="form-status">{statusMessage}</p> : null}
       </PageToolbar>
+
+      <section className="panel panel-compact" aria-labelledby="institutional-hierarchy-heading">
+        <div className="toolbar-row toolbar-start">
+          <div>
+            <span className="badge">{copy.hierarchyBadge}</span>
+            <h2 id="institutional-hierarchy-heading" className="section-heading">{copy.hierarchyTitle}</h2>
+          </div>
+          <strong className="metric-value">{archivalNodes.length}</strong>
+        </div>
+        <p className="helper-text">{copy.hierarchyDescription}</p>
+        {archivalNodesError ? <p className="form-status" role="alert">{archivalNodesError}</p> : null}
+        {!archivalNodesError && archivalNodes.length === 0 ? <p className="helper-text">{copy.hierarchyEmpty}</p> : null}
+        {archivalNodes.length > 0 ? (
+          <ol className="mobile-field-list" aria-label={copy.hierarchyTitle}>
+            {archivalNodes.map((node) => (
+              <li key={node.id}>
+                <strong>{[...node.path.map((entry) => entry.title), node.title].join(" › ")}</strong>
+                <span>{node.referenceCode || node.level}</span>
+              </li>
+            ))}
+          </ol>
+        ) : null}
+      </section>
 
       {canManageCollections && (canUndo(deleteStack) || canRedo(deleteStack)) ? (
         <div className="button-row">

@@ -174,6 +174,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/archival-nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the institutional archival hierarchy */
+        get: operations["listArchivalNodes"];
+        put?: never;
+        /** Create an institutional archival node */
+        post: operations["createArchivalNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/archival-nodes/{id}/move-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview moving an archival node without changing it */
+        post: operations["previewArchivalNodeMove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/attachments/{attachmentId}/health": {
         parameters: {
             query?: never;
@@ -4433,6 +4468,57 @@ export interface components {
         ApprovalRequestsResponse: components["schemas"]["OkEnvelope"] & {
             requests: components["schemas"]["ApprovalRequest"][];
         };
+        ArchivalNode: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            level: "institution" | "fonds" | "series" | "program" | "season" | "episode" | "item" | "segment";
+            /** Format: uuid */
+            parentId: string | null;
+            path: components["schemas"]["ArchivalNodePathEntry"][];
+            position: number;
+            recordStore: string | null;
+            recordUid: string | null;
+            referenceCode: string | null;
+            title: string;
+        };
+        ArchivalNodeCreateRequest: {
+            /** @enum {string} */
+            level: "institution" | "fonds" | "series" | "program" | "season" | "episode" | "item" | "segment";
+            /** Format: uuid */
+            parentId?: string | null;
+            recordStore?: string | null;
+            recordUid?: string | null;
+            referenceCode?: string | null;
+            title: string;
+        };
+        ArchivalNodeMovePreview: {
+            affectedDescendantCount: number;
+            /** Format: uuid */
+            nodeId: string;
+            /** Format: uuid */
+            parentId: string | null;
+        };
+        ArchivalNodeMovePreviewResponse: components["schemas"]["OkEnvelope"] & {
+            preview: components["schemas"]["ArchivalNodeMovePreview"];
+        };
+        ArchivalNodeMoveRequest: {
+            /** Format: uuid */
+            parentId?: string | null;
+        };
+        ArchivalNodePathEntry: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            level: "institution" | "fonds" | "series" | "program" | "season" | "episode" | "item" | "segment";
+            title: string;
+        };
+        ArchivalNodeResponse: components["schemas"]["OkEnvelope"] & {
+            node: components["schemas"]["ArchivalNode"];
+        };
+        ArchivalNodesResponse: components["schemas"]["OkEnvelope"] & {
+            nodes: components["schemas"]["ArchivalNode"][];
+        };
         ArchiveRecord: {
             attachmentCount?: number;
             /** Format: date-time */
@@ -8350,6 +8436,82 @@ export interface operations {
                     "application/json": components["schemas"]["ApprovalRequestError"];
                 };
             };
+        };
+    };
+    listArchivalNodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archival nodes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchivalNodesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createArchivalNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArchivalNodeCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created archival node */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchivalNodeResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    previewArchivalNodeMove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArchivalNodeMoveRequest"];
+            };
+        };
+        responses: {
+            /** @description Move impact preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchivalNodeMovePreviewResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listFileHealthChecks: {

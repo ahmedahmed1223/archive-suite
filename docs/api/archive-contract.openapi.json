@@ -6804,6 +6804,46 @@
         }
       }
     },
+    "/archival-nodes": {
+      "get": {
+        "tags": ["Archival hierarchy"],
+        "summary": "List the institutional archival hierarchy",
+        "operationId": "listArchivalNodes",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Archival nodes", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArchivalNodesResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Archival hierarchy"],
+        "summary": "Create an institutional archival node",
+        "operationId": "createArchivalNode",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArchivalNodeCreateRequest" } } } },
+        "responses": {
+          "201": { "description": "Created archival node", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArchivalNodeResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/archival-nodes/{id}/move-preview": {
+      "post": {
+        "tags": ["Archival hierarchy"],
+        "summary": "Preview moving an archival node without changing it",
+        "operationId": "previewArchivalNodeMove",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArchivalNodeMoveRequest" } } } },
+        "responses": {
+          "200": { "description": "Move impact preview", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArchivalNodeMovePreviewResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/collections": {
       "get": {
         "tags": [
@@ -21053,6 +21093,64 @@
             }
           }
         ]
+      },
+      "ArchivalNodePathEntry": {
+        "type": "object",
+        "required": ["id", "title", "level"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "title": { "type": "string" },
+          "level": { "type": "string", "enum": ["institution", "fonds", "series", "program", "season", "episode", "item", "segment"] }
+        }
+      },
+      "ArchivalNode": {
+        "type": "object",
+        "required": ["id", "parentId", "level", "title", "referenceCode", "position", "recordStore", "recordUid", "path"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "parentId": { "type": ["string", "null"], "format": "uuid" },
+          "level": { "type": "string", "enum": ["institution", "fonds", "series", "program", "season", "episode", "item", "segment"] },
+          "title": { "type": "string" },
+          "referenceCode": { "type": ["string", "null"] },
+          "position": { "type": "integer", "minimum": 0 },
+          "recordStore": { "type": ["string", "null"] },
+          "recordUid": { "type": ["string", "null"] },
+          "path": { "type": "array", "items": { "$ref": "#/components/schemas/ArchivalNodePathEntry" } }
+        }
+      },
+      "ArchivalNodeCreateRequest": {
+        "type": "object",
+        "required": ["title", "level"],
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "level": { "type": "string", "enum": ["institution", "fonds", "series", "program", "season", "episode", "item", "segment"] },
+          "parentId": { "type": ["string", "null"], "format": "uuid" },
+          "referenceCode": { "type": ["string", "null"], "maxLength": 200 },
+          "recordStore": { "type": ["string", "null"], "maxLength": 200 },
+          "recordUid": { "type": ["string", "null"], "maxLength": 200 }
+        }
+      },
+      "ArchivalNodeMoveRequest": {
+        "type": "object",
+        "properties": { "parentId": { "type": ["string", "null"], "format": "uuid" } }
+      },
+      "ArchivalNodeMovePreview": {
+        "type": "object",
+        "required": ["nodeId", "parentId", "affectedDescendantCount"],
+        "properties": {
+          "nodeId": { "type": "string", "format": "uuid" },
+          "parentId": { "type": ["string", "null"], "format": "uuid" },
+          "affectedDescendantCount": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "ArchivalNodesResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["nodes"], "properties": { "nodes": { "type": "array", "items": { "$ref": "#/components/schemas/ArchivalNode" } } } }]
+      },
+      "ArchivalNodeResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["node"], "properties": { "node": { "$ref": "#/components/schemas/ArchivalNode" } } }]
+      },
+      "ArchivalNodeMovePreviewResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["preview"], "properties": { "preview": { "$ref": "#/components/schemas/ArchivalNodeMovePreview" } } }]
       },
       "Collection": {
         "type": "object",
