@@ -1588,6 +1588,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/montage-projects/{id}/interchange/cmx-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview supported CMX 3600 video cuts without saving a revision */
+        post: operations["previewCmx3600Interchange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/montage-projects/{id}/materials": {
         parameters: {
             query?: never;
@@ -11080,6 +11097,47 @@ export interface operations {
             };
             409: components["responses"]["MontageRevisionConflict"];
             422: components["responses"]["MontageValidation"];
+        };
+    };
+    previewCmx3600Interchange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    edl: string;
+                };
+            };
+        };
+        responses: {
+            /** @description CMX preview; no revision is created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        format: "cmx3600";
+                        /** @constant */
+                        ok: true;
+                        preview: {
+                            accepted: Record<string, never>[];
+                            rejected: Record<string, never>[];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listMontageMaterials: {

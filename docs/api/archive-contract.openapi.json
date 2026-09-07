@@ -10593,6 +10593,20 @@
         }
       }
     },
+    "/montage-projects/{id}/interchange/cmx-preview": {
+      "post": {
+        "tags": ["Montage"],
+        "summary": "Preview supported CMX 3600 video cuts without saving a revision",
+        "operationId": "previewCmx3600Interchange",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["edl"], "properties": { "edl": { "type": "string", "maxLength": 1048576 } }, "additionalProperties": false } } } },
+        "responses": {
+          "200": { "description": "CMX preview; no revision is created", "content": { "application/json": { "schema": { "type": "object", "required": ["ok", "format", "preview"], "properties": { "ok": { "const": true }, "format": { "const": "cmx3600" }, "preview": { "type": "object", "required": ["accepted", "rejected"], "properties": { "accepted": { "type": "array", "items": { "type": "object" } }, "rejected": { "type": "array", "items": { "type": "object" } } } } } } } } },
+          "401": { "$ref": "#/components/responses/Error" }, "403": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/montage-projects/{id}/exports/qc": {
       "post": {
         "tags": ["Montage"],
