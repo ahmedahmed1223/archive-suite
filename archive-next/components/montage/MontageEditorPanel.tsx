@@ -40,6 +40,7 @@ export type MontageEditorCopy = {
   previewFailed: string;
   reelMapping: string;
   applyCmx: string;
+  applyCmxFailed: string;
 };
 
 type MontageEditorPanelProps = {
@@ -222,8 +223,12 @@ export default function MontageEditorPanel({
     });
     if (mappings.some((mapping) => mapping === null)) return;
     const response = await api.montageApplyCmx(projectId, { expectedRevision: state.revisionNumber, edl: cmxEdl, mappings: mappings.filter((mapping): mapping is NonNullable<typeof mapping> => mapping !== null) });
-    if (response.ok) setState((current) => ({ ...current, revisionNumber: response.revisionNumber }));
-  }, [api, cmxEdl, cmxPreview, materials, projectId, reelMappings, state.revisionNumber]);
+    if (response.ok) {
+      setState((current) => ({ ...current, revisionNumber: response.revisionNumber }));
+      return;
+    }
+    setCmxStatus(copy.applyCmxFailed);
+  }, [api, cmxEdl, cmxPreview, copy.applyCmxFailed, materials, projectId, reelMappings, state.revisionNumber]);
 
   const addMaterial = useCallback((item: MaterialBinItem) => {
     const selectedClip = selectedClipId === null

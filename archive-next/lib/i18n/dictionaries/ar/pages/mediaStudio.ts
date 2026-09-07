@@ -110,6 +110,7 @@ export const mediaStudio = {
     previewFailed: "تعذرت معاينة القائمة. أعد المحاولة.",
     reelMapping: "بكرة {reel}",
     applyCmx: "تطبيق CMX في مراجعة جديدة",
+    applyCmxFailed: "تعذر إنشاء مراجعة من CMX. أعد المعاينة وحاول مجددًا.",
     undoButton: "تراجع",
     redoButton: "إعادة",
     saveRevision: "حفظ مراجعة",

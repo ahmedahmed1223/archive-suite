@@ -58,6 +58,7 @@ const copy = {
   interchangeTitle: "Interchange preview",
   reelMapping: "Reel {reel}",
   applyCmx: "Apply CMX to new revision",
+  applyCmxFailed: "Could not apply CMX",
   previewOnlyHint: "Preview only — it does not change the project.",
   previewAccepted: "Accepted",
   previewRejected: "Rejected",
@@ -246,5 +247,16 @@ describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
     fireEvent.change(await screen.findByRole("combobox", { name: "Reel AX" }), { target: { value: "m1" } });
     fireEvent.click(screen.getByRole("button", { name: copy.applyCmx }));
     await waitFor(() => expect(montageApplyCmx).toHaveBeenCalledWith("p1", expect.objectContaining({ expectedRevision: 1 })));
+  });
+
+  it("shows a clear error when CMX application is rejected", async () => {
+    montagePreviewCmx.mockResolvedValueOnce({ ok: true, format: "cmx3600", preview: { accepted: [{ event: 1, reel: "AX" }], rejected: [] } });
+    montageApplyCmx.mockResolvedValueOnce({ ok: false, error: "Revision conflict." });
+    render(<MontageEditorPanel projectId="p1" initialState={makeState()} materials={[{ id: "m1", name: "Camera master", durationSeconds: 20, source: { recordId: "r1", sourceVersionToken: "sha256:a" } }]} copy={copy} />);
+    fireEvent.change(screen.getByRole("textbox", { name: copy.previewCmx }), { target: { value: "001  AX       V     C        00:00:00:00 00:00:02:00 00:00:00:00 00:00:02:00" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.previewCmx }));
+    fireEvent.change(await screen.findByRole("combobox", { name: "Reel AX" }), { target: { value: "m1" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.applyCmx }));
+    expect(await screen.findByText(copy.applyCmxFailed)).toBeInTheDocument();
   });
 });
