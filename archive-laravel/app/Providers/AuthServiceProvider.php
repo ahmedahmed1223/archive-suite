@@ -29,6 +29,11 @@ class AuthServiceProvider extends ServiceProvider
 
         Gate::define('manage-content', fn (User $user): bool => in_array($user->role, ['admin', 'editor'], true));
 
+        // V2 media QC exceptions have a distinct authority boundary.  An
+        // editor can request and inspect QC work, but only an administrator
+        // may override a failed, version-pinned result with a recorded reason.
+        Gate::define('media.qc.override', fn (User $user): bool => $user->role === 'admin');
+
         // V2-707: Pulse dashboard exposes request/queue/exception metrics —
         // same admin-only rule as manage-system. viewHorizon is defined
         // separately in HorizonServiceProvider::gate() (Horizon's own

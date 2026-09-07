@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -44,6 +45,17 @@ class RoleMatrixApiTest extends TestCase
         File::deleteDirectory($this->backupDir);
 
         parent::tearDown();
+    }
+
+    public function test_only_admin_has_the_explicit_media_qc_override_ability(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $editor = User::factory()->create(['role' => 'editor']);
+        $viewer = User::factory()->create(['role' => 'viewer']);
+
+        $this->assertTrue(Gate::forUser($admin)->allows('media.qc.override'));
+        $this->assertFalse(Gate::forUser($editor)->allows('media.qc.override'));
+        $this->assertFalse(Gate::forUser($viewer)->allows('media.qc.override'));
     }
 
     // -- share management (V1-102 gap: was open to every authenticated role) --
