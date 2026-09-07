@@ -25100,8 +25100,9 @@
           "versionToken",
           "isCurrentVersion",
           "report",
-          "mediaJobId",
-          "completedAt"
+            "mediaJobId",
+            "completedAt",
+            "qcOverride"
         ],
         "properties": {
           "id": {
@@ -25150,6 +25151,10 @@
               "null"
             ],
             "format": "date-time"
+          },
+          "qcOverride": {
+            "type": "boolean",
+            "description": "True only when this failed QC inspection has a separately recorded, authorized override. The technical report remains unchanged."
           }
         }
       },

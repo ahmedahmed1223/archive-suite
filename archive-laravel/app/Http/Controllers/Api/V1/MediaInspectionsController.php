@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\MediaInspection;
 use App\Services\Media\MediaInspectionService;
+use App\Services\Media\MediaApprovalService;
 use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ use RuntimeException;
 
 class MediaInspectionsController extends Controller
 {
-    public function __construct(private readonly MediaInspectionService $inspections) {}
+    public function __construct(private readonly MediaInspectionService $inspections, private readonly MediaApprovalService $approvals) {}
 
     public function index(Request $request, string $recordId): JsonResponse
     {
@@ -45,6 +46,7 @@ class MediaInspectionsController extends Controller
             'report' => $inspection->report,
             'mediaJobId' => $inspection->media_job_id,
             'completedAt' => $inspection->completed_at?->toISOString(),
+            'qcOverride' => $inspection->inspection_type === 'qc' && $this->approvals->isOverridden($inspection),
         ];
     }
 }

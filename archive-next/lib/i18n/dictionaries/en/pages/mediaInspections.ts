@@ -24,6 +24,7 @@ export const mediaInspections = {
   qcWarning: "Warning",
   qcFailed: "Failed",
   qcWaived: "Waived",
+  qcOverrideNote: "Export is allowed by a recorded override; the original technical result remains unchanged.",
   qcRules: {
     decode: "Decode integrity",
     expected_video: "Video stream",

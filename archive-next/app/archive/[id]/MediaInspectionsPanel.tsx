@@ -43,8 +43,8 @@ export default function MediaInspectionsPanel({ record }: Readonly<{ record: Arc
   const probeReport = probe && isProbeReport(probe.report) ? probe.report : null;
   const qcReport = qc && isQcReport(qc.report) ? qc.report : null;
   const latest = probe ?? qc;
-  const qcStatusLabel = qc?.status === "passed" ? copy.qcPassed : qc?.status === "warning" ? copy.qcWarning : qc?.status === "waived" ? copy.qcWaived : copy.qcFailed;
-  const qcStatusClass = qc?.status === "passed" ? "badge-success" : qc?.status === "warning" ? "badge-warning" : qc?.status === "waived" ? "badge" : "badge-error";
+  const qcStatusLabel = qc?.qcOverride ? copy.qcWaived : qc?.status === "passed" ? copy.qcPassed : qc?.status === "warning" ? copy.qcWarning : qc?.status === "waived" ? copy.qcWaived : copy.qcFailed;
+  const qcStatusClass = qc?.qcOverride ? "badge-success" : qc?.status === "passed" ? "badge-success" : qc?.status === "warning" ? "badge-warning" : qc?.status === "waived" ? "badge" : "badge-error";
   const qcRuleLabel = (rule: string) => rule in copy.qcRules ? copy.qcRules[rule as keyof typeof copy.qcRules] : rule;
 
   return (
@@ -73,6 +73,7 @@ export default function MediaInspectionsPanel({ record }: Readonly<{ record: Arc
           <div className="panel-title-row"><div><h3 id="media-qc-title">{copy.qcTitle}</h3><p className="helper-text">{copy.qcDescription}</p></div><span className={`badge ${qcStatusClass}`}>{qcStatusLabel}</span></div>
           <ul className="media-inspections__findings">{qcReport.findings.map((finding, index) => <li key={`${finding.rule}-${finding.startSeconds}-${index}`} data-status={finding.status}><strong>{qcRuleLabel(finding.rule)}</strong><span className="badge">{finding.status === "passed" ? copy.qcPassed : finding.status === "warning" ? copy.qcWarning : finding.status === "waived" ? copy.qcWaived : copy.qcFailed}</span><p>{finding.evidence}</p></li>)}</ul>
           <p className="field-note">{copy.versionNote.replace("{token}", qc.versionToken)}</p>
+          {qc.qcOverride ? <p className="field-note">{copy.qcOverrideNote}</p> : null}
         </section>
       ) : null}
     </article>

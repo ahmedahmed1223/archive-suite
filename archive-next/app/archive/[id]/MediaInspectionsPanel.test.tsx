@@ -84,4 +84,11 @@ describe("MediaInspectionsPanel", () => {
     expect(screen.getAllByText("فشل")).toHaveLength(2);
     expect(screen.getByText("ذروة صوت مرتفعة")).toBeInTheDocument();
   });
+
+  test("shows an authorized QC override without rewriting the failed technical finding", async () => {
+    mediaInspections.mockResolvedValue({ ok: true, inspections: [{ ...inspection(), inspectionType: "qc", status: "failed", qcOverride: true, report: { status: "failed", findings: [], metrics: {} } }] });
+    render(<LocaleProvider initialLocale="ar" hasLocaleCookie={false}><MediaInspectionsPanel record={{ id: "record-1", store: "archive-items" } as ArchiveRecord} /></LocaleProvider>);
+    expect(await screen.findByText("تم التجاوز")).toBeInTheDocument();
+    expect(screen.getByText("السماح بالتصدير يستند إلى تجاوز موثق؛ تبقى نتيجة الفحص الفني الأصلية محفوظة دون تعديل.")).toBeInTheDocument();
+  });
 });

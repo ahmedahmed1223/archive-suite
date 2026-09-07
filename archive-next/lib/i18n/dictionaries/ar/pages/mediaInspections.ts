@@ -24,6 +24,7 @@ export const mediaInspections = {
   qcWarning: "تحذير",
   qcFailed: "فشل",
   qcWaived: "تم التجاوز",
+  qcOverrideNote: "السماح بالتصدير يستند إلى تجاوز موثق؛ تبقى نتيجة الفحص الفني الأصلية محفوظة دون تعديل.",
   qcRules: {
     decode: "سلامة فك الترميز",
     expected_video: "مسار الفيديو",

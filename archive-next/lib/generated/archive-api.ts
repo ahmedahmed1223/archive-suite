@@ -5612,6 +5612,8 @@ export interface components {
             /** @description False once the record source has been replaced since this inspection ran -- it is still returned, but must not be treated as matching the current source. */
             isCurrentVersion: boolean;
             mediaJobId: string | null;
+            /** @description True only when this failed QC inspection has a separately recorded, authorized override. The technical report remains unchanged. */
+            qcOverride: boolean;
             recordStore: string;
             recordUid: string;
             report: components["schemas"]["MediaProbeReport"] | components["schemas"]["MediaQcReport"];
