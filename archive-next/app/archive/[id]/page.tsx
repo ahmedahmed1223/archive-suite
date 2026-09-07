@@ -14,6 +14,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { type AppDictionary } from "@/lib/i18n/dictionaries";
 import GeotagPanel from "./GeotagPanel";
 import MediaDerivativesTree from "./MediaDerivativesTree";
+import MediaInspectionsPanel from "./MediaInspectionsPanel";
 import { RecordDescribeForm, type RecordDescribePatch } from "./RecordDescribeForm";
 import { RelationPreviewPanel } from "./RelationPreviewPanel";
 import { RecordNotesPanel, sortRecordNotes } from "./RecordNotesPanel";
@@ -977,6 +978,7 @@ export default function ArchiveDetailPage() {
             <RecordSourceReplacementPanel recordId={id} canEdit={canEditRecords} />
             <RecordChangeImpactPanel recordId={id} canEdit={canEditRecords} />
             <MediaDerivativesTree record={state.record} />
+            <MediaInspectionsPanel record={state.record} />
             <RecordHistoryPanel
               entries={state.history}
               loading={state.historyLoading}

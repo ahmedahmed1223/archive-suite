@@ -1,0 +1,21 @@
+export const mediaInspections = {
+  title: "الفحص التقني",
+  description: "نتيجة فنية محفوظة ومرتبطة بنسخة المصدر، لتقييم جاهزية المادة قبل المعالجة أو الإتاحة.",
+  currentVersion: "مطابق للنسخة الحالية",
+  historicVersion: "نتيجة لنسخة سابقة",
+  loadingText: "جارٍ تحميل نتيجة الفحص الفني...",
+  loadErrorPrefix: "تعذر تحميل الفحص الفني: {message}",
+  retryButton: "إعادة المحاولة",
+  emptyTitle: "لا يوجد فحص تقني محفوظ",
+  emptyDescription: "شغّل مهمة فحص الملف من مساحة عمليات الوسائط؛ ستُحفظ النتيجة هنا مع بصمة نسخة المصدر.",
+  unknownFormat: "تنسيق غير محدد",
+  completedAt: "اكتمل الفحص في {date}",
+  unknownDate: "وقت الإكمال غير مسجل",
+  durationLabel: "المدة",
+  sizeLabel: "الحجم",
+  bitRateLabel: "معدل البت",
+  streamsLabel: "المسارات",
+  secondsUnit: "ث",
+  megabitsUnit: "Mbps",
+  versionNote: "بصمة النسخة: {token}"
+} as const;

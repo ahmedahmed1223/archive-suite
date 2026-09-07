@@ -25,6 +25,22 @@ describe("archive API uploads", () => {
   });
 });
 
+describe("media inspections API client", () => {
+  it("loads the durable technical inspection history for the selected record store", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, inspections: [] }), { status: 200 }),
+    );
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    await api.mediaInspections("record / 1", { store: "archive items" });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "/api/v1/records/record%20%2F%201/media-inspections?store=archive+items",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+});
+
 describe("archive API report exports", () => {
   it("uses the access token issued by login when downloading the compliance CSV", async () => {
     const fetchImpl = vi

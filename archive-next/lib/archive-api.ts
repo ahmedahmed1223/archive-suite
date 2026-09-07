@@ -897,6 +897,7 @@ export type MediaJob = GeneratedSchemas["MediaJob"];
 export type MediaJobStatus = MediaJob["status"];
 export type MediaProbeReport = GeneratedSchemas["MediaProbeReport"];
 export type MediaProbeStream = GeneratedSchemas["MediaProbeStream"];
+export type MediaInspection = GeneratedSchemas["MediaInspection"];
 export type RationalFrameRate = GeneratedSchemas["RationalFrameRate"];
 
 export interface CreateMediaJobPayload {
@@ -1428,6 +1429,11 @@ export interface ArchiveApiClient {
     params?: { store?: string; attachmentId?: string; type?: MediaDerivativeType },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ derivatives: MediaDerivative[] }>>;
+  mediaInspections(
+    recordId: string,
+    params?: { store?: string },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ inspections: MediaInspection[] }>>;
   requestMediaDerivative(
     payload: MediaDerivativeRequestPayload,
     options?: AuthRequestOptions
@@ -2514,6 +2520,15 @@ export function createArchiveApiClient({
       return get<{ derivatives: MediaDerivative[] }>(
         `/records/${encodeURIComponent(recordId)}/media-derivatives${query ? `?${query}` : ""}`,
         options
+      );
+    },
+    mediaInspections: (recordId: string, params?: { store?: string }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.store) queryParams.set("store", params.store);
+      const query = queryParams.toString();
+      return get<{ inspections: MediaInspection[] }>(
+        `/records/${encodeURIComponent(recordId)}/media-inspections${query ? `?${query}` : ""}`,
+        options,
       );
     },
     requestMediaDerivative: (payload: MediaDerivativeRequestPayload, options?: AuthRequestOptions) =>

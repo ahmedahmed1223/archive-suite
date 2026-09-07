@@ -1,0 +1,21 @@
+export const mediaInspections = {
+  title: "Technical inspection",
+  description: "A durable, source-version-pinned report used to assess media readiness before processing or access.",
+  currentVersion: "Matches current version",
+  historicVersion: "Result for an earlier version",
+  loadingText: "Loading technical inspection...",
+  loadErrorPrefix: "Could not load the technical inspection: {message}",
+  retryButton: "Retry",
+  emptyTitle: "No technical inspection saved",
+  emptyDescription: "Run a file-probe task from Media Operations; its result will be retained here with the source version fingerprint.",
+  unknownFormat: "Unknown format",
+  completedAt: "Inspection completed {date}",
+  unknownDate: "Completion time not recorded",
+  durationLabel: "Duration",
+  sizeLabel: "Size",
+  bitRateLabel: "Bit rate",
+  streamsLabel: "Streams",
+  secondsUnit: "s",
+  megabitsUnit: "Mbps",
+  versionNote: "Version fingerprint: {token}"
+} as const;
