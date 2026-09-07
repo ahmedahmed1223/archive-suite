@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { reduceEditor, type EditorAction, type EditorState } from "@/lib/montage-editor";
+import { framesToTimecode, secondsToFrames, type RationalFrameRate, type TimecodeMode } from "@/lib/timecode";
 
 export type TimelineCanvasCopy = {
   timelineAriaLabel: string;
@@ -13,6 +14,8 @@ type TimelineCanvasProps = {
   state: EditorState;
   dispatch: (action: EditorAction) => void;
   fps?: number;
+  frameRate?: RationalFrameRate;
+  timecodeMode?: TimecodeMode;
   selectedClipId: string | null;
   onSelectClip: (clipId: string) => void;
   copy: TimelineCanvasCopy;
@@ -27,6 +30,8 @@ export default function TimelineCanvas({
   state,
   dispatch,
   fps = 25,
+  frameRate,
+  timecodeMode = "non_drop",
   selectedClipId,
   onSelectClip,
   copy,
@@ -76,10 +81,8 @@ export default function TimelineCanvas({
   );
 
   const secondsToTimecode = (s: number): string => {
-    const total = Math.round(s * fps);
-    const ss = Math.floor(total / fps);
-    const ff = total % fps;
-    return `${String(ss).padStart(2, "0")}:${String(ff).padStart(2, "0")}`;
+    const rate = frameRate ?? { numerator: fps, denominator: 1 };
+    return framesToTimecode(secondsToFrames(s, rate), rate, timecodeMode);
   };
 
   return (
