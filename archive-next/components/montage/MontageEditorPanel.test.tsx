@@ -4,16 +4,17 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import MontageEditorPanel from "./MontageEditorPanel";
 import { type EditorState } from "@/lib/montage-editor";
 
-const { montageExportQc, collaborationPresence } = vi.hoisted(() => ({
+const { montageExportQc, collaborationPresence, montagePreviewCmx } = vi.hoisted(() => ({
   montageExportQc: vi.fn(),
   collaborationPresence: vi.fn(),
+  montagePreviewCmx: vi.fn(),
 }));
 
 vi.mock("@/lib/archive-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
   return {
     ...actual,
-    createArchiveApiClient: () => ({ montageExportQc, collaborationPresence }),
+    createArchiveApiClient: () => ({ montageExportQc, collaborationPresence, montagePreviewCmx }),
   };
 });
 
@@ -52,6 +53,12 @@ const copy = {
   clipsUnit: "clips",
   presenceLabel: "Other editors open",
   noOtherEditors: "No other editor",
+  previewCmx: "Preview CMX 3600",
+  interchangeTitle: "Interchange preview",
+  previewOnlyHint: "Preview only — it does not change the project.",
+  previewAccepted: "Accepted",
+  previewRejected: "Rejected",
+  previewFailed: "Preview failed",
   timelineAriaLabel: "Timeline clips",
   selectHint: "Select a clip to start editing",
   selectedHint: "Clip selected",
@@ -70,6 +77,11 @@ afterEach(cleanup);
 beforeEach(() => {
   montageExportQc.mockResolvedValue({ ok: true, ready: true, revisionNumber: 1 });
   collaborationPresence.mockResolvedValue({ ok: true, participants: [] });
+  montagePreviewCmx.mockResolvedValue({
+    ok: true,
+    format: "cmx3600",
+    preview: { accepted: [{ event: 1 }], rejected: [{ event: 2, reason: "audio_track_unsupported" }] },
+  });
 });
 
 describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
@@ -169,5 +181,40 @@ describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
 
     fireEvent.doubleClick(screen.getByRole("option", { name: /Interview/ }));
     expect(screen.getByText(/rev 1 · 2 clips/)).toBeInTheDocument();
+  });
+
+  it("previews a CMX edit list without implying that it was imported", () => {
+    render(
+      <MontageEditorPanel
+        projectId="p1"
+        initialState={makeState()}
+        materials={[]}
+        copy={copy}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: copy.previewCmx })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: copy.interchangeTitle })).toBeInTheDocument();
+    expect(screen.getByText(copy.previewOnlyHint)).toBeInTheDocument();
+  });
+
+  it("sends an edit list for preview and shows accepted and rejected counts", async () => {
+    render(
+      <MontageEditorPanel
+        projectId="p1"
+        initialState={makeState()}
+        materials={[]}
+        copy={copy}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("textbox", { name: copy.previewCmx }), {
+      target: { value: "001  AX       V     C        00:00:00:00 00:00:02:00 00:00:00:00 00:00:02:00" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: copy.previewCmx }));
+
+    await waitFor(() => expect(montagePreviewCmx).toHaveBeenCalledWith("p1", expect.objectContaining({ edl: expect.stringContaining("001") })));
+    expect(screen.getByText("Accepted: 1")).toBeInTheDocument();
+    expect(screen.getByText("Rejected: 1")).toBeInTheDocument();
   });
 });

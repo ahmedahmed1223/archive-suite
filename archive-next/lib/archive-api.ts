@@ -1564,6 +1564,11 @@ export interface ArchiveApiClient {
     payload: { expectedRevision: number; preset: "web-1080p" | "web-4k" | "archive-master" },
     options?: AuthRequestOptions,
   ): Promise<ApiEnvelope<{ ready: boolean; revisionNumber: number }>>;
+  montagePreviewCmx(
+    projectId: string,
+    payload: { edl: string },
+    options?: AuthRequestOptions,
+  ): Promise<ApiEnvelope<{ format: "cmx3600"; preview: { accepted: unknown[]; rejected: unknown[] } }>>;
   montageCancelExport(
     projectId: string,
     exportId: string,
@@ -2770,6 +2775,12 @@ export function createArchiveApiClient({
     montageExportQc: (projectId, payload, options?: AuthRequestOptions) =>
       post<{ ready: boolean; revisionNumber: number }>(
         `/montage-projects/${encodeURIComponent(projectId)}/exports/qc`,
+        payload,
+        options,
+      ),
+    montagePreviewCmx: (projectId, payload, options?: AuthRequestOptions) =>
+      post<{ format: "cmx3600"; preview: { accepted: unknown[]; rejected: unknown[] } }>(
+        `/montage-projects/${encodeURIComponent(projectId)}/interchange/cmx-preview`,
         payload,
         options,
       ),

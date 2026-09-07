@@ -32,6 +32,12 @@ export type MontageEditorCopy = {
   clipsUnit: string;
   presenceLabel: string;
   noOtherEditors: string;
+  previewCmx: string;
+  interchangeTitle: string;
+  previewOnlyHint: string;
+  previewAccepted: string;
+  previewRejected: string;
+  previewFailed: string;
 };
 
 type MontageEditorPanelProps = {
@@ -82,6 +88,9 @@ export default function MontageEditorPanel({
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string>("");
+  const [cmxEdl, setCmxEdl] = useState("");
+  const [cmxPreview, setCmxPreview] = useState<{ accepted: unknown[]; rejected: unknown[] } | null>(null);
+  const [cmxStatus, setCmxStatus] = useState("");
   const [qcReady, setQcReady] = useState(false);
   const [presence, setPresence] = useState<PresenceSnapshot>({ projectId, editors: [] });
 
@@ -184,6 +193,22 @@ export default function MontageEditorPanel({
     setQcReady(response.ok && response.ready === true);
   }, [api, projectId, state.revisionNumber, state.timeline]);
 
+  const previewCmx = useCallback(async () => {
+    if (!cmxEdl.trim()) return;
+    setCmxStatus("");
+    setCmxPreview(null);
+    try {
+      const response = await api.montagePreviewCmx(projectId, { edl: cmxEdl });
+      if (!response.ok) {
+        setCmxStatus(copy.previewFailed);
+        return;
+      }
+      setCmxPreview(response.preview);
+    } catch {
+      setCmxStatus(copy.previewFailed);
+    }
+  }, [api, cmxEdl, copy.previewFailed, projectId]);
+
   const addMaterial = useCallback((item: MaterialBinItem) => {
     const selectedClip = selectedClipId === null
       ? null
@@ -223,6 +248,33 @@ export default function MontageEditorPanel({
       </div>
 
       <p role="status" className="ui-visually-hidden montage-editor-panel__status">{saveStatus}</p>
+
+      <section aria-label={copy.interchangeTitle} className="card card-border bg-base-200 shadow-sm">
+        <div className="card-body gap-3 p-4">
+          <div>
+            <h2 className="card-title text-base">{copy.interchangeTitle}</h2>
+            <p className="text-sm text-base-content/70">{copy.previewOnlyHint}</p>
+          </div>
+          <label className="ui-visually-hidden" htmlFor="cmx-edl">{copy.previewCmx}</label>
+          <textarea
+            id="cmx-edl"
+            className="textarea w-full font-mono text-sm"
+            value={cmxEdl}
+            onChange={(event) => setCmxEdl(event.target.value)}
+            placeholder={copy.previewCmx}
+          />
+          <div className="card-actions justify-start">
+            <button type="button" className="btn btn-primary" onClick={() => void previewCmx()} disabled={!cmxEdl.trim()}>{copy.previewCmx}</button>
+          </div>
+          {cmxPreview ? (
+            <div role="status" className="alert alert-info alert-soft sm:alert-horizontal">
+              <span>{copy.previewAccepted}: {cmxPreview.accepted.length}</span>
+              <span>{copy.previewRejected}: {cmxPreview.rejected.length}</span>
+            </div>
+          ) : null}
+          {cmxStatus ? <p role="status" className="alert alert-error alert-soft">{cmxStatus}</p> : null}
+        </div>
+      </section>
 
       <div className="montage-editor-panel__columns">
         <MediaBin
