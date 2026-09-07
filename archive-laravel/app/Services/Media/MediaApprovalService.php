@@ -36,4 +36,24 @@ final class MediaApprovalService
     {
         return MediaQcOverride::query()->where('media_inspection_id', $inspection->id)->exists();
     }
+
+    /** @param array<int, array<string, mixed>> $sources @return array<string, string> */
+    public function exportBlockingFailures(array $sources): array
+    {
+        $errors = [];
+        foreach ($sources as $source) {
+            $recordStore = $source['recordStore'] ?? null;
+            $recordId = $source['recordId'] ?? null;
+            $versionToken = $source['sourceVersionToken'] ?? null;
+            if (! is_string($recordStore) || ! is_string($recordId) || ! is_string($versionToken)) continue;
+            $inspection = MediaInspection::query()->where([
+                'record_store' => $recordStore, 'record_uid' => $recordId,
+                'inspection_type' => 'qc', 'status' => 'failed', 'version_token' => $versionToken,
+            ])->latest('completed_at')->first();
+            if ($inspection instanceof MediaInspection && ! $this->isOverridden($inspection)) {
+                $errors["qc.$recordId"] = 'Current source QC failed and has not received an authorized override.';
+            }
+        }
+        return $errors;
+    }
 }

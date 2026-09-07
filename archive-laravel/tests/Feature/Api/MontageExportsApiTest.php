@@ -4,6 +4,8 @@ namespace Tests\Feature\Api;
 
 use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaJob;
+use App\Models\MediaInspection;
+use App\Models\MediaQcOverride;
 use App\Models\MontageProject;
 use App\Models\MontageProjectRevision;
 use App\Models\User;
@@ -57,6 +59,42 @@ class MontageExportsApiTest extends TestCase
         $this->assertDatabaseCount('montage_exports', 0);
         $this->assertDatabaseCount('media_jobs', 0);
         Queue::assertNothingPushed();
+    }
+
+    public function test_export_is_blocked_by_a_current_failed_source_qc_until_it_is_overridden(): void
+    {
+        Queue::fake();
+        $owner = User::factory()->create(['role' => 'editor']);
+        [$project] = $this->projectWithRevision($owner);
+        MediaInspection::query()->create([
+            'id' => 'export-qc-failure', 'record_store' => 'archive-items', 'record_uid' => 'record-export-source',
+            'inspection_type' => 'qc', 'status' => 'failed', 'version_token' => 'record:source-checksum',
+            'report' => ['status' => 'failed', 'findings' => []], 'completed_at' => now(),
+        ]);
+
+        $this->actingAs($owner)->postJson("/api/v1/montage-projects/{$project->id}/exports", ['expectedRevision' => 1, 'preset' => 'web-1080p'])
+            ->assertUnprocessable()->assertJsonStructure(['errors' => ['qc.record-export-source']]);
+        $this->assertDatabaseCount('montage_exports', 0);
+    }
+
+    public function test_export_allows_a_failed_source_qc_after_a_version_pinned_override(): void
+    {
+        Queue::fake();
+        $admin = User::factory()->create(['role' => 'admin']);
+        [$project] = $this->projectWithRevision($admin);
+        $inspection = MediaInspection::query()->create([
+            'id' => 'export-qc-waived', 'record_store' => 'archive-items', 'record_uid' => 'record-export-source',
+            'inspection_type' => 'qc', 'status' => 'failed', 'version_token' => 'record:source-checksum',
+            'report' => ['status' => 'failed', 'findings' => []], 'completed_at' => now(),
+        ]);
+        MediaQcOverride::query()->create([
+            'id' => 'export-qc-waived-decision', 'media_inspection_id' => $inspection->id,
+            'record_store' => 'archive-items', 'record_uid' => 'record-export-source', 'version_token' => 'record:source-checksum',
+            'reason' => 'Approved exception.', 'overridden_by' => $admin->id, 'overridden_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->postJson("/api/v1/montage-projects/{$project->id}/exports", ['expectedRevision' => 1, 'preset' => 'web-1080p'])
+            ->assertCreated();
     }
 
     public function test_pre_queue_qc_rejects_insufficient_output_storage_as_structured_422(): void

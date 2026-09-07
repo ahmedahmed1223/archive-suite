@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaJobQueueRouter;
+use App\Services\Media\MediaApprovalService;
 use App\Support\RequestCorrelation;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ class MontageExportService
         private readonly MediaJobExecutor $executor,
         private readonly MediaJobQueueRouter $queues,
         private readonly MediaJobProgressBroadcaster $progress,
+        private readonly MediaApprovalService $mediaApprovals,
     ) {}
 
     /**
@@ -59,6 +61,7 @@ class MontageExportService
 
                 $manifest = $this->manifests->build($preset, $revision->id, $revision->clips ?? [], $actor);
                 $this->qc->assertReady($revision, $manifest);
+                $this->assertSourceQcReady($manifest);
 
                 $export = MontageExport::create([
                     'montage_project_id' => $project->id,
@@ -150,5 +153,12 @@ class MontageExportService
 
         $manifest = $this->manifests->build($preset, $revision->id, $revision->clips ?? [], $actor);
         $this->qc->assertReady($revision, $manifest);
+        $this->assertSourceQcReady($manifest);
+    }
+
+    private function assertSourceQcReady(MontageRenderManifest $manifest): void
+    {
+        $errors = $this->mediaApprovals->exportBlockingFailures($manifest->sources);
+        if ($errors !== []) throw new MontageValidationException($errors);
     }
 }
