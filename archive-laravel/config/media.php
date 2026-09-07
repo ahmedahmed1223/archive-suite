@@ -68,4 +68,21 @@ return [
         'opacity' => env('MEDIA_WATERMARK_OPACITY', 0.85),
         'margin' => env('MEDIA_WATERMARK_MARGIN', 24),
     ],
+
+    // V2 QC policy. Warning findings remain reviewable; failed findings are
+    // persisted for a later approval/override gate rather than being hidden
+    // in the transient media-job log.
+    'qc' => [
+        'require_video' => env('MEDIA_QC_REQUIRE_VIDEO', true),
+        'require_audio' => env('MEDIA_QC_REQUIRE_AUDIO', false),
+        'black_min_duration_seconds' => (float) env('MEDIA_QC_BLACK_MIN_DURATION_SECONDS', 1),
+        'black_pixel_threshold' => (float) env('MEDIA_QC_BLACK_PIXEL_THRESHOLD', 0.10),
+        'freeze_min_duration_seconds' => (float) env('MEDIA_QC_FREEZE_MIN_DURATION_SECONDS', 2),
+        'freeze_noise' => (float) env('MEDIA_QC_FREEZE_NOISE', 0.003),
+        'silence_min_duration_seconds' => (float) env('MEDIA_QC_SILENCE_MIN_DURATION_SECONDS', 2),
+        'silence_noise_db' => (float) env('MEDIA_QC_SILENCE_NOISE_DB', -50),
+        'clipping_max_volume_db' => (float) env('MEDIA_QC_CLIPPING_MAX_VOLUME_DB', -1),
+        'loudness_target_lufs' => (float) env('MEDIA_QC_LOUDNESS_TARGET_LUFS', -23),
+        'loudness_tolerance_lufs' => (float) env('MEDIA_QC_LOUDNESS_TOLERANCE_LUFS', 3),
+    ],
 ];

@@ -51,6 +51,22 @@ class FakeMediaProcessor implements MediaProcessor
                     'streams' => [],
                 ],
             ]],
+            'media_qc' => [[
+                'kind' => 'media_qc_report',
+                'key' => null,
+                'url' => null,
+                'report' => [
+                    'status' => 'passed',
+                    'findings' => [[
+                        'rule' => 'decode',
+                        'startSeconds' => 0.0,
+                        'endSeconds' => null,
+                        'status' => 'passed',
+                        'evidence' => 'Media stream decoded successfully.',
+                    ]],
+                    'metrics' => ['decodeExitCode' => 0],
+                ],
+            ]],
             'montage_export' => [
                 [
                     'kind' => 'montage_mp4',

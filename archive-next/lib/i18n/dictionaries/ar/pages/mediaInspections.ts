@@ -17,5 +17,21 @@ export const mediaInspections = {
   streamsLabel: "المسارات",
   secondsUnit: "ث",
   megabitsUnit: "Mbps",
-  versionNote: "بصمة النسخة: {token}"
+  versionNote: "بصمة النسخة: {token}",
+  qcTitle: "فحص الجودة",
+  qcDescription: "نتائج جودة تشغيلية مرتبطة بالنسخة الحالية؛ التحذيرات للمراجعة والفشل يحتاج قرارًا موثقًا.",
+  qcPassed: "اجتاز",
+  qcWarning: "تحذير",
+  qcFailed: "فشل",
+  qcWaived: "تم التجاوز",
+  qcRules: {
+    decode: "سلامة فك الترميز",
+    expected_video: "مسار الفيديو",
+    expected_audio: "مسار الصوت",
+    black_frame: "مقطع أسود",
+    frozen_frame: "تجمّد الصورة",
+    silence: "صمت",
+    audio_clipping: "ذروة صوت مرتفعة",
+    loudness: "مستوى الصوت"
+  }
 } as const;

@@ -5,6 +5,7 @@ export const mediaJobs = {
     transcription: "Transcription",
     ocr: "OCR text extraction",
     mediaProbe: "Technical file probe",
+    mediaQc: "Quality control",
     montageExport: "Montage export"
   },
   statuses: {
@@ -58,6 +59,7 @@ export const mediaJobs = {
     sourcePathLabel: "Source file path",
     sourcePathPlaceholder: "media/source.mp4",
     mediaProbeHint: "Reads the container, streams, codecs, duration, and size without modifying the source file.",
+    mediaQcHint: "Checks decode health, expected streams, black, freeze, silence, and audio level without modifying the source file.",
     whisperHint: "The Whisper processor is selected in system settings and applies to all new transcription jobs.",
     outputFormats: "Output formats",
     srtOption: "SRT (timestamped text)",

@@ -5,6 +5,7 @@ export const mediaJobs = {
     transcription: "تفريغ نصي",
     ocr: "استخراج نص OCR",
     mediaProbe: "فحص الملف الفني",
+    mediaQc: "فحص الجودة",
     montageExport: "تصدير مونتاج"
   },
   statuses: {
@@ -58,6 +59,7 @@ export const mediaJobs = {
     sourcePathLabel: "مسار الملف المصدر",
     sourcePathPlaceholder: "media/source.mp4",
     mediaProbeHint: "يقرأ الفحص الحاوية والمسارات والترميزات والمدة والحجم دون تعديل الملف الأصلي.",
+    mediaQcHint: "يتحقق من سلامة فك الترميز والمسارات والسواد والتجمد والصمت ومستوى الصوت دون تعديل الملف الأصلي.",
     whisperHint: "يُختار معالج Whisper من إعدادات النظام ويُطبّق على جميع مهام التفريغ الجديدة.",
     outputFormats: "صيغ الإخراج",
     srtOption: "SRT (نص مع طوابع زمنية)",

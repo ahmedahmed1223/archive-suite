@@ -17,5 +17,21 @@ export const mediaInspections = {
   streamsLabel: "Streams",
   secondsUnit: "s",
   megabitsUnit: "Mbps",
-  versionNote: "Version fingerprint: {token}"
+  versionNote: "Version fingerprint: {token}",
+  qcTitle: "Quality control",
+  qcDescription: "Operational quality results are pinned to the source version; warnings need review and failures need a documented decision.",
+  qcPassed: "Passed",
+  qcWarning: "Warning",
+  qcFailed: "Failed",
+  qcWaived: "Waived",
+  qcRules: {
+    decode: "Decode integrity",
+    expected_video: "Video stream",
+    expected_audio: "Audio stream",
+    black_frame: "Black segment",
+    frozen_frame: "Frozen frame",
+    silence: "Silence",
+    audio_clipping: "Audio clipping",
+    loudness: "Loudness"
+  }
 } as const;

@@ -22,9 +22,10 @@ final class MediaInspectionService
     /** @param array<int, array<string, mixed>> $artifacts */
     public function persistCompletedProbe(MediaJob $job, array $artifacts): void
     {
-        if ($job->operation !== 'media_probe') return;
+        if (! in_array($job->operation, ['media_probe', 'media_qc'], true)) return;
 
-        $report = $this->probeReport($artifacts);
+        $type = $job->operation === 'media_qc' ? 'qc' : 'probe';
+        $report = $this->report($artifacts, $type);
         if ($report === null) return;
 
         try {
@@ -41,8 +42,8 @@ final class MediaInspectionService
         $inspection->forceFill([
             'record_store' => $recordStore,
             'record_uid' => $recordUid,
-            'inspection_type' => 'probe',
-            'status' => 'completed',
+            'inspection_type' => $type,
+            'status' => $type === 'qc' ? (string) ($report['status'] ?? 'failed') : 'completed',
             'version_token' => $versionToken,
             'report' => $report,
             'media_job_id' => $job->id,
@@ -62,10 +63,11 @@ final class MediaInspectionService
 
     /** @param array<int, array<string, mixed>> $artifacts
      *  @return array<string, mixed>|null */
-    private function probeReport(array $artifacts): ?array
+    private function report(array $artifacts, string $type): ?array
     {
+        $kind = $type === 'qc' ? 'media_qc_report' : 'media_probe_report';
         foreach ($artifacts as $artifact) {
-            if (($artifact['kind'] ?? null) === 'media_probe_report' && is_array($artifact['report'] ?? null)) return $artifact['report'];
+            if (($artifact['kind'] ?? null) === $kind && is_array($artifact['report'] ?? null)) return $artifact['report'];
         }
         return null;
     }

@@ -19517,6 +19517,7 @@
         "type": "string",
         "enum": [
           "media_probe",
+          "media_qc",
           "thumbnail",
           "transcode",
           "transcription",
@@ -19833,6 +19834,83 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MediaProbeStream"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaQcFinding": {
+        "type": "object",
+        "required": [
+          "rule",
+          "startSeconds",
+          "endSeconds",
+          "status",
+          "evidence"
+        ],
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "startSeconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "endSeconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "warning",
+              "failed",
+              "waived"
+            ]
+          },
+          "evidence": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaQcReport": {
+        "type": "object",
+        "required": [
+          "status",
+          "findings",
+          "metrics"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "warning",
+              "failed",
+              "waived"
+            ]
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaQcFinding"
+            }
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "integer",
+                "string",
+                "boolean",
+                "null"
+              ]
             }
           }
         },
@@ -24997,13 +25075,18 @@
       "MediaInspectionType": {
         "type": "string",
         "enum": [
-          "probe"
+          "probe",
+          "qc"
         ]
       },
       "MediaInspectionStatus": {
         "type": "string",
         "enum": [
-          "completed"
+          "completed",
+          "passed",
+          "warning",
+          "failed",
+          "waived"
         ]
       },
       "MediaInspection": {
@@ -25046,7 +25129,14 @@
             "description": "False once the record source has been replaced since this inspection ran -- it is still returned, but must not be treated as matching the current source."
           },
           "report": {
-            "$ref": "#/components/schemas/MediaProbeReport"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MediaProbeReport"
+              },
+              {
+                "$ref": "#/components/schemas/MediaQcReport"
+              }
+            ]
           },
           "mediaJobId": {
             "type": [

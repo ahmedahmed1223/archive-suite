@@ -58,4 +58,30 @@ describe("MediaInspectionsPanel", () => {
     expect(screen.getByText("QuickTime / MOV")).toBeInTheDocument();
     expect(screen.getByText("٨٣٫٥ ث")).toBeInTheDocument();
   });
+
+  test("shows persisted QC failures as operational findings, not a generic job error", async () => {
+    mediaInspections.mockResolvedValue({
+      ok: true,
+      inspections: [{
+        ...inspection(),
+        inspectionType: "qc",
+        status: "failed",
+        report: {
+          status: "failed",
+          findings: [{ rule: "audio_clipping", startSeconds: 0, endSeconds: null, status: "failed", evidence: "Maximum audio level: -0.2 dB." }],
+          metrics: { maxVolumeDb: -0.2 }
+        }
+      }]
+    });
+
+    render(
+      <LocaleProvider initialLocale="ar" hasLocaleCookie={false}>
+        <MediaInspectionsPanel record={{ id: "record-1", store: "archive-items" } as ArchiveRecord} />
+      </LocaleProvider>
+    );
+
+    expect(await screen.findByText("فحص الجودة" )).toBeInTheDocument();
+    expect(screen.getAllByText("فشل")).toHaveLength(2);
+    expect(screen.getByText("ذروة صوت مرتفعة")).toBeInTheDocument();
+  });
 });

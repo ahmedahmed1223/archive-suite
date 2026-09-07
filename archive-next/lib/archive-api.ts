@@ -898,6 +898,7 @@ export type MediaJobStatus = MediaJob["status"];
 export type MediaProbeReport = GeneratedSchemas["MediaProbeReport"];
 export type MediaProbeStream = GeneratedSchemas["MediaProbeStream"];
 export type MediaInspection = GeneratedSchemas["MediaInspection"];
+export type MediaQcReport = GeneratedSchemas["MediaQcReport"];
 export type RationalFrameRate = GeneratedSchemas["RationalFrameRate"];
 
 export interface CreateMediaJobPayload {

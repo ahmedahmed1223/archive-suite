@@ -56,6 +56,7 @@ class RealMediaProcessor implements MediaProcessor
             'transcription' => $this->processTranscription($job),
             'ocr' => $this->processOcr($job),
             'media_probe' => $this->processMediaProbe($job),
+            'media_qc' => $this->processMediaQc($job),
             'montage_export' => $this->processMontageExport($job),
             'derivative' => $this->processDerivative($job),
             default => [],
@@ -72,6 +73,22 @@ class RealMediaProcessor implements MediaProcessor
 
         return [[
             'kind' => 'media_probe_report',
+            'key' => null,
+            'url' => null,
+            'report' => $report,
+        ]];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function processMediaQc(MediaJob $job): array
+    {
+        $this->updateProgress($job, ['progress_stage' => 'quality_control', 'progress_percent' => 10]);
+        $report = (new MediaQcService($this->runner, $this->pathGuard, $this->ffmpegPath, $this->ffprobePath, config('media.qc', [])))
+            ->inspect((string) $job->source_path, fn (): bool => $this->isCanceled($job));
+        $this->updateProgress($job, ['progress_stage' => 'qc_complete', 'progress_percent' => 100]);
+
+        return [[
+            'kind' => 'media_qc_report',
             'key' => null,
             'url' => null,
             'report' => $report,

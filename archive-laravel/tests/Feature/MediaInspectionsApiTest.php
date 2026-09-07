@@ -44,4 +44,34 @@ class MediaInspectionsApiTest extends TestCase
             ->assertJsonPath('inspections.0.isCurrentVersion', true)
             ->assertJsonPath('inspections.0.report.formatNames.0', 'mov');
     }
+
+    public function test_a_completed_qc_run_is_persisted_as_a_version_pinned_operational_result(): void
+    {
+        DB::table('storage_rows')->insert([
+            'store' => 'archive-items',
+            'uid' => 'video-qc-1',
+            'data' => json_encode([
+                'id' => 'video-qc-1',
+                'title' => 'مادة اختبار الجودة',
+                'checksum' => 'source-checksum-qc-1',
+            ], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'video-qc-1',
+            'operation' => 'media_qc',
+            'sourcePath' => 'ingest/video-qc-1.mov',
+        ], $this->authHeaders())->assertAccepted();
+
+        $this->getJson('/api/v1/records/video-qc-1/media-inspections', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(1, 'inspections')
+            ->assertJsonPath('inspections.0.inspectionType', 'qc')
+            ->assertJsonPath('inspections.0.status', 'passed')
+            ->assertJsonPath('inspections.0.versionToken', 'record:source-checksum-qc-1')
+            ->assertJsonPath('inspections.0.isCurrentVersion', true)
+            ->assertJsonPath('inspections.0.report.findings.0.rule', 'decode');
+    }
 }

@@ -48,7 +48,7 @@ type CancelState =
 /** V3-PERF-005: matches StudioTimelinePanel's poll-when-disconnected fallback cadence. */
 const QUEUE_STATUS_POLL_INTERVAL_MS = 8000;
 
-const OPERATIONS: readonly MediaOperation[] = ["media_probe", "thumbnail", "transcode", "transcription"];
+const OPERATIONS: readonly MediaOperation[] = ["media_probe", "media_qc", "thumbnail", "transcode", "transcription"];
 function createMediaJobFormSchema(copy: MediaJobsCopy) {
   return z
     .object({
@@ -74,7 +74,7 @@ function createMediaJobFormSchema(copy: MediaJobsCopy) {
         ctx.addIssue({ code: "custom", path: ["watermarkPath"], message: copy.validation.watermarkPathRequired });
       }
 
-      if (value.operation === "media_probe" && !value.sourcePath) {
+      if (["media_probe", "media_qc"].includes(value.operation) && !value.sourcePath) {
         ctx.addIssue({ code: "custom", path: ["sourcePath"], message: copy.validation.sourcePathRequired });
       }
     });
@@ -97,6 +97,7 @@ function operationLabel(operation: MediaOperation, copy: MediaJobsCopy) {
     transcription: copy.operations.transcription,
     ocr: copy.operations.ocr,
     media_probe: copy.operations.mediaProbe,
+    media_qc: copy.operations.mediaQc,
     montage_export: copy.operations.montageExport
   };
 
@@ -561,6 +562,7 @@ export function MediaJobsList() {
           </label>
 
           {selectedOperation === "media_probe" && <p className="field-note">{copy.create.mediaProbeHint}</p>}
+          {selectedOperation === "media_qc" && <p className="field-note">{copy.create.mediaQcHint}</p>}
 
           {selectedOperation === "transcription" && (
             <div className="state-banner">

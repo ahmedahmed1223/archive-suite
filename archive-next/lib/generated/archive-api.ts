@@ -5614,7 +5614,7 @@ export interface components {
             mediaJobId: string | null;
             recordStore: string;
             recordUid: string;
-            report: components["schemas"]["MediaProbeReport"];
+            report: components["schemas"]["MediaProbeReport"] | components["schemas"]["MediaQcReport"];
             status: components["schemas"]["MediaInspectionStatus"];
             /** @description Same checksum-derived identity as ReviewSession.versionToken / MediaDerivative.versionToken -- pinned when this inspection was recorded. */
             versionToken: string;
@@ -5623,9 +5623,9 @@ export interface components {
             inspections: components["schemas"]["MediaInspection"][];
         };
         /** @enum {string} */
-        MediaInspectionStatus: "completed";
+        MediaInspectionStatus: "completed" | "passed" | "warning" | "failed" | "waived";
         /** @enum {string} */
-        MediaInspectionType: "probe";
+        MediaInspectionType: "probe" | "qc";
         MediaJob: {
             /** Format: date-time */
             completedAt?: string | null;
@@ -5665,7 +5665,7 @@ export interface components {
             job: components["schemas"]["MediaJob"];
         };
         /** @enum {string} */
-        MediaOperation: "media_probe" | "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
+        MediaOperation: "media_probe" | "media_qc" | "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
         MediaProbeReport: {
             bitRate: number | null;
             durationSeconds: number | null;
@@ -5696,6 +5696,22 @@ export interface components {
             /** @enum {string} */
             type: "video" | "audio" | "subtitle" | "data" | "attachment" | "unknown";
             width?: number | null;
+        };
+        MediaQcFinding: {
+            endSeconds: number | null;
+            evidence: string;
+            rule: string;
+            startSeconds: number;
+            /** @enum {string} */
+            status: "passed" | "warning" | "failed" | "waived";
+        };
+        MediaQcReport: {
+            findings: components["schemas"]["MediaQcFinding"][];
+            metrics: {
+                [key: string]: number | string | boolean | null;
+            };
+            /** @enum {string} */
+            status: "passed" | "warning" | "failed" | "waived";
         };
         MediaReviewComment: {
             /** Format: uuid */
