@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\V1\LinkAuditController;
 use App\Http\Controllers\Api\V1\MediaDerivativesController;
 use App\Http\Controllers\Api\V1\MediaInspectionsController;
 use App\Http\Controllers\Api\V1\MediaQcOverridesController;
+use App\Http\Controllers\Api\V1\MontageInterchangeController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\MediaReviewCommentsController;
 use App\Http\Controllers\Api\V1\MetadataTemplatesController;
@@ -440,6 +441,7 @@ Route::prefix('v1')->group(function (): void {
         // by the derivative's own id.
         Route::get('/records/{id}/media-derivatives', [MediaDerivativesController::class, 'index']);
           Route::get('/records/{id}/media-inspections', [MediaInspectionsController::class, 'index']);
+          Route::post('/montage-projects/{id}/interchange/cmx-preview', [MontageInterchangeController::class, 'previewCmx']);
           Route::post('/media-inspections/{inspectionId}/override', [MediaQcOverridesController::class, 'store']);
         Route::post('/media-derivatives', [MediaDerivativesController::class, 'store']);
         Route::get('/media-derivatives/{id}', [MediaDerivativesController::class, 'show']);

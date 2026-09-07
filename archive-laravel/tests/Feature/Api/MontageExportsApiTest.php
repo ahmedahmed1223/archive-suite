@@ -61,6 +61,16 @@ class MontageExportsApiTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_cmx_preview_reports_accepted_and_rejected_edits_without_creating_a_revision(): void
+    {
+        $owner = User::factory()->create(['role' => 'editor']);
+        [$project] = $this->projectWithRevision($owner);
+        $this->actingAs($owner)->postJson("/api/v1/montage-projects/{$project->id}/interchange/cmx-preview", [
+            'edl' => "001  AX       V     C        01:00:00:00 01:00:05:00 00:00:00:00 00:00:05:00\n002  AX       A     C        01:00:05:00 01:00:10:00 00:00:05:00 00:00:10:00",
+        ])->assertOk()->assertJsonCount(1, 'preview.accepted')->assertJsonCount(1, 'preview.rejected');
+        $this->assertDatabaseCount('montage_project_revisions', 1);
+    }
+
     public function test_export_is_blocked_by_a_current_failed_source_qc_until_it_is_overridden(): void
     {
         Queue::fake();
