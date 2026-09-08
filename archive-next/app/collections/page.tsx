@@ -41,7 +41,7 @@ export default function CollectionsPage() {
   const authorityKindLabels: Record<AuthorityEntity["kind"], string> = locale === "ar"
     ? { person: "شخص", organization: "مؤسسة", place: "مكان", program: "برنامج" }
     : { person: "Person", organization: "Organization", place: "Place", program: "Program" };
-  const curatedCopy = locale === "ar" ? { title: "المجموعات المنسقة", description: "اختيارات تحريرية للمؤسسة لا تغيّر موقع المادة في التسلسل الأرشيفي.", new: "إنشاء مجموعة منسقة", label: "العنوان", intro: "المقدمة", save: "إنشاء مسودة", failed: "تعذر إنشاء المجموعة المنسقة." } : { title: "Curated collections", description: "Institutional editorial selections that do not change a record's archival placement.", new: "Create curated collection", label: "Title", intro: "Introduction", save: "Create draft", failed: "Could not create curated collection." };
+  const curatedCopy = locale === "ar" ? { title: "المجموعات المنسقة", description: "اختيارات تحريرية للمؤسسة لا تغيّر موقع المادة في التسلسل الأرشيفي.", new: "إنشاء مجموعة منسقة", label: "العنوان", intro: "المقدمة", save: "إنشاء مسودة", failed: "تعذر إنشاء المجموعة المنسقة.", selected: "المواد المختارة", choose: "اختر مجموعة", addRecord: "إضافة مادة", chooseRecord: "اختر مادة من الفهرس", removeRecord: "إزالة من المجموعة", empty: "لا توجد مواد في هذه المجموعة بعد.", membershipFailed: "تعذر تحديث مواد المجموعة." } : { title: "Curated collections", description: "Institutional editorial selections that do not change a record's archival placement.", new: "Create curated collection", label: "Title", intro: "Introduction", save: "Create draft", failed: "Could not create curated collection.", selected: "Selected records", choose: "Choose a collection", addRecord: "Add record", chooseRecord: "Choose a record from the archive", removeRecord: "Remove from collection", empty: "No records have been selected for this collection yet.", membershipFailed: "Could not update the collection's records." };
   const curatedStatusLabels: Record<CuratedCollection["status"], string> = locale === "ar" ? { draft: "مسودة", published: "منشورة" } : { draft: "Draft", published: "Published" };
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
@@ -68,6 +68,10 @@ export default function CollectionsPage() {
   const [curatedTitle, setCuratedTitle] = useState("");
   const [curatedIntroduction, setCuratedIntroduction] = useState("");
   const [curatedError, setCuratedError] = useState("");
+  const [selectedCuratedCollectionId, setSelectedCuratedCollectionId] = useState("");
+  const [curatedRecordIds, setCuratedRecordIds] = useState<string[]>([]);
+  const [curatedRecordsLoading, setCuratedRecordsLoading] = useState(false);
+  const [recordToAdd, setRecordToAdd] = useState("");
   const [collectionsState, setCollectionsState] = useState<CollectionsLoadState>({ status: "loading" });
   const [statusMessage, setStatusMessage] = useState("");
   const [name, setName] = useState("");
@@ -108,6 +112,25 @@ export default function CollectionsPage() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshCollections and the inline search callback are redefined every render; api is the only stable dependency and is already listed
   }, [api]);
+
+  useEffect(() => {
+    if (!selectedCuratedCollectionId && curatedCollections.length > 0) {
+      setSelectedCuratedCollectionId(curatedCollections[0].id);
+    }
+  }, [curatedCollections, selectedCuratedCollectionId]);
+
+  useEffect(() => {
+    if (!selectedCuratedCollectionId) {
+      setCuratedRecordIds([]);
+      return;
+    }
+    setCuratedRecordsLoading(true);
+    void api.curatedCollectionRecords(selectedCuratedCollectionId).then((response) => {
+      if (response.ok) setCuratedRecordIds(response.recordIds);
+      else setCuratedError(response.error || curatedCopy.membershipFailed);
+      setCuratedRecordsLoading(false);
+    });
+  }, [api, curatedCopy.membershipFailed, selectedCuratedCollectionId]);
 
   const records = useMemo(
     () => (state.status === "ready" ? state.records : []),
@@ -193,7 +216,24 @@ export default function CollectionsPage() {
     event.preventDefault(); if (!curatedTitle.trim()) return;
     const response = await api.createCuratedCollection({ title: curatedTitle.trim(), introduction: curatedIntroduction.trim() || null });
     if (!response.ok) { setCuratedError(response.error || curatedCopy.failed); return; }
-    setCuratedCollections((current) => [...current, response.collection]); setCuratedTitle(""); setCuratedIntroduction(""); setShowCuratedForm(false);
+    setCuratedCollections((current) => [...current, response.collection]); setSelectedCuratedCollectionId(response.collection.id); setCuratedTitle(""); setCuratedIntroduction(""); setShowCuratedForm(false);
+  }
+
+  async function addRecordToCuratedCollection() {
+    if (!selectedCuratedCollectionId || !recordToAdd) return;
+    setCuratedError("");
+    const response = await api.addCuratedCollectionRecord(selectedCuratedCollectionId, recordToAdd);
+    if (!response.ok) { setCuratedError(response.error || curatedCopy.membershipFailed); return; }
+    setCuratedRecordIds((current) => current.includes(recordToAdd) ? current : [...current, recordToAdd]);
+    setRecordToAdd("");
+  }
+
+  async function removeRecordFromCuratedCollection(recordId: string) {
+    if (!selectedCuratedCollectionId) return;
+    setCuratedError("");
+    const response = await api.removeCuratedCollectionRecord(selectedCuratedCollectionId, recordId);
+    if (!response.ok) { setCuratedError(response.error || curatedCopy.membershipFailed); return; }
+    setCuratedRecordIds((current) => current.filter((id) => id !== recordId));
   }
 
   async function addCollection(event: FormEvent<HTMLFormElement>) {
@@ -378,6 +418,16 @@ export default function CollectionsPage() {
         <p className="helper-text">{curatedCopy.description}</p>{curatedError ? <p className="form-status" role="alert">{curatedError}</p> : null}
         {canManageCollections ? (showCuratedForm ? <form className="archive-toolbar-grid" onSubmit={createCuratedCollection}><label><span>{curatedCopy.label}</span><input className="search-input" value={curatedTitle} onChange={(event) => setCuratedTitle(event.target.value)} required /></label><label><span>{curatedCopy.intro}</span><textarea value={curatedIntroduction} onChange={(event) => setCuratedIntroduction(event.target.value)} /></label><div className="archive-toolbar-actions"><button className="button button-primary" type="submit">{curatedCopy.save}</button><button className="button button-secondary" type="button" onClick={() => setShowCuratedForm(false)}>{copy.cancel}</button></div></form> : <button className="button button-secondary button-sm" type="button" onClick={() => setShowCuratedForm(true)}>{curatedCopy.new}</button>) : null}
         {curatedCollections.length ? <div className="tags">{curatedCollections.map((collection) => <span className="tag" key={collection.id}>{collection.title} · {curatedStatusLabels[collection.status]}</span>)}</div> : null}
+        {curatedCollections.length > 0 ? (
+          <div className="panel panel-compact">
+            <label><span>{curatedCopy.choose}</span><select value={selectedCuratedCollectionId} onChange={(event) => setSelectedCuratedCollectionId(event.target.value)}>{curatedCollections.map((collection) => <option key={collection.id} value={collection.id}>{collection.title}</option>)}</select></label>
+            <h3 className="section-heading">{curatedCopy.selected}</h3>
+            {curatedRecordsLoading ? <p className="helper-text">{copy.loadingRecords}</p> : null}
+            {!curatedRecordsLoading && curatedRecordIds.length === 0 ? <p className="helper-text">{curatedCopy.empty}</p> : null}
+            {curatedRecordIds.length > 0 ? <ol className="mobile-field-list">{curatedRecordIds.map((recordId) => { const record = records.find((item) => item.id === recordId); return <li key={recordId}><strong>{record?.title || recordId}</strong>{canManageCollections ? <button className="button button-secondary button-sm" type="button" onClick={() => void removeRecordFromCuratedCollection(recordId)}>{curatedCopy.removeRecord}</button> : null}</li>; })}</ol> : null}
+            {canManageCollections ? <div className="archive-toolbar-actions"><select aria-label={curatedCopy.chooseRecord} value={recordToAdd} onChange={(event) => setRecordToAdd(event.target.value)}><option value="">{curatedCopy.chooseRecord}</option>{records.filter((record) => !curatedRecordIds.includes(record.id)).map((record) => <option key={record.id} value={record.id}>{record.title}</option>)}</select><button className="button button-primary button-sm" type="button" disabled={!recordToAdd} onClick={() => void addRecordToCuratedCollection()}>{curatedCopy.addRecord}</button></div> : null}
+          </div>
+        ) : null}
       </section>
 
       {canManageCollections && (canUndo(deleteStack) || canRedo(deleteStack)) ? (
