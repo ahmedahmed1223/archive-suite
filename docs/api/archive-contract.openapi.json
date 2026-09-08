@@ -6804,6 +6804,10 @@
         }
       }
     },
+    "/authority-entities": {
+      "get": { "tags": ["Authority records"], "summary": "List active authority entities", "operationId": "listAuthorityEntities", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "kind", "in": "query", "schema": { "type": "string", "enum": ["person", "organization", "place", "program"] } }], "responses": { "200": { "description": "Authority entities", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthorityEntitiesResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } } },
+      "post": { "tags": ["Authority records"], "summary": "Create an authority entity", "operationId": "createAuthorityEntity", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthorityEntityCreateRequest" } } } }, "responses": { "201": { "description": "Created authority entity", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthorityEntityResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
     "/archival-nodes": {
       "get": {
         "tags": ["Archival hierarchy"],
@@ -21109,6 +21113,20 @@
             }
           }
         ]
+      },
+      "AuthorityEntity": {
+        "type": "object", "required": ["id", "kind", "preferredLabel", "aliases", "mergedIntoId"],
+        "properties": { "id": { "type": "string", "format": "uuid" }, "kind": { "type": "string", "enum": ["person", "organization", "place", "program"] }, "preferredLabel": { "type": "string" }, "aliases": { "type": "array", "items": { "type": "string" } }, "mergedIntoId": { "type": ["string", "null"], "format": "uuid" } }
+      },
+      "AuthorityEntityCreateRequest": {
+        "type": "object", "required": ["kind", "preferredLabel"],
+        "properties": { "kind": { "type": "string", "enum": ["person", "organization", "place", "program"] }, "preferredLabel": { "type": "string", "minLength": 1, "maxLength": 500 }, "aliases": { "type": "array", "maxItems": 50, "items": { "type": "string", "maxLength": 500 } } }
+      },
+      "AuthorityEntitiesResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["entities"], "properties": { "entities": { "type": "array", "items": { "$ref": "#/components/schemas/AuthorityEntity" } } } }]
+      },
+      "AuthorityEntityResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["entity"], "properties": { "entity": { "$ref": "#/components/schemas/AuthorityEntity" } } }]
       },
       "ArchivalNodePathEntry": {
         "type": "object",

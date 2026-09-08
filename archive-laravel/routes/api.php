@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\ArchivalNodesController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AutomationRulesController;
 use App\Http\Controllers\Api\V1\AutomationRuleTemplatesController;
+use App\Http\Controllers\Api\V1\AuthorityEntitiesController;
 use App\Http\Controllers\Api\V1\BackupsController;
 use App\Http\Controllers\Api\V1\BulkMacrosController;
 use App\Http\Controllers\Api\V1\CapabilitiesController;
@@ -526,6 +527,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/archival-nodes', [ArchivalNodesController::class, 'store']);
         Route::post('/archival-nodes/{id}/move-preview', [ArchivalNodesController::class, 'movePreview']);
         Route::post('/archival-nodes/{id}/move', [ArchivalNodesController::class, 'move']);
+        Route::get('/authority-entities', [AuthorityEntitiesController::class, 'index']);
+        Route::post('/authority-entities', [AuthorityEntitiesController::class, 'store']);
 
         Route::get('/inbox', [InboxController::class, 'index']);
         Route::post('/inbox', [InboxController::class, 'store']);

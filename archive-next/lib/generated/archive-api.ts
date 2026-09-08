@@ -328,6 +328,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/authority-entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active authority entities */
+        get: operations["listAuthorityEntities"];
+        put?: never;
+        /** Create an authority entity */
+        post: operations["createAuthorityEntity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/automation/rule-templates": {
         parameters: {
             query?: never;
@@ -4592,6 +4610,28 @@ export interface components {
             mode?: "table" | "grid";
             pageSize?: number;
         };
+        AuthorityEntitiesResponse: components["schemas"]["OkEnvelope"] & {
+            entities: components["schemas"]["AuthorityEntity"][];
+        };
+        AuthorityEntity: {
+            aliases: string[];
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "person" | "organization" | "place" | "program";
+            /** Format: uuid */
+            mergedIntoId: string | null;
+            preferredLabel: string;
+        };
+        AuthorityEntityCreateRequest: {
+            aliases?: string[];
+            /** @enum {string} */
+            kind: "person" | "organization" | "place" | "program";
+            preferredLabel: string;
+        };
+        AuthorityEntityResponse: components["schemas"]["OkEnvelope"] & {
+            entity: components["schemas"]["AuthorityEntity"];
+        };
         AuthResponse: components["schemas"]["OkEnvelope"] & {
             token?: string;
             user: components["schemas"]["User"];
@@ -8675,6 +8715,55 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             429: components["responses"]["Error"];
+        };
+    };
+    listAuthorityEntities: {
+        parameters: {
+            query?: {
+                kind?: "person" | "organization" | "place" | "program";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authority entities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthorityEntitiesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createAuthorityEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthorityEntityCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created authority entity */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthorityEntityResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listAutomationRuleTemplates: {
