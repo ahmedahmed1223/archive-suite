@@ -736,6 +736,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/curated-collections/{id}/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List manually ordered records in a curated collection */
+        get: operations["listCuratedCollectionRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/curated-collections/{id}/records/{recordId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a record to a curated collection */
+        post: operations["addCuratedCollectionRecord"];
+        /** Remove a record from a curated collection */
+        delete: operations["removeCuratedCollectionRecord"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/department-field-owners": {
         parameters: {
             query?: never;
@@ -5297,6 +5332,9 @@ export interface components {
             introduction?: string | null;
             title: string;
         };
+        CuratedCollectionRecordsResponse: components["schemas"]["OkEnvelope"] & {
+            recordIds: string[];
+        };
         CuratedCollectionResponse: components["schemas"]["OkEnvelope"] & {
             collection: components["schemas"]["CuratedCollection"];
         };
@@ -9809,6 +9847,64 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listCuratedCollectionRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Record identifiers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CuratedCollectionRecordsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    addCuratedCollectionRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    removeCuratedCollectionRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     listDepartmentFieldOwners: {

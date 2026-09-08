@@ -9,6 +9,7 @@ use App\Models\CuratedCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class CuratedCollectionsController extends Controller
 {
@@ -23,6 +24,28 @@ class CuratedCollectionsController extends Controller
         $data = $request->validate(['title' => ['required', 'string', 'max:500'], 'introduction' => ['nullable', 'string', 'max:5000']]);
         $collection = CuratedCollection::query()->create(['id' => (string) Str::uuid(), 'title' => trim($data['title']), 'introduction' => $data['introduction'] ?? null, 'status' => 'draft', 'created_by' => $request->attributes->get('archive_user')?->getKey()]);
         return response()->json(['ok' => true, 'collection' => $this->payload($collection)], 201);
+    }
+
+    public function records(string $id): JsonResponse
+    {
+        if (! CuratedCollection::query()->whereKey($id)->exists()) return response()->json(['ok' => false, 'error' => 'Curated collection not found.', 'code' => 'not_found'], 404);
+        return response()->json(['ok' => true, 'recordIds' => DB::table('curated_collection_records')->where('curated_collection_id', $id)->orderBy('position')->pluck('record_id')]);
+    }
+
+    public function addRecord(Request $request, string $id, string $recordId): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        if (! CuratedCollection::query()->whereKey($id)->exists()) return response()->json(['ok' => false, 'error' => 'Curated collection not found.', 'code' => 'not_found'], 404);
+        DB::table('curated_collection_records')->updateOrInsert(['curated_collection_id' => $id, 'record_id' => $recordId], ['position' => ((int) DB::table('curated_collection_records')->where('curated_collection_id', $id)->max('position')) + 1, 'added_at' => now()]);
+        return response()->json(['ok' => true]);
+    }
+
+    public function removeRecord(Request $request, string $id, string $recordId): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        $deleted = DB::table('curated_collection_records')->where('curated_collection_id', $id)->where('record_id', $recordId)->delete();
+        if ($deleted < 1) return response()->json(['ok' => false, 'error' => 'Curated collection record not found.', 'code' => 'not_found'], 404);
+        return response()->json(['ok' => true, 'deleted' => true]);
     }
 
     /** @return array<string, mixed> */

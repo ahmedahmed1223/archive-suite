@@ -6864,6 +6864,13 @@
         }
       }
     },
+    "/curated-collections/{id}/records": {
+      "get": { "tags": ["Curated collections"], "summary": "List manually ordered records in a curated collection", "operationId": "listCuratedCollectionRecords", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "200": { "description": "Record identifiers", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CuratedCollectionRecordsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } } }
+    },
+    "/curated-collections/{id}/records/{recordId}": {
+      "post": { "tags": ["Curated collections"], "summary": "Add a record to a curated collection", "operationId": "addCuratedCollectionRecord", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }, { "name": "recordId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "$ref": "#/components/responses/Ok" }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } } },
+      "delete": { "tags": ["Curated collections"], "summary": "Remove a record from a curated collection", "operationId": "removeCuratedCollectionRecord", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }, { "name": "recordId", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "$ref": "#/components/responses/Ok" }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" } } }
+    },
     "/curated-collections": {
       "get": { "tags": ["Curated collections"], "summary": "List institutional curated collections", "operationId": "listCuratedCollections", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "responses": { "200": { "description": "Curated collections", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CuratedCollectionsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } } },
       "post": { "tags": ["Curated collections"], "summary": "Create an institutional curated collection", "operationId": "createCuratedCollection", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CuratedCollectionCreateRequest" } } } }, "responses": { "201": { "description": "Created curated collection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CuratedCollectionResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
@@ -21204,6 +21211,7 @@
       "CuratedCollectionCreateRequest": { "type": "object", "required": ["title"], "properties": { "title": { "type": "string", "minLength": 1, "maxLength": 500 }, "introduction": { "type": ["string", "null"], "maxLength": 5000 } } },
       "CuratedCollectionsResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["collections"], "properties": { "collections": { "type": "array", "items": { "$ref": "#/components/schemas/CuratedCollection" } } } }] },
       "CuratedCollectionResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["collection"], "properties": { "collection": { "$ref": "#/components/schemas/CuratedCollection" } } }] },
+      "CuratedCollectionRecordsResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["recordIds"], "properties": { "recordIds": { "type": "array", "items": { "type": "string" } } } }] },
       "Collection": {
         "type": "object",
         "required": [
