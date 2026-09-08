@@ -489,6 +489,7 @@ export type CreateArchivalNodePayload = GeneratedSchemas["ArchivalNodeCreateRequ
 export type AuthorityEntity = GeneratedSchemas["AuthorityEntity"];
 export type CreateAuthorityEntityPayload = GeneratedSchemas["AuthorityEntityCreateRequest"];
 export type RecordAuthorityEntityLink = GeneratedSchemas["RecordAuthorityEntityLink"];
+export type CuratedCollection = GeneratedSchemas["CuratedCollection"];
 
 export interface CreateCollectionPayload {
   name: string;
@@ -1515,6 +1516,8 @@ export interface ArchiveApiClient {
   recordAuthorityEntities(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ links: RecordAuthorityEntityLink[] }>>;
   linkRecordAuthorityEntity(recordId: string, payload: GeneratedSchemas["RecordAuthorityEntityLinkRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ link: RecordAuthorityEntityLink }>>;
   unlinkRecordAuthorityEntity(recordId: string, entityId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  curatedCollections(options?: AuthRequestOptions): Promise<ApiEnvelope<{ collections: CuratedCollection[] }>>;
+  createCuratedCollection(payload: GeneratedSchemas["CuratedCollectionCreateRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ collection: CuratedCollection }>>;
   workInbox(
     params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
     options?: AuthRequestOptions
@@ -2698,6 +2701,9 @@ export function createArchiveApiClient({
       post<{ link: RecordAuthorityEntityLink }>(`/records/${encodeURIComponent(recordId)}/authority-entities`, payload, options),
     unlinkRecordAuthorityEntity: (recordId: string, entityId: string, options?: AuthRequestOptions) =>
       del<{ deleted: boolean }>(`/records/${encodeURIComponent(recordId)}/authority-entities/${encodeURIComponent(entityId)}`, undefined, options),
+    curatedCollections: (options?: AuthRequestOptions) => get<{ collections: CuratedCollection[] }>("/curated-collections", options),
+    createCuratedCollection: (payload: GeneratedSchemas["CuratedCollectionCreateRequest"], options?: AuthRequestOptions) =>
+      post<{ collection: CuratedCollection }>("/curated-collections", payload, options),
     workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.set("page", String(params.page));

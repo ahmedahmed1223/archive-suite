@@ -8,7 +8,7 @@ import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import IconPicker from "@/components/IconPicker";
 import { useCapability } from "@/components/RoleGate";
-import { createArchiveApiClient, type ArchivalNode, type ArchiveRecord, type AuthorityEntity, type Collection, type CreateCollectionPayload } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchivalNode, type ArchiveRecord, type AuthorityEntity, type Collection, type CreateCollectionPayload, type CuratedCollection } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-utils";
@@ -41,6 +41,7 @@ export default function CollectionsPage() {
   const authorityKindLabels: Record<AuthorityEntity["kind"], string> = locale === "ar"
     ? { person: "شخص", organization: "مؤسسة", place: "مكان", program: "برنامج" }
     : { person: "Person", organization: "Organization", place: "Place", program: "Program" };
+  const curatedCopy = locale === "ar" ? { title: "المجموعات المنسقة", description: "اختيارات تحريرية للمؤسسة لا تغيّر موقع المادة في التسلسل الأرشيفي.", new: "إنشاء مجموعة منسقة", label: "العنوان", intro: "المقدمة", save: "إنشاء مسودة", failed: "تعذر إنشاء المجموعة المنسقة." } : { title: "Curated collections", description: "Institutional editorial selections that do not change a record's archival placement.", new: "Create curated collection", label: "Title", intro: "Introduction", save: "Create draft", failed: "Could not create curated collection." };
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -61,6 +62,11 @@ export default function CollectionsPage() {
   const [authorityLabel, setAuthorityLabel] = useState("");
   const [authorityKind, setAuthorityKind] = useState<AuthorityEntity["kind"]>("person");
   const [authorityAliases, setAuthorityAliases] = useState("");
+  const [curatedCollections, setCuratedCollections] = useState<CuratedCollection[]>([]);
+  const [showCuratedForm, setShowCuratedForm] = useState(false);
+  const [curatedTitle, setCuratedTitle] = useState("");
+  const [curatedIntroduction, setCuratedIntroduction] = useState("");
+  const [curatedError, setCuratedError] = useState("");
   const [collectionsState, setCollectionsState] = useState<CollectionsLoadState>({ status: "loading" });
   const [statusMessage, setStatusMessage] = useState("");
   const [name, setName] = useState("");
@@ -94,6 +100,7 @@ export default function CollectionsPage() {
       if (response.ok) setAuthorityEntities(response.entities);
       else setAuthorityError(response.error || authorityCopy.failed);
     });
+    void api.curatedCollections().then((response) => { if (response.ok) setCuratedCollections(response.collections); else setCuratedError(response.error || curatedCopy.failed); });
     void (async () => {
       const response = await api.search({ limit: 1000 });
       setState(response.ok ? { status: "ready", records: response.records } : { status: "error", message: response.error });
@@ -179,6 +186,13 @@ export default function CollectionsPage() {
     }
     setAuthorityEntities((current) => [...current, response.entity]);
     setAuthorityLabel(""); setAuthorityAliases(""); setShowAuthorityForm(false);
+  }
+
+  async function createCuratedCollection(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!curatedTitle.trim()) return;
+    const response = await api.createCuratedCollection({ title: curatedTitle.trim(), introduction: curatedIntroduction.trim() || null });
+    if (!response.ok) { setCuratedError(response.error || curatedCopy.failed); return; }
+    setCuratedCollections((current) => [...current, response.collection]); setCuratedTitle(""); setCuratedIntroduction(""); setShowCuratedForm(false);
   }
 
   async function addCollection(event: FormEvent<HTMLFormElement>) {
@@ -356,6 +370,13 @@ export default function CollectionsPage() {
         {authorityError ? <p className="form-status" role="alert">{authorityError}</p> : null}
         {canManageCollections ? (showAuthorityForm ? <form className="archive-toolbar-grid" onSubmit={createAuthorityEntity}><label><span>{authorityCopy.label}</span><input className="search-input" value={authorityLabel} onChange={(event) => setAuthorityLabel(event.target.value)} required /></label><label><span>{authorityCopy.kind}</span><select value={authorityKind} onChange={(event) => setAuthorityKind(event.target.value as AuthorityEntity["kind"])}>{(["person", "organization", "place", "program"] as const).map((kind) => <option key={kind} value={kind}>{authorityKindLabels[kind]}</option>)}</select></label><label><span>{authorityCopy.aliases}</span><input className="search-input" value={authorityAliases} onChange={(event) => setAuthorityAliases(event.target.value)} /></label><div className="archive-toolbar-actions"><button className="button button-primary" type="submit">{authorityCopy.save}</button><button className="button button-secondary" type="button" onClick={() => setShowAuthorityForm(false)}>{copy.cancel}</button></div></form> : <button className="button button-secondary button-sm" type="button" onClick={() => setShowAuthorityForm(true)}>{authorityCopy.newEntity}</button>) : null}
         {authorityEntities.length > 0 ? <div className="tags">{authorityEntities.map((entity) => <span className="tag" key={entity.id}>{entity.preferredLabel} · {authorityKindLabels[entity.kind]}</span>)}</div> : null}
+      </section>
+
+      <section className="panel panel-compact" aria-labelledby="curated-collections-heading">
+        <div className="toolbar-row toolbar-start"><div><span className="badge">{copy.eyebrow}</span><h2 id="curated-collections-heading" className="section-heading">{curatedCopy.title}</h2></div><strong className="metric-value">{curatedCollections.length}</strong></div>
+        <p className="helper-text">{curatedCopy.description}</p>{curatedError ? <p className="form-status" role="alert">{curatedError}</p> : null}
+        {canManageCollections ? (showCuratedForm ? <form className="archive-toolbar-grid" onSubmit={createCuratedCollection}><label><span>{curatedCopy.label}</span><input className="search-input" value={curatedTitle} onChange={(event) => setCuratedTitle(event.target.value)} required /></label><label><span>{curatedCopy.intro}</span><textarea value={curatedIntroduction} onChange={(event) => setCuratedIntroduction(event.target.value)} /></label><div className="archive-toolbar-actions"><button className="button button-primary" type="submit">{curatedCopy.save}</button><button className="button button-secondary" type="button" onClick={() => setShowCuratedForm(false)}>{copy.cancel}</button></div></form> : <button className="button button-secondary button-sm" type="button" onClick={() => setShowCuratedForm(true)}>{curatedCopy.new}</button>) : null}
+        {curatedCollections.length ? <div className="tags">{curatedCollections.map((collection) => <span className="tag" key={collection.id}>{collection.title} · {collection.status}</span>)}</div> : null}
       </section>
 
       {canManageCollections && (canUndo(deleteStack) || canRedo(deleteStack)) ? (
