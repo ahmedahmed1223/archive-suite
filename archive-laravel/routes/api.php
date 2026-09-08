@@ -525,6 +525,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/archival-nodes', [ArchivalNodesController::class, 'index']);
         Route::post('/archival-nodes', [ArchivalNodesController::class, 'store']);
         Route::post('/archival-nodes/{id}/move-preview', [ArchivalNodesController::class, 'movePreview']);
+        Route::post('/archival-nodes/{id}/move', [ArchivalNodesController::class, 'move']);
 
         Route::get('/inbox', [InboxController::class, 'index']);
         Route::post('/inbox', [InboxController::class, 'store']);

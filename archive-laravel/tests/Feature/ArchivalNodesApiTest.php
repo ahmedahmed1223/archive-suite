@@ -45,4 +45,19 @@ class ArchivalNodesApiTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('code', 'cycle_detected');
     }
+
+    public function test_it_applies_a_previously_validated_move_and_returns_the_new_path(): void
+    {
+        $fonds = $this->postJson('/api/v1/archival-nodes', ['title' => 'أرشيف الأخبار', 'level' => 'fonds'], $this->authHeaders())->assertCreated();
+        $series = $this->postJson('/api/v1/archival-nodes', ['title' => 'النشرة المسائية', 'level' => 'series', 'parentId' => $fonds->json('node.id')], $this->authHeaders())->assertCreated();
+        $target = $this->postJson('/api/v1/archival-nodes', ['title' => 'أرشيف البرامج', 'level' => 'fonds'], $this->authHeaders())->assertCreated();
+
+        $this->postJson('/api/v1/archival-nodes/'.$series->json('node.id').'/move-preview', ['parentId' => $target->json('node.id')], $this->authHeaders())
+            ->assertOk()->assertJsonPath('preview.affectedDescendantCount', 0);
+
+        $this->postJson('/api/v1/archival-nodes/'.$series->json('node.id').'/move', ['parentId' => $target->json('node.id')], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('node.parentId', $target->json('node.id'))
+            ->assertJsonPath('node.path.0.id', $target->json('node.id'));
+    }
 }

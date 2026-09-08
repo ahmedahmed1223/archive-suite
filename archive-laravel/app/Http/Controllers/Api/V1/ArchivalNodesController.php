@@ -88,6 +88,35 @@ class ArchivalNodesController extends Controller
         ]);
     }
 
+    public function move(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
+
+        $node = ArchivalNode::query()->find($id);
+        if (! $node) {
+            return response()->json(['ok' => false, 'error' => 'Archival node not found.', 'code' => 'not_found'], 404);
+        }
+        $data = $request->validate(['parentId' => ['nullable', 'uuid']]);
+        $parentId = $data['parentId'] ?? null;
+
+        if ($parentId === $node->id || ($parentId !== null && $this->isDescendant($parentId, $node->id))) {
+            return response()->json(['ok' => false, 'error' => 'An archival node cannot move into itself or one of its descendants.', 'code' => 'cycle_detected'], 422);
+        }
+        if ($parentId !== null && ! ArchivalNode::query()->whereKey($parentId)->exists()) {
+            return response()->json(['ok' => false, 'error' => 'Parent archival node not found.', 'code' => 'parent_not_found'], 422);
+        }
+
+        $node->update([
+            'parent_id' => $parentId,
+            'position' => ((int) ArchivalNode::query()->where('parent_id', $parentId)->whereKeyNot($node->id)->max('position')) + 1,
+        ]);
+        $byId = ArchivalNode::query()->get()->keyBy('id')->all();
+
+        return response()->json(['ok' => true, 'node' => $this->payload($node->fresh(), $byId)]);
+    }
+
     /** @param array<string, ArchivalNode> $byId @return array<string, mixed> */
     private function payload(ArchivalNode $node, array $byId): array
     {

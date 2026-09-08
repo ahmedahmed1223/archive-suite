@@ -6828,6 +6828,22 @@
         }
       }
     },
+    "/archival-nodes/{id}/move": {
+      "post": {
+        "tags": ["Archival hierarchy"],
+        "summary": "Move an archival node after reviewing its impact",
+        "operationId": "moveArchivalNode",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArchivalNodeMoveRequest" } } } },
+        "responses": {
+          "200": { "description": "Moved archival node", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArchivalNodeResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/archival-nodes/{id}/move-preview": {
       "post": {
         "tags": ["Archival hierarchy"],
