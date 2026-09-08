@@ -411,6 +411,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/records/{id}/segments', [RecordSegmentsController::class, 'store']);
         Route::get('/records/{id}/authority-entities', [RecordAuthorityEntitiesController::class, 'index']);
         Route::post('/records/{id}/authority-entities', [RecordAuthorityEntitiesController::class, 'store']);
+        Route::delete('/records/{id}/authority-entities/{entityId}', [RecordAuthorityEntitiesController::class, 'destroy']);
         Route::patch('/record-segments/{id}', [RecordSegmentsController::class, 'update']);
         Route::delete('/record-segments/{id}', [RecordSegmentsController::class, 'destroy']);
         Route::delete('/record-comments/{id}', [RecordCommentsController::class, 'destroy']);

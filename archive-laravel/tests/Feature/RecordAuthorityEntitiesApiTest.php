@@ -24,5 +24,8 @@ class RecordAuthorityEntitiesApiTest extends TestCase
 
         $this->getJson('/api/v1/records/video-1/authority-entities', $this->authHeaders())
             ->assertOk()->assertJsonCount(1, 'links')->assertJsonPath('links.0.entity.id', $entity->id);
+
+        $this->deleteJson('/api/v1/records/video-1/authority-entities/'.$entity->id, [], $this->authHeaders())
+            ->assertOk()->assertJsonPath('deleted', true);
     }
 }

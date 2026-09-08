@@ -2180,6 +2180,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/authority-entities/{entityId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove an authority entity link from a record */
+        delete: operations["unlinkRecordAuthorityEntity"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/broadcast-metadata": {
         parameters: {
             query?: never;
@@ -12507,6 +12524,23 @@ export interface operations {
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    unlinkRecordAuthorityEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entityId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     getRecordBroadcastMetadata: {

@@ -32,6 +32,14 @@ class RecordAuthorityEntitiesController extends Controller
         return response()->json(['ok' => true, 'link' => $this->payload($row)], 201);
     }
 
+    public function destroy(Request $request, string $recordId, string $entityId): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        $deleted = DB::table('record_authority_entities')->where('record_id', $recordId)->where('authority_entity_id', $entityId)->delete();
+        if ($deleted < 1) return response()->json(['ok' => false, 'error' => 'Authority link not found.', 'code' => 'not_found'], 404);
+        return response()->json(['ok' => true, 'deleted' => true]);
+    }
+
     /** @return array<string, mixed> */
     private function payload(stdClass $row): array
     {
