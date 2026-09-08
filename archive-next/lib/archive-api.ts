@@ -1518,6 +1518,9 @@ export interface ArchiveApiClient {
   unlinkRecordAuthorityEntity(recordId: string, entityId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   curatedCollections(options?: AuthRequestOptions): Promise<ApiEnvelope<{ collections: CuratedCollection[] }>>;
   createCuratedCollection(payload: GeneratedSchemas["CuratedCollectionCreateRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ collection: CuratedCollection }>>;
+  curatedCollectionRecords(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[] }>>;
+  addCuratedCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
+  removeCuratedCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   workInbox(
     params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
     options?: AuthRequestOptions
@@ -2704,6 +2707,9 @@ export function createArchiveApiClient({
     curatedCollections: (options?: AuthRequestOptions) => get<{ collections: CuratedCollection[] }>("/curated-collections", options),
     createCuratedCollection: (payload: GeneratedSchemas["CuratedCollectionCreateRequest"], options?: AuthRequestOptions) =>
       post<{ collection: CuratedCollection }>("/curated-collections", payload, options),
+    curatedCollectionRecords: (id: string, options?: AuthRequestOptions) => get<{ recordIds: string[] }>(`/curated-collections/${encodeURIComponent(id)}/records`, options),
+    addCuratedCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) => post<Record<string, never>>(`/curated-collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
+    removeCuratedCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) => del<{ deleted: boolean }>(`/curated-collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.set("page", String(params.page));
