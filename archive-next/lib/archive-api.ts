@@ -1514,6 +1514,7 @@ export interface ArchiveApiClient {
   createAuthorityEntity(payload: CreateAuthorityEntityPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entity: AuthorityEntity }>>;
   recordAuthorityEntities(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ links: RecordAuthorityEntityLink[] }>>;
   linkRecordAuthorityEntity(recordId: string, payload: GeneratedSchemas["RecordAuthorityEntityLinkRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ link: RecordAuthorityEntityLink }>>;
+  unlinkRecordAuthorityEntity(recordId: string, entityId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   workInbox(
     params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
     options?: AuthRequestOptions
@@ -2695,6 +2696,8 @@ export function createArchiveApiClient({
       get<{ links: RecordAuthorityEntityLink[] }>(`/records/${encodeURIComponent(recordId)}/authority-entities`, options),
     linkRecordAuthorityEntity: (recordId: string, payload: GeneratedSchemas["RecordAuthorityEntityLinkRequest"], options?: AuthRequestOptions) =>
       post<{ link: RecordAuthorityEntityLink }>(`/records/${encodeURIComponent(recordId)}/authority-entities`, payload, options),
+    unlinkRecordAuthorityEntity: (recordId: string, entityId: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/records/${encodeURIComponent(recordId)}/authority-entities/${encodeURIComponent(entityId)}`, undefined, options),
     workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.set("page", String(params.page));
