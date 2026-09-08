@@ -488,6 +488,7 @@ export type ArchivalNode = GeneratedSchemas["ArchivalNode"];
 export type CreateArchivalNodePayload = GeneratedSchemas["ArchivalNodeCreateRequest"];
 export type AuthorityEntity = GeneratedSchemas["AuthorityEntity"];
 export type CreateAuthorityEntityPayload = GeneratedSchemas["AuthorityEntityCreateRequest"];
+export type RecordAuthorityEntityLink = GeneratedSchemas["RecordAuthorityEntityLink"];
 
 export interface CreateCollectionPayload {
   name: string;
@@ -1511,6 +1512,8 @@ export interface ArchiveApiClient {
   previewArchivalNodeMove(id: string, payload: { parentId?: string | null }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: GeneratedSchemas["ArchivalNodeMovePreview"] }>>;
   authorityEntities(params?: { kind?: AuthorityEntity["kind"] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entities: AuthorityEntity[] }>>;
   createAuthorityEntity(payload: CreateAuthorityEntityPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entity: AuthorityEntity }>>;
+  recordAuthorityEntities(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ links: RecordAuthorityEntityLink[] }>>;
+  linkRecordAuthorityEntity(recordId: string, payload: GeneratedSchemas["RecordAuthorityEntityLinkRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ link: RecordAuthorityEntityLink }>>;
   workInbox(
     params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
     options?: AuthRequestOptions
@@ -2688,6 +2691,10 @@ export function createArchiveApiClient({
       get<{ entities: AuthorityEntity[] }>(`/authority-entities${params?.kind ? `?kind=${encodeURIComponent(params.kind)}` : ""}`, options),
     createAuthorityEntity: (payload: CreateAuthorityEntityPayload, options?: AuthRequestOptions) =>
       post<{ entity: AuthorityEntity }>("/authority-entities", payload, options),
+    recordAuthorityEntities: (recordId: string, options?: AuthRequestOptions) =>
+      get<{ links: RecordAuthorityEntityLink[] }>(`/records/${encodeURIComponent(recordId)}/authority-entities`, options),
+    linkRecordAuthorityEntity: (recordId: string, payload: GeneratedSchemas["RecordAuthorityEntityLinkRequest"], options?: AuthRequestOptions) =>
+      post<{ link: RecordAuthorityEntityLink }>(`/records/${encodeURIComponent(recordId)}/authority-entities`, payload, options),
     workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.set("page", String(params.page));
