@@ -32,6 +32,9 @@ type CollectionsLoadState =
 export default function CollectionsPage() {
   const { locale, t } = useLocale();
   const copy = t.pages.collections;
+  const hierarchyMoveCopy = locale === "ar"
+    ? { move: "نقل", preview: "معاينة الأثر", apply: "تطبيق النقل", failed: "تعذر نقل العقدة الأرشيفية.", impact: "سيتغير سياق {count} من العقد التابعة." }
+    : { move: "Move", preview: "Preview impact", apply: "Apply move", failed: "Could not move the archival node.", impact: "The context of {count} descendant nodes will change." };
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -43,6 +46,9 @@ export default function CollectionsPage() {
   const [nodeTitle, setNodeTitle] = useState("");
   const [nodeLevel, setNodeLevel] = useState<ArchivalNode["level"]>("fonds");
   const [nodeParentId, setNodeParentId] = useState("");
+  const [movingNodeId, setMovingNodeId] = useState("");
+  const [moveParentId, setMoveParentId] = useState("");
+  const [moveAffectedCount, setMoveAffectedCount] = useState<number | null>(null);
   const [collectionsState, setCollectionsState] = useState<CollectionsLoadState>({ status: "loading" });
   const [statusMessage, setStatusMessage] = useState("");
   const [name, setName] = useState("");
@@ -120,6 +126,30 @@ export default function CollectionsPage() {
     setNodeTitle("");
     setNodeParentId("");
     setShowNodeForm(false);
+  }
+
+  async function previewArchivalMove() {
+    if (!movingNodeId) return;
+    setArchivalNodesError("");
+    const response = await api.previewArchivalNodeMove(movingNodeId, { parentId: moveParentId || null });
+    if (!response.ok) {
+      setArchivalNodesError(response.error || hierarchyMoveCopy.failed);
+      return;
+    }
+    setMoveAffectedCount(response.preview.affectedDescendantCount);
+  }
+
+  async function applyArchivalMove() {
+    if (!movingNodeId || moveAffectedCount === null) return;
+    const response = await api.moveArchivalNode(movingNodeId, { parentId: moveParentId || null });
+    if (!response.ok) {
+      setArchivalNodesError(response.error || hierarchyMoveCopy.failed);
+      return;
+    }
+    setArchivalNodes((current) => current.map((node) => node.id === response.node.id ? response.node : node));
+    setMovingNodeId("");
+    setMoveParentId("");
+    setMoveAffectedCount(null);
   }
 
   async function addCollection(event: FormEvent<HTMLFormElement>) {
@@ -277,9 +307,17 @@ export default function CollectionsPage() {
               <li key={node.id}>
                 <strong>{[...node.path.map((entry) => entry.title), node.title].join(" › ")}</strong>
                 <span>{node.referenceCode || node.level}</span>
+                {canManageCollections ? <button className="button button-secondary button-sm" type="button" onClick={() => { setMovingNodeId(node.id); setMoveParentId(node.parentId || ""); setMoveAffectedCount(null); }}>{hierarchyMoveCopy.move}</button> : null}
               </li>
             ))}
           </ol>
+        ) : null}
+        {movingNodeId ? (
+          <div className="panel panel-compact">
+            <label><span>{copy.hierarchyParent}</span><select value={moveParentId} onChange={(event) => { setMoveParentId(event.target.value); setMoveAffectedCount(null); }}><option value="">{copy.hierarchyRoot}</option>{archivalNodes.filter((node) => node.id !== movingNodeId).map((node) => <option key={node.id} value={node.id}>{[...node.path.map((entry) => entry.title), node.title].join(" › ")}</option>)}</select></label>
+            <div className="archive-toolbar-actions"><button className="button button-secondary" type="button" onClick={() => void previewArchivalMove()}>{hierarchyMoveCopy.preview}</button>{moveAffectedCount !== null ? <button className="button button-primary" type="button" onClick={() => void applyArchivalMove()}>{hierarchyMoveCopy.apply}</button> : null}<button className="button button-secondary" type="button" onClick={() => { setMovingNodeId(""); setMoveAffectedCount(null); }}>{copy.cancel}</button></div>
+            {moveAffectedCount !== null ? <p className="form-status" role="status">{hierarchyMoveCopy.impact.replace("{count}", String(moveAffectedCount))}</p> : null}
+          </div>
         ) : null}
       </section>
 
