@@ -39,6 +39,10 @@ export default function CollectionsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [archivalNodes, setArchivalNodes] = useState<ArchivalNode[]>([]);
   const [archivalNodesError, setArchivalNodesError] = useState("");
+  const [showNodeForm, setShowNodeForm] = useState(false);
+  const [nodeTitle, setNodeTitle] = useState("");
+  const [nodeLevel, setNodeLevel] = useState<ArchivalNode["level"]>("fonds");
+  const [nodeParentId, setNodeParentId] = useState("");
   const [collectionsState, setCollectionsState] = useState<CollectionsLoadState>({ status: "loading" });
   const [statusMessage, setStatusMessage] = useState("");
   const [name, setName] = useState("");
@@ -101,6 +105,21 @@ export default function CollectionsPage() {
     }
     setStatusMessage(copy.saved); toastSuccess(copy.saved);
     await refreshCollections();
+  }
+
+  async function createArchivalNode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!nodeTitle.trim()) return;
+    setArchivalNodesError("");
+    const response = await api.createArchivalNode({ title: nodeTitle.trim(), level: nodeLevel, parentId: nodeParentId || null });
+    if (!response.ok) {
+      setArchivalNodesError(response.error || copy.hierarchyCreateFailed);
+      return;
+    }
+    setArchivalNodes((current) => [...current, response.node]);
+    setNodeTitle("");
+    setNodeParentId("");
+    setShowNodeForm(false);
   }
 
   async function addCollection(event: FormEvent<HTMLFormElement>) {
@@ -241,6 +260,16 @@ export default function CollectionsPage() {
         </div>
         <p className="helper-text">{copy.hierarchyDescription}</p>
         {archivalNodesError ? <p className="form-status" role="alert">{archivalNodesError}</p> : null}
+        {canManageCollections ? (
+          showNodeForm ? (
+            <form className="archive-toolbar-grid" onSubmit={createArchivalNode}>
+              <label><span>{copy.hierarchyNodeTitle}</span><input className="search-input" value={nodeTitle} onChange={(event) => setNodeTitle(event.target.value)} required /></label>
+              <label><span>{copy.hierarchyLevel}</span><select value={nodeLevel} onChange={(event) => setNodeLevel(event.target.value as ArchivalNode["level"])}>{(["institution", "fonds", "series", "program", "season", "episode", "item", "segment"] as const).map((level) => <option key={level} value={level}>{copy.hierarchyLevels[level]}</option>)}</select></label>
+              <label><span>{copy.hierarchyParent}</span><select value={nodeParentId} onChange={(event) => setNodeParentId(event.target.value)}><option value="">{copy.hierarchyRoot}</option>{archivalNodes.map((node) => <option key={node.id} value={node.id}>{[...node.path.map((entry) => entry.title), node.title].join(" › ")}</option>)}</select></label>
+              <div className="archive-toolbar-actions"><button className="button button-primary" type="submit">{copy.hierarchyCreate}</button><button className="button button-secondary" type="button" onClick={() => setShowNodeForm(false)}>{copy.cancel}</button></div>
+            </form>
+          ) : <button className="button button-secondary button-sm" type="button" onClick={() => setShowNodeForm(true)}>{copy.hierarchyNew}</button>
+        ) : null}
         {!archivalNodesError && archivalNodes.length === 0 ? <p className="helper-text">{copy.hierarchyEmpty}</p> : null}
         {archivalNodes.length > 0 ? (
           <ol className="mobile-field-list" aria-label={copy.hierarchyTitle}>
