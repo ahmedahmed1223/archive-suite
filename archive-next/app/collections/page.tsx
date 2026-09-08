@@ -8,7 +8,7 @@ import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import IconPicker from "@/components/IconPicker";
 import { useCapability } from "@/components/RoleGate";
-import { createArchiveApiClient, type ArchivalNode, type ArchiveRecord, type Collection, type CreateCollectionPayload } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchivalNode, type ArchiveRecord, type AuthorityEntity, type Collection, type CreateCollectionPayload } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { buildChangeImpact } from "@/lib/change-impact";
 import { countBy, formatDate, recordMatches, uniqueSorted } from "@/lib/record-utils";
@@ -35,6 +35,9 @@ export default function CollectionsPage() {
   const hierarchyMoveCopy = locale === "ar"
     ? { move: "نقل", preview: "معاينة الأثر", apply: "تطبيق النقل", failed: "تعذر نقل العقدة الأرشيفية.", impact: "سيتغير سياق {count} من العقد التابعة." }
     : { move: "Move", preview: "Preview impact", apply: "Apply move", failed: "Could not move the archival node.", impact: "The context of {count} descendant nodes will change." };
+  const authorityCopy = locale === "ar"
+    ? { badge: "سجل استناد", title: "الأشخاص والمؤسسات والأماكن", description: "أسماء مضبوطة قابلة لإعادة الاستخدام في توصيف المواد والمقاطع، وليست وسومًا حرة.", newEntity: "إضافة سجل", label: "الاسم المفضّل", kind: "النوع", aliases: "مرادفات مفصولة بفواصل", save: "حفظ السجل", failed: "تعذر إنشاء سجل الاستناد." }
+    : { badge: "Authority record", title: "People, organizations, and places", description: "Controlled names reused in record and segment description; they are not free-form tags.", newEntity: "Add authority record", label: "Preferred label", kind: "Kind", aliases: "Comma-separated aliases", save: "Save record", failed: "Could not create the authority record." };
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -49,6 +52,12 @@ export default function CollectionsPage() {
   const [movingNodeId, setMovingNodeId] = useState("");
   const [moveParentId, setMoveParentId] = useState("");
   const [moveAffectedCount, setMoveAffectedCount] = useState<number | null>(null);
+  const [authorityEntities, setAuthorityEntities] = useState<AuthorityEntity[]>([]);
+  const [authorityError, setAuthorityError] = useState("");
+  const [showAuthorityForm, setShowAuthorityForm] = useState(false);
+  const [authorityLabel, setAuthorityLabel] = useState("");
+  const [authorityKind, setAuthorityKind] = useState<AuthorityEntity["kind"]>("person");
+  const [authorityAliases, setAuthorityAliases] = useState("");
   const [collectionsState, setCollectionsState] = useState<CollectionsLoadState>({ status: "loading" });
   const [statusMessage, setStatusMessage] = useState("");
   const [name, setName] = useState("");
@@ -77,6 +86,10 @@ export default function CollectionsPage() {
     void api.archivalNodes().then((response) => {
       if (response.ok) setArchivalNodes(response.nodes);
       else setArchivalNodesError(response.error || copy.hierarchyLoadFailed);
+    });
+    void api.authorityEntities().then((response) => {
+      if (response.ok) setAuthorityEntities(response.entities);
+      else setAuthorityError(response.error || authorityCopy.failed);
     });
     void (async () => {
       const response = await api.search({ limit: 1000 });
@@ -150,6 +163,19 @@ export default function CollectionsPage() {
     setMovingNodeId("");
     setMoveParentId("");
     setMoveAffectedCount(null);
+  }
+
+  async function createAuthorityEntity(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!authorityLabel.trim()) return;
+    setAuthorityError("");
+    const response = await api.createAuthorityEntity({ kind: authorityKind, preferredLabel: authorityLabel.trim(), aliases: authorityAliases.split(",").map((alias) => alias.trim()).filter(Boolean) });
+    if (!response.ok) {
+      setAuthorityError(response.error || authorityCopy.failed);
+      return;
+    }
+    setAuthorityEntities((current) => [...current, response.entity]);
+    setAuthorityLabel(""); setAuthorityAliases(""); setShowAuthorityForm(false);
   }
 
   async function addCollection(event: FormEvent<HTMLFormElement>) {
@@ -319,6 +345,14 @@ export default function CollectionsPage() {
             {moveAffectedCount !== null ? <p className="form-status" role="status">{hierarchyMoveCopy.impact.replace("{count}", String(moveAffectedCount))}</p> : null}
           </div>
         ) : null}
+      </section>
+
+      <section className="panel panel-compact" aria-labelledby="authority-entities-heading">
+        <div className="toolbar-row toolbar-start"><div><span className="badge">{authorityCopy.badge}</span><h2 id="authority-entities-heading" className="section-heading">{authorityCopy.title}</h2></div><strong className="metric-value">{authorityEntities.length}</strong></div>
+        <p className="helper-text">{authorityCopy.description}</p>
+        {authorityError ? <p className="form-status" role="alert">{authorityError}</p> : null}
+        {canManageCollections ? (showAuthorityForm ? <form className="archive-toolbar-grid" onSubmit={createAuthorityEntity}><label><span>{authorityCopy.label}</span><input className="search-input" value={authorityLabel} onChange={(event) => setAuthorityLabel(event.target.value)} required /></label><label><span>{authorityCopy.kind}</span><select value={authorityKind} onChange={(event) => setAuthorityKind(event.target.value as AuthorityEntity["kind"])}>{(["person", "organization", "place", "program"] as const).map((kind) => <option key={kind} value={kind}>{kind}</option>)}</select></label><label><span>{authorityCopy.aliases}</span><input className="search-input" value={authorityAliases} onChange={(event) => setAuthorityAliases(event.target.value)} /></label><div className="archive-toolbar-actions"><button className="button button-primary" type="submit">{authorityCopy.save}</button><button className="button button-secondary" type="button" onClick={() => setShowAuthorityForm(false)}>{copy.cancel}</button></div></form> : <button className="button button-secondary button-sm" type="button" onClick={() => setShowAuthorityForm(true)}>{authorityCopy.newEntity}</button>) : null}
+        {authorityEntities.length > 0 ? <div className="tags">{authorityEntities.map((entity) => <span className="tag" key={entity.id}>{entity.preferredLabel} · {entity.kind}</span>)}</div> : null}
       </section>
 
       {canManageCollections && (canUndo(deleteStack) || canRedo(deleteStack)) ? (

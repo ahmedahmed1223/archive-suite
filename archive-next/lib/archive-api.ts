@@ -486,6 +486,8 @@ export interface CreateSavedSearchPayload {
 export type Collection = GeneratedSchemas["Collection"];
 export type ArchivalNode = GeneratedSchemas["ArchivalNode"];
 export type CreateArchivalNodePayload = GeneratedSchemas["ArchivalNodeCreateRequest"];
+export type AuthorityEntity = GeneratedSchemas["AuthorityEntity"];
+export type CreateAuthorityEntityPayload = GeneratedSchemas["AuthorityEntityCreateRequest"];
 
 export interface CreateCollectionPayload {
   name: string;
@@ -1507,6 +1509,8 @@ export interface ArchiveApiClient {
   createArchivalNode(payload: CreateArchivalNodePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ node: ArchivalNode }>>;
   moveArchivalNode(id: string, payload: { parentId?: string | null }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ node: ArchivalNode }>>;
   previewArchivalNodeMove(id: string, payload: { parentId?: string | null }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: GeneratedSchemas["ArchivalNodeMovePreview"] }>>;
+  authorityEntities(params?: { kind?: AuthorityEntity["kind"] }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entities: AuthorityEntity[] }>>;
+  createAuthorityEntity(payload: CreateAuthorityEntityPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ entity: AuthorityEntity }>>;
   workInbox(
     params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
     options?: AuthRequestOptions
@@ -2680,6 +2684,10 @@ export function createArchiveApiClient({
       post<{ node: ArchivalNode }>(`/archival-nodes/${encodeURIComponent(id)}/move`, payload, options),
     previewArchivalNodeMove: (id: string, payload: { parentId?: string | null }, options?: AuthRequestOptions) =>
       post<{ preview: GeneratedSchemas["ArchivalNodeMovePreview"] }>(`/archival-nodes/${encodeURIComponent(id)}/move-preview`, payload, options),
+    authorityEntities: (params?: { kind?: AuthorityEntity["kind"] }, options?: AuthRequestOptions) =>
+      get<{ entities: AuthorityEntity[] }>(`/authority-entities${params?.kind ? `?kind=${encodeURIComponent(params.kind)}` : ""}`, options),
+    createAuthorityEntity: (payload: CreateAuthorityEntityPayload, options?: AuthRequestOptions) =>
+      post<{ entity: AuthorityEntity }>("/authority-entities", payload, options),
     workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.set("page", String(params.page));
