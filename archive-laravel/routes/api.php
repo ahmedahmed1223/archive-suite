@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\CapabilitiesController;
 use App\Http\Controllers\Api\V1\ClipsController;
 use App\Http\Controllers\Api\V1\CollaborationController;
 use App\Http\Controllers\Api\V1\CollectionsController;
+use App\Http\Controllers\Api\V1\CuratedCollectionsController;
 use App\Http\Controllers\Api\V1\ComplianceReportsController;
 use App\Http\Controllers\Api\V1\DelegatedAccessController;
 use App\Http\Controllers\Api\V1\DepartmentFieldOwnersController;
@@ -522,6 +523,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/collections/{id}/records', [CollectionsController::class, 'records']);
         Route::post('/collections/{id}/records/{recordId}', [CollectionsController::class, 'addRecord']);
         Route::delete('/collections/{id}/records/{recordId}', [CollectionsController::class, 'removeRecord']);
+        Route::get('/curated-collections', [CuratedCollectionsController::class, 'index']);
+        Route::post('/curated-collections', [CuratedCollectionsController::class, 'store']);
 
         // V2: the institutional archival hierarchy is distinct from personal
         // smart collections and editorial projects. Moving is preview-only in

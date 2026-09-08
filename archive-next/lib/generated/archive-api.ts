@@ -718,6 +718,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/curated-collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List institutional curated collections */
+        get: operations["listCuratedCollections"];
+        put?: never;
+        /** Create an institutional curated collection */
+        post: operations["createCuratedCollection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/department-field-owners": {
         parameters: {
             query?: never;
@@ -5263,6 +5281,28 @@ export interface components {
             folder?: string;
             totalSize: number;
         };
+        CuratedCollection: {
+            /** Format: date-time */
+            createdAt: string | null;
+            /** Format: uuid */
+            id: string;
+            introduction: string | null;
+            /** @enum {string} */
+            status: "draft" | "published";
+            title: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+        };
+        CuratedCollectionCreateRequest: {
+            introduction?: string | null;
+            title: string;
+        };
+        CuratedCollectionResponse: components["schemas"]["OkEnvelope"] & {
+            collection: components["schemas"]["CuratedCollection"];
+        };
+        CuratedCollectionsResponse: components["schemas"]["OkEnvelope"] & {
+            collections: components["schemas"]["CuratedCollection"][];
+        };
         DecideApprovalRequestRequest: {
             /** @enum {string} */
             decision: "approve" | "reject";
@@ -9722,6 +9762,53 @@ export interface operations {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    listCuratedCollections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Curated collections */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CuratedCollectionsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    createCuratedCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CuratedCollectionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created curated collection */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CuratedCollectionResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listDepartmentFieldOwners: {

@@ -6864,6 +6864,10 @@
         }
       }
     },
+    "/curated-collections": {
+      "get": { "tags": ["Curated collections"], "summary": "List institutional curated collections", "operationId": "listCuratedCollections", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "responses": { "200": { "description": "Curated collections", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CuratedCollectionsResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } } },
+      "post": { "tags": ["Curated collections"], "summary": "Create an institutional curated collection", "operationId": "createCuratedCollection", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CuratedCollectionCreateRequest" } } } }, "responses": { "201": { "description": "Created curated collection", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CuratedCollectionResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
     "/collections": {
       "get": {
         "tags": [
@@ -21193,6 +21197,13 @@
       "ArchivalNodeMovePreviewResponse": {
         "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["preview"], "properties": { "preview": { "$ref": "#/components/schemas/ArchivalNodeMovePreview" } } }]
       },
+      "CuratedCollection": {
+        "type": "object", "required": ["id", "title", "introduction", "status", "createdAt", "updatedAt"],
+        "properties": { "id": { "type": "string", "format": "uuid" }, "title": { "type": "string" }, "introduction": { "type": ["string", "null"] }, "status": { "type": "string", "enum": ["draft", "published"] }, "createdAt": { "type": ["string", "null"], "format": "date-time" }, "updatedAt": { "type": ["string", "null"], "format": "date-time" } }
+      },
+      "CuratedCollectionCreateRequest": { "type": "object", "required": ["title"], "properties": { "title": { "type": "string", "minLength": 1, "maxLength": 500 }, "introduction": { "type": ["string", "null"], "maxLength": 5000 } } },
+      "CuratedCollectionsResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["collections"], "properties": { "collections": { "type": "array", "items": { "$ref": "#/components/schemas/CuratedCollection" } } } }] },
+      "CuratedCollectionResponse": { "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["collection"], "properties": { "collection": { "$ref": "#/components/schemas/CuratedCollection" } } }] },
       "Collection": {
         "type": "object",
         "required": [
