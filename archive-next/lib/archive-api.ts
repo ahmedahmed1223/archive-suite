@@ -1505,6 +1505,7 @@ export interface ArchiveApiClient {
   removeCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   archivalNodes(options?: AuthRequestOptions): Promise<ApiEnvelope<{ nodes: ArchivalNode[] }>>;
   createArchivalNode(payload: CreateArchivalNodePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ node: ArchivalNode }>>;
+  moveArchivalNode(id: string, payload: { parentId?: string | null }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ node: ArchivalNode }>>;
   previewArchivalNodeMove(id: string, payload: { parentId?: string | null }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: GeneratedSchemas["ArchivalNodeMovePreview"] }>>;
   workInbox(
     params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
@@ -2675,6 +2676,8 @@ export function createArchiveApiClient({
     archivalNodes: (options?: AuthRequestOptions) => get<{ nodes: ArchivalNode[] }>("/archival-nodes", options),
     createArchivalNode: (payload: CreateArchivalNodePayload, options?: AuthRequestOptions) =>
       post<{ node: ArchivalNode }>("/archival-nodes", payload, options),
+    moveArchivalNode: (id: string, payload: { parentId?: string | null }, options?: AuthRequestOptions) =>
+      post<{ node: ArchivalNode }>(`/archival-nodes/${encodeURIComponent(id)}/move`, payload, options),
     previewArchivalNodeMove: (id: string, payload: { parentId?: string | null }, options?: AuthRequestOptions) =>
       post<{ preview: GeneratedSchemas["ArchivalNodeMovePreview"] }>(`/archival-nodes/${encodeURIComponent(id)}/move-preview`, payload, options),
     workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
