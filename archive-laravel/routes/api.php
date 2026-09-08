@@ -58,6 +58,7 @@ use App\Http\Controllers\Api\V1\ProjectTaskTemplatesController;
 use App\Http\Controllers\Api\V1\PublicCatalogController;
 use App\Http\Controllers\Api\V1\RecordAiAssistController;
 use App\Http\Controllers\Api\V1\RecordAiSuggestionController;
+use App\Http\Controllers\Api\V1\RecordAuthorityEntitiesController;
 use App\Http\Controllers\Api\V1\RecordAttachmentsController;
 use App\Http\Controllers\Api\V1\RecordBroadcastMetadataController;
 use App\Http\Controllers\Api\V1\RecordChangeImpactController;
@@ -408,6 +409,8 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/records/{id}/triage-flag', [RecordTriageFlagController::class, 'destroy']);
         Route::get('/records/{id}/segments', [RecordSegmentsController::class, 'index']);
         Route::post('/records/{id}/segments', [RecordSegmentsController::class, 'store']);
+        Route::get('/records/{id}/authority-entities', [RecordAuthorityEntitiesController::class, 'index']);
+        Route::post('/records/{id}/authority-entities', [RecordAuthorityEntitiesController::class, 'store']);
         Route::patch('/record-segments/{id}', [RecordSegmentsController::class, 'update']);
         Route::delete('/record-segments/{id}', [RecordSegmentsController::class, 'destroy']);
         Route::delete('/record-comments/{id}', [RecordCommentsController::class, 'destroy']);

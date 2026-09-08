@@ -16363,6 +16363,10 @@
         }
       }
     },
+    "/records/{id}/authority-entities": {
+      "get": { "tags": ["Authority records"], "summary": "List controlled authority links for a record", "operationId": "listRecordAuthorityEntities", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "Authority links", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordAuthorityEntitiesResponse" } } } }, "401": { "$ref": "#/components/responses/Error" } } },
+      "post": { "tags": ["Authority records"], "summary": "Link a controlled authority entity to a record", "operationId": "linkRecordAuthorityEntity", "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }], "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordAuthorityEntityLinkRequest" } } } }, "responses": { "201": { "description": "Created authority link", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RecordAuthorityEntityLinkResponse" } } } }, "401": { "$ref": "#/components/responses/Error" }, "404": { "$ref": "#/components/responses/Error" }, "422": { "$ref": "#/components/responses/Error" } } }
+    },
     "/records/{id}/segments": {
       "get": {
         "tags": [
@@ -31727,6 +31731,20 @@
             }
           }
         ]
+      },
+      "RecordAuthorityEntityLink": {
+        "type": "object", "required": ["id", "relationship", "entity"],
+        "properties": { "id": { "type": "string", "format": "uuid" }, "relationship": { "type": "string" }, "entity": { "$ref": "#/components/schemas/AuthorityEntity" } }
+      },
+      "RecordAuthorityEntityLinkRequest": {
+        "type": "object", "required": ["entityId", "relationship"],
+        "properties": { "entityId": { "type": "string", "format": "uuid" }, "relationship": { "type": "string", "minLength": 1, "maxLength": 64 } }
+      },
+      "RecordAuthorityEntitiesResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["links"], "properties": { "links": { "type": "array", "items": { "$ref": "#/components/schemas/RecordAuthorityEntityLink" } } } }]
+      },
+      "RecordAuthorityEntityLinkResponse": {
+        "allOf": [{ "$ref": "#/components/schemas/OkEnvelope" }, { "type": "object", "required": ["link"], "properties": { "link": { "$ref": "#/components/schemas/RecordAuthorityEntityLink" } } }]
       },
       "RecordSegment": {
         "type": "object",

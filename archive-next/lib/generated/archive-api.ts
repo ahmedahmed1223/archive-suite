@@ -2162,6 +2162,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/authority-entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List controlled authority links for a record */
+        get: operations["listRecordAuthorityEntities"];
+        put?: never;
+        /** Link a controlled authority entity to a record */
+        post: operations["linkRecordAuthorityEntity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/broadcast-metadata": {
         parameters: {
             query?: never;
@@ -6455,6 +6473,23 @@ export interface components {
         };
         RecordAttachmentsResponse: components["schemas"]["OkEnvelope"] & {
             attachments: components["schemas"]["RecordAttachment"][];
+        };
+        RecordAuthorityEntitiesResponse: components["schemas"]["OkEnvelope"] & {
+            links: components["schemas"]["RecordAuthorityEntityLink"][];
+        };
+        RecordAuthorityEntityLink: {
+            entity: components["schemas"]["AuthorityEntity"];
+            /** Format: uuid */
+            id: string;
+            relationship: string;
+        };
+        RecordAuthorityEntityLinkRequest: {
+            /** Format: uuid */
+            entityId: string;
+            relationship: string;
+        };
+        RecordAuthorityEntityLinkResponse: components["schemas"]["OkEnvelope"] & {
+            link: components["schemas"]["RecordAuthorityEntityLink"];
         };
         RecordBroadcastMetadata: {
             itemId: string;
@@ -12420,6 +12455,58 @@ export interface operations {
             200: components["responses"]["Ok"];
             403: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    listRecordAuthorityEntities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authority links */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordAuthorityEntitiesResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    linkRecordAuthorityEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordAuthorityEntityLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Created authority link */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordAuthorityEntityLinkResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     getRecordBroadcastMetadata: {
