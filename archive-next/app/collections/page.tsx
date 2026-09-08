@@ -42,6 +42,7 @@ export default function CollectionsPage() {
     ? { person: "شخص", organization: "مؤسسة", place: "مكان", program: "برنامج" }
     : { person: "Person", organization: "Organization", place: "Place", program: "Program" };
   const curatedCopy = locale === "ar" ? { title: "المجموعات المنسقة", description: "اختيارات تحريرية للمؤسسة لا تغيّر موقع المادة في التسلسل الأرشيفي.", new: "إنشاء مجموعة منسقة", label: "العنوان", intro: "المقدمة", save: "إنشاء مسودة", failed: "تعذر إنشاء المجموعة المنسقة." } : { title: "Curated collections", description: "Institutional editorial selections that do not change a record's archival placement.", new: "Create curated collection", label: "Title", intro: "Introduction", save: "Create draft", failed: "Could not create curated collection." };
+  const curatedStatusLabels: Record<CuratedCollection["status"], string> = locale === "ar" ? { draft: "مسودة", published: "منشورة" } : { draft: "Draft", published: "Published" };
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -376,7 +377,7 @@ export default function CollectionsPage() {
         <div className="toolbar-row toolbar-start"><div><span className="badge">{copy.eyebrow}</span><h2 id="curated-collections-heading" className="section-heading">{curatedCopy.title}</h2></div><strong className="metric-value">{curatedCollections.length}</strong></div>
         <p className="helper-text">{curatedCopy.description}</p>{curatedError ? <p className="form-status" role="alert">{curatedError}</p> : null}
         {canManageCollections ? (showCuratedForm ? <form className="archive-toolbar-grid" onSubmit={createCuratedCollection}><label><span>{curatedCopy.label}</span><input className="search-input" value={curatedTitle} onChange={(event) => setCuratedTitle(event.target.value)} required /></label><label><span>{curatedCopy.intro}</span><textarea value={curatedIntroduction} onChange={(event) => setCuratedIntroduction(event.target.value)} /></label><div className="archive-toolbar-actions"><button className="button button-primary" type="submit">{curatedCopy.save}</button><button className="button button-secondary" type="button" onClick={() => setShowCuratedForm(false)}>{copy.cancel}</button></div></form> : <button className="button button-secondary button-sm" type="button" onClick={() => setShowCuratedForm(true)}>{curatedCopy.new}</button>) : null}
-        {curatedCollections.length ? <div className="tags">{curatedCollections.map((collection) => <span className="tag" key={collection.id}>{collection.title} · {collection.status}</span>)}</div> : null}
+        {curatedCollections.length ? <div className="tags">{curatedCollections.map((collection) => <span className="tag" key={collection.id}>{collection.title} · {curatedStatusLabels[collection.status]}</span>)}</div> : null}
       </section>
 
       {canManageCollections && (canUndo(deleteStack) || canRedo(deleteStack)) ? (
