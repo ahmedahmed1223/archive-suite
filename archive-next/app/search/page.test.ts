@@ -43,7 +43,7 @@ describe("advanced search workbench", () => {
     const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 
     expect(pageSource).toContain("segmentMatches: TimedDescriptionSegment[]");
-    expect(pageSource).toContain("#timed-description-${encodeURIComponent(segment.id)}");
+    expect(pageSource).toContain("segmentId=${encodeURIComponent(segment.id)}");
     expect(pageSource).toContain("searchCopy.timedSegmentsHeading");
   });
 });

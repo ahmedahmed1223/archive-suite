@@ -9,4 +9,10 @@ describe("media player localization", () => {
     expect(pageSource).toContain("aria-label={copy.bookmarksAriaLabel}");
     expect(pageSource).toContain("copy.loadingSavedTranscript");
   });
+
+  it("resolves a timed-description link only from the current probe report", () => {
+    expect(pageSource).toContain("resolveTimedDescriptionStartSeconds");
+    expect(pageSource).toContain("api.mediaInspections(recordIdParam");
+    expect(pageSource).toContain("params.get(\"segmentId\")");
+  });
 });

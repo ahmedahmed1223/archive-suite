@@ -527,7 +527,7 @@ function SearchPageContent() {
         </div>
       </div>
       <div className="button-row">
-        <a href={`/archive/${encodeURIComponent(segment.recordId)}#timed-description-${encodeURIComponent(segment.id)}`} className="button button-primary button-sm">
+        <a href={`/media/play?recordId=${encodeURIComponent(segment.recordId)}&segmentId=${encodeURIComponent(segment.id)}`} className="button button-primary button-sm">
           {searchCopy.openTimedSegment}
         </a>
       </div>

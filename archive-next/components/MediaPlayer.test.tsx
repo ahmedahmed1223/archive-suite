@@ -21,4 +21,14 @@ describe("MediaPlayer", () => {
     expect((video as HTMLVideoElement).currentTime).toBe(83);
     expect(document.activeElement).toBe(video);
   });
+
+  it("applies a deep-link seek that arrives after media metadata", () => {
+    const { container, rerender } = render(<MediaPlayer path="video/oral-history.mp4" />);
+    const video = container.querySelector("video") as HTMLVideoElement;
+    fireEvent.loadedMetadata(video);
+
+    rerender(<MediaPlayer path="video/oral-history.mp4" initialTime={100.1} />);
+
+    expect(video.currentTime).toBeCloseTo(100.1, 6);
+  });
 });

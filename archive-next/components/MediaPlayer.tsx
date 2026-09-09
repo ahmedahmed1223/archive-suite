@@ -118,6 +118,7 @@ export default function MediaPlayer({
   const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [metadataLoaded, setMetadataLoaded] = useState(false);
   const mediaRef = useRef<HTMLMediaElement | null>(null);
   const hasAppliedInitialTime = useRef(false);
   const src = useMemo(() => streamSrc(path, disk), [disk, path]);
@@ -140,6 +141,28 @@ export default function MediaPlayer({
     [onReady],
   );
 
+  const applyInitialTime = useCallback((element: HTMLMediaElement) => {
+    const seekTime = typeof initialTime === "number" && Number.isFinite(initialTime) && initialTime >= 0
+      ? initialTime
+      : null;
+    if (hasAppliedInitialTime.current || seekTime === null) return;
+    hasAppliedInitialTime.current = true;
+    element.currentTime = seekTime;
+    setCurrentTime(seekTime);
+    element.focus({ preventScroll: true });
+  }, [initialTime]);
+
+  useEffect(() => {
+    hasAppliedInitialTime.current = false;
+    setMetadataLoaded(false);
+    setCurrentTime(0);
+  }, [src]);
+
+  useEffect(() => {
+    if (!metadataLoaded || !mediaRef.current) return;
+    applyInitialTime(mediaRef.current);
+  }, [applyInitialTime, metadataLoaded]);
+
   const handleError = useCallback(() => {
     setError(copy.playbackError);
   }, [copy.playbackError]);
@@ -149,17 +172,9 @@ export default function MediaPlayer({
     const nextDuration = Number(element.duration);
     setDuration(Number.isFinite(nextDuration) ? nextDuration : 0);
 
-    const seekTime = typeof initialTime === "number" && Number.isFinite(initialTime) && initialTime >= 0
-      ? initialTime
-      : null;
-
-    if (!hasAppliedInitialTime.current && seekTime !== null) {
-      hasAppliedInitialTime.current = true;
-      element.currentTime = seekTime;
-      setCurrentTime(seekTime);
-      element.focus({ preventScroll: true });
-    }
-  }, [initialTime]);
+    setMetadataLoaded(true);
+    applyInitialTime(element);
+  }, [applyInitialTime]);
 
   const handleTimeUpdate = useCallback((event: SyntheticEvent<HTMLMediaElement>) => {
     const element = event.currentTarget;

@@ -9,8 +9,9 @@ import MediaSourcePicker from "@/components/MediaSourcePicker";
 import OperationalSafetyPanel from "@/components/OperationalSafetyPanel";
 import PageToolbar from "@/components/PageToolbar";
 import { parseSubtitles } from "@/lib/media/subtitles";
-import { createArchiveApiClient, type RecordNote } from "@/lib/archive-api";
+import { createArchiveApiClient, deriveRecordSourcePath, type RecordNote } from "@/lib/archive-api";
 import { bookmarkNotes, formatBookmarkTime } from "@/lib/timestamp-bookmarks";
+import { resolveTimedDescriptionStartSeconds } from "@/lib/timed-description-playback";
 import styles from "./play.module.css";
 import "../media.css";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
@@ -28,6 +29,7 @@ export default function MediaPlayPage() {
   const [recordId, setRecordId] = useState("");
   const [recordStore, setRecordStore] = useState("");
   const [initialTime, setInitialTime] = useState<number | undefined>();
+  const [segmentStatus, setSegmentStatus] = useState("");
   const transcriptCueCount = parseSubtitles(transcriptText).length;
   const api = useMemo(() => createArchiveApiClient(), []);
   const playerRef = useRef<HTMLMediaElement | null>(null);
@@ -39,6 +41,7 @@ export default function MediaPlayPage() {
     const pathParam = params.get("path")?.trim() ?? "";
     const diskParam = params.get("disk")?.trim() ?? "";
     const recordIdParam = params.get("recordId")?.trim() ?? "";
+    const segmentIdParam = params.get("segmentId")?.trim() ?? "";
     const timeParam = Number(params.get("at"));
 
     if (pathParam) {
@@ -67,9 +70,38 @@ export default function MediaPlayPage() {
         setTranscriptText(response.record.transcript ?? "");
         const loadedStore = response.record.store || "archive-items";
         setRecordStore(loadedStore);
+        const source = deriveRecordSourcePath(response.record);
+        if (!pathParam && source) {
+          setPathInput(source.sourcePath);
+          setPath(source.sourcePath);
+          setDiskInput(source.disk ?? "");
+          setDisk(source.disk ?? "");
+        }
         void api.recordNotes(recordIdParam, loadedStore).then((notesResponse) => {
           if (notesResponse.ok) setBookmarks(bookmarkNotes(notesResponse.notes));
         });
+        if (segmentIdParam) {
+          setSegmentStatus(copy.timedSegmentLoading);
+          void Promise.all([
+            api.timedDescriptionSegments(recordIdParam),
+            api.mediaInspections(recordIdParam, { store: loadedStore }),
+          ]).then(([segmentsResponse, inspectionsResponse]) => {
+            const segment = segmentsResponse.ok ? segmentsResponse.segments.find((item) => item.id === segmentIdParam) : undefined;
+            if (!segment) {
+              setSegmentStatus(copy.timedSegmentNotFound);
+              return;
+            }
+            const seconds = inspectionsResponse.ok
+              ? resolveTimedDescriptionStartSeconds(segment.startFrame, inspectionsResponse.inspections)
+              : null;
+            if (seconds === null) {
+              setSegmentStatus(copy.timedSegmentUnavailable);
+              return;
+            }
+            setInitialTime(seconds);
+            setSegmentStatus(copy.timedSegmentReady);
+          }).catch(() => setSegmentStatus(copy.timedSegmentUnavailable));
+        }
         setTranscriptStatus(response.record.transcript?.trim() ? copy.savedTranscriptLoaded : copy.noSavedTranscript);
       })
       .catch(() => setTranscriptStatus(copy.savedTranscriptLoadFailure));
@@ -184,6 +216,7 @@ export default function MediaPlayPage() {
       </PageToolbar>
 
       <OperationalSafetyPanel action={copy.safetyAction} dryRun confidence={96} auditHref="/activity" />
+      {segmentStatus ? <p className="form-status" role="status">{segmentStatus}</p> : null}
 
       {path ? (
         <div className={styles.theaterLayout}>
