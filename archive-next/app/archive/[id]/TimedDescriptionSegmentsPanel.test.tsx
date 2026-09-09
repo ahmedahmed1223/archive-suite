@@ -3,9 +3,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { AuthorityEntity, TimedDescriptionSegment } from "@/lib/archive-api";
 
-const { timedDescriptionSegments, createTimedDescriptionSegment, deleteTimedDescriptionSegment, authorityEntities, timedDescriptionSegmentAuthorityEntities, linkTimedDescriptionSegmentAuthorityEntity } = vi.hoisted(() => ({
+const { timedDescriptionSegments, createTimedDescriptionSegment, updateTimedDescriptionSegment, deleteTimedDescriptionSegment, authorityEntities, timedDescriptionSegmentAuthorityEntities, linkTimedDescriptionSegmentAuthorityEntity } = vi.hoisted(() => ({
   timedDescriptionSegments: vi.fn(),
   createTimedDescriptionSegment: vi.fn(),
+  updateTimedDescriptionSegment: vi.fn(),
   deleteTimedDescriptionSegment: vi.fn(),
   authorityEntities: vi.fn(),
   timedDescriptionSegmentAuthorityEntities: vi.fn(),
@@ -14,7 +15,7 @@ const { timedDescriptionSegments, createTimedDescriptionSegment, deleteTimedDesc
 
 vi.mock("@/lib/archive-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
-  return { ...actual, createArchiveApiClient: () => ({ timedDescriptionSegments, createTimedDescriptionSegment, deleteTimedDescriptionSegment, authorityEntities, timedDescriptionSegmentAuthorityEntities, linkTimedDescriptionSegmentAuthorityEntity }) };
+  return { ...actual, createArchiveApiClient: () => ({ timedDescriptionSegments, createTimedDescriptionSegment, updateTimedDescriptionSegment, deleteTimedDescriptionSegment, authorityEntities, timedDescriptionSegmentAuthorityEntities, linkTimedDescriptionSegmentAuthorityEntity }) };
 });
 
 vi.mock("@/components/RoleGate", () => ({ useCapability: () => true }));
@@ -103,5 +104,26 @@ describe("TimedDescriptionSegmentsPanel", () => {
 
     await waitFor(() => expect(deleteTimedDescriptionSegment).toHaveBeenCalledWith("segment-1"));
     expect(screen.queryByText("بداية المؤتمر")).toBeNull();
+  });
+
+  test("updates the selected segment's corrected frame bounds and description", async () => {
+    timedDescriptionSegments.mockResolvedValue({ ok: true, segments: [segment()] });
+    authorityEntities.mockResolvedValue({ ok: true, entities: [] });
+    timedDescriptionSegmentAuthorityEntities.mockResolvedValue({ ok: true, links: [] });
+    updateTimedDescriptionSegment.mockResolvedValue({ ok: true, segment: segment({ title: "افتتاح المؤتمر", startFrame: 150, endFrame: 420, description: "تم تصحيح حدود اللقطة." }) });
+
+    render(<TimedDescriptionSegmentsPanel recordId="record-1" />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "تعديل المقطع: بداية المؤتمر" }));
+    fireEvent.change(screen.getByLabelText("عنوان المقطع: بداية المؤتمر"), { target: { value: "افتتاح المؤتمر" } });
+    fireEvent.change(screen.getByLabelText("بداية الإطار للمقطع: بداية المؤتمر"), { target: { value: "150" } });
+    fireEvent.change(screen.getByLabelText("نهاية الإطار للمقطع: بداية المؤتمر"), { target: { value: "420" } });
+    fireEvent.change(screen.getByLabelText("وصف المقطع: بداية المؤتمر"), { target: { value: "تم تصحيح حدود اللقطة." } });
+    fireEvent.click(screen.getByRole("button", { name: "حفظ التعديل" }));
+
+    await waitFor(() => expect(updateTimedDescriptionSegment).toHaveBeenCalledWith("segment-1", expect.objectContaining({
+      title: "افتتاح المؤتمر", startFrame: 150, endFrame: 420, description: "تم تصحيح حدود اللقطة."
+    })));
+    expect(await screen.findByText("افتتاح المؤتمر")).toBeInTheDocument();
   });
 });
