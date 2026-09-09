@@ -23,6 +23,7 @@ import { RecordFieldRequestsPanel } from "./RecordFieldRequestsPanel";
 import { RecordHistoryPanel } from "./RecordHistoryPanel";
 import { RecordReadinessPanel } from "./RecordReadinessPanel";
 import { RecordAuthorityEntitiesPanel } from "./RecordAuthorityEntitiesPanel";
+import TimedDescriptionSegmentsPanel from "./TimedDescriptionSegmentsPanel";
 import {
   createArchiveApiClient,
   deriveRecordSourcePath,
@@ -972,6 +973,7 @@ export default function ArchiveDetailPage() {
               canEdit={canEditRecords}
             />
             <RecordAuthorityEntitiesPanel recordId={id} canEdit={canEditRecords} />
+            <TimedDescriptionSegmentsPanel recordId={id} />
             <GeotagPanel
               record={state.record}
               onRecordUpdate={(updated) => setState((current) => (current.status === "ready" ? { ...current, record: updated } : current))}
