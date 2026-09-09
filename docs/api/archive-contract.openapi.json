@@ -26837,6 +26837,13 @@
               "null"
             ]
           },
+          "recordId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Archive record created when this watched entry was explicitly applied; null before approval or when processing failed."
+          },
           "routing": {
             "$ref": "#/components/schemas/WatchedIngestRouting"
           }

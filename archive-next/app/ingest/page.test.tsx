@@ -135,7 +135,7 @@ describe("ingest workflow workspace", () => {
       batch: {
         id: "batch-1",
         status: "applied",
-        entries: [{ id: "entry-1", fileName: "reel.mov", status: "applied", routing: null, reason: null }]
+        entries: [{ id: "entry-1", fileName: "reel.mov", status: "applied", recordId: "record-9", routing: null, reason: null }]
       }
     });
 
@@ -147,6 +147,7 @@ describe("ingest workflow workspace", () => {
 
     expect(await screen.findByText("The operation created records for ingested material")).toBeVisible();
     expect((await screen.findAllByText("1 ingested")).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Open reel.mov" })).toHaveAttribute("href", "/archive/record-9");
   });
 
   test("keeps record creation pending when an applied watched batch is empty", async () => {

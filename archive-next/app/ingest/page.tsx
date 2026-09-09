@@ -339,7 +339,7 @@ export default function IngestPage() {
               <div className="table-wrap" aria-live="polite">
                 <table>
                   <thead><tr><th>{ti.tableHeaders.file}</th><th>{ti.tableHeaders.status}</th><th>{ti.tableHeaders.routingRule}</th><th>{ti.tableHeaders.stagingDestination}</th><th>{ti.tableHeaders.reviewReason}</th></tr></thead>
-                  <tbody>{watchedBatch.entries.map((entry) => <tr key={entry.id}><td>{entry.fileName}</td><td>{entry.status}</td><td>{entry.routing?.metadataTemplateId || ti.defaultValue}</td><td>{entry.routing?.stagingDirectory || "ingest/watched/accepted"}</td><td>{entry.reason || ti.readyLabel}</td></tr>)}</tbody>
+                  <tbody>{watchedBatch.entries.map((entry) => <tr key={entry.id}><td>{entry.recordId ? <a href={`/archive/${encodeURIComponent(entry.recordId)}`}>{ti.openRecord.replace("{fileName}", entry.fileName)}</a> : entry.fileName}</td><td>{entry.status}</td><td>{entry.routing?.metadataTemplateId || ti.defaultValue}</td><td>{entry.routing?.stagingDirectory || "ingest/watched/accepted"}</td><td>{entry.reason || ti.readyLabel}</td></tr>)}</tbody>
                 </table>
               </div>
             )}

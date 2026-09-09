@@ -103,12 +103,14 @@ class IngestApiTest extends TestCase
         Storage::disk($disk)->put("$dir/watched/approved.txt", 'approved content');
         $preview = $this->postJson('/api/v1/ingest/watched/scan', [], $this->authHeaders())->assertCreated();
 
-        $this->postJson('/api/v1/ingest/watched/batches/'.$preview->json('batch.id').'/apply', [], $this->authHeaders())
+        $applied = $this->postJson('/api/v1/ingest/watched/batches/'.$preview->json('batch.id').'/apply', [], $this->authHeaders())
             ->assertOk()
             ->assertJsonPath('batch.status', 'completed');
 
         $this->assertDatabaseCount('storage_rows', 1);
         $this->assertDatabaseHas('watched_ingest_entries', ['status' => 'applied']);
+        $this->assertIsString($applied->json('batch.entries.0.recordId'));
+        $this->assertSame($applied->json('batch.entries.0.recordId'), DB::table('watched_ingest_entries')->value('record_id'));
     }
 
     public function test_watched_ingest_preview_is_classified_in_the_central_audit_log(): void

@@ -79,7 +79,7 @@ final class WatchedIngestService
                 $routing = json_decode($entry->routing ?: '[]', true) ?: [];
                 $result = $this->finalizer->finalize($batch->disk, $quarantinePath, (string) Str::uuid().($extension === '' ? '' : '.'.$extension), $entry->file_name, $entry->checksum, $routing['stagingDirectory'] ?? 'ingest/watched/accepted');
                 $this->applyRouting($result['recordId'], $result['record'], $routing);
-                DB::table('watched_ingest_entries')->where('id', $entry->id)->update(['status' => 'applied', 'reason' => null, 'updated_at' => now()]);
+                DB::table('watched_ingest_entries')->where('id', $entry->id)->update(['record_id' => $result['recordId'], 'status' => 'applied', 'reason' => null, 'updated_at' => now()]);
             } catch (Throwable) {
                 DB::table('watched_ingest_entries')->where('id', $entry->id)->update(['status' => 'quarantined', 'reason' => 'apply_failed', 'updated_at' => now()]);
             }
@@ -111,7 +111,7 @@ final class WatchedIngestService
     /** @param array<string, mixed> $entry */
     private function entrySummary(array $entry): array
     {
-        return ['id' => $entry['id'], 'fileName' => $entry['file_name'], 'status' => $entry['status'], 'reason' => $entry['reason'], 'checksum' => $entry['checksum'], 'routing' => json_decode($entry['routing'] ?? '[]', true) ?: []];
+        return ['id' => $entry['id'], 'fileName' => $entry['file_name'], 'recordId' => $entry['record_id'] ?? null, 'status' => $entry['status'], 'reason' => $entry['reason'], 'checksum' => $entry['checksum'], 'routing' => json_decode($entry['routing'] ?? '[]', true) ?: []];
     }
 
     private function quarantinePath(string $entryId, string $fileName): string

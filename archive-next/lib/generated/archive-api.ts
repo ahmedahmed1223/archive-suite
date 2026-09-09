@@ -8231,6 +8231,8 @@ export interface components {
             fileName: string;
             id: string;
             reason?: string | null;
+            /** @description Archive record created when this watched entry was explicitly applied; null before approval or when processing failed. */
+            recordId?: string | null;
             routing?: components["schemas"]["WatchedIngestRouting"];
             /** @enum {string} */
             status: "pending" | "applied" | "deferred" | "quarantined";
