@@ -490,6 +490,7 @@ export type AuthorityEntity = GeneratedSchemas["AuthorityEntity"];
 export type CreateAuthorityEntityPayload = GeneratedSchemas["AuthorityEntityCreateRequest"];
 export type RecordAuthorityEntityLink = GeneratedSchemas["RecordAuthorityEntityLink"];
 export type CuratedCollection = GeneratedSchemas["CuratedCollection"];
+export type TimedDescriptionSegment = GeneratedSchemas["TimedDescriptionSegment"];
 
 export interface CreateCollectionPayload {
   name: string;
@@ -1522,6 +1523,8 @@ export interface ArchiveApiClient {
   reorderCuratedCollectionRecords(id: string, payload: GeneratedSchemas["CuratedCollectionRecordOrderRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[] }>>;
   addCuratedCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   removeCuratedCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
+  timedDescriptionSegments(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segments: TimedDescriptionSegment[] }>>;
+  createTimedDescriptionSegment(recordId: string, payload: GeneratedSchemas["TimedDescriptionSegmentCreateRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ segment: TimedDescriptionSegment }>>;
   workInbox(
     params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
     options?: AuthRequestOptions
@@ -2712,6 +2715,8 @@ export function createArchiveApiClient({
     reorderCuratedCollectionRecords: (id: string, payload: GeneratedSchemas["CuratedCollectionRecordOrderRequest"], options?: AuthRequestOptions) => put<{ recordIds: string[] }>(`/curated-collections/${encodeURIComponent(id)}/records/order`, payload, options),
     addCuratedCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) => post<Record<string, never>>(`/curated-collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     removeCuratedCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) => del<{ deleted: boolean }>(`/curated-collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
+    timedDescriptionSegments: (recordId: string, options?: AuthRequestOptions) => get<{ segments: TimedDescriptionSegment[] }>(`/records/${encodeURIComponent(recordId)}/timed-description-segments`, options),
+    createTimedDescriptionSegment: (recordId: string, payload: GeneratedSchemas["TimedDescriptionSegmentCreateRequest"], options?: AuthRequestOptions) => post<{ segment: TimedDescriptionSegment }>(`/records/${encodeURIComponent(recordId)}/timed-description-segments`, payload, options),
     workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.set("page", String(params.page));

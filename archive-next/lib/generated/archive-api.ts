@@ -2847,6 +2847,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{recordId}/timed-description-segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List frame-bounded description segments */
+        get: operations["listTimedDescriptionSegments"];
+        put?: never;
+        /** Create a frame-bounded description segment */
+        post: operations["createTimedDescriptionSegment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/bulk": {
         parameters: {
             query?: never;
@@ -7592,6 +7610,37 @@ export interface components {
         };
         TaskEscalationPolicyResponse: components["schemas"]["OkEnvelope"] & {
             policy: components["schemas"]["TaskEscalationPolicy"];
+        };
+        TimedDescriptionSegment: {
+            /** Format: date-time */
+            createdAt?: string | null;
+            description?: string | null;
+            endFrame: number;
+            /** Format: uuid */
+            id: string;
+            place?: string | null;
+            recordId: string;
+            rightsNote?: string | null;
+            startFrame: number;
+            subjects: string[];
+            title: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        TimedDescriptionSegmentCreateRequest: {
+            description?: string | null;
+            endFrame: number;
+            place?: string | null;
+            rightsNote?: string | null;
+            startFrame: number;
+            subjects?: string[];
+            title: string;
+        };
+        TimedDescriptionSegmentResponse: components["schemas"]["OkEnvelope"] & {
+            segment: components["schemas"]["TimedDescriptionSegment"];
+        };
+        TimedDescriptionSegmentsResponse: components["schemas"]["OkEnvelope"] & {
+            segments: components["schemas"]["TimedDescriptionSegment"][];
         };
         TranscriptCue: {
             endSeconds: number;
@@ -14076,6 +14125,55 @@ export interface operations {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    listTimedDescriptionSegments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Timed description segments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimedDescriptionSegmentsResponse"];
+                };
+            };
+        };
+    };
+    createTimedDescriptionSegment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimedDescriptionSegmentCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created segment */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimedDescriptionSegmentResponse"];
+                };
+            };
+            422: components["responses"]["Error"];
         };
     };
     bulkUpsertRecords: {
