@@ -328,5 +328,22 @@ export const archiveDetail = {
         hint: "Request team review by adding a comment."
       }
     }
+  },
+  authorityEntities: {
+    title: "Authority records",
+    description: "Controlled people, organizations, and places linked to this record.",
+    empty: "No authority records are linked yet.",
+    entity: "Authority record",
+    relation: "Relationship",
+    add: "Link record",
+    remove: "Remove",
+    failed: "Could not update authority records.",
+    loading: "Loading authority records...",
+    kinds: {
+      person: "Person",
+      organization: "Organization",
+      place: "Place",
+      program: "Program"
+    }
   }
 } as const;

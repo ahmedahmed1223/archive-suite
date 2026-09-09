@@ -32,17 +32,11 @@ type CollectionsLoadState =
 export default function CollectionsPage() {
   const { locale, t } = useLocale();
   const copy = t.pages.collections;
-  const hierarchyMoveCopy = locale === "ar"
-    ? { move: "نقل", preview: "معاينة الأثر", apply: "تطبيق النقل", failed: "تعذر نقل العقدة الأرشيفية.", impact: "سيتغير سياق {count} من العقد التابعة." }
-    : { move: "Move", preview: "Preview impact", apply: "Apply move", failed: "Could not move the archival node.", impact: "The context of {count} descendant nodes will change." };
-  const authorityCopy = locale === "ar"
-    ? { badge: "سجل استناد", title: "الأشخاص والمؤسسات والأماكن", description: "أسماء مضبوطة قابلة لإعادة الاستخدام في توصيف المواد والمقاطع، وليست وسومًا حرة.", newEntity: "إضافة سجل", label: "الاسم المفضّل", kind: "النوع", aliases: "مرادفات مفصولة بفواصل", save: "حفظ السجل", failed: "تعذر إنشاء سجل الاستناد." }
-    : { badge: "Authority record", title: "People, organizations, and places", description: "Controlled names reused in record and segment description; they are not free-form tags.", newEntity: "Add authority record", label: "Preferred label", kind: "Kind", aliases: "Comma-separated aliases", save: "Save record", failed: "Could not create the authority record." };
-  const authorityKindLabels: Record<AuthorityEntity["kind"], string> = locale === "ar"
-    ? { person: "شخص", organization: "مؤسسة", place: "مكان", program: "برنامج" }
-    : { person: "Person", organization: "Organization", place: "Place", program: "Program" };
-  const curatedCopy = locale === "ar" ? { title: "المجموعات المنسقة", description: "اختيارات تحريرية للمؤسسة لا تغيّر موقع المادة في التسلسل الأرشيفي.", new: "إنشاء مجموعة منسقة", label: "العنوان", intro: "المقدمة", save: "إنشاء مسودة", failed: "تعذر إنشاء المجموعة المنسقة.", selected: "المواد المختارة", choose: "اختر مجموعة", addRecord: "إضافة مادة", chooseRecord: "اختر مادة من الفهرس", removeRecord: "إزالة من المجموعة", empty: "لا توجد مواد في هذه المجموعة بعد.", membershipFailed: "تعذر تحديث مواد المجموعة." } : { title: "Curated collections", description: "Institutional editorial selections that do not change a record's archival placement.", new: "Create curated collection", label: "Title", intro: "Introduction", save: "Create draft", failed: "Could not create curated collection.", selected: "Selected records", choose: "Choose a collection", addRecord: "Add record", chooseRecord: "Choose a record from the archive", removeRecord: "Remove from collection", empty: "No records have been selected for this collection yet.", membershipFailed: "Could not update the collection's records." };
-  const curatedStatusLabels: Record<CuratedCollection["status"], string> = locale === "ar" ? { draft: "مسودة", published: "منشورة" } : { draft: "Draft", published: "Published" };
+  const hierarchyMoveCopy = copy.hierarchyMove;
+  const authorityCopy = copy.authority;
+  const authorityKindLabels: Record<AuthorityEntity["kind"], string> = copy.authorityKinds;
+  const curatedCopy = copy.curated;
+  const curatedStatusLabels: Record<CuratedCollection["status"], string> = copy.curatedStatuses;
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
   const api = useMemo(() => createArchiveApiClient(), []);

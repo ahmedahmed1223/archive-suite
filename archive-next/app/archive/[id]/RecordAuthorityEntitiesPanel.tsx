@@ -5,13 +5,9 @@ import { createArchiveApiClient, type AuthorityEntity, type RecordAuthorityEntit
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 export function RecordAuthorityEntitiesPanel({ recordId, canEdit }: Readonly<{ recordId: string; canEdit: boolean }>) {
-  const { locale } = useLocale();
-  const copy = locale === "ar"
-    ? { title: "سجلات الاستناد", description: "أشخاص ومؤسسات وأماكن مرتبطة بهذه المادة بوصف مضبوط.", empty: "لا توجد سجلات استناد مرتبطة بعد.", entity: "السجل", relation: "نوع العلاقة", add: "ربط السجل", remove: "إزالة", failed: "تعذر تحديث سجلات الاستناد.", loading: "جارٍ تحميل سجلات الاستناد..." }
-    : { title: "Authority records", description: "Controlled people, organizations, and places linked to this record.", empty: "No authority records are linked yet.", entity: "Authority record", relation: "Relationship", add: "Link record", remove: "Remove", failed: "Could not update authority records.", loading: "Loading authority records..." };
-  const kindLabels: Record<AuthorityEntity["kind"], string> = locale === "ar"
-    ? { person: "شخص", organization: "مؤسسة", place: "مكان", program: "برنامج" }
-    : { person: "Person", organization: "Organization", place: "Place", program: "Program" };
+  const { t } = useLocale();
+  const copy = t.pages.archiveDetail.authorityEntities;
+  const kindLabels: Record<AuthorityEntity["kind"], string> = copy.kinds;
   const api = useMemo(() => createArchiveApiClient(), []);
   const [links, setLinks] = useState<RecordAuthorityEntityLink[]>([]);
   const [entities, setEntities] = useState<AuthorityEntity[]>([]);

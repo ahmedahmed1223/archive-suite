@@ -328,5 +328,22 @@ export const archiveDetail = {
         hint: "اطلب مراجعة الفريق عبر إضافة تعليق."
       }
     }
+  },
+  authorityEntities: {
+    title: "سجلات الاستناد",
+    description: "أشخاص ومؤسسات وأماكن مرتبطة بهذه المادة بوصف مضبوط.",
+    empty: "لا توجد سجلات استناد مرتبطة بعد.",
+    entity: "السجل",
+    relation: "نوع العلاقة",
+    add: "ربط السجل",
+    remove: "إزالة",
+    failed: "تعذر تحديث سجلات الاستناد.",
+    loading: "جارٍ تحميل سجلات الاستناد...",
+    kinds: {
+      person: "شخص",
+      organization: "مؤسسة",
+      place: "مكان",
+      program: "برنامج"
+    }
   }
 } as const;
