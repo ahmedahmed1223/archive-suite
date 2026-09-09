@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, SyntheticEvent } from "react";
 import { formatCueTime, getActiveCue, parseSubtitles } from "@/lib/media/subtitles";
 import { downsamplePeaks, peaksToBars, placeholderPeaks } from "@/lib/media/waveform";
+import { framesToTimecode, secondsToFrames, timecodeToFrames, type RationalFrameRate, type TimecodeMode } from "@/lib/timecode";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
 // Browsers cannot play file:// media in local mode, so playback always streams
@@ -95,6 +96,9 @@ export interface MediaPlayerProps {
   onPlayPause?: (el: HTMLMediaElement) => void;
   /** Optional deep-link position, applied once after media metadata is ready. */
   initialTime?: number;
+  /** Enables frame controls only when a current probe supplied this exact rate. */
+  frameRate?: RationalFrameRate | null;
+  timecodeMode?: TimecodeMode;
   showTimeline?: boolean;
   transcriptText?: string;
   /** Set false when a caller renders its own transcript list (e.g. a dedicated studio panel) to avoid showing the cues twice. */
@@ -109,6 +113,8 @@ export default function MediaPlayer({
   onTimeUpdate,
   onPlayPause,
   initialTime,
+  frameRate = null,
+  timecodeMode = "non_drop",
   showTimeline = false,
   transcriptText,
   showTranscriptList = true,
@@ -119,6 +125,8 @@ export default function MediaPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [metadataLoaded, setMetadataLoaded] = useState(false);
+  const [timecodeInput, setTimecodeInput] = useState("");
+  const [timecodeError, setTimecodeError] = useState("");
   const mediaRef = useRef<HTMLMediaElement | null>(null);
   const hasAppliedInitialTime = useRef(false);
   const src = useMemo(() => streamSrc(path, disk), [disk, path]);
@@ -128,6 +136,8 @@ export default function MediaPlayer({
   const decodedPeaks = useAudioWaveform(src, showTimeline && audio);
   const timelineDuration = duration || cues.at(-1)?.end || 0;
   const progressRatio = timelineDuration > 0 ? Math.min(1, Math.max(0, currentTime / timelineDuration)) : 0;
+  const currentFrame = frameRate ? secondsToFrames(currentTime, frameRate) : null;
+  const currentTimecode = frameRate && currentFrame !== null ? framesToTimecode(currentFrame, frameRate, timecodeMode) : "";
   const bars = useMemo(
     () => peaksToBars(decodedPeaks ?? placeholderPeaks({ id: src, outSec: timelineDuration }, WAVEFORM_BUCKETS), WAVEFORM_HEIGHT),
     [decodedPeaks, src, timelineDuration],
@@ -192,6 +202,15 @@ export default function MediaPlayer({
     element.currentTime = Math.max(0, seconds);
     setCurrentTime(element.currentTime);
   }, []);
+
+  const seekToFrame = useCallback((frame: number) => {
+    if (!frameRate || !Number.isInteger(frame) || frame < 0) return;
+    seekTo(frame * frameRate.denominator / frameRate.numerator);
+  }, [frameRate, seekTo]);
+
+  useEffect(() => {
+    if (currentTimecode) setTimecodeInput(currentTimecode);
+  }, [currentTimecode]);
 
   const handleWaveformClick = useCallback((event: MouseEvent<HTMLButtonElement>) => {
     if (timelineDuration <= 0) return;
@@ -266,6 +285,33 @@ export default function MediaPlayer({
             <span>{formatCueTime(currentTime)}</span>
             <span>{formatCueTime(timelineDuration)}</span>
           </div>
+          {frameRate && currentFrame !== null ? (
+            <form
+              className="media-player__frame-controls"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const frame = timecodeToFrames(timecodeInput, frameRate, timecodeMode);
+                if (frame === null) {
+                  setTimecodeError(copy.invalidTimecode);
+                  return;
+                }
+                setTimecodeError("");
+                seekToFrame(frame);
+              }}
+            >
+              <output className="media-player__timecode" aria-label={copy.currentTimecodeLabel}>{currentTimecode}</output>
+              <div className="button-row">
+                <button type="button" className="button button-secondary button-sm" onClick={() => seekToFrame(Math.max(0, currentFrame - 1))}>{copy.previousFrame}</button>
+                <button type="button" className="button button-secondary button-sm" onClick={() => seekToFrame(currentFrame + 1)}>{copy.nextFrame}</button>
+              </div>
+              <label className="media-player__timecode-entry">
+                <span>{copy.timecodeInputLabel}</span>
+                <input dir="ltr" value={timecodeInput} onChange={(event) => setTimecodeInput(event.target.value)} pattern="\\d{2}:\\d{2}:\\d{2}[:;]\\d{2}" />
+              </label>
+              <button type="submit" className="button button-primary button-sm">{copy.seekToTimecode}</button>
+              {timecodeError ? <p className="form-status status-error" role="alert">{timecodeError}</p> : null}
+            </form>
+          ) : null}
           {activeCue ? (
             <p className="media-player__active-cue" dir="auto">
               {activeCue.text}

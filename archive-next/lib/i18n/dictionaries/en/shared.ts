@@ -45,7 +45,13 @@ export const shared = {
   mediaPlayer: {
     playbackError: "This item could not be played. Check the path and whether the browser supports its format.",
     empty: "No item selected for playback.",
-    timelineAriaLabel: "Media timeline"
+    timelineAriaLabel: "Media timeline",
+    currentTimecodeLabel: "Current timecode",
+    previousFrame: "Previous frame",
+    nextFrame: "Next frame",
+    timecodeInputLabel: "Enter timecode",
+    seekToTimecode: "Go to timecode",
+    invalidTimecode: "Enter a timecode valid for the current frame rate."
   },
   mediaSourcePicker: {
     dialogAriaLabel: "Choose media source",

@@ -31,4 +31,22 @@ describe("MediaPlayer", () => {
 
     expect(video.currentTime).toBeCloseTo(100.1, 6);
   });
+
+  it("offers frame-accurate stepping and direct timecode entry when a rational rate is available", () => {
+    const { container, getByLabelText, getByRole } = render(
+      <MediaPlayer path="video/oral-history.mp4" showTimeline frameRate={{ numerator: 30000, denominator: 1001 }} />,
+    );
+    const video = container.querySelector("video") as HTMLVideoElement;
+    fireEvent.loadedMetadata(video);
+    video.currentTime = 1;
+    fireEvent.timeUpdate(video);
+
+    expect(getByLabelText("التايم كود الحالي")).toHaveTextContent("00:00:01:00");
+    fireEvent.click(getByRole("button", { name: "الإطار التالي" }));
+    expect(video.currentTime).toBeCloseTo(31 * 1001 / 30000, 6);
+
+    fireEvent.change(getByLabelText("إدخال التايم كود"), { target: { value: "00:00:02:00" } });
+    fireEvent.submit(getByRole("button", { name: "الانتقال إلى التايم كود" }).closest("form")!);
+    expect(video.currentTime).toBeCloseTo(2.002, 6);
+  });
 });

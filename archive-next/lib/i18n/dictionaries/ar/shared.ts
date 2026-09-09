@@ -42,7 +42,13 @@ export const shared = {
   mediaPlayer: {
     playbackError: "تعذّر تشغيل هذه المادة. تحقّق من المسار ومن دعم المتصفح للصيغة.",
     empty: "لا توجد مادة محددة للتشغيل.",
-    timelineAriaLabel: "خط زمن الوسائط"
+    timelineAriaLabel: "خط زمن الوسائط",
+    currentTimecodeLabel: "التايم كود الحالي",
+    previousFrame: "الإطار السابق",
+    nextFrame: "الإطار التالي",
+    timecodeInputLabel: "إدخال التايم كود",
+    seekToTimecode: "الانتقال إلى التايم كود",
+    invalidTimecode: "أدخل تايم كودًا صالحًا لمعدل الإطارات الحالي."
   },
   mediaSourcePicker: {
     dialogAriaLabel: "اختيار مصدر المادة",

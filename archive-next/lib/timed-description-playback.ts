@@ -17,6 +17,14 @@ export function resolveTimedDescriptionStartSeconds(
 ): number | null {
   if (!Number.isInteger(startFrame) || startFrame < 0) return null;
 
+  const frameRate = resolveCurrentVideoFrameRate(inspections);
+  if (!frameRate) return null;
+
+  return startFrame * frameRate.denominator / frameRate.numerator;
+}
+
+/** Returns the video frame rate only when it comes from a current probe report. */
+export function resolveCurrentVideoFrameRate(inspections: readonly ProbeInspection[]) {
   const report = inspections.find((inspection) => (
     inspection.inspectionType === "probe"
     && inspection.isCurrentVersion
@@ -26,6 +34,5 @@ export function resolveTimedDescriptionStartSeconds(
 
   const frameRate = report.streams.find((stream) => stream.type === "video")?.frameRate;
   if (!frameRate || frameRate.numerator <= 0 || frameRate.denominator <= 0) return null;
-
-  return startFrame * frameRate.denominator / frameRate.numerator;
+  return frameRate;
 }

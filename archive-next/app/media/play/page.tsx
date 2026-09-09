@@ -11,7 +11,8 @@ import PageToolbar from "@/components/PageToolbar";
 import { parseSubtitles } from "@/lib/media/subtitles";
 import { createArchiveApiClient, deriveRecordSourcePath, type RecordNote } from "@/lib/archive-api";
 import { bookmarkNotes, formatBookmarkTime } from "@/lib/timestamp-bookmarks";
-import { resolveTimedDescriptionStartSeconds } from "@/lib/timed-description-playback";
+import { resolveCurrentVideoFrameRate, resolveTimedDescriptionStartSeconds } from "@/lib/timed-description-playback";
+import type { RationalFrameRate } from "@/lib/timecode";
 import styles from "./play.module.css";
 import "../media.css";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
@@ -30,6 +31,7 @@ export default function MediaPlayPage() {
   const [recordStore, setRecordStore] = useState("");
   const [initialTime, setInitialTime] = useState<number | undefined>();
   const [segmentStatus, setSegmentStatus] = useState("");
+  const [frameRate, setFrameRate] = useState<RationalFrameRate | null>(null);
   const transcriptCueCount = parseSubtitles(transcriptText).length;
   const api = useMemo(() => createArchiveApiClient(), []);
   const playerRef = useRef<HTMLMediaElement | null>(null);
@@ -80,11 +82,15 @@ export default function MediaPlayPage() {
         void api.recordNotes(recordIdParam, loadedStore).then((notesResponse) => {
           if (notesResponse.ok) setBookmarks(bookmarkNotes(notesResponse.notes));
         });
+        const inspectionsPromise = api.mediaInspections(recordIdParam, { store: loadedStore });
+        void inspectionsPromise.then((inspectionsResponse) => {
+          setFrameRate(inspectionsResponse.ok ? resolveCurrentVideoFrameRate(inspectionsResponse.inspections) : null);
+        });
         if (segmentIdParam) {
           setSegmentStatus(copy.timedSegmentLoading);
           void Promise.all([
             api.timedDescriptionSegments(recordIdParam),
-            api.mediaInspections(recordIdParam, { store: loadedStore }),
+            inspectionsPromise,
           ]).then(([segmentsResponse, inspectionsResponse]) => {
             const segment = segmentsResponse.ok ? segmentsResponse.segments.find((item) => item.id === segmentIdParam) : undefined;
             if (!segment) {
@@ -226,6 +232,7 @@ export default function MediaPlayPage() {
               disk={disk || undefined}
               title={disk ? `${disk}:${path}` : path}
               initialTime={initialTime}
+              frameRate={frameRate}
               showTimeline
               transcriptText={transcriptText}
               onReady={(element) => { playerRef.current = element; }}
