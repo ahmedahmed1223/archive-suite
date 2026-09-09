@@ -1,15 +1,19 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import type { ArchiveRecord, MediaInspection } from "@/lib/archive-api";
 
-const { mediaInspections } = vi.hoisted(() => ({ mediaInspections: vi.fn() }));
+const { mediaInspections, overrideMediaQc } = vi.hoisted(() => ({ mediaInspections: vi.fn(), overrideMediaQc: vi.fn() }));
 
 vi.mock("@/lib/archive-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
-  return { ...actual, createArchiveApiClient: () => ({ mediaInspections }) };
+  return { ...actual, createArchiveApiClient: () => ({ mediaInspections, overrideMediaQc }) };
 });
+
+vi.mock("@/lib/auth-session", () => ({
+  useAuthSession: () => ({ user: { id: "admin-1", role: "admin" } })
+}));
 
 import MediaInspectionsPanel from "./MediaInspectionsPanel";
 
@@ -91,5 +95,19 @@ describe("MediaInspectionsPanel", () => {
     render(<LocaleProvider initialLocale="ar" hasLocaleCookie={false}><MediaInspectionsPanel record={{ id: "record-1", store: "archive-items" } as ArchiveRecord} /></LocaleProvider>);
     expect(await screen.findByText("تم التجاوز")).toBeInTheDocument();
     expect(screen.getByText("السماح بالتصدير يستند إلى تجاوز موثق؛ تبقى نتيجة الفحص الفني الأصلية محفوظة دون تعديل.")).toBeInTheDocument();
+  });
+
+  test("lets an administrator document a reason before overriding a current QC failure", async () => {
+    mediaInspections.mockResolvedValue({ ok: true, inspections: [{ ...inspection(), inspectionType: "qc", status: "failed", report: { status: "failed", findings: [], metrics: {} } }] });
+    overrideMediaQc.mockResolvedValue({ ok: true, override: { id: "override-1", inspectionId: "inspection-1", reason: "مرجع المصدر معتمد رغم الخلل.", overriddenAt: "2026-09-09T10:00:00.000Z" } });
+
+    render(<LocaleProvider initialLocale="ar" hasLocaleCookie={false}><MediaInspectionsPanel record={{ id: "record-1", store: "archive-items" } as ArchiveRecord} /></LocaleProvider>);
+
+    fireEvent.click(await screen.findByRole("button", { name: "تسجيل تجاوز موثق" }));
+    fireEvent.change(screen.getByLabelText("سبب التجاوز"), { target: { value: "مرجع المصدر معتمد رغم الخلل." } });
+    fireEvent.click(screen.getByRole("button", { name: "تأكيد التجاوز" }));
+
+    await waitFor(() => expect(overrideMediaQc).toHaveBeenCalledWith("inspection-1", { reason: "مرجع المصدر معتمد رغم الخلل." }));
+    expect(await screen.findByText("تم تسجيل التجاوز الموثق." )).toBeInTheDocument();
   });
 });

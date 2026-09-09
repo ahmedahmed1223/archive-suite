@@ -5486,7 +5486,7 @@
         "tags": [
           "Media Inspections"
         ],
-        "summary": "List persisted media-probe inspections for a record",
+        "summary": "List persisted technical and QC inspections for a record",
         "operationId": "listMediaInspections",
         "security": [
           {
@@ -5529,6 +5529,69 @@
             "$ref": "#/components/responses/Error"
           },
           "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/media-inspections/{inspectionId}/override": {
+      "post": {
+        "tags": [
+          "Media Inspections"
+        ],
+        "summary": "Record an authorized exception for a current failed QC inspection",
+        "description": "Available only to administrators. The original failed technical report is retained; the separately recorded reason permits the governed downstream workflow to proceed.",
+        "operationId": "overrideMediaQcInspection",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "inspectionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaQcOverrideRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Authorized QC override recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaQcOverrideResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
             "$ref": "#/components/responses/Error"
           }
         }
@@ -25415,6 +25478,67 @@
                 "items": {
                   "$ref": "#/components/schemas/MediaInspection"
                 }
+              }
+            }
+          }
+        ]
+      },
+      "MediaQcOverride": {
+        "type": "object",
+        "required": [
+          "id",
+          "inspectionId",
+          "reason",
+          "overriddenAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inspectionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          },
+          "overriddenAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaQcOverrideRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 2000
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaQcOverrideResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OkEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "override"
+            ],
+            "properties": {
+              "override": {
+                "$ref": "#/components/schemas/MediaQcOverride"
               }
             }
           }

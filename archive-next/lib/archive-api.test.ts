@@ -39,6 +39,20 @@ describe("media inspections API client", () => {
       expect.objectContaining({ method: "GET" }),
     );
   });
+
+  it("submits a documented QC exception to the inspection-specific endpoint", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, override: { id: "override-1", inspectionId: "inspection / 1", reason: "Approved exception.", overriddenAt: "2026-09-09T10:00:00.000Z" } }), { status: 201 }),
+    );
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    await api.overrideMediaQc("inspection / 1", { reason: "Approved exception." });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "/api/v1/media-inspections/inspection%20%2F%201/override",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ reason: "Approved exception." }) }),
+    );
+  });
 });
 
 describe("archive API report exports", () => {

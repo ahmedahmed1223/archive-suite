@@ -1414,6 +1414,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/media-inspections/{inspectionId}/override": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record an authorized exception for a current failed QC inspection
+         * @description Available only to administrators. The original failed technical report is retained; the separately recorded reason permits the governed downstream workflow to proceed.
+         */
+        post: operations["overrideMediaQcInspection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media-review-comments/{id}": {
         parameters: {
             query?: never;
@@ -2489,7 +2509,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List persisted media-probe inspections for a record */
+        /** List persisted technical and QC inspections for a record */
         get: operations["listMediaInspections"];
         put?: never;
         post?: never;
@@ -6092,6 +6112,21 @@ export interface components {
             startSeconds: number;
             /** @enum {string} */
             status: "passed" | "warning" | "failed" | "waived";
+        };
+        MediaQcOverride: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            inspectionId: string;
+            /** Format: date-time */
+            overriddenAt: string;
+            reason: string;
+        };
+        MediaQcOverrideRequest: {
+            reason: string;
+        };
+        MediaQcOverrideResponse: components["schemas"]["OkEnvelope"] & {
+            override: components["schemas"]["MediaQcOverride"];
         };
         MediaQcReport: {
             findings: components["schemas"]["MediaQcFinding"][];
@@ -11165,6 +11200,36 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    overrideMediaQcInspection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                inspectionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaQcOverrideRequest"];
+            };
+        };
+        responses: {
+            /** @description Authorized QC override recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaQcOverrideResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     getMediaReviewComment: {

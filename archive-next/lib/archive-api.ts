@@ -907,6 +907,7 @@ export type MediaProbeReport = GeneratedSchemas["MediaProbeReport"];
 export type MediaProbeStream = GeneratedSchemas["MediaProbeStream"];
 export type MediaInspection = GeneratedSchemas["MediaInspection"];
 export type MediaQcReport = GeneratedSchemas["MediaQcReport"];
+export type MediaQcOverride = GeneratedSchemas["MediaQcOverride"];
 export type RationalFrameRate = GeneratedSchemas["RationalFrameRate"];
 
 export interface CreateMediaJobPayload {
@@ -1443,6 +1444,11 @@ export interface ArchiveApiClient {
     params?: { store?: string },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ inspections: MediaInspection[] }>>;
+  overrideMediaQc(
+    inspectionId: string,
+    payload: { reason: string },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ override: MediaQcOverride }>>;
   requestMediaDerivative(
     payload: MediaDerivativeRequestPayload,
     options?: AuthRequestOptions
@@ -2568,6 +2574,8 @@ export function createArchiveApiClient({
         options,
       );
     },
+    overrideMediaQc: (inspectionId: string, payload: { reason: string }, options?: AuthRequestOptions) =>
+      post<{ override: MediaQcOverride }>(`/media-inspections/${encodeURIComponent(inspectionId)}/override`, payload, options),
     requestMediaDerivative: (payload: MediaDerivativeRequestPayload, options?: AuthRequestOptions) =>
       post<{ derivative: MediaDerivative; cached?: boolean }>("/media-derivatives", payload, options),
     getMediaDerivative: (id: string, options?: AuthRequestOptions) =>
