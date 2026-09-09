@@ -37,7 +37,7 @@ export default function CollectionsPage() {
   const authorityKindLabels: Record<AuthorityEntity["kind"], string> = copy.authorityKinds;
   const curatedCopy = copy.curated;
   const curatedStatusLabels: Record<CuratedCollection["status"], string> = copy.curatedStatuses;
-  const curatedOrderCopy = locale === "ar" ? { moveUp: "نقل إلى الأعلى", moveDown: "نقل إلى الأسفل" } : { moveUp: "Move up", moveDown: "Move down" };
+  const curatedOrderCopy = t.pages.daily;
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
   const api = useMemo(() => createArchiveApiClient(), []);

@@ -70,6 +70,7 @@ import { sharesWithMe } from "./sharesWithMe";
 import { shares } from "./shares";
 import { sync } from "./sync";
 import { timeline } from "./timeline";
+import { timedDescriptions } from "./timedDescriptions";
 import { transcriber } from "./transcriber";
 import { types } from "./types";
 import { trash } from "./trash";
@@ -159,6 +160,7 @@ export const pages = {
   shares,
   sync,
   timeline,
+  timedDescriptions,
   transcriber,
   types,
   trash,

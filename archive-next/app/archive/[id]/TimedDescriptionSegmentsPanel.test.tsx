@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { AuthorityEntity, TimedDescriptionSegment } from "@/lib/archive-api";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 const { timedDescriptionSegments, createTimedDescriptionSegment, updateTimedDescriptionSegment, deleteTimedDescriptionSegment, authorityEntities, timedDescriptionSegmentAuthorityEntities, linkTimedDescriptionSegmentAuthorityEntity } = vi.hoisted(() => ({
   timedDescriptionSegments: vi.fn(),
@@ -21,6 +22,10 @@ vi.mock("@/lib/archive-api", async () => {
 vi.mock("@/components/RoleGate", () => ({ useCapability: () => true }));
 
 import TimedDescriptionSegmentsPanel from "./TimedDescriptionSegmentsPanel";
+
+function renderPanel() {
+  return render(<LocaleProvider initialLocale="ar" hasLocaleCookie={false}><TimedDescriptionSegmentsPanel recordId="record-1" /></LocaleProvider>);
+}
 
 afterEach(() => {
   cleanup();
@@ -51,7 +56,7 @@ describe("TimedDescriptionSegmentsPanel", () => {
     timedDescriptionSegmentAuthorityEntities.mockResolvedValue({ ok: true, links: [] });
     createTimedDescriptionSegment.mockResolvedValue({ ok: true, segment: segment({ title: "وصول الضيوف" }) });
 
-    render(<TimedDescriptionSegmentsPanel recordId="record-1" />);
+    renderPanel();
 
     fireEvent.change(screen.getByLabelText("العنوان"), { target: { value: "وصول الضيوف" } });
     fireEvent.change(screen.getByLabelText("نهاية الإطار"), { target: { value: "240" } });
@@ -79,7 +84,7 @@ describe("TimedDescriptionSegmentsPanel", () => {
     timedDescriptionSegmentAuthorityEntities.mockResolvedValue({ ok: true, links: [] });
     linkTimedDescriptionSegmentAuthorityEntity.mockResolvedValue({ ok: true, link: { id: "link-1", relationship: "on_screen", entity: person } });
 
-    render(<TimedDescriptionSegmentsPanel recordId="record-1" />);
+    renderPanel();
 
     const selector = await screen.findByLabelText("سجل استنادي للمقطع: بداية المؤتمر");
     fireEvent.change(selector, { target: { value: "entity-1" } });
@@ -98,7 +103,7 @@ describe("TimedDescriptionSegmentsPanel", () => {
     timedDescriptionSegmentAuthorityEntities.mockResolvedValue({ ok: true, links: [] });
     deleteTimedDescriptionSegment.mockResolvedValue({ ok: true, deleted: true });
 
-    render(<TimedDescriptionSegmentsPanel recordId="record-1" />);
+    renderPanel();
 
     fireEvent.click(await screen.findByRole("button", { name: "حذف المقطع: بداية المؤتمر" }));
 
@@ -112,7 +117,7 @@ describe("TimedDescriptionSegmentsPanel", () => {
     timedDescriptionSegmentAuthorityEntities.mockResolvedValue({ ok: true, links: [] });
     updateTimedDescriptionSegment.mockResolvedValue({ ok: true, segment: segment({ title: "افتتاح المؤتمر", startFrame: 150, endFrame: 420, description: "تم تصحيح حدود اللقطة." }) });
 
-    render(<TimedDescriptionSegmentsPanel recordId="record-1" />);
+    renderPanel();
 
     fireEvent.click(await screen.findByRole("button", { name: "تعديل المقطع: بداية المؤتمر" }));
     fireEvent.change(screen.getByLabelText("عنوان المقطع: بداية المؤتمر"), { target: { value: "افتتاح المؤتمر" } });
