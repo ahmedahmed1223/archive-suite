@@ -3,9 +3,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { AuthorityEntity, TimedDescriptionSegment } from "@/lib/archive-api";
 
-const { timedDescriptionSegments, createTimedDescriptionSegment, authorityEntities, timedDescriptionSegmentAuthorityEntities, linkTimedDescriptionSegmentAuthorityEntity } = vi.hoisted(() => ({
+const { timedDescriptionSegments, createTimedDescriptionSegment, deleteTimedDescriptionSegment, authorityEntities, timedDescriptionSegmentAuthorityEntities, linkTimedDescriptionSegmentAuthorityEntity } = vi.hoisted(() => ({
   timedDescriptionSegments: vi.fn(),
   createTimedDescriptionSegment: vi.fn(),
+  deleteTimedDescriptionSegment: vi.fn(),
   authorityEntities: vi.fn(),
   timedDescriptionSegmentAuthorityEntities: vi.fn(),
   linkTimedDescriptionSegmentAuthorityEntity: vi.fn()
@@ -13,7 +14,7 @@ const { timedDescriptionSegments, createTimedDescriptionSegment, authorityEntiti
 
 vi.mock("@/lib/archive-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
-  return { ...actual, createArchiveApiClient: () => ({ timedDescriptionSegments, createTimedDescriptionSegment, authorityEntities, timedDescriptionSegmentAuthorityEntities, linkTimedDescriptionSegmentAuthorityEntity }) };
+  return { ...actual, createArchiveApiClient: () => ({ timedDescriptionSegments, createTimedDescriptionSegment, deleteTimedDescriptionSegment, authorityEntities, timedDescriptionSegmentAuthorityEntities, linkTimedDescriptionSegmentAuthorityEntity }) };
 });
 
 vi.mock("@/components/RoleGate", () => ({ useCapability: () => true }));
@@ -88,5 +89,19 @@ describe("TimedDescriptionSegmentsPanel", () => {
       relationship: "on_screen"
     }));
     expect(await screen.findByText("ليلى حداد · on_screen")).toBeInTheDocument();
+  });
+
+  test("removes a mistaken timed segment without touching the record", async () => {
+    timedDescriptionSegments.mockResolvedValue({ ok: true, segments: [segment()] });
+    authorityEntities.mockResolvedValue({ ok: true, entities: [] });
+    timedDescriptionSegmentAuthorityEntities.mockResolvedValue({ ok: true, links: [] });
+    deleteTimedDescriptionSegment.mockResolvedValue({ ok: true, deleted: true });
+
+    render(<TimedDescriptionSegmentsPanel recordId="record-1" />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "حذف المقطع: بداية المؤتمر" }));
+
+    await waitFor(() => expect(deleteTimedDescriptionSegment).toHaveBeenCalledWith("segment-1"));
+    expect(screen.queryByText("بداية المؤتمر")).toBeNull();
   });
 });

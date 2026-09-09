@@ -533,6 +533,8 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/curated-collections/{id}/records/{recordId}', [CuratedCollectionsController::class, 'removeRecord']);
         Route::get('/records/{recordId}/timed-description-segments', [TimedDescriptionSegmentsController::class, 'index']);
         Route::post('/records/{recordId}/timed-description-segments', [TimedDescriptionSegmentsController::class, 'store']);
+        Route::patch('/timed-description-segments/{id}', [TimedDescriptionSegmentsController::class, 'update']);
+        Route::delete('/timed-description-segments/{id}', [TimedDescriptionSegmentsController::class, 'destroy']);
         Route::get('/timed-description-segments/{segmentId}/authority-entities', [TimedDescriptionSegmentAuthorityEntitiesController::class, 'index']);
         Route::post('/timed-description-segments/{segmentId}/authority-entities', [TimedDescriptionSegmentAuthorityEntitiesController::class, 'store']);
         Route::delete('/timed-description-segments/{segmentId}/authority-entities/{entityId}', [TimedDescriptionSegmentAuthorityEntitiesController::class, 'destroy']);

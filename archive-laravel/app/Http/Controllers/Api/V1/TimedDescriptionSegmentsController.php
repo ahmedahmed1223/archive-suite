@@ -25,6 +25,49 @@ class TimedDescriptionSegmentsController extends Controller
         return response()->json(['ok' => true, 'segment' => $this->payload($segment)], 201);
     }
 
+    public function update(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        $segment = TimedDescriptionSegment::query()->find($id);
+        if (! $segment) return response()->json(['ok' => false, 'error' => 'Timed description segment not found.', 'code' => 'not_found'], 404);
+
+        $data = $request->validate([
+            'startFrame' => ['sometimes', 'integer', 'min:0'],
+            'endFrame' => ['sometimes', 'integer', 'min:1'],
+            'title' => ['sometimes', 'string', 'min:1', 'max:500'],
+            'description' => ['nullable', 'string', 'max:10000'],
+            'subjects' => ['sometimes', 'array'],
+            'subjects.*' => ['string', 'max:250'],
+            'place' => ['nullable', 'string', 'max:500'],
+            'rightsNote' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $startFrame = $data['startFrame'] ?? $segment->start_frame;
+        $endFrame = $data['endFrame'] ?? $segment->end_frame;
+        if ($endFrame <= $startFrame) return response()->json(['ok' => false, 'error' => 'The end frame must be greater than the start frame.', 'code' => 'validation_failed'], 422);
+
+        $segment->fill([
+            'start_frame' => $startFrame,
+            'end_frame' => $endFrame,
+            'title' => array_key_exists('title', $data) ? trim($data['title']) : $segment->title,
+            'description' => $data['description'] ?? $segment->description,
+            'subjects' => $data['subjects'] ?? $segment->subjects,
+            'place' => $data['place'] ?? $segment->place,
+            'rights_note' => $data['rightsNote'] ?? $segment->rights_note,
+        ])->save();
+
+        return response()->json(['ok' => true, 'segment' => $this->payload($segment->fresh())]);
+    }
+
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        $segment = TimedDescriptionSegment::query()->find($id);
+        if (! $segment) return response()->json(['ok' => false, 'error' => 'Timed description segment not found.', 'code' => 'not_found'], 404);
+        $segment->delete();
+
+        return response()->json(['ok' => true, 'deleted' => true]);
+    }
+
     /** @return array<string, mixed> */
     private function payload(TimedDescriptionSegment $segment): array
     {

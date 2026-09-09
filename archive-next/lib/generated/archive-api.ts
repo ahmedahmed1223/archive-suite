@@ -3974,6 +3974,24 @@ export interface paths {
         patch: operations["updateTaskEscalationPolicy"];
         trace?: never;
     };
+    "/timed-description-segments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a frame-bounded description segment */
+        delete: operations["deleteTimedDescriptionSegment"];
+        options?: never;
+        head?: never;
+        /** Correct a frame-bounded description segment */
+        patch: operations["updateTimedDescriptionSegment"];
+        trace?: never;
+    };
     "/timed-description-segments/{segmentId}/authority-entities": {
         parameters: {
             query?: never;
@@ -7693,6 +7711,15 @@ export interface components {
         };
         TimedDescriptionSegmentsResponse: components["schemas"]["OkEnvelope"] & {
             segments: components["schemas"]["TimedDescriptionSegment"][];
+        };
+        TimedDescriptionSegmentUpdateRequest: {
+            description?: string | null;
+            endFrame?: number;
+            place?: string | null;
+            rightsNote?: string | null;
+            startFrame?: number;
+            subjects?: string[];
+            title?: string;
         };
         TranscriptCue: {
             endSeconds: number;
@@ -16209,6 +16236,49 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    deleteTimedDescriptionSegment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateTimedDescriptionSegment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimedDescriptionSegmentUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated segment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimedDescriptionSegmentResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
             422: components["responses"]["Error"];
         };
     };
