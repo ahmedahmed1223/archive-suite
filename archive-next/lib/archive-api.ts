@@ -1519,6 +1519,7 @@ export interface ArchiveApiClient {
   curatedCollections(options?: AuthRequestOptions): Promise<ApiEnvelope<{ collections: CuratedCollection[] }>>;
   createCuratedCollection(payload: GeneratedSchemas["CuratedCollectionCreateRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ collection: CuratedCollection }>>;
   curatedCollectionRecords(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[] }>>;
+  reorderCuratedCollectionRecords(id: string, payload: GeneratedSchemas["CuratedCollectionRecordOrderRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ recordIds: string[] }>>;
   addCuratedCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<Record<string, never>>>;
   removeCuratedCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   workInbox(
@@ -2708,6 +2709,7 @@ export function createArchiveApiClient({
     createCuratedCollection: (payload: GeneratedSchemas["CuratedCollectionCreateRequest"], options?: AuthRequestOptions) =>
       post<{ collection: CuratedCollection }>("/curated-collections", payload, options),
     curatedCollectionRecords: (id: string, options?: AuthRequestOptions) => get<{ recordIds: string[] }>(`/curated-collections/${encodeURIComponent(id)}/records`, options),
+    reorderCuratedCollectionRecords: (id: string, payload: GeneratedSchemas["CuratedCollectionRecordOrderRequest"], options?: AuthRequestOptions) => put<{ recordIds: string[] }>(`/curated-collections/${encodeURIComponent(id)}/records/order`, payload, options),
     addCuratedCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) => post<Record<string, never>>(`/curated-collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     removeCuratedCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) => del<{ deleted: boolean }>(`/curated-collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {

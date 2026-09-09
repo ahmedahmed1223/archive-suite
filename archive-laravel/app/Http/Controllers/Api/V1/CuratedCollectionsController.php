@@ -40,6 +40,30 @@ class CuratedCollectionsController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function reorderRecords(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->requireEditor($request)) return $denied;
+        if (! CuratedCollection::query()->whereKey($id)->exists()) return response()->json(['ok' => false, 'error' => 'Curated collection not found.', 'code' => 'not_found'], 404);
+
+        $data = $request->validate(['recordIds' => ['required', 'array'], 'recordIds.*' => ['required', 'string', 'distinct']]);
+        $recordIds = $data['recordIds'];
+        $existingRecordIds = DB::table('curated_collection_records')->where('curated_collection_id', $id)->pluck('record_id')->all();
+        $requested = $recordIds;
+        sort($existingRecordIds);
+        sort($requested);
+        if ($existingRecordIds !== $requested) {
+            return response()->json(['ok' => false, 'error' => 'Record order must include every current collection record exactly once.', 'code' => 'invalid_record_order'], 422);
+        }
+
+        DB::transaction(function () use ($id, $recordIds): void {
+            foreach ($recordIds as $position => $recordId) {
+                DB::table('curated_collection_records')->where('curated_collection_id', $id)->where('record_id', $recordId)->update(['position' => $position + 1]);
+            }
+        });
+
+        return response()->json(['ok' => true, 'recordIds' => $recordIds]);
+    }
+
     public function removeRecord(Request $request, string $id, string $recordId): JsonResponse
     {
         if ($denied = $this->requireEditor($request)) return $denied;

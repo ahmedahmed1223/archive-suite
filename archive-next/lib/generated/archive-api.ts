@@ -771,6 +771,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/curated-collections/{id}/records/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set the manual order of every record in a curated collection */
+        put: operations["reorderCuratedCollectionRecords"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/department-field-owners": {
         parameters: {
             query?: never;
@@ -5331,6 +5348,9 @@ export interface components {
         CuratedCollectionCreateRequest: {
             introduction?: string | null;
             title: string;
+        };
+        CuratedCollectionRecordOrderRequest: {
+            recordIds: string[];
         };
         CuratedCollectionRecordsResponse: components["schemas"]["OkEnvelope"] & {
             recordIds: string[];
@@ -9905,6 +9925,35 @@ export interface operations {
             200: components["responses"]["Ok"];
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    reorderCuratedCollectionRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CuratedCollectionRecordOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated record order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CuratedCollectionRecordsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listDepartmentFieldOwners: {

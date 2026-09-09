@@ -526,6 +526,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/curated-collections', [CuratedCollectionsController::class, 'index']);
         Route::post('/curated-collections', [CuratedCollectionsController::class, 'store']);
         Route::get('/curated-collections/{id}/records', [CuratedCollectionsController::class, 'records']);
+        Route::put('/curated-collections/{id}/records/order', [CuratedCollectionsController::class, 'reorderRecords']);
         Route::post('/curated-collections/{id}/records/{recordId}', [CuratedCollectionsController::class, 'addRecord']);
         Route::delete('/curated-collections/{id}/records/{recordId}', [CuratedCollectionsController::class, 'removeRecord']);
 

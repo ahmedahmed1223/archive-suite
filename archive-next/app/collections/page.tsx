@@ -37,6 +37,7 @@ export default function CollectionsPage() {
   const authorityKindLabels: Record<AuthorityEntity["kind"], string> = copy.authorityKinds;
   const curatedCopy = copy.curated;
   const curatedStatusLabels: Record<CuratedCollection["status"], string> = copy.curatedStatuses;
+  const curatedOrderCopy = locale === "ar" ? { moveUp: "نقل إلى الأعلى", moveDown: "نقل إلى الأسفل" } : { moveUp: "Move up", moveDown: "Move down" };
   const dialogs = useConfirmDialog();
   const canManageCollections = useCapability("collections.manage");
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -230,6 +231,19 @@ export default function CollectionsPage() {
     setCuratedRecordIds((current) => current.filter((id) => id !== recordId));
   }
 
+  async function moveCuratedRecord(recordId: string, offset: -1 | 1) {
+    if (!selectedCuratedCollectionId) return;
+    const currentPosition = curatedRecordIds.indexOf(recordId);
+    const targetPosition = currentPosition + offset;
+    if (currentPosition < 0 || targetPosition < 0 || targetPosition >= curatedRecordIds.length) return;
+    const recordIds = [...curatedRecordIds];
+    [recordIds[currentPosition], recordIds[targetPosition]] = [recordIds[targetPosition], recordIds[currentPosition]];
+    setCuratedError("");
+    const response = await api.reorderCuratedCollectionRecords(selectedCuratedCollectionId, { recordIds });
+    if (!response.ok) { setCuratedError(response.error || curatedCopy.membershipFailed); return; }
+    setCuratedRecordIds(response.recordIds);
+  }
+
   async function addCollection(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!name.trim()) return;
@@ -418,7 +432,7 @@ export default function CollectionsPage() {
             <h3 className="section-heading">{curatedCopy.selected}</h3>
             {curatedRecordsLoading ? <p className="helper-text">{copy.loadingRecords}</p> : null}
             {!curatedRecordsLoading && curatedRecordIds.length === 0 ? <p className="helper-text">{curatedCopy.empty}</p> : null}
-            {curatedRecordIds.length > 0 ? <ol className="mobile-field-list">{curatedRecordIds.map((recordId) => { const record = records.find((item) => item.id === recordId); return <li key={recordId}><strong>{record?.title || recordId}</strong>{canManageCollections ? <button className="button button-secondary button-sm" type="button" onClick={() => void removeRecordFromCuratedCollection(recordId)}>{curatedCopy.removeRecord}</button> : null}</li>; })}</ol> : null}
+            {curatedRecordIds.length > 0 ? <ol className="mobile-field-list">{curatedRecordIds.map((recordId, index) => { const record = records.find((item) => item.id === recordId); return <li key={recordId}><strong>{record?.title || recordId}</strong>{canManageCollections ? <div className="button-row"><button className="button button-secondary button-sm" type="button" disabled={index === 0} onClick={() => void moveCuratedRecord(recordId, -1)}>{curatedOrderCopy.moveUp}</button><button className="button button-secondary button-sm" type="button" disabled={index === curatedRecordIds.length - 1} onClick={() => void moveCuratedRecord(recordId, 1)}>{curatedOrderCopy.moveDown}</button><button className="button button-secondary button-sm" type="button" onClick={() => void removeRecordFromCuratedCollection(recordId)}>{curatedCopy.removeRecord}</button></div> : null}</li>; })}</ol> : null}
             {canManageCollections ? <div className="archive-toolbar-actions"><select aria-label={curatedCopy.chooseRecord} value={recordToAdd} onChange={(event) => setRecordToAdd(event.target.value)}><option value="">{curatedCopy.chooseRecord}</option>{records.filter((record) => !curatedRecordIds.includes(record.id)).map((record) => <option key={record.id} value={record.id}>{record.title}</option>)}</select><button className="button button-primary button-sm" type="button" disabled={!recordToAdd} onClick={() => void addRecordToCuratedCollection()}>{curatedCopy.addRecord}</button></div> : null}
           </div>
         ) : null}

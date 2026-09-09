@@ -22,8 +22,8 @@ vi.mock("@/lib/archive-api", async (importOriginal) => {
       archivalNodes: vi.fn().mockResolvedValue({ ok: true, nodes: [] }),
       authorityEntities: vi.fn().mockResolvedValue({ ok: true, entities: [] }),
       curatedCollections: vi.fn().mockResolvedValue({ ok: true, collections: [{ id: "curated-1", title: "Evening news", introduction: null, status: "draft" }] }),
-      curatedCollectionRecords: vi.fn().mockResolvedValue({ ok: true, recordIds: ["record-1"] }),
-      search: vi.fn().mockResolvedValue({ ok: true, records: [{ id: "record-1", title: "Bulletin 1", type: "video", tags: [] }] })
+      curatedCollectionRecords: vi.fn().mockResolvedValue({ ok: true, recordIds: ["record-1", "record-2"] }),
+      search: vi.fn().mockResolvedValue({ ok: true, records: [{ id: "record-1", title: "Bulletin 1", type: "video", tags: [] }, { id: "record-2", title: "Bulletin 2", type: "video", tags: [] }] })
     })
   };
 });
@@ -34,9 +34,10 @@ describe("curated collection membership", () => {
   test("shows the selected collection's records without implying they were moved", async () => {
     render(<LocaleProvider initialLocale="en" hasLocaleCookie><CollectionsPage /></LocaleProvider>);
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "Remove from collection" })).toBeVisible());
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Remove from collection" })).toHaveLength(2));
     expect(screen.getByText("Selected records")).toBeVisible();
     expect(screen.getByText("Bulletin 1")).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "Move down" })).toHaveLength(2);
     // The record still counts toward the archive's own type breakdown, proving
     // curated membership does not remove or relocate it from the archive.
     expect(screen.getByText("Type: video")).toBeVisible();
