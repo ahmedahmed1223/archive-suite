@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\CollaborationController;
 use App\Http\Controllers\Api\V1\CollectionsController;
 use App\Http\Controllers\Api\V1\CuratedCollectionsController;
 use App\Http\Controllers\Api\V1\TimedDescriptionSegmentsController;
+use App\Http\Controllers\Api\V1\TimedDescriptionSegmentAuthorityEntitiesController;
 use App\Http\Controllers\Api\V1\ComplianceReportsController;
 use App\Http\Controllers\Api\V1\DelegatedAccessController;
 use App\Http\Controllers\Api\V1\DepartmentFieldOwnersController;
@@ -532,6 +533,9 @@ Route::prefix('v1')->group(function (): void {
         Route::delete('/curated-collections/{id}/records/{recordId}', [CuratedCollectionsController::class, 'removeRecord']);
         Route::get('/records/{recordId}/timed-description-segments', [TimedDescriptionSegmentsController::class, 'index']);
         Route::post('/records/{recordId}/timed-description-segments', [TimedDescriptionSegmentsController::class, 'store']);
+        Route::get('/timed-description-segments/{segmentId}/authority-entities', [TimedDescriptionSegmentAuthorityEntitiesController::class, 'index']);
+        Route::post('/timed-description-segments/{segmentId}/authority-entities', [TimedDescriptionSegmentAuthorityEntitiesController::class, 'store']);
+        Route::delete('/timed-description-segments/{segmentId}/authority-entities/{entityId}', [TimedDescriptionSegmentAuthorityEntitiesController::class, 'destroy']);
 
         // V2: the institutional archival hierarchy is distinct from personal
         // smart collections and editorial projects. Moving is preview-only in

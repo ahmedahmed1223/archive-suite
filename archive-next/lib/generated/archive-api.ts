@@ -3974,6 +3974,41 @@ export interface paths {
         patch: operations["updateTaskEscalationPolicy"];
         trace?: never;
     };
+    "/timed-description-segments/{segmentId}/authority-entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List controlled authority links for a description segment */
+        get: operations["listTimedDescriptionSegmentAuthorityEntities"];
+        put?: never;
+        /** Link a controlled authority entity to a description segment */
+        post: operations["linkTimedDescriptionSegmentAuthorityEntity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/timed-description-segments/{segmentId}/authority-entities/{entityId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a controlled authority link from a description segment */
+        delete: operations["unlinkTimedDescriptionSegmentAuthorityEntity"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/trash": {
         parameters: {
             query?: never;
@@ -7626,6 +7661,23 @@ export interface components {
             title: string;
             /** Format: date-time */
             updatedAt?: string | null;
+        };
+        TimedDescriptionSegmentAuthorityEntityLink: {
+            entity: components["schemas"]["AuthorityEntity"];
+            /** Format: uuid */
+            id: string;
+            relationship: string;
+        };
+        TimedDescriptionSegmentAuthorityEntityLinkRequest: {
+            /** Format: uuid */
+            entityId: string;
+            relationship: string;
+        };
+        TimedDescriptionSegmentAuthorityEntityLinkResponse: components["schemas"]["OkEnvelope"] & {
+            link: components["schemas"]["TimedDescriptionSegmentAuthorityEntityLink"];
+        };
+        TimedDescriptionSegmentAuthorityEntityLinksResponse: components["schemas"]["OkEnvelope"] & {
+            links: components["schemas"]["TimedDescriptionSegmentAuthorityEntityLink"][];
         };
         TimedDescriptionSegmentCreateRequest: {
             description?: string | null;
@@ -16158,6 +16210,73 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    listTimedDescriptionSegmentAuthorityEntities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                segmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authority links */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimedDescriptionSegmentAuthorityEntityLinksResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+        };
+    };
+    linkTimedDescriptionSegmentAuthorityEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                segmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimedDescriptionSegmentAuthorityEntityLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Created authority link */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimedDescriptionSegmentAuthorityEntityLinkResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    unlinkTimedDescriptionSegmentAuthorityEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entityId: string;
+                segmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            404: components["responses"]["Error"];
         };
     };
     listTrash: {

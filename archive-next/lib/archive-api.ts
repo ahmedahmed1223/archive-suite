@@ -491,6 +491,7 @@ export type CreateAuthorityEntityPayload = GeneratedSchemas["AuthorityEntityCrea
 export type RecordAuthorityEntityLink = GeneratedSchemas["RecordAuthorityEntityLink"];
 export type CuratedCollection = GeneratedSchemas["CuratedCollection"];
 export type TimedDescriptionSegment = GeneratedSchemas["TimedDescriptionSegment"];
+export type TimedDescriptionSegmentAuthorityEntityLink = GeneratedSchemas["TimedDescriptionSegmentAuthorityEntityLink"];
 
 export interface CreateCollectionPayload {
   name: string;
@@ -1525,6 +1526,9 @@ export interface ArchiveApiClient {
   removeCuratedCollectionRecord(id: string, recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   timedDescriptionSegments(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ segments: TimedDescriptionSegment[] }>>;
   createTimedDescriptionSegment(recordId: string, payload: GeneratedSchemas["TimedDescriptionSegmentCreateRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ segment: TimedDescriptionSegment }>>;
+  timedDescriptionSegmentAuthorityEntities(segmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ links: TimedDescriptionSegmentAuthorityEntityLink[] }>>;
+  linkTimedDescriptionSegmentAuthorityEntity(segmentId: string, payload: GeneratedSchemas["TimedDescriptionSegmentAuthorityEntityLinkRequest"], options?: AuthRequestOptions): Promise<ApiEnvelope<{ link: TimedDescriptionSegmentAuthorityEntityLink }>>;
+  unlinkTimedDescriptionSegmentAuthorityEntity(segmentId: string, entityId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   workInbox(
     params?: { page?: number; limit?: number; types?: WorkInboxItemType[] },
     options?: AuthRequestOptions
@@ -2717,6 +2721,9 @@ export function createArchiveApiClient({
     removeCuratedCollectionRecord: (id: string, recordId: string, options?: AuthRequestOptions) => del<{ deleted: boolean }>(`/curated-collections/${encodeURIComponent(id)}/records/${encodeURIComponent(recordId)}`, undefined, options),
     timedDescriptionSegments: (recordId: string, options?: AuthRequestOptions) => get<{ segments: TimedDescriptionSegment[] }>(`/records/${encodeURIComponent(recordId)}/timed-description-segments`, options),
     createTimedDescriptionSegment: (recordId: string, payload: GeneratedSchemas["TimedDescriptionSegmentCreateRequest"], options?: AuthRequestOptions) => post<{ segment: TimedDescriptionSegment }>(`/records/${encodeURIComponent(recordId)}/timed-description-segments`, payload, options),
+    timedDescriptionSegmentAuthorityEntities: (segmentId: string, options?: AuthRequestOptions) => get<{ links: TimedDescriptionSegmentAuthorityEntityLink[] }>(`/timed-description-segments/${encodeURIComponent(segmentId)}/authority-entities`, options),
+    linkTimedDescriptionSegmentAuthorityEntity: (segmentId: string, payload: GeneratedSchemas["TimedDescriptionSegmentAuthorityEntityLinkRequest"], options?: AuthRequestOptions) => post<{ link: TimedDescriptionSegmentAuthorityEntityLink }>(`/timed-description-segments/${encodeURIComponent(segmentId)}/authority-entities`, payload, options),
+    unlinkTimedDescriptionSegmentAuthorityEntity: (segmentId: string, entityId: string, options?: AuthRequestOptions) => del<{ deleted: boolean }>(`/timed-description-segments/${encodeURIComponent(segmentId)}/authority-entities/${encodeURIComponent(entityId)}`, undefined, options),
     workInbox: (params?: { page?: number; limit?: number; types?: WorkInboxItemType[] }, options?: AuthRequestOptions) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.set("page", String(params.page));
