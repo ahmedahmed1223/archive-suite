@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
  * Extracted from UploadsController::store() (V1-711) so single-shot and
  * chunked (assembled) uploads share one finalize path: content-sniff the
  * already-quarantined file, move it into the servable directory, and create
- * the archive record + optional thumbnail job. Both callers write the raw
+ * the archive record plus the appropriate technical processing jobs. Both callers write the raw
  * bytes to quarantine themselves first — a single-shot multipart write, or a
  * streamed concatenation of chunks — since that part differs by caller.
  */
@@ -23,6 +23,12 @@ class UploadFinalizer
 {
     /** Bytes sampled from the start of the file for magic-byte sniffing. */
     private const SNIFF_SAMPLE_BYTES = 8192;
+
+    /** @var list<string> */
+    private const QC_MEDIA_EXTENSIONS = [
+        'mp4', 'mov', 'mxf', 'avi', 'mkv', 'wmv', 'flv', 'webm', 'ts', 'm2ts', 'mts', 'dv',
+        'wav', 'mp3', 'm4a', 'aac', 'ogg', 'opus', 'flac',
+    ];
 
     public function __construct(
         private readonly UploadFileValidator $validator,
@@ -71,8 +77,8 @@ class UploadFinalizer
             'updated_at' => $now,
         ]);
 
-        if ($this->isThumbnailCandidate($fileName)) {
-            $this->enqueueMediaJob($recordId, $storedPath);
+        if ($this->isMediaCandidate($fileName)) {
+            $this->enqueueMediaJobs($recordId, $storedPath, $fileName);
         }
 
         return ['recordId' => $recordId, 'record' => $recordData];
@@ -112,23 +118,41 @@ class UploadFinalizer
         return in_array($extension, $thumbnailExtensions, true);
     }
 
-    private function enqueueMediaJob(string $recordId, string $filePath): void
+    private function isMediaCandidate(string $fileName): bool
     {
-        $jobId = (string) Str::uuid();
-        $now = now();
+        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
-        DB::table('media_jobs')->insert([
-            'id' => $jobId,
-            'record_id' => $recordId,
-            'operation' => 'thumbnail',
-            'status' => 'queued',
-            'source_path' => $filePath,
-            'options' => json_encode([], JSON_THROW_ON_ERROR),
-            'queued_at' => $now,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        return in_array($extension, (array) config('ingest.media_extensions', []), true);
+    }
 
-        ProcessMediaWorkflow::dispatch($jobId, RequestCorrelation::id());
+    private function enqueueMediaJobs(string $recordId, string $filePath, string $fileName): void
+    {
+        $extension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        $operations = ['media_probe'];
+        if ($this->isThumbnailCandidate($fileName)) {
+            $operations[] = 'thumbnail';
+        }
+        if (in_array($extension, self::QC_MEDIA_EXTENSIONS, true)) {
+            $operations[] = 'media_qc';
+        }
+
+        foreach ($operations as $operation) {
+            $jobId = (string) Str::uuid();
+            $now = now();
+
+            DB::table('media_jobs')->insert([
+                'id' => $jobId,
+                'record_id' => $recordId,
+                'operation' => $operation,
+                'status' => 'queued',
+                'source_path' => $filePath,
+                'options' => json_encode([], JSON_THROW_ON_ERROR),
+                'queued_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            ProcessMediaWorkflow::dispatch($jobId, RequestCorrelation::id());
+        }
     }
 }

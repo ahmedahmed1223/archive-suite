@@ -70,7 +70,7 @@ class UploadsApiTest extends TestCase
         );
     }
 
-    public function test_it_enqueues_a_media_job_for_media_uploads(): void
+    public function test_it_enqueues_thumbnail_probe_and_qc_for_video_uploads(): void
     {
         Queue::fake();
 
@@ -79,10 +79,12 @@ class UploadsApiTest extends TestCase
         $this->postJson('/api/v1/uploads', ['file' => $file], $this->authHeaders())
             ->assertCreated();
 
-        $this->assertSame(1, DB::table('media_jobs')->count());
+        $jobs = DB::table('media_jobs')->get();
+        $this->assertSame(3, $jobs->count());
+        $this->assertSame(['media_probe', 'media_qc', 'thumbnail'], $jobs->pluck('operation')->sort()->values()->all());
     }
 
-    public function test_it_uploads_wav_audio_without_an_invalid_thumbnail_job(): void
+    public function test_it_uploads_wav_audio_with_probe_and_qc_but_no_thumbnail_job(): void
     {
         Queue::fake();
 
@@ -92,7 +94,7 @@ class UploadsApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('record.fileName', 'acceptance.wav');
 
-        $this->assertSame(0, DB::table('media_jobs')->count());
+        $this->assertSame(['media_probe', 'media_qc'], DB::table('media_jobs')->pluck('operation')->sort()->values()->all());
     }
 
     public function test_it_does_not_enqueue_a_media_job_for_non_media_uploads(): void
