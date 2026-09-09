@@ -11,6 +11,12 @@ use Throwable;
 
 class IngestScanner
 {
+    /** @var list<string> */
+    private const QC_MEDIA_EXTENSIONS = [
+        'mp4', 'mov', 'mxf', 'avi', 'mkv', 'wmv', 'flv', 'webm', 'ts', 'm2ts', 'mts', 'dv',
+        'wav', 'mp3', 'm4a', 'aac', 'ogg', 'opus', 'flac',
+    ];
+
     public function __construct(private readonly string $disk, private readonly string $directory) {}
 
     /**
@@ -89,7 +95,7 @@ class IngestScanner
 
                 // Enqueue media job if media extension
                 if ($this->isMediaFile($fileName)) {
-                    $this->enqueueMediaJob($recordId, $filePath);
+                    $this->enqueueMediaJobs($recordId, $filePath);
                 }
 
                 $ingested[] = [
@@ -137,24 +143,31 @@ class IngestScanner
         return in_array($extension, $mediaExtensions, true);
     }
 
-    private function enqueueMediaJob(string $recordId, string $filePath): void
+    private function enqueueMediaJobs(string $recordId, string $filePath): void
     {
-        $jobId = (string) Str::uuid();
-        $now = now();
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $operations = ['thumbnail', 'media_probe'];
+        if (in_array($extension, self::QC_MEDIA_EXTENSIONS, true)) {
+            $operations[] = 'media_qc';
+        }
 
-        DB::table('media_jobs')->insert([
-            'id' => $jobId,
-            'record_id' => $recordId,
-            'operation' => 'thumbnail',
-            'status' => 'queued',
-            'source_path' => $filePath,
-            'options' => json_encode([], JSON_THROW_ON_ERROR),
-            'queued_at' => $now,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        foreach ($operations as $operation) {
+            $jobId = (string) Str::uuid();
+            $now = now();
 
-        // Dispatch job via Laravel queue
-        ProcessMediaWorkflow::dispatch($jobId, RequestCorrelation::id());
+            DB::table('media_jobs')->insert([
+                'id' => $jobId,
+                'record_id' => $recordId,
+                'operation' => $operation,
+                'status' => 'queued',
+                'source_path' => $filePath,
+                'options' => json_encode([], JSON_THROW_ON_ERROR),
+                'queued_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            ProcessMediaWorkflow::dispatch($jobId, RequestCorrelation::id());
+        }
     }
 }

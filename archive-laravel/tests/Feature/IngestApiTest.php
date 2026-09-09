@@ -225,12 +225,13 @@ class IngestApiTest extends TestCase
         $this->postJson('/api/v1/ingest/scan', [], $this->authHeaders())
             ->assertOk();
 
-        // Check that media jobs were created for video and image, not text
+        // Every media item is probed; only moving-image/audio material is
+        // automatically sent to QC, because image files have no video stream.
         $mediaJobs = DB::table('media_jobs')->get();
-        $this->assertEquals(2, $mediaJobs->count());
-
-        $operations = $mediaJobs->pluck('operation')->toArray();
-        $this->assertTrue(in_array('thumbnail', $operations));
+        $this->assertEquals(5, $mediaJobs->count());
+        $this->assertSame(2, $mediaJobs->where('operation', 'thumbnail')->count());
+        $this->assertSame(2, $mediaJobs->where('operation', 'media_probe')->count());
+        $this->assertSame(1, $mediaJobs->where('operation', 'media_qc')->count());
     }
 
     public function test_scan_does_not_enqueue_media_job_for_non_media_files(): void

@@ -13,6 +13,7 @@ export const ingest = {
   operationInProgressLabel: "Operation in progress",
   completedLabel: "{label} completed",
   resultSummary: "Ingested {ingested} items and skipped {skipped}.",
+  openRecord: "Open {fileName}",
   failedLabel: "{label} failed",
   genericOperationError: "The operation failed.",
   watchedPreviewError: "Could not preview the watched folder.",

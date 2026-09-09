@@ -13,6 +13,7 @@ export const ingest = {
   operationInProgressLabel: "عملية جارية",
   completedLabel: "اكتمل {label}",
   resultSummary: "تم إدخال {ingested} عنصر وتجاوز {skipped}.",
+  openRecord: "فتح {fileName}",
   failedLabel: "تعذر {label}",
   genericOperationError: "فشلت العملية.",
   watchedPreviewError: "تعذرت معاينة المجلد المراقَب.",

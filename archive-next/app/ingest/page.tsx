@@ -12,7 +12,8 @@ import { createArchiveApiClient, type WatchedIngestBatch } from "@/lib/archive-a
 import type { AppDictionary } from "@/lib/i18n/dictionaries";
 import "./ingest.css";
 
-type PullResult = { ingested: number; skipped: number };
+type IngestedRecordLink = { id: string; fileName: string };
+type PullResult = { ingested: number; skipped: number; records?: IngestedRecordLink[] };
 
 type OperationState =
   | { status: "idle" }
@@ -22,6 +23,16 @@ type OperationState =
 
 type IngestSource = "scan" | "watched" | "ftp" | "smb" | "dropbox";
 type IngestStage = "source" | "inventory" | "metadata" | "processing" | "review";
+
+function ingestedRecordLinks(items: unknown[]): IngestedRecordLink[] {
+  return items.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const candidate = item as { id?: unknown; fileName?: unknown };
+    return typeof candidate.id === "string" && typeof candidate.fileName === "string"
+      ? [{ id: candidate.id, fileName: candidate.fileName }]
+      : [];
+  });
+}
 
 function operationStatusLabel(state: OperationState, tt: AppDictionary["pages"]["ingest"]) {
   if (state.status === "running") return tt.runningLabel;
@@ -46,6 +57,15 @@ function ResultBanner({
         <span className="helper-text">
           {tt.resultSummary.replace("{ingested}", String(state.result.ingested)).replace("{skipped}", String(state.result.skipped))}
         </span>
+        {state.result.records?.length ? (
+          <div className="button-row">
+            {state.result.records.map((record) => (
+              <a key={record.id} className="button button-secondary button-sm" href={`/archive/${encodeURIComponent(record.id)}`}>
+                {tt.openRecord.replace("{fileName}", record.fileName)}
+              </a>
+            ))}
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -101,7 +121,7 @@ export default function IngestPage() {
     try {
       const response = await operation();
       if (response.ok) {
-        setState({ status: "success", result: { ingested: response.ingested.length, skipped: response.skipped } });
+        setState({ status: "success", result: { ingested: response.ingested.length, skipped: response.skipped, records: ingestedRecordLinks(response.ingested) } });
       } else {
         setState({ status: "error", message: response.error || ti.genericOperationError });
       }

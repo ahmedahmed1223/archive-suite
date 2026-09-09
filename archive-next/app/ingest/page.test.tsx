@@ -91,6 +91,15 @@ describe("ingest workflow workspace", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("The ingest directory is unavailable.");
   });
 
+  test("links each received record directly into its description and inspection work", async () => {
+    mocks.ingestScan.mockResolvedValue({ ok: true, ingested: [{ id: "record-9", fileName: "reel.mov" }], skipped: 0 });
+    renderIngest();
+
+    fireEvent.click(screen.getByRole("button", { name: "Start scan" }));
+
+    expect(await screen.findByRole("link", { name: "Open reel.mov" })).toHaveAttribute("href", "/archive/record-9");
+  });
+
   test("keeps watched-folder preview separate from record creation", async () => {
     mocks.previewWatchedIngest.mockResolvedValue({
       ok: true,
