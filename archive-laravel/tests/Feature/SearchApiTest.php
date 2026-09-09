@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\TimedDescriptionSegment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -54,6 +56,33 @@ class SearchApiTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'records')
             ->assertJsonPath('records.0.uid', 'audio-arabic-001');
+    }
+
+    public function test_it_returns_matching_timed_description_segments_alongside_records(): void
+    {
+        $this->seedRecords();
+
+        TimedDescriptionSegment::query()->create([
+            'id' => (string) Str::uuid(),
+            'record_id' => 'clip-001',
+            'start_frame' => 1250,
+            'end_frame' => 1425,
+            'title' => 'وصول وفد التخطيط إلى الساحة',
+            'description' => 'لقطة توثق وصول الوفد إلى ساحة المدينة.',
+            'subjects' => ['تخطيط عمراني', 'الرياض'],
+            'place' => 'الرياض',
+        ]);
+
+        $this->getJson('/api/v1/search?q='.rawurlencode('وفد التخطيط'), $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('segmentMatches.0.recordId', 'clip-001')
+            ->assertJsonPath('segmentMatches.0.startFrame', 1250)
+            ->assertJsonPath('segmentMatches.0.endFrame', 1425)
+            ->assertJsonPath('segmentMatches.0.title', 'وصول وفد التخطيط إلى الساحة');
+
+        $this->getJson('/api/v1/search?type=audio&q='.rawurlencode('وفد التخطيط'), $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(0, 'segmentMatches');
     }
 
     public function test_transcript_mode_returns_only_matching_timed_cues(): void

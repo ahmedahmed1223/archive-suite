@@ -18678,6 +18678,7 @@
             "type": "object",
             "required": [
               "records",
+              "segmentMatches",
               "facets"
             ],
             "properties": {
@@ -18685,6 +18686,13 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/ArchiveRecord"
+                }
+              },
+              "segmentMatches": {
+                "type": "array",
+                "description": "Timed description segments that match a keyword search. Empty for semantic, transcript, and advanced-field queries.",
+                "items": {
+                  "$ref": "#/components/schemas/TimedDescriptionSegment"
                 }
               },
               "facets": {

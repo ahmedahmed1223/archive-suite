@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\TimedDescriptionSegment;
 use App\Repositories\StorageRowRepository;
 use App\Services\Search\EmbeddingService;
 use App\Services\Search\TranscriptSearchService;
@@ -140,10 +141,12 @@ class SearchController extends Controller
         $hasMore = $pageRecords->count() > $limit;
         $pageRecords = $pageRecords->take($limit)->values();
         $lastRecord = $pageRecords->last();
+        $segmentMatches = $this->matchingTimedDescriptionSegments($queryText, $mode, $isAdvancedQuery, $limit, $validated);
 
         return response()->json([
             'ok' => true,
             'records' => $pageRecords,
+            'segmentMatches' => $segmentMatches,
             'facets' => $facets,
             'nextCursor' => $hasMore && is_array($lastRecord) ? StorageRowPayload::encodeCursor((string) ($lastRecord['uid'] ?? $lastRecord['id'] ?? '')) : null,
         ]);
@@ -211,6 +214,7 @@ class SearchController extends Controller
         return [
             'ok' => true,
             'records' => $pageRecords,
+            'segmentMatches' => [],
             'facets' => $facets,
             'nextCursor' => $hasMore ? StorageRowPayload::encodeCursor((string) ($offset + $limit)) : null,
         ];
@@ -269,6 +273,92 @@ class SearchController extends Controller
 
         return is_string($encodedRecord)
             && str_contains($this->normalize($encodedRecord), $this->normalize($queryText));
+    }
+
+    /**
+     * Timed descriptions are independent archival description records, not
+     * derived player timestamps. Keep them in keyword search only until a
+     * semantic index and transcript-aware ranking are explicitly available.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function matchingTimedDescriptionSegments(string $queryText, string $mode, bool $isAdvancedQuery, int $limit, array $validated): array
+    {
+        if ($mode !== 'keyword' || $queryText === '' || $isAdvancedQuery) {
+            return [];
+        }
+
+        $eligibleRecordIds = $this->eligibleTimedDescriptionRecordIds($validated);
+
+        return TimedDescriptionSegment::query()
+            ->orderBy('record_id')
+            ->orderBy('start_frame')
+            ->get()
+            ->filter(fn (TimedDescriptionSegment $segment): bool => ($eligibleRecordIds === null || isset($eligibleRecordIds[$segment->record_id]))
+                && $this->matchesTimedDescriptionSegment($segment, $queryText))
+            ->take($limit)
+            ->map(fn (TimedDescriptionSegment $segment): array => $this->timedDescriptionSegmentPayload($segment))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Apply active record filters to timed-description matches. Segment rows
+     * deliberately do not duplicate the source record's type, store, tags,
+     * workflow state, or event date, so the source record is authoritative.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<string, true>|null
+     */
+    private function eligibleTimedDescriptionRecordIds(array $validated): ?array
+    {
+        $recordFilterKeys = ['store', 'type', 'subtype', 'tag', 'status', 'workflowStatus', 'dateFrom', 'dateTo', 'descriptionState'];
+        if (! collect($recordFilterKeys)->contains(fn (string $key): bool => trim((string) ($validated[$key] ?? '')) !== '')) {
+            return null;
+        }
+
+        $query = $this->storageRows->query()->orderBy('uid');
+        if (isset($validated['store'])) {
+            $query->where('store', $validated['store']);
+        }
+
+        return $query->get()
+            ->map(fn (stdClass $row): array => StorageRowPayload::format($row))
+            ->filter(fn (array $record): bool => $this->matchesFilters($record, $validated))
+            ->mapWithKeys(fn (array $record): array => [(string) ($record['uid'] ?? $record['id'] ?? '') => true])
+            ->all();
+    }
+
+    private function matchesTimedDescriptionSegment(TimedDescriptionSegment $segment, string $queryText): bool
+    {
+        $encoded = json_encode([
+            $segment->title,
+            $segment->description,
+            $segment->subjects ?? [],
+            $segment->place,
+            $segment->rights_note,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return is_string($encoded)
+            && str_contains($this->normalize($encoded), $this->normalize($queryText));
+    }
+
+    /** @return array<string, mixed> */
+    private function timedDescriptionSegmentPayload(TimedDescriptionSegment $segment): array
+    {
+        return [
+            'id' => $segment->id,
+            'recordId' => $segment->record_id,
+            'startFrame' => $segment->start_frame,
+            'endFrame' => $segment->end_frame,
+            'title' => $segment->title,
+            'description' => $segment->description,
+            'subjects' => $segment->subjects ?? [],
+            'place' => $segment->place,
+            'rightsNote' => $segment->rights_note,
+            'createdAt' => $segment->created_at?->toISOString(),
+            'updatedAt' => $segment->updated_at?->toISOString(),
+        ];
     }
 
     /**

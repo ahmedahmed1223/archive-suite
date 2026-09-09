@@ -7411,6 +7411,8 @@ export interface components {
             facets: components["schemas"]["SearchFacets"];
             nextCursor?: string | null;
             records: components["schemas"]["ArchiveRecord"][];
+            /** @description Timed description segments that match a keyword search. Empty for semantic, transcript, and advanced-field queries. */
+            segmentMatches: components["schemas"]["TimedDescriptionSegment"][];
         };
         SearchSuggestion: {
             /** @enum {string} */

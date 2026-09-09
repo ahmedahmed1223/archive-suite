@@ -38,4 +38,12 @@ describe("advanced search workbench", () => {
     expect(pageSource).toContain("const requestId = ++searchRequestIdRef.current;");
     expect(pageSource).toMatch(/if \(searchRequestIdRef\.current !== requestId\) return;/);
   });
+
+  it("renders timed-description matches with a stable link back to the record segment", () => {
+    const pageSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+
+    expect(pageSource).toContain("segmentMatches: TimedDescriptionSegment[]");
+    expect(pageSource).toContain("#timed-description-${encodeURIComponent(segment.id)}");
+    expect(pageSource).toContain("searchCopy.timedSegmentsHeading");
+  });
 });

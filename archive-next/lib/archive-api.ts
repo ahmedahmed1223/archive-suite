@@ -1214,7 +1214,7 @@ export interface ArchiveApiClient {
   search(
     params: { q?: string; store?: string; type?: string; subtype?: string; tag?: string; status?: string; dateFrom?: string; dateTo?: string; descriptionState?: "complete" | "incomplete"; cursor?: string; limit?: number; mode?: "keyword" | "semantic" | "transcript" },
     options?: AuthRequestOptions
-  ): Promise<ApiEnvelope<{ records: ArchiveRecord[]; facets?: SearchFacets; nextCursor?: string | null }>>;
+  ): Promise<ApiEnvelope<{ records: ArchiveRecord[]; segmentMatches: TimedDescriptionSegment[]; facets?: SearchFacets; nextCursor?: string | null }>>;
   searchSuggestions(params: { q: string; limit?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ suggestions: SearchSuggestion[] }>>;
   publicCatalog(params?: { q?: string; type?: string; tag?: string; cursor?: string; limit?: number }): Promise<ApiEnvelope<{ records: PublicCatalogRecord[]; nextCursor?: string | null }>>;
   plugins(params?: { status?: string; category?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ runtimePolicy: PluginRuntimePolicy; plugins: PluginCatalogItem[]; permissionScopes: PluginPermissionScopeSummary[] }>>;
@@ -1986,7 +1986,7 @@ export function createArchiveApiClient({
       if (cursor) params.set("cursor", cursor);
       if (mode !== "keyword") params.set("mode", mode);
       params.set("limit", String(clampApiLimit(limit, 20, 100)));
-      return get(`/search?${params.toString()}`, options);
+      return get<{ records: ArchiveRecord[]; segmentMatches: TimedDescriptionSegment[]; facets?: SearchFacets; nextCursor?: string | null }>(`/search?${params.toString()}`, options);
     },
     searchSuggestions: ({ q, limit = 8 }, options?: AuthRequestOptions) => get(`/search/suggestions?${new URLSearchParams({ q, limit: String(clampApiLimit(limit, 8, 8)) }).toString()}`, options),
     publicCatalog: ({ q = "", type = "", tag = "", cursor = "", limit = 24 } = {}) => {

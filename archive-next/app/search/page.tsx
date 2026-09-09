@@ -13,7 +13,7 @@ import SuggestionsPanel from "@/components/SuggestionsPanel";
 import SearchAutocomplete from "@/components/SearchAutocomplete";
 import SearchFilterBuilder from "@/components/SearchFilterBuilder";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue, type TimedDescriptionSegment } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
 import { buildSearchPlaybackHref, buildActiveSearchFilters, resolveSearchSession as serializeSearchSession, describePreviewForScreenReader } from "@/lib/search";
@@ -32,7 +32,7 @@ import { formatDate as formatDisplayDate } from "@/lib/display-settings";
 type SearchState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "ready"; records: ArchiveRecord[]; total: number; cursor: string | null; facets?: SearchFacets }
+  | { status: "ready"; records: ArchiveRecord[]; segmentMatches: TimedDescriptionSegment[]; total: number; cursor: string | null; facets?: SearchFacets }
   | { status: "error"; message: string };
 
 type SearchViewMode = "cards" | "list";
@@ -249,6 +249,7 @@ function SearchPageContent() {
       setState({
         status: "ready",
         records: response.records,
+        segmentMatches: response.segmentMatches,
         total: response.facets?.total ?? response.records.length,
         cursor: response.nextCursor ?? null,
         facets: response.facets
@@ -330,6 +331,7 @@ function SearchPageContent() {
     const start = (currentPage - 1) * pageSize;
     return filteredRecords.slice(start, start + pageSize);
   }, [filteredRecords, currentPage, pageSize]);
+  const segmentMatches = state.status === "ready" ? state.segmentMatches : [];
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(filteredRecords.length / pageSize)), [filteredRecords.length, pageSize]);
   const resultCount = useMemo(() => deriveWorkspaceResultCount({
@@ -509,6 +511,28 @@ function SearchPageContent() {
     </article>
     );
   };
+
+  const renderTimedSegment = (segment: TimedDescriptionSegment) => (
+    <article className="search-result-card" key={`segment-${segment.id}`} data-view={viewMode}>
+      <div className="search-result-card__body">
+        <div className="panel-title-row">
+          <h2>{segment.title}</h2>
+          <span className="badge">{searchCopy.timedSegmentsHeading}</span>
+        </div>
+        {segment.description ? <p className="helper-text">{segment.description}</p> : null}
+        <div className="record-meta">
+          <span className="badge" dir="ltr">{searchCopy.framesTemplate.replace("{start}", String(segment.startFrame)).replace("{end}", String(segment.endFrame))}</span>
+          {segment.place ? <span className="badge">{segment.place}</span> : null}
+          {segment.subjects.slice(0, 4).map((subject) => <span key={subject} className="tag">{subject}</span>)}
+        </div>
+      </div>
+      <div className="button-row">
+        <a href={`/archive/${encodeURIComponent(segment.recordId)}#timed-description-${encodeURIComponent(segment.id)}`} className="button button-primary button-sm">
+          {searchCopy.openTimedSegment}
+        </a>
+      </div>
+    </article>
+  );
 
   return (
     <AppShell subtitle={pageTitle} contentClassName="search-content" tipsPage="search">
@@ -722,7 +746,7 @@ function SearchPageContent() {
         />
       ) : null}
 
-      {state.status === "ready" && visibleRecords.length === 0 ? (
+      {state.status === "ready" && visibleRecords.length === 0 && segmentMatches.length === 0 ? (
         <EmptyState
           title={searchCopy.noResults}
           description={searchCopy.noResultsDescription}
@@ -730,7 +754,7 @@ function SearchPageContent() {
         />
       ) : null}
 
-      {state.status === "ready" && visibleRecords.length > 0 ? (
+      {state.status === "ready" && (visibleRecords.length > 0 || segmentMatches.length > 0) ? (
         <section className="search-workspace" aria-label={searchCopy.results}>
           <div className="search-results-surface" data-view={viewMode}>
             <div className="panel panel-compact">
@@ -740,6 +764,19 @@ function SearchPageContent() {
                 {query ? searchCopy.searchingForTemplate.replace("{query}", query) : ""}
               </p>
             </div>
+
+            {segmentMatches.length > 0 ? (
+              <section className="panel stack" aria-label={searchCopy.timedSegmentsHeading}>
+                <div className="panel-section-header">
+                  <div>
+                    <h2>{searchCopy.timedSegmentsHeading}</h2>
+                    <p className="helper-text">{searchCopy.timedSegmentsDescription}</p>
+                  </div>
+                  <span className="badge">{segmentMatches.length}</span>
+                </div>
+                {segmentMatches.map(renderTimedSegment)}
+              </section>
+            ) : null}
 
             {visibleRecords.map(renderRecord)}
 
