@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Cached, version-pinned media derivatives -- thumbnail, waveform, and
@@ -181,6 +182,42 @@ class MediaDerivativesController extends Controller
         return response()->json(['ok' => true, 'derivative' => $this->format($derivative)]);
     }
 
+    /**
+     * Streams a ready derivative only when it still represents the record's
+     * current source. The storage key remains server-side: clients receive a
+     * derivative id, never a filesystem path that could be replayed through
+     * the generic file endpoint.
+     */
+    public function content(Request $request, string $id): BinaryFileResponse|JsonResponse
+    {
+        $derivative = MediaDerivative::query()->find($id);
+        if (! $derivative instanceof MediaDerivative || $derivative->status !== 'ready' || ! is_string($derivative->storage_key)) {
+            return $this->notFound();
+        }
+
+        if (! $this->derivatives->isCurrentVersion($derivative)) {
+            return response()->json(
+                ApiError::envelope('This derivative is stale and cannot be served for the current record source.', 409),
+                409,
+            );
+        }
+
+        try {
+            $path = app(MediaPathGuard::class)->resolveInput($derivative->storage_key, 'derivative content');
+        } catch (RuntimeException) {
+            return $this->notFound();
+        }
+
+        if (! is_file($path)) {
+            return $this->notFound();
+        }
+
+        return response()->file($path, [
+            'Content-Type' => $this->contentType($derivative->storage_key),
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
     private function actor(Request $request): ?User
     {
         $user = $request->attributes->get('archive_user');
@@ -198,6 +235,16 @@ class MediaDerivativesController extends Controller
     private function notFound(?RuntimeException $exception = null): JsonResponse
     {
         return response()->json(ApiError::envelope($exception?->getMessage() ?? 'Not found.', 404), 404);
+    }
+
+    private function contentType(string $storageKey): string
+    {
+        return match (strtolower(pathinfo($storageKey, PATHINFO_EXTENSION))) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'mp4' => 'video/mp4',
+            default => 'application/octet-stream',
+        };
     }
 
     /**

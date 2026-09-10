@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Jobs\ProcessMediaWorkflow;
+use App\Models\MediaDerivative;
 use App\Models\MediaJob;
 use App\Models\User;
+use App\Services\Media\MediaPathGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +59,38 @@ class MediaDerivativesApiTest extends TestCase
             'derivative_type' => 'thumbnail',
             'status' => 'ready',
         ]);
+    }
+
+    public function test_a_ready_current_thumbnail_can_be_streamed_without_exposing_its_storage_key(): void
+    {
+        $this->seedRecord('stream-record', 'stream-checksum');
+
+        $created = $this->requestDerivative('stream-record', 'thumbnail', ['atSec' => 0]);
+        $derivativeId = $created->json('derivative.id');
+        $this->writeDerivativeFile($derivativeId);
+
+        $this->get('/api/v1/media-derivatives/'.$derivativeId.'/content', $this->authHeaders())
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg');
+    }
+
+    public function test_a_stale_derivative_is_not_streamable_as_current_media(): void
+    {
+        $disk = config('ingest.disk');
+        Storage::fake($disk);
+        Storage::disk($disk)->put('ingest/uploads/stale-source.txt', 'original');
+        $this->seedRecord('stale-stream-record', hash('sha256', 'original'), 'ingest/uploads/stale-source.txt', 'stale-source.txt');
+
+        $derivativeId = $this->requestDerivative('stale-stream-record', 'thumbnail', [])->json('derivative.id');
+        $this->writeDerivativeFile($derivativeId);
+
+        $this->post('/api/v1/records/stale-stream-record/source-replacements', [
+            'file' => UploadedFile::fake()->createWithContent('replacement.txt', 'replacement'),
+        ], $this->authHeaders())->assertOk();
+
+        $this->getJson('/api/v1/media-derivatives/'.$derivativeId.'/content', $this->authHeaders())
+            ->assertStatus(409)
+            ->assertJsonPath('ok', false);
     }
 
     public function test_a_second_identical_request_returns_the_cached_derivative_without_dispatching_again(): void
@@ -204,6 +238,11 @@ class MediaDerivativesApiTest extends TestCase
         ])->assertUnauthorized();
     }
 
+    public function test_unauthenticated_derivative_content_requests_are_rejected(): void
+    {
+        $this->getJson('/api/v1/media-derivatives/does-not-exist/content')->assertUnauthorized();
+    }
+
     public function test_missing_record_returns_not_found(): void
     {
         $this->postJson('/api/v1/media-derivatives', [
@@ -328,6 +367,14 @@ class MediaDerivativesApiTest extends TestCase
             'sourcePath' => "archive/{$recordId}.mov",
             'settings' => $settings,
         ], $this->authHeaders())->assertStatus(202);
+    }
+
+    private function writeDerivativeFile(string $derivativeId): void
+    {
+        $derivative = MediaDerivative::query()->findOrFail($derivativeId);
+        $path = app(MediaPathGuard::class)->resolveOutput((string) $derivative->storage_key, 'test derivative');
+
+        file_put_contents($path, "\xFF\xD8\xFF\xDBtest thumbnail");
     }
 
     /**

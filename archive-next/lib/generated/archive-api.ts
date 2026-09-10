@@ -1414,6 +1414,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/media-derivatives/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream a ready, current derivative without exposing its storage key */
+        get: operations["streamMediaDerivativeContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media-inspections/{inspectionId}/override": {
         parameters: {
             query?: never;
@@ -11202,6 +11219,35 @@ export interface operations {
             };
             401: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    streamMediaDerivativeContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Derivative content */
+            200: {
+                headers: {
+                    /** @description Private no-store response for protected derivative media. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                    "image/png": string;
+                    "video/mp4": string;
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
         };
     };
     overrideMediaQcInspection: {

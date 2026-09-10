@@ -454,6 +454,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/montage-projects/{id}/interchange/cmx-apply', [MontageInterchangeController::class, 'applyCmx']);
           Route::post('/media-inspections/{inspectionId}/override', [MediaQcOverridesController::class, 'store']);
         Route::post('/media-derivatives', [MediaDerivativesController::class, 'store']);
+        Route::get('/media-derivatives/{id}/content', [MediaDerivativesController::class, 'content']);
         Route::get('/media-derivatives/{id}', [MediaDerivativesController::class, 'show']);
 
         Route::get('/montage-projects', [MontageProjectsController::class, 'index']);
