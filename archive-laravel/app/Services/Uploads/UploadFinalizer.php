@@ -6,6 +6,7 @@ use App\Exceptions\UploadContentMismatchException;
 use App\Jobs\ProcessMediaWorkflow;
 use App\Repositories\StorageRowRepository;
 use App\Support\RequestCorrelation;
+use App\Services\Media\IngestDerivativeService;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -33,6 +34,7 @@ class UploadFinalizer
     public function __construct(
         private readonly UploadFileValidator $validator,
         private readonly StorageRowRepository $storageRows,
+        private readonly IngestDerivativeService $ingestDerivatives,
     ) {}
 
     /**
@@ -79,6 +81,7 @@ class UploadFinalizer
 
         if ($this->isMediaCandidate($fileName)) {
             $this->enqueueMediaJobs($recordId, $storedPath, $fileName);
+            $this->ingestDerivatives->queueBaseline($recordId, $storedPath, $fileName);
         }
 
         return ['recordId' => $recordId, 'record' => $recordData];

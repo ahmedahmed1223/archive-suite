@@ -13,6 +13,7 @@ use App\Services\Ingest\PhpFtpClient;
 use App\Services\Ingest\SmbIngestTransport;
 use App\Services\Media\CudaCapabilityChecker;
 use App\Services\Media\FakeMediaProcessor;
+use App\Services\Media\IngestDerivativeService;
 use App\Services\Media\LocalMediaJobExecutor;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
@@ -150,6 +151,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(IngestScanner::class, fn () => new IngestScanner(
             config('ingest.disk'),
             config('ingest.directory'),
+            $this->app->make(IngestDerivativeService::class),
         ));
     }
 

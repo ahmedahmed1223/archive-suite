@@ -4,6 +4,7 @@ namespace App\Services\Ingest;
 
 use App\Jobs\ProcessMediaWorkflow;
 use App\Support\RequestCorrelation;
+use App\Services\Media\IngestDerivativeService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -17,7 +18,11 @@ class IngestScanner
         'wav', 'mp3', 'm4a', 'aac', 'ogg', 'opus', 'flac',
     ];
 
-    public function __construct(private readonly string $disk, private readonly string $directory) {}
+    public function __construct(
+        private readonly string $disk,
+        private readonly string $directory,
+        private readonly IngestDerivativeService $ingestDerivatives,
+    ) {}
 
     /**
      * Scan ingest directory and create records for new files.
@@ -96,6 +101,7 @@ class IngestScanner
                 // Enqueue media job if media extension
                 if ($this->isMediaFile($fileName)) {
                     $this->enqueueMediaJobs($recordId, $filePath);
+                    $this->ingestDerivatives->queueBaseline($recordId, $filePath, $fileName);
                 }
 
                 $ingested[] = [

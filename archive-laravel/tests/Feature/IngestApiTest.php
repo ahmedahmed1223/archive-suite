@@ -230,10 +230,12 @@ class IngestApiTest extends TestCase
         // Every media item is probed; only moving-image/audio material is
         // automatically sent to QC, because image files have no video stream.
         $mediaJobs = DB::table('media_jobs')->get();
-        $this->assertEquals(5, $mediaJobs->count());
+        $this->assertEquals(6, $mediaJobs->count());
+        $this->assertSame(1, $mediaJobs->where('operation', 'derivative')->count());
         $this->assertSame(2, $mediaJobs->where('operation', 'thumbnail')->count());
         $this->assertSame(2, $mediaJobs->where('operation', 'media_probe')->count());
         $this->assertSame(1, $mediaJobs->where('operation', 'media_qc')->count());
+        $this->assertDatabaseHas('media_derivatives', ['derivative_type' => 'proxy', 'status' => 'processing']);
     }
 
     public function test_scan_does_not_enqueue_media_job_for_non_media_files(): void

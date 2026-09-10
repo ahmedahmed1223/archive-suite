@@ -80,8 +80,9 @@ class UploadsApiTest extends TestCase
             ->assertCreated();
 
         $jobs = DB::table('media_jobs')->get();
-        $this->assertSame(3, $jobs->count());
-        $this->assertSame(['media_probe', 'media_qc', 'thumbnail'], $jobs->pluck('operation')->sort()->values()->all());
+        $this->assertSame(4, $jobs->count());
+        $this->assertSame(['derivative', 'media_probe', 'media_qc', 'thumbnail'], $jobs->pluck('operation')->sort()->values()->all());
+        $this->assertDatabaseHas('media_derivatives', ['derivative_type' => 'proxy', 'status' => 'processing']);
     }
 
     public function test_it_uploads_wav_audio_with_probe_and_qc_but_no_thumbnail_job(): void
@@ -94,7 +95,8 @@ class UploadsApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('record.fileName', 'acceptance.wav');
 
-        $this->assertSame(['media_probe', 'media_qc'], DB::table('media_jobs')->pluck('operation')->sort()->values()->all());
+        $this->assertSame(['derivative', 'media_probe', 'media_qc'], DB::table('media_jobs')->pluck('operation')->sort()->values()->all());
+        $this->assertDatabaseHas('media_derivatives', ['derivative_type' => 'waveform', 'status' => 'processing']);
     }
 
     public function test_it_does_not_enqueue_a_media_job_for_non_media_uploads(): void
