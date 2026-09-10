@@ -866,6 +866,7 @@ export default function ArchiveDetailPage() {
             <RecordAiAssistPanel onAnalyze={handleAiAssist} canEdit={canEditRecords} />
             <SuggestionsPanel suggestions={suggestions} title={copy.suggestionsTitle} onFeedback={handleSuggestionFeedback} />
             {canEditRecords && <RecordDescribeForm key={id} record={state.record} onSave={handleSaveRecord} />}
+            <TimedDescriptionSegmentsPanel recordId={id} />
             <RecordNotesPanel
               notes={state.notes}
               loading={state.notesLoading}
@@ -891,6 +892,11 @@ export default function ArchiveDetailPage() {
           </div>
 
           <div className="page-section">
+            <MediaInspectionsPanel record={state.record} />
+            <MediaDerivativesTree record={state.record} />
+            <RecordAttachmentsPanel recordId={id} store={state.record.store || "archive-items"} />
+            <RecordSourceReplacementPanel recordId={id} canEdit={canEditRecords} />
+            <RecordChangeImpactPanel recordId={id} canEdit={canEditRecords} />
             <article className="panel">
               <div className="panel-section-header">
                 <h2>{t.pages.archiveDetail.rights.title}</h2>
@@ -973,16 +979,10 @@ export default function ArchiveDetailPage() {
               canEdit={canEditRecords}
             />
             <RecordAuthorityEntitiesPanel recordId={id} canEdit={canEditRecords} />
-            <TimedDescriptionSegmentsPanel recordId={id} />
             <GeotagPanel
               record={state.record}
               onRecordUpdate={(updated) => setState((current) => (current.status === "ready" ? { ...current, record: updated } : current))}
             />
-            <RecordAttachmentsPanel recordId={id} store={state.record.store || "archive-items"} />
-            <RecordSourceReplacementPanel recordId={id} canEdit={canEditRecords} />
-            <RecordChangeImpactPanel recordId={id} canEdit={canEditRecords} />
-            <MediaDerivativesTree record={state.record} />
-            <MediaInspectionsPanel record={state.record} />
             <RecordHistoryPanel
               entries={state.history}
               loading={state.historyLoading}
