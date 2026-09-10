@@ -17,6 +17,7 @@ type DerivativesState =
 
 function operationLabel(operation: MediaOperation, copy: DerivativesCopy): string {
   const labels: Record<MediaOperation, string> = {
+    derivative: copy.operationDerivative,
     thumbnail: copy.operationThumbnail,
     transcode: copy.operationTranscode,
     transcription: copy.operationTranscription,

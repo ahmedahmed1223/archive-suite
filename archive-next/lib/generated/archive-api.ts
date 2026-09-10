@@ -6073,7 +6073,7 @@ export interface components {
             job: components["schemas"]["MediaJob"];
         };
         /** @enum {string} */
-        MediaOperation: "media_probe" | "media_qc" | "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
+        MediaOperation: "media_probe" | "media_qc" | "derivative" | "thumbnail" | "transcode" | "transcription" | "ocr" | "montage_export";
         MediaProbeReport: {
             bitRate: number | null;
             durationSeconds: number | null;

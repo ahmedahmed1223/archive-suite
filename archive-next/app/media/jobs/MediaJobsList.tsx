@@ -92,6 +92,7 @@ function clampNumber(value: number, min: number, max: number, fallback: number) 
 
 function operationLabel(operation: MediaOperation, copy: MediaJobsCopy) {
   const labels: Record<MediaOperation, string> = {
+    derivative: copy.operations.derivative,
     thumbnail: copy.operations.thumbnail,
     transcode: copy.operations.transcode,
     transcription: copy.operations.transcription,

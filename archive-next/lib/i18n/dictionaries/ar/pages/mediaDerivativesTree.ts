@@ -1,4 +1,5 @@
 export const mediaDerivativesTree = {
+  operationDerivative: "مشتق وسائط",
   operationThumbnail: "صورة مصغرة",
   operationTranscode: "تحويل صيغة",
   operationTranscription: "تفريغ نصي",

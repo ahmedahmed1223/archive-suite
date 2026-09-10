@@ -1,5 +1,6 @@
 export const mediaJobs = {
   operations: {
+    derivative: "Media derivative",
     thumbnail: "Thumbnail",
     transcode: "Transcode",
     transcription: "Transcription",

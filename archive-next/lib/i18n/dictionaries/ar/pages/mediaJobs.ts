@@ -1,5 +1,6 @@
 export const mediaJobs = {
   operations: {
+    derivative: "مشتق وسائط",
     thumbnail: "صورة مصغرة",
     transcode: "تحويل صيغة",
     transcription: "تفريغ نصي",
