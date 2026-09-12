@@ -164,7 +164,12 @@ export default function HomeDashboard() {
                   icon={<Archive aria-hidden="true" />}
                   title={copy.empty}
                   description={copy.emptyDescription}
-                  actions={<Link className="button button-primary" href="/uploads">{copy.add}</Link>}
+                  actions={
+                    <>
+                      <Link className="button button-primary" href="/uploads">{copy.add}</Link>
+                      <Link className="button button-secondary" href="/archive">{copy.openArchive}</Link>
+                    </>
+                  }
                 />
               ) : (
                 <ul className="dashboard-recent__grid">

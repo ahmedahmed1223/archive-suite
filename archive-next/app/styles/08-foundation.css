@@ -1200,3 +1200,36 @@ textarea:focus-visible,
   display: inline-block;
   padding-block: calc((24px - 1lh) / 2);
 }
+
+/* P10 (V14-UX-011): drawer-carried close control. The overlay panel
+   shrink-wraps its content, so in-flow placement can never reach the thumb
+   zone — the button is viewport-fixed at the panel bottom instead, mirroring
+   the panel geometry per breakpoint. Hidden on desktop where the sidebar is
+   persistent. */
+@media (max-width: 760px) {
+  .drawer-close {
+    position: fixed;
+    z-index: 61;
+    inset-block-end: max(var(--space-2), env(safe-area-inset-bottom));
+    inset-inline-start: max(var(--space-2), env(safe-area-inset-left));
+    inline-size: min(22rem, calc(100vw - 2rem));
+    min-block-size: 44px;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1119px) {
+  .drawer-close {
+    position: fixed;
+    z-index: 61;
+    inset-block-end: max(var(--space-2), env(safe-area-inset-bottom));
+    inset-inline-start: max(var(--space-2), env(safe-area-inset-left));
+    inline-size: min(24rem, calc(100vw - 2rem));
+    min-block-size: 44px;
+  }
+}
+
+@media (min-width: 1120px) {
+  .drawer-close {
+    display: none;
+  }
+}

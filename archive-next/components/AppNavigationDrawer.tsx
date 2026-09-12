@@ -98,6 +98,14 @@ export default function AppNavigationDrawer({
               </div>
             </details>
           ))}
+          {/* P10 (V14-UX-011): thumb-zone dismiss — on phones the drawer
+              leaves almost no tappable backdrop, so the drawer carries its
+              own sticky close control. Hidden on desktop (min-1120px) where
+              the sidebar is persistent. */}
+          <button type="button" className="button button-secondary drawer-close" onClick={onClose}>
+            <Icons.X aria-hidden="true" size={16} strokeWidth={2} />
+            <span>{t.shell.closeNavigation}</span>
+          </button>
         </nav>
         <button type="button" className="sidebar-scroll-control" aria-label={t.shell.scrollNavigationDown} title={t.shell.scrollNavigationDown} disabled={!scroll.down} onClick={() => scrollByPage(1)}>
           <Icons.ChevronDown aria-hidden="true" size={18} strokeWidth={2} />
