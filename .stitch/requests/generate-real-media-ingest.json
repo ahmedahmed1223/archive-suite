@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "id": "real-media-ingest",
+  "title": "استقبال مواد الوسائط",
+  "routes": ["/ingest"],
+  "direction": "rtl",
+  "locale": "ar",
+  "designReference": ".stitch/DESIGN.md",
+  "implementation": {
+    "page": "archive-next/app/ingest/page.tsx",
+    "components": ["archive-next/lib/ingest-wizard.ts"],
+    "dictionaries": ["archive-next/lib/i18n/dictionaries/ar/pages/ingest.ts"]
+  },
+  "prompt": "شاشة مكتبية عربية RTL لاستقبال مواد الوسائط في أرشيف فيديو مؤسسي. شريط جانبي ثابت 272px. معالج خطي بخمس خطوات متتابعة في المنطقة الرئيسية مع مؤشر خطوات معلَن دلاليًا، ولوحة سياق جانبية تعرض حصيلة الخطوة الحالية. لا تبويبات مستقلة على المستوى الأعلى.",
+  "surfaces": [
+    {
+      "id": "intake-wizard",
+      "title": "معالج الاستقبال",
+      "kind": "linear-wizard",
+      "requirement": "خطوات متتابعة لا تبويبات؛ الرجوع يُبطل الخطوات اللاحقة؛ القبول أو الحجر قرار صريح لا افتراضي.",
+      "steps": [
+        { "key": "source", "label": "مصدر", "requirement": "اختيار المصدر ومعاملاته: مجلد الخادم، مجلد مراقَب، FTP، SMB، Dropbox." },
+        { "key": "preview", "label": "معاينة", "requirement": "تشغيل تجريبي يعرض ما سيُستقبَل قبل أي تطبيق." },
+        { "key": "metadata", "label": "بيانات وحقوق", "requirement": "الوجهة والبيانات الوصفية وتأكيد الحقوق الصريح." },
+        { "key": "inspection", "label": "فحص", "requirement": "مرحلة الفحص الفني مرتبطة بـ /media/jobs." },
+        { "key": "decision", "label": "قبول/حجر", "requirement": "قرار نهائي صريح؛ الحجر مسار متكافئ لا استثناء." }
+      ],
+      "screenStates": ["loading", "empty", "error", "readOnly", "blockedStep"]
+    }
+  ],
+  "renders": []
+}
