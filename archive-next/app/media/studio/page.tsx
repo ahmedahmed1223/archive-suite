@@ -21,6 +21,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { AppDictionary } from "@/lib/i18n/dictionaries";
 import MediaDerivativesTree from "../../archive/[id]/MediaDerivativesTree";
 import StudioCommentsPanel from "./StudioCommentsPanel";
+import StudioRecordTasks from "./StudioRecordTasks";
 import styles from "./studio.module.css";
 import "../media.css";
 
@@ -66,15 +67,6 @@ export function isInteractiveTarget(target: EventTarget | null): boolean {
   if (isTypingTarget(target)) return true;
   if (!(target instanceof HTMLElement)) return false;
   return target.tagName === "BUTTON" || target.tagName === "A" || target.tagName === "SELECT";
-}
-
-function ComingSoonPanel({ title, heading, description }: Readonly<{ title: string; heading: string; description: string }>) {
-  return (
-    <article className="panel" aria-label={title}>
-      <h2>{title}</h2>
-      <EmptyState title={heading} description={description} />
-    </article>
-  );
 }
 
 export default function MediaStudioPage() {
@@ -291,7 +283,7 @@ export default function MediaStudioPage() {
                   currentTime={currentTime}
                   onSeek={seekTo}
                 />
-                <ComingSoonPanel title={copy.tasks.title} heading={copy.tasks.comingSoonTitle} description={copy.tasks.comingSoonDescription} />
+                <StudioRecordTasks recordId={state.record.id} />
               </div>
             </div>
           </div>
