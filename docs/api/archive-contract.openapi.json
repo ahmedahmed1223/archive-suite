@@ -13124,6 +13124,38 @@
         }
       }
     },
+    "/system/media-toolchain": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Read independent status for each media-operations toolchain component",
+        "operationId": "getMediaToolchainStatus",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current status of ffmpeg, ffprobe, whisper, reverb, gpu, and connectors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaToolchainStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/system/security-settings": {
       "get": {
         "tags": [
@@ -28468,6 +28500,76 @@
               },
               "capabilities": {
                 "$ref": "#/components/schemas/Capabilities"
+              }
+            }
+          }
+        ]
+      },
+      "MediaToolchainComponentKey": {
+        "type": "string",
+        "enum": [
+          "ffmpeg",
+          "ffprobe",
+          "whisper",
+          "reverb",
+          "gpu",
+          "connectors"
+        ]
+      },
+      "MediaToolchainComponentStatus": {
+        "type": "string",
+        "enum": [
+          "available",
+          "needs_configuration",
+          "stopped"
+        ]
+      },
+      "MediaToolchainComponent": {
+        "type": "object",
+        "required": [
+          "key",
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/MediaToolchainComponentKey"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MediaToolchainComponentStatus"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "configHint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "MediaToolchainStatusResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OkEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "checkedAt",
+              "components"
+            ],
+            "properties": {
+              "checkedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "components": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MediaToolchainComponent"
+                }
               }
             }
           }

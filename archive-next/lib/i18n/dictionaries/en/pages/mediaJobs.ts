@@ -155,5 +155,30 @@ export const mediaJobs = {
     deviceCpu: "CPU",
     deviceCuda: "GPU (CUDA)",
     resourceFailure: "The last GPU job failed to run: {error}"
+  },
+  toolchainStatus: {
+    ariaLabel: "Media processing toolchain status",
+    title: "Processing toolchain status",
+    description: "Independent status for each media-processing tool, derived from the actual deployment configuration.",
+    loading: "Checking the media-processing toolchain...",
+    empty: "No toolchain status is available right now.",
+    emptyDescription: "Reload the panel or check that the server is responding.",
+    loadError: "Unable to load toolchain status: {error}",
+    refresh: "Refresh",
+    retry: "Retry",
+    checkedAtLabel: "Last checked",
+    components: {
+      ffmpeg: "FFmpeg",
+      ffprobe: "FFprobe",
+      whisper: "Whisper",
+      reverb: "Reverb",
+      gpu: "GPU",
+      connectors: "Ingest connectors"
+    },
+    statuses: {
+      available: "Available",
+      needs_configuration: "Needs configuration",
+      stopped: "Stopped"
+    }
   }
 } as const;

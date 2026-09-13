@@ -3750,6 +3750,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system/media-toolchain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read independent status for each media-operations toolchain component */
+        get: operations["getMediaToolchainStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/system/metrics/history": {
         parameters: {
             query?: never;
@@ -6206,6 +6223,21 @@ export interface components {
             endSeconds?: number | null;
             startSeconds?: number;
             type?: components["schemas"]["MediaReviewCommentType"];
+        };
+        MediaToolchainComponent: {
+            configHint?: string | null;
+            detail: string;
+            key: components["schemas"]["MediaToolchainComponentKey"];
+            status: components["schemas"]["MediaToolchainComponentStatus"];
+        };
+        /** @enum {string} */
+        MediaToolchainComponentKey: "ffmpeg" | "ffprobe" | "whisper" | "reverb" | "gpu" | "connectors";
+        /** @enum {string} */
+        MediaToolchainComponentStatus: "available" | "needs_configuration" | "stopped";
+        MediaToolchainStatusResponse: components["schemas"]["OkEnvelope"] & {
+            /** Format: date-time */
+            checkedAt: string;
+            components: components["schemas"]["MediaToolchainComponent"][];
         };
         MentionableUser: {
             id: string;
@@ -15846,6 +15878,27 @@ export interface operations {
             };
             409: components["responses"]["Error"];
             502: components["responses"]["Error"];
+        };
+    };
+    getMediaToolchainStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current status of ffmpeg, ffprobe, whisper, reverb, gpu, and connectors */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaToolchainStatusResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
         };
     };
     systemMetricsHistory: {

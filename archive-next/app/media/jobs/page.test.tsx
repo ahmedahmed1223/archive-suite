@@ -11,6 +11,7 @@ vi.mock("@/components/AppShell", () => ({
 
 vi.mock("./MediaJobLookup", () => ({ MediaJobLookup: () => <div>Lookup tool</div> }));
 vi.mock("./MediaJobsList", () => ({ MediaJobsList: () => <div>Jobs workspace</div> }));
+vi.mock("./MediaToolchainStatus", () => ({ MediaToolchainStatus: () => <div>Toolchain status</div> }));
 
 describe("media jobs operational shell", () => {
   afterEach(() => cleanup());
@@ -25,5 +26,6 @@ describe("media jobs operational shell", () => {
     expect(screen.getByRole("region", { name: "Media jobs" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Media studio" })).toHaveAttribute("href", "/media/studio");
     expect(screen.getByText("Jobs workspace")).toBeVisible();
+    expect(screen.getByText("Toolchain status")).toBeVisible();
   });
 });
