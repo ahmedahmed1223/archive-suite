@@ -7,6 +7,7 @@ use App\Models\TimedDescriptionSegment;
 use App\Repositories\StorageRowRepository;
 use App\Services\Search\EmbeddingService;
 use App\Services\Search\TranscriptSearchService;
+use App\Services\Media\RecordMediaSummaryService;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -140,6 +141,7 @@ class SearchController extends Controller
 
         $hasMore = $pageRecords->count() > $limit;
         $pageRecords = $pageRecords->take($limit)->values();
+        $pageRecords = $this->withMediaSummaries($pageRecords);
         $lastRecord = $pageRecords->last();
         $segmentMatches = $this->matchingTimedDescriptionSegments($queryText, $mode, $isAdvancedQuery, $limit, $validated);
 
@@ -210,6 +212,7 @@ class SearchController extends Controller
 
         $pageRecords = $records->slice($offset, $limit)->values();
         $hasMore = ($offset + $limit) < $records->count();
+        $pageRecords = $this->withMediaSummaries($pageRecords);
 
         return [
             'ok' => true,
@@ -218,6 +221,22 @@ class SearchController extends Controller
             'facets' => $facets,
             'nextCursor' => $hasMore ? StorageRowPayload::encodeCursor((string) ($offset + $limit)) : null,
         ];
+    }
+
+    /** @param Collection<int, array<string, mixed>> $records */
+    private function withMediaSummaries(Collection $records): Collection
+    {
+        $summaries = app(RecordMediaSummaryService::class)->forPage($records->all());
+
+        return $records->map(function (array $record) use ($summaries): array {
+            $store = is_string($record['store'] ?? null) ? $record['store'] : '';
+            $uid = is_string($record['uid'] ?? null) ? $record['uid'] : '';
+
+            return [
+                ...$record,
+                'mediaSummary' => $summaries[RecordMediaSummaryService::key($store, $uid)] ?? null,
+            ];
+        })->values();
     }
 
     /**

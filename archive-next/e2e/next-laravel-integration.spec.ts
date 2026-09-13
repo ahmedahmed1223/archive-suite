@@ -4,6 +4,8 @@ import { WHATS_NEW_RELEASE, WHATS_NEW_STORAGE_KEY } from '../lib/whats-new';
 const shareToken = process.env.ARCHIVE_E2E_SHARE_TOKEN ?? 'next-laravel-share';
 const email = process.env.ARCHIVE_E2E_EMAIL ?? 'it@archive.test';
 const password = process.env.ARCHIVE_E2E_PASSWORD ?? 'password123';
+const currentThumbnailId = '44444444-4444-4444-8444-444444444444';
+const staleThumbnailId = '55555555-5555-4555-8555-555555555555';
 
 // The operational pages (/archive, /archive/[id], /media/jobs) are guarded by
 // the cookie-session middleware. The API ROTATES the refresh token on every
@@ -46,6 +48,28 @@ test('renders a public share record through the Next.js to Laravel API rewrite',
 test('lists the seeded archive record from Laravel on /archive', async ({ page }) => {
   await page.goto('/archive', { waitUntil: 'networkidle' });
   await expect(page.getByText('تسجيل تكامل Next/Laravel').first()).toBeVisible({ timeout: 15_000 });
+});
+
+test('renders only the current video derivative in an operational archive card', async ({ page }) => {
+  const requestedDerivatives: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/media-derivatives/')) requestedDerivatives.push(request.url());
+  });
+  const currentThumbnail = page.waitForResponse((response) =>
+    response.url().includes(`/media-derivatives/${currentThumbnailId}/content`) && response.status() === 200,
+  );
+
+  await page.goto('/archive', { waitUntil: 'networkidle' });
+
+  const card = page.locator('.record-card').filter({ hasText: 'نشرة تكامل الفيديو' });
+  await expect(card.getByRole('img', { name: 'معاينة فيديو نشرة تكامل الفيديو' })).toBeVisible({ timeout: 15_000 });
+  await expect(card.getByText('01:02')).toBeVisible();
+  await expect(card.getByText('النسخة البديلة قيد المعالجة')).toBeVisible();
+  await expect(card.getByText('الفحص اجتاز')).toBeVisible();
+  await currentThumbnail;
+
+  expect(requestedDerivatives.some((url) => url.includes(staleThumbnailId))).toBe(false);
+  await expect(card.locator('img')).toHaveAttribute('src', /^blob:/);
 });
 
 test('renders the seeded record detail on /archive/[id]', async ({ page }) => {

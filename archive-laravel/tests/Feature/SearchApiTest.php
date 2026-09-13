@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\TimedDescriptionSegment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
@@ -23,6 +24,56 @@ class SearchApiTest extends TestCase
             ->assertJsonCount(1, 'records')
             ->assertJsonPath('records.0.uid', 'clip-001')
             ->assertJsonPath('facets.mode', 'keyword');
+    }
+
+    public function test_keyword_search_includes_only_the_current_media_summary_for_its_page(): void
+    {
+        $this->seedRecords();
+        $now = now();
+
+        DB::table('media_derivatives')->insert([
+            [
+                'id' => '88888888-8888-4888-8888-888888888888',
+                'record_store' => 'archive-items',
+                'record_uid' => 'clip-001',
+                'attachment_id' => null,
+                'derivative_type' => 'thumbnail',
+                'version_token' => 'record:clip-001-checksum',
+                'settings' => json_encode([]),
+                'settings_hash' => hash('sha256', 'search-current-thumbnail'),
+                'status' => 'ready',
+                'storage_key' => 'clip-001/derivatives/current.jpg',
+                'media_job_id' => null,
+                'error' => null,
+                'created_by' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => '99999999-9999-4999-8999-999999999999',
+                'record_store' => 'archive-items',
+                'record_uid' => 'clip-001',
+                'attachment_id' => null,
+                'derivative_type' => 'thumbnail',
+                'version_token' => 'record:stale-clip-001',
+                'settings' => json_encode([]),
+                'settings_hash' => hash('sha256', 'search-stale-thumbnail'),
+                'status' => 'ready',
+                'storage_key' => 'clip-001/derivatives/stale.jpg',
+                'media_job_id' => null,
+                'error' => null,
+                'created_by' => null,
+                'created_at' => $now->copy()->addSecond(),
+                'updated_at' => $now->copy()->addSecond(),
+            ],
+        ]);
+
+        $this->getJson('/api/v1/search?store=archive-items&q=riyadh&limit=10', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('records.0.mediaSummary.kind', 'video')
+            ->assertJsonPath('records.0.mediaSummary.durationSeconds', 62)
+            ->assertJsonPath('records.0.mediaSummary.thumbnailDerivativeId', '88888888-8888-4888-8888-888888888888')
+            ->assertJsonPath('records.0.mediaSummary.thumbnailStatus', 'ready');
     }
 
     public function test_keyword_search_rehydrates_a_pool_from_the_database_cache(): void
@@ -293,7 +344,7 @@ class SearchApiTest extends TestCase
         $this->postJson('/api/v1/records/bulk', [
             'store' => 'archive-items',
             'records' => [
-                ['uid' => 'clip-001', 'title' => 'Riyadh archive interview', 'description' => 'City planning', 'type' => 'video', 'tags' => ['city', 'riyadh'], 'workflowStatus' => 'review'],
+                ['uid' => 'clip-001', 'title' => 'Riyadh archive interview', 'description' => 'City planning', 'type' => 'video', 'fileName' => 'clip-001.mp4', 'checksum' => 'clip-001-checksum', 'durationSeconds' => 62, 'tags' => ['city', 'riyadh'], 'workflowStatus' => 'review'],
                 ['uid' => 'clip-002', 'title' => 'Jeddah archive package', 'description' => 'Coastal story', 'type' => 'video', 'tags' => ['city', 'jeddah'], 'workflowStatus' => 'draft'],
                 ['uid' => 'clip-003', 'title' => 'Sports segment', 'description' => 'Match highlights', 'type' => 'video', 'tags' => ['sports'], 'workflowStatus' => 'published'],
             ],
