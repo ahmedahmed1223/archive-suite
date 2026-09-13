@@ -1454,6 +1454,7 @@ export interface ArchiveApiClient {
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ derivative: MediaDerivative; cached?: boolean }>>;
   getMediaDerivative(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ derivative: MediaDerivative }>>;
+  mediaDerivativeContent(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ blob: Blob }>>;
   transcriptVersions(recordId: string, params?: { store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ current: TranscriptCurrentState; versions: TranscriptVersion[] }>>;
   saveTranscriptVersion(recordId: string, payload: TranscriptVersionStorePayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
   lockTranscriptVersion(recordId: string, payload?: { store?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ version: TranscriptVersion }>>;
@@ -1909,6 +1910,37 @@ export function createArchiveApiClient({
     }
 
     return payload;
+  }
+
+  async function requestBlob(
+    path: string,
+    { accessToken, skipRefresh = false }: { accessToken?: string; skipRefresh?: boolean } = {}
+  ): Promise<ApiEnvelope<{ blob: Blob }>> {
+    const headers = new Headers({ Accept: "image/jpeg, image/png, video/mp4" });
+    const effectiveAccessToken = accessToken ?? cachedAccessToken;
+    if (effectiveAccessToken) headers.set("Authorization", `Bearer ${effectiveAccessToken}`);
+
+    let response: Response;
+    try {
+      response = await fetchImpl(`${baseUrl}${path}`, { headers, credentials: "include" });
+    } catch {
+      return { ok: false, error: clientRequestError(currentLocale(), "network") };
+    }
+
+    if (response.status === 401 && !skipRefresh) {
+      const refreshedAccessToken = await refreshAccessToken();
+      if (refreshedAccessToken) {
+        cachedAccessToken = refreshedAccessToken;
+        return requestBlob(path, { accessToken: refreshedAccessToken, skipRefresh: true });
+      }
+      if (!lastRefreshFailureTransient) handleUnauthorized();
+    }
+
+    if (!response.ok) {
+      return { ok: false, code: `http_${response.status}`, error: clientRequestError(currentLocale(), "http", response.status) };
+    }
+
+    return { ok: true, blob: await response.blob() };
   }
 
   const get = <T extends object>(path: string, options?: AuthRequestOptions) =>
@@ -2580,6 +2612,8 @@ export function createArchiveApiClient({
       post<{ derivative: MediaDerivative; cached?: boolean }>("/media-derivatives", payload, options),
     getMediaDerivative: (id: string, options?: AuthRequestOptions) =>
       get<{ derivative: MediaDerivative }>(`/media-derivatives/${encodeURIComponent(id)}`, options),
+    mediaDerivativeContent: (id: string, options?: AuthRequestOptions) =>
+      requestBlob(`/media-derivatives/${encodeURIComponent(id)}/content`, { accessToken: options?.accessToken }),
     reviewLink: (token: string) =>
       get<ReviewLinkDetails>(`/review-links/${encodeURIComponent(token)}`),
     createReviewLink: (payload: CreateReviewLinkPayload, options?: AuthRequestOptions) =>

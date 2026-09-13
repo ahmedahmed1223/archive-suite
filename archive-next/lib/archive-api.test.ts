@@ -25,6 +25,37 @@ describe("archive API uploads", () => {
   });
 });
 
+describe("archive API protected media derivatives", () => {
+  it("fetches derivative bytes with the current bearer token instead of exposing a storage key", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({
+        ok: true,
+        user: { id: "admin", email: "admin@example.test", role: "admin" },
+        accessToken: "derivative-access-token",
+        expiresAt: "2030-01-01T00:00:00.000Z"
+      }))
+      .mockResolvedValueOnce(new Response(new Blob(["thumbnail"], { type: "image/jpeg" }), {
+        status: 200,
+        headers: { "Content-Type": "image/jpeg" }
+      }));
+    const api = createArchiveApiClient({ baseUrl: "http://archive.test/api/v1", fetchImpl });
+
+    await api.login({ email: "admin@example.test", password: "not-a-real-password" });
+    const response = await api.mediaDerivativeContent("thumb / 1");
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "http://archive.test/api/v1/media-derivatives/thumb%20%2F%201/content",
+      expect.objectContaining({ credentials: "include" })
+    );
+    const request = fetchImpl.mock.calls[1]?.[1] as RequestInit;
+    expect(new Headers(request.headers).get("Authorization")).toBe("Bearer derivative-access-token");
+    expect(new Headers(request.headers).get("Accept")).toBe("image/jpeg, image/png, video/mp4");
+    expect(response.ok).toBe(true);
+    if (response.ok) expect(response.blob.type).toBe("image/jpeg");
+  });
+});
+
 describe("media inspections API client", () => {
   it("loads the durable technical inspection history for the selected record store", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
