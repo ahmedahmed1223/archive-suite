@@ -59,6 +59,7 @@
     { "path": "docs/v3-gate-001-capability-matrix.ar.md", "lifecycle": "internal-release-gate-evidence" },
     { "path": "docs/v3-gate-001-mcp-acceptance.ar.md", "lifecycle": "internal-release-gate-evidence" },
     { "path": "docs/designmd-ux-guide.md", "lifecycle": "internal-design-record" },
+    { "path": "docs/v2-continuation.ar.md", "lifecycle": "internal-task-tracking" },
     { "path": "TASKS.md", "lifecycle": "internal-task-tracking" }
   ]
 }
