@@ -38,8 +38,13 @@ return [
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-            'busy_timeout' => null,
-            'journal_mode' => null,
+            // SQLite is also used by the self-contained Laravel/Next live
+            // gate, where the HTTP server, scheduler, and queue worker run
+            // concurrently. Keep the production default unchanged, while
+            // allowing that harness to opt into SQLite's normal concurrent
+            // reader/writer settings through its isolated environment.
+            'busy_timeout' => env('DB_BUSY_TIMEOUT'),
+            'journal_mode' => env('DB_JOURNAL_MODE'),
             'synchronous' => null,
             'transaction_mode' => 'DEFERRED',
         ],

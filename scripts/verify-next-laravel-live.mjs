@@ -79,7 +79,24 @@ async function waitForJson(url, label, timeoutMs = 90000) {
 
 async function stopAll() {
   for (const { child } of children) {
-    if (!child.killed) child.kill("SIGTERM");
+    if (child.exitCode !== null || child.pid === undefined) continue;
+
+    // On Windows, killing the cmd.exe wrapper alone leaves its Next.js child
+    // alive. End the tree that this harness started so the live gate can
+    // return a real pass/fail status instead of hanging after Playwright.
+    if (process.platform === "win32") {
+      await new Promise((resolve) => {
+        const cleanup = spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
+          cwd: ROOT,
+          stdio: "ignore",
+          shell: false,
+        });
+        cleanup.on("exit", resolve);
+        cleanup.on("error", resolve);
+      });
+    } else {
+      child.kill("SIGTERM");
+    }
   }
   if (!startedLaravelContainer) return;
 
@@ -140,6 +157,14 @@ async function main() {
       // be subject to the production-wide API limiter.
       "-e",
       "APP_ENV=testing",
+      // The live gate deliberately runs the HTTP server, scheduler and a
+      // database-backed queue worker against one throwaway SQLite file. WAL
+      // plus a short busy timeout prevents transient writer contention from
+      // stranding a claimed scheduled upload during that integration check.
+      "-e",
+      "DB_JOURNAL_MODE=WAL",
+      "-e",
+      "DB_BUSY_TIMEOUT=5000",
       "-e",
       `ARCHIVE_CORS_ORIGINS=http://127.0.0.1:${nextPort},http://localhost:${nextPort}`,
       LARAVEL_RUNTIME_IMAGE,
