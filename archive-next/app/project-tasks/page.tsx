@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
@@ -18,6 +19,7 @@ function formatDueDate(value: string | null, locale: "ar" | "en", noDueDate: str
 export default function ProjectTasksPage() {
   const { t, locale } = useLocale();
   const copy = t.pages.projectTasks;
+  const linkedRecordId = useSearchParams().get("recordId")?.trim() ?? "";
   const columns: Array<[ProjectTaskStatus, string]> = [
     ["todo", copy.columns.todo],
     ["in_progress", copy.columns.inProgress],
@@ -32,7 +34,7 @@ export default function ProjectTasksPage() {
   const [projectId, setProjectId] = useState("");
   const [title, setTitle] = useState("");
   const [assignee, setAssignee] = useState("");
-  const [recordId, setRecordId] = useState("");
+  const [recordId, setRecordId] = useState(linkedRecordId);
   const [dueDate, setDueDate] = useState("");
   const [status, setStatus] = useState("");
   const [templates, setTemplates] = useState<ProjectTaskTemplate[]>([]);

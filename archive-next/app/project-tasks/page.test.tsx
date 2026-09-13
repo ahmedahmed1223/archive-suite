@@ -9,6 +9,7 @@ const projectTasks = vi.fn();
 const createProjectTask = vi.fn();
 const updateProjectTask = vi.fn();
 const projectTaskTemplates = vi.fn();
+const { useSearchParams } = vi.hoisted(() => ({ useSearchParams: vi.fn() }));
 
 vi.mock("@/lib/archive-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
@@ -20,6 +21,7 @@ vi.mock("@/lib/auth-session", () => ({
 vi.mock("@/components/AppShell", () => ({ default: ({ children }: { children: ReactNode }) => <main>{children}</main> }));
 vi.mock("@/components/PageToolbar", () => ({ default: ({ title, description }: { title: string; description: string }) => <header><h1>{title}</h1><p>{description}</p></header> }));
 vi.mock("@/components/EmptyState", () => ({ default: ({ title }: { title: string }) => <p>{title}</p> }));
+vi.mock("next/navigation", () => ({ useSearchParams }));
 
 import ProjectTasksPage from "./page";
 
@@ -33,6 +35,7 @@ function renderPage() {
 
 afterEach(cleanup);
 beforeEach(() => {
+  useSearchParams.mockReturnValue(new URLSearchParams());
   projects.mockResolvedValue({ ok: true, projects: [{ id: "project-1", name: "وثائقي", notes: null, sortOrder: 0, createdAt: "2026-01-01", updatedAt: "2026-01-01" }] });
   projectTasks.mockResolvedValue({ ok: true, tasks: [] });
   projectTaskTemplates.mockResolvedValue({ ok: true, templates: [] });
@@ -67,4 +70,13 @@ test("creates a project task with its optional due date", async () => {
 
   await waitFor(() => expect(createProjectTask).toHaveBeenCalledWith(expect.objectContaining({ projectId: "project-1", dueDate: "2026-08-15" })));
   expect(await screen.findByText(/الاستحقاق:/)).toBeTruthy();
+});
+
+test("prefills the linked record when opened from the media studio", async () => {
+  useSearchParams.mockReturnValue(new URLSearchParams("recordId=record-9"));
+
+  renderPage();
+
+  await screen.findByRole("option", { name: "وثائقي" });
+  expect(screen.getByLabelText("معرّف المادة (اختياري)")).toHaveValue("record-9");
 });
