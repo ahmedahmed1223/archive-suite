@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -38,6 +39,79 @@ class RecordsApiTest extends TestCase
             ->assertJsonCount(1, 'records')
             ->assertJsonPath('records.0.uid', 'a-003')
             ->assertJsonPath('nextCursor', null);
+    }
+
+    public function test_it_lists_a_current_video_media_summary_without_using_stale_derivatives(): void
+    {
+        $now = now();
+        DB::table('storage_rows')->insert([
+            'store' => 'archive-items',
+            'uid' => 'video-summary-001',
+            'data' => json_encode([
+                'id' => 'video-summary-001',
+                'title' => 'نشرة المساء',
+                'fileName' => 'evening-news.mov',
+                'durationSeconds' => 62.52,
+                'checksum' => 'video-summary-checksum',
+            ], JSON_THROW_ON_ERROR),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        DB::table('media_derivatives')->insert([
+            [
+                'id' => '11111111-1111-4111-8111-111111111111',
+                'record_store' => 'archive-items',
+                'record_uid' => 'video-summary-001',
+                'attachment_id' => null,
+                'derivative_type' => 'thumbnail',
+                'version_token' => 'record:video-summary-checksum',
+                'settings' => json_encode([]),
+                'settings_hash' => hash('sha256', 'thumbnail-current'),
+                'status' => 'ready',
+                'storage_key' => 'video-summary-001/derivatives/current.jpg',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => '22222222-2222-4222-8222-222222222222',
+                'record_store' => 'archive-items',
+                'record_uid' => 'video-summary-001',
+                'attachment_id' => null,
+                'derivative_type' => 'proxy',
+                'version_token' => 'record:video-summary-checksum',
+                'settings' => json_encode([]),
+                'settings_hash' => hash('sha256', 'proxy-current'),
+                'status' => 'processing',
+                'storage_key' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => '33333333-3333-4333-8333-333333333333',
+                'record_store' => 'archive-items',
+                'record_uid' => 'video-summary-001',
+                'attachment_id' => null,
+                'derivative_type' => 'thumbnail',
+                'version_token' => 'record:replaced-source',
+                'settings' => json_encode([]),
+                'settings_hash' => hash('sha256', 'thumbnail-stale'),
+                'status' => 'ready',
+                'storage_key' => 'video-summary-001/derivatives/stale.jpg',
+                'created_at' => $now->copy()->addSecond(),
+                'updated_at' => $now->copy()->addSecond(),
+            ],
+        ]);
+
+        $this->getJson('/api/v1/records?store=archive-items', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('records.0.mediaSummary.kind', 'video')
+            ->assertJsonPath('records.0.mediaSummary.durationSeconds', 62.52)
+            ->assertJsonPath('records.0.mediaSummary.thumbnailDerivativeId', '11111111-1111-4111-8111-111111111111')
+            ->assertJsonPath('records.0.mediaSummary.thumbnailStatus', 'ready')
+            ->assertJsonPath('records.0.mediaSummary.proxyStatus', 'processing')
+            ->assertJsonPath('records.0.mediaSummary.waveformStatus', 'missing')
+            ->assertJsonMissingPath('records.0.mediaSummary.storageKey');
     }
 
     public function test_it_requires_uid_or_id_for_bulk_records(): void

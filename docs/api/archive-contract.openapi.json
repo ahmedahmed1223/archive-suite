@@ -17364,6 +17364,9 @@
           "thumbnail": {
             "type": "string"
           },
+          "mediaSummary": {
+            "$ref": "#/components/schemas/MediaSummary"
+          },
           "tags": {
             "type": "array",
             "items": {
@@ -25273,6 +25276,49 @@
           "accelerate": {
             "type": "boolean",
             "description": "proxy: request GPU (h264_nvenc) encoding. Only ever honored when the worker's NVIDIA runtime is verified healthy -- otherwise the job fails rather than silently falling back to CPU and misreporting the encoder used."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaSummary": {
+        "type": "object",
+        "required": [
+          "kind",
+          "durationSeconds",
+          "thumbnailDerivativeId",
+          "thumbnailStatus",
+          "proxyStatus",
+          "waveformStatus",
+          "inspectionStatus"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["video", "audio", "image", "document", "unknown"]
+          },
+          "durationSeconds": {
+            "type": ["number", "null"],
+            "minimum": 0
+          },
+          "thumbnailDerivativeId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "thumbnailStatus": {
+            "type": "string",
+            "enum": ["ready", "pending", "processing", "failed", "missing"]
+          },
+          "proxyStatus": {
+            "type": "string",
+            "enum": ["ready", "pending", "processing", "failed", "missing"]
+          },
+          "waveformStatus": {
+            "type": "string",
+            "enum": ["ready", "pending", "processing", "failed", "missing"]
+          },
+          "inspectionStatus": {
+            "type": "string",
+            "enum": ["passed", "warning", "failed", "waived", "pending", "missing"]
           }
         },
         "additionalProperties": false

@@ -35,6 +35,10 @@ overrides:
   '@opentelemetry/core@<2.8.0': ^2.8.0
   esbuild@>=0.27.3 <0.28.1: ^0.28.1
   hono@<4.12.25: ^4.12.25
+  # @redocly/openapi-core 1.34 uses the v4 `types.merge` API. Keep this
+  # compatible, patched v4 release scoped to Redocly while every other
+  # vulnerable js-yaml range resolves to v5 below.
+  '@redocly/openapi-core>js-yaml': 4.3.1
   js-yaml@<5: ^5.4.1
   nanoid@<3.3.17: ^3.3.17
   sharp@<0.35.4: ^0.35.4

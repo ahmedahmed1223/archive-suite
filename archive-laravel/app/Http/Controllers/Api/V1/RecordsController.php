@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Repositories\StorageRowRepository;
 use App\Services\Automation\AutomationRuleRunner;
+use App\Services\Media\RecordMediaSummaryService;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,6 +66,16 @@ class RecordsController extends Controller
         $hasMore = $rows->count() > $limit;
         $pageRows = $rows->take($limit);
         $records = $pageRows->map(fn (stdClass $row): array => StorageRowPayload::format($row))->values();
+        $mediaSummaries = app(RecordMediaSummaryService::class)->forPage($records->all());
+        $records = $records->map(function (array $record) use ($mediaSummaries): array {
+            $store = is_string($record['store'] ?? null) ? $record['store'] : '';
+            $uid = is_string($record['uid'] ?? null) ? $record['uid'] : '';
+
+            return [
+                ...$record,
+                'mediaSummary' => $mediaSummaries[RecordMediaSummaryService::key($store, $uid)] ?? null,
+            ];
+        })->values();
         $lastRow = $pageRows->last();
 
         return response()->json([

@@ -4789,6 +4789,7 @@ export interface components {
                 kind: "metadata" | "semantic" | "transcript";
                 timestampSeconds?: number;
             };
+            mediaSummary?: components["schemas"]["MediaSummary"];
             metadata?: {
                 [key: string]: unknown;
             };
@@ -6206,6 +6207,21 @@ export interface components {
             endSeconds?: number | null;
             startSeconds?: number;
             type?: components["schemas"]["MediaReviewCommentType"];
+        };
+        MediaSummary: {
+            durationSeconds: number | null;
+            /** @enum {string} */
+            inspectionStatus: "passed" | "warning" | "failed" | "waived" | "pending" | "missing";
+            /** @enum {string} */
+            kind: "video" | "audio" | "image" | "document" | "unknown";
+            /** @enum {string} */
+            proxyStatus: "ready" | "pending" | "processing" | "failed" | "missing";
+            /** Format: uuid */
+            thumbnailDerivativeId: string | null;
+            /** @enum {string} */
+            thumbnailStatus: "ready" | "pending" | "processing" | "failed" | "missing";
+            /** @enum {string} */
+            waveformStatus: "ready" | "pending" | "processing" | "failed" | "missing";
         };
         MentionableUser: {
             id: string;
