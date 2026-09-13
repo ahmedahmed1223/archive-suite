@@ -837,6 +837,7 @@ function ArchivePageContent() {
       itemSize={itemSize}
       isSelected={selectedIdSet.has(record.id)}
       canEdit={canEditRecords}
+      accessToken={accessToken ?? undefined}
       onSelectClick={handleSelectClick}
       onPreview={setPreviewId}
       onRename={handleRenameRecord}

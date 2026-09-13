@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ContextMenu, type ContextMenuPosition } from "@/components/ui/ContextMenu";
+import ProtectedDerivativeImage from "@/components/ProtectedDerivativeImage";
 import type { ArchiveRecord } from "@/lib/archive-api";
 import { deriveRecordStatus } from "@/lib/record-status";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
@@ -15,12 +16,24 @@ interface ArchiveRecordCardProps {
   itemSize: ArchiveItemSize;
   isSelected: boolean;
   canEdit: boolean;
+  accessToken?: string;
   onSelectClick: (recordId: string, modifiers: SelectClickModifiers) => void;
   onPreview: (recordId: string) => void;
   onRename: (recordId: string, newTitle: string) => void;
 }
 
-export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSelectClick, onPreview, onRename }: ArchiveRecordCardProps) {
+function formatMediaDuration(seconds: number | null): string | null {
+  if (seconds === null || !Number.isFinite(seconds) || seconds < 0) return null;
+  const totalSeconds = Math.floor(seconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const remainingSeconds = totalSeconds % 60;
+  return hours > 0
+    ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`
+    : `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
+export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, accessToken, onSelectClick, onPreview, onRename }: ArchiveRecordCardProps) {
   const { t, locale } = useLocale();
   const titleLinkRef = useRef<HTMLAnchorElement>(null);
   const [menuPosition, setMenuPosition] = useState<ContextMenuPosition | null>(null);
@@ -34,6 +47,28 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
   const describeLabel =
     describeStatus === "green" ? t.pages.archiveRecordCard.describeComplete
     : t.pages.archiveRecordCard.describeIncomplete;
+  const mediaSummary = record.mediaSummary;
+  const showMediaSummary = mediaSummary?.kind === "video" || mediaSummary?.kind === "audio" || mediaSummary?.kind === "image";
+  const mediaKindLabel = mediaSummary?.kind === "video" ? t.pages.archiveRecordCard.mediaVideo
+    : mediaSummary?.kind === "audio" ? t.pages.archiveRecordCard.mediaAudio
+    : mediaSummary?.kind === "image" ? t.pages.archiveRecordCard.mediaImage
+    : mediaSummary?.kind === "document" ? t.pages.archiveRecordCard.mediaDocument
+    : t.pages.archiveRecordCard.mediaUnknown;
+  const proxyLabel = mediaSummary?.proxyStatus === "ready" ? t.pages.archiveRecordCard.proxyReady
+    : mediaSummary?.proxyStatus === "processing" ? t.pages.archiveRecordCard.proxyProcessing
+    : mediaSummary?.proxyStatus === "pending" ? t.pages.archiveRecordCard.proxyPending
+    : mediaSummary?.proxyStatus === "failed" ? t.pages.archiveRecordCard.proxyFailed
+    : t.pages.archiveRecordCard.proxyMissing;
+  const inspectionLabel = mediaSummary?.inspectionStatus === "passed" ? t.pages.archiveRecordCard.inspectionPassed
+    : mediaSummary?.inspectionStatus === "warning" ? t.pages.archiveRecordCard.inspectionWarning
+    : mediaSummary?.inspectionStatus === "failed" ? t.pages.archiveRecordCard.inspectionFailed
+    : mediaSummary?.inspectionStatus === "waived" ? t.pages.archiveRecordCard.inspectionWaived
+    : mediaSummary?.inspectionStatus === "pending" ? t.pages.archiveRecordCard.inspectionPending
+    : t.pages.archiveRecordCard.inspectionMissing;
+  const previewAlt = t.pages.archiveRecordCard.mediaPreviewAlt
+    .replace("{kind}", mediaKindLabel)
+    .replace("{title}", record.title || t.pages.archiveRecordCard.fallbackRecordLabel);
+  const mediaDuration = mediaSummary ? formatMediaDuration(mediaSummary.durationSeconds) : null;
 
   const closeMenu = () => setMenuPosition(null);
 
@@ -61,6 +96,7 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
       data-size={itemSize}
       data-selected={isSelected ? "true" : "false"}
       data-record-id={record.id}
+      data-media={showMediaSummary ? "true" : "false"}
       role="listitem"
       onMouseEnter={() => onPreview(record.id)}
       onContextMenu={(e) => {
@@ -83,6 +119,36 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, onSel
           onChange={() => {}}
         />
       </div>
+      {showMediaSummary && mediaSummary ? (
+        <section className="record-card__media" aria-label={previewAlt}>
+          <div className="record-card__media-preview">
+            {mediaSummary.thumbnailStatus === "ready" && mediaSummary.thumbnailDerivativeId ? (
+              <ProtectedDerivativeImage
+                derivativeId={mediaSummary.thumbnailDerivativeId}
+                accessToken={accessToken}
+                alt={previewAlt}
+                className="record-card__thumbnail"
+                loadingLabel={t.pages.archiveRecordCard.mediaPreviewProcessing}
+                unavailableLabel={t.pages.archiveRecordCard.mediaPreviewUnavailable}
+              />
+            ) : (
+              <span className="record-card__thumbnail" role="status" data-state={mediaSummary.thumbnailStatus}>
+                {mediaSummary.thumbnailStatus === "processing" || mediaSummary.thumbnailStatus === "pending"
+                  ? t.pages.archiveRecordCard.mediaPreviewProcessing
+                  : t.pages.archiveRecordCard.mediaPreviewUnavailable}
+              </span>
+            )}
+          </div>
+          <div className="record-card__media-caption">
+            <span className="badge">{mediaKindLabel}</span>
+            {mediaDuration ? <time dir="ltr">{mediaDuration}</time> : null}
+          </div>
+          <div className="record-card__media-status">
+            <span className="badge" data-proxy-status={mediaSummary.proxyStatus}>{proxyLabel}</span>
+            <span className="badge" data-inspection-status={mediaSummary.inspectionStatus}>{inspectionLabel}</span>
+          </div>
+        </section>
+      ) : null}
       <div className="record-card__body">
         <div className="panel-title-row">
           <h2>

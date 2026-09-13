@@ -905,6 +905,21 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .record-card[data-media="true"],
+  .records-surface[data-view="list"] .record-card[data-media="true"] {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .record-card[data-media="true"] .record-card__media {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(7rem, 10rem) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .record-card[data-media="true"] .record-card__media-status {
+    align-content: start;
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {

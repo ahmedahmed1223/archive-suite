@@ -6,6 +6,10 @@ import type { ArchiveRecord } from "@/lib/archive-api";
 import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 import { ArchiveRecordCard } from "./ArchiveRecordCard";
 
+vi.mock("@/components/ProtectedDerivativeImage", () => ({
+  default: ({ derivativeId, alt }: { derivativeId: string; alt: string }) => <img src={`blob:${derivativeId}`} alt={alt} />,
+}));
+
 afterEach(cleanup);
 
 const record: ArchiveRecord = { id: "rec-1", title: "سجل تجريبي" };
@@ -147,5 +151,49 @@ describe("ArchiveRecordCard double-click inline rename", () => {
     fireEvent.keyDown(input, { key: "Enter" });
 
     expect(onRename).not.toHaveBeenCalled();
+  });
+});
+
+describe("ArchiveRecordCard media summary", () => {
+  test("renders a video thumbnail, duration, and operational state from the current media summary", () => {
+    renderCard({
+      record: {
+        ...record,
+        mediaSummary: {
+          kind: "video",
+          durationSeconds: 62,
+          thumbnailDerivativeId: "thumbnail-current",
+          thumbnailStatus: "ready",
+          proxyStatus: "processing",
+          waveformStatus: "missing",
+          inspectionStatus: "passed",
+        },
+      },
+    });
+
+    expect(screen.getByRole("img", { name: "معاينة فيديو سجل تجريبي" })).toHaveAttribute("src", "blob:thumbnail-current");
+    expect(screen.getByText("01:02")).toBeTruthy();
+    expect(screen.getByText("النسخة البديلة قيد المعالجة")).toBeTruthy();
+    expect(screen.getByText("الفحص اجتاز")).toBeTruthy();
+  });
+
+  test("does not render a thumbnail until the current derivative is ready", () => {
+    renderCard({
+      record: {
+        ...record,
+        mediaSummary: {
+          kind: "video",
+          durationSeconds: null,
+          thumbnailDerivativeId: "thumbnail-processing",
+          thumbnailStatus: "processing",
+          proxyStatus: "pending",
+          waveformStatus: "missing",
+          inspectionStatus: "pending",
+        },
+      },
+    });
+
+    expect(screen.queryByRole("img", { name: "معاينة فيديو سجل تجريبي" })).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("المعاينة قيد الإنشاء");
   });
 });

@@ -437,6 +437,50 @@
   padding-block-start: 0.2rem;
 }
 
+.record-card[data-media="true"] {
+  grid-template-columns: auto minmax(9rem, 12rem) minmax(0, 1fr);
+}
+
+.record-card__media {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-inline-size: 0;
+}
+
+.record-card__media-preview {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary);
+}
+
+.record-card__thumbnail {
+  display: grid;
+  place-items: center;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+.record-card__media-caption,
+.record-card__media-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.record-card__media-caption time {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
 .record-card__body {
   display: grid;
   gap: var(--space-3);
@@ -456,6 +500,10 @@
 
 .records-surface[data-view="list"] .record-card {
   grid-template-columns: auto minmax(0, 1fr);
+}
+
+.records-surface[data-view="list"] .record-card[data-media="true"] {
+  grid-template-columns: auto minmax(9rem, 12rem) minmax(0, 1fr);
 }
 
 .records-surface[data-view="list"] .record-card__body {
