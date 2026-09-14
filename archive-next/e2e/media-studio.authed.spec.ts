@@ -3,14 +3,17 @@ import { test, expect } from './fixtures/auth';
 const ui = expect.configure({ timeout: 15_000 });
 
 /**
- * V3-MEDIA-001 live acceptance for the unified media studio (/media/studio).
+ * V3-MEDIA-001 / V2-UI-004 live acceptance for the unified media studio
+ * (/media/studio).
  *
- * NOT RUN LIVE: this spec was authored and reviewed against the app's own
- * conventions (see scheduled-uploads.authed.spec.ts and auth-fixtures.authed.spec.ts
- * for the patterns it reuses) but was never executed, because this worktree
- * has no live Docker/Laravel stack available to it. Run it for real via
- * `pnpm verify:laravel-next:live` (or `pnpm exec playwright test media-studio`
- * against an already-running live stack) before treating it as passing.
+ * RUN LIVE 2026-09-14 via `pnpm verify:laravel-next:live` -- passing. That
+ * first real run caught two genuine bugs this spec was written to catch:
+ * (1) a Playwright strict-mode locator collision on the record title (fixed
+ * with `{ exact: true }`), and (2) a real backend defect -- the auth
+ * `refresh` endpoint rotated the access token but never re-issued the
+ * `va_media` cookie, so any session that lived past one token rotation lost
+ * media playback everywhere until logging back in (fixed in
+ * AuthController::refresh()).
  *
  * It intentionally creates a real record with a real playable media file
  * through the actual upload UI, then reaches the studio using the record id
@@ -84,7 +87,9 @@ test.describe('media studio — live acceptance', () => {
     // 3. Open the studio via the recordId query param.
     await page.goto(`/media/studio?recordId=${encodeURIComponent(recordId)}`);
 
-    await ui(page.getByText(recordTitle)).toBeVisible();
+    // exact: true -- the toolbar badge ("السجل: {title}") also contains this
+    // text as a substring, so a non-exact match hits two elements.
+    await ui(page.getByText(recordTitle, { exact: true })).toBeVisible();
 
     // No manual path/UID entry surface anywhere on the page.
     await expect(page.getByPlaceholder(/path|مسار/i)).toHaveCount(0);

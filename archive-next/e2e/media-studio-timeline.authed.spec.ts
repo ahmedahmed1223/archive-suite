@@ -3,14 +3,15 @@ import { test, expect } from './fixtures/auth';
 const ui = expect.configure({ timeout: 15_000 });
 
 /**
- * V3-MEDIA-003 live acceptance for the studio's timeline markers/comments
- * panel (/media/studio).
+ * V3-MEDIA-003 / V2-UI-004 live acceptance for the studio's timeline
+ * markers/comments panel (/media/studio).
  *
- * NOT RUN LIVE: authored and reviewed against this repo's own e2e
- * conventions (media-studio.authed.spec.ts's buildWavBuffer + upload-UI
- * pattern) but not executed here, because this worktree has no live
- * Docker/Laravel stack available to it. Run for real via
- * `pnpm verify:laravel-next:live` before treating it as passing.
+ * RUN LIVE 2026-09-14 via `pnpm verify:laravel-next:live` -- passing. The
+ * first real run surfaced that this spec was authored against guessed
+ * English control labels ('New marker', 'Add marker', 'Live'/'Polling', ...)
+ * that never matched this Arabic-first UI, plus an out-of-band API call that
+ * had no way to authenticate (page.request shares the browser's cookies but
+ * not the SPA's in-memory bearer token) -- both fixed below.
  *
  * Live-broadcast vs. polling-fallback: this repo's live-integration gate
  * (scripts/verify-next-laravel-live.mjs) does not start a Reverb server or
@@ -69,7 +70,9 @@ async function uploadRecordAndOpenStudio(page: import('@playwright/test').Page, 
   expect(recordId.length).toBeGreaterThan(0);
 
   await page.goto(`/media/studio?recordId=${encodeURIComponent(recordId)}`);
-  await ui(page.getByText(recordTitle)).toBeVisible();
+  // exact: true -- the toolbar badge ("السجل: {title}") also contains this
+  // text as a substring, so a non-exact match hits two elements.
+  await ui(page.getByText(recordTitle, { exact: true })).toBeVisible();
 
   // Let the player actually decode the file so techSpec.durationSeconds (and
   // therefore the marker strip + server-side duration cache) is populated.
@@ -92,8 +95,8 @@ test.describe('media studio timeline — live acceptance', () => {
     await mediaLocator.evaluate((el) => {
       (el as HTMLMediaElement).currentTime = 1;
     });
-    await page.getByLabel('New marker').fill('Audio glitch here');
-    await page.getByRole('button', { name: 'Add marker' }).click();
+    await page.getByLabel('علامة جديدة').fill('Audio glitch here');
+    await page.getByRole('button', { name: 'إضافة علامة' }).click();
     await ui(page.getByText('Audio glitch here')).toBeVisible();
 
     // Precise jump: seek elsewhere, then click the marker's timestamp and
@@ -102,7 +105,7 @@ test.describe('media studio timeline — live acceptance', () => {
     await mediaLocator.evaluate((el) => {
       (el as HTMLMediaElement).currentTime = 0;
     });
-    await page.getByRole('button', { name: "Jump to this marker's timestamp" }).first().click();
+    await page.getByRole('button', { name: 'الانتقال إلى توقيت هذه العلامة' }).first().click();
     await expect
       .poll(async () => mediaLocator.evaluate((el) => (el as HTMLMediaElement).currentTime))
       .toBe(1);
@@ -111,21 +114,21 @@ test.describe('media studio timeline — live acceptance', () => {
     await mediaLocator.evaluate((el) => {
       (el as HTMLMediaElement).currentTime = 0.5;
     });
-    await page.getByRole('button', { name: 'Mark range start' }).click();
+    await page.getByRole('button', { name: 'تحديد بداية المدى' }).click();
     await mediaLocator.evaluate((el) => {
       (el as HTMLMediaElement).currentTime = 2;
     });
-    await page.getByLabel('Type').selectOption('chapter');
-    await page.getByLabel('New marker').fill('Interview segment');
-    await page.getByRole('button', { name: 'Add marker' }).click();
+    await page.getByLabel('النوع').selectOption('chapter');
+    await page.getByLabel('علامة جديدة').fill('Interview segment');
+    await page.getByRole('button', { name: 'إضافة علامة' }).click();
     await ui(page.getByText('Interview segment')).toBeVisible();
 
     // Resolve, then reopen.
     const issueRow = page.getByText('Audio glitch here').locator('..').locator('..');
-    await issueRow.getByRole('button', { name: 'Resolve' }).click();
-    await ui(issueRow.getByText('Resolved')).toBeVisible();
-    await issueRow.getByRole('button', { name: 'Reopen' }).click();
-    await expect(issueRow.getByText('Resolved')).toHaveCount(0);
+    await issueRow.getByRole('button', { name: 'حلّ' }).click();
+    await ui(issueRow.getByText('تم الحل')).toBeVisible();
+    await issueRow.getByRole('button', { name: 'إعادة الفتح' }).click();
+    await expect(issueRow.getByText('تم الحل')).toHaveCount(0);
   });
 
   test('rejects a marker timestamp beyond the media\'s known duration', async ({ roleSession }) => {
@@ -151,8 +154,8 @@ test.describe('media studio timeline — live acceptance', () => {
       const media = el as HTMLMediaElement;
       media.currentTime = media.duration || 3;
     });
-    await page.getByLabel('New marker').fill('At the very end');
-    await page.getByRole('button', { name: 'Add marker' }).click();
+    await page.getByLabel('علامة جديدة').fill('At the very end');
+    await page.getByRole('button', { name: 'إضافة علامة' }).click();
     await ui(page.getByText('At the very end')).toBeVisible();
   });
 
@@ -161,15 +164,23 @@ test.describe('media studio timeline — live acceptance', () => {
     const { page } = await roleSession('editor');
     const { recordId } = await uploadRecordAndOpenStudio(page, 'خط زمني تزامن');
 
-    const modeBadge = page.getByText(/^(Live|Polling)$/).first();
+    const modeBadge = page.getByText(/^(مباشر|تحديث دوري)$/).first();
     await ui(modeBadge).toBeVisible();
     const mode = await modeBadge.textContent();
 
     // Simulate a second editor adding a marker directly through the API,
     // bypassing this page's own UI entirely -- proves the panel picks up
     // changes it did not itself cause, whether via the live channel or the
-    // next poll tick.
+    // next poll tick. page.request is a raw HTTP client: it carries the
+    // context's cookies but not the SPA's in-memory Bearer token, so a
+    // fresh token is minted the same way the app itself does on load -- by
+    // exchanging the va_refresh cookie at /api/v1/auth/refresh.
+    const refreshResponse = await page.request.post('/api/v1/auth/refresh');
+    expect(refreshResponse.ok()).toBe(true);
+    const { accessToken } = (await refreshResponse.json()) as { accessToken: string };
+
     const response = await page.request.post(`/api/v1/records/${encodeURIComponent(recordId)}/media-review-comments`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
       data: { type: 'suggestion', startSeconds: 0.2, body: 'Added by another session' },
     });
     expect(response.ok()).toBe(true);

@@ -119,16 +119,27 @@ class AuthApiTest extends TestCase
             'refresh_token_hash' => ApiToken::hash($refreshCookie),
         ]);
 
-        $this->call('POST', '/api/v1/auth/refresh', [], [
+        $refresh = $this->call('POST', '/api/v1/auth/refresh', [], [
             'va_refresh' => $refreshCookie,
         ], [], [
             'HTTP_ACCEPT' => 'application/json',
         ])
             ->assertOk()
             ->assertCookie('va_refresh')
+            ->assertCookie('va_media')
             ->assertJsonPath('ok', true);
 
         $this->assertSame(1, ApiSession::query()->count());
+
+        // The media cookie must be re-issued on every refresh, matching the
+        // freshly rotated access token -- a media element can't send an
+        // Authorization header, so a stale media cookie 401s every stream
+        // request for the rest of the session.
+        $newMediaCookie = $this->responseCookieValue($refresh, 'va_media');
+        $this->assertIsString($newMediaCookie);
+        $this->assertDatabaseHas('api_sessions', [
+            'access_token_hash' => ApiToken::hash($newMediaCookie),
+        ]);
     }
 
     public function test_a_parallel_refresh_with_the_just_rotated_cookie_recovers_within_grace(): void

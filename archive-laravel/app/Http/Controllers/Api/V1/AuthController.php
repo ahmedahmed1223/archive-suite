@@ -118,6 +118,7 @@ class AuthController extends Controller
             'expiresAt' => $accessExpiresAt->toISOString(),
         ], 200)
             ->withCookie($this->refreshCookie($refreshToken, $refreshExpiresAt, $rememberMe))
+            ->withCookie($this->mediaCookie($accessToken, $accessExpiresAt, $rememberMe))
             ->withCookie($this->sessionCookie($refreshExpiresAt, $rememberMe));
     }
 
