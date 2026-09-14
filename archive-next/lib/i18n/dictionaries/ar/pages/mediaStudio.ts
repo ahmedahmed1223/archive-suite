@@ -66,6 +66,16 @@ export const mediaStudio = {
   versions: {
     title: "الإصدارات والمشتقات"
   },
+  segments: {
+    title: "مقاطع المادة",
+    description: "مقاطع وصفية محفوظة ونطاقاتها الزمنية على النسخة الحالية.",
+    loading: "جارٍ تحميل المقاطع…",
+    error: "تعذر تحميل المقاطع: {message}",
+    empty: "لا توجد مقاطع وصفية محفوظة بعد.",
+    unbounded: "دون توقيت محدد",
+    jump: "انتقال",
+    jumpAriaLabel: "الانتقال إلى {title} عند {time}"
+  },
   timeline: {
     title: "الخط الزمني",
     description: "علامات لحظية أو لمدى زمني، مرئية لفريق العمل على هذه المادة.",

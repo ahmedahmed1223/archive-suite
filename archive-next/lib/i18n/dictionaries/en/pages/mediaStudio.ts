@@ -66,6 +66,16 @@ export const mediaStudio = {
   versions: {
     title: "Versions & derivatives"
   },
+  segments: {
+    title: "Asset segments",
+    description: "Saved descriptive segments and their time ranges on the current version.",
+    loading: "Loading segments…",
+    error: "Could not load segments: {message}",
+    empty: "No descriptive segments have been saved yet.",
+    unbounded: "No time range",
+    jump: "Jump",
+    jumpAriaLabel: "Jump to {title} at {time}"
+  },
   timeline: {
     title: "Timeline",
     description: "Point-in-time and range markers, visible to the team working on this media.",
