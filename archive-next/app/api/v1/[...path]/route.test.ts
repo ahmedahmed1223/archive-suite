@@ -32,14 +32,14 @@ describe("/api/v1 proxy errors", () => {
     expect(await response.json()).toEqual({ ok: false, error: "تعذر الاتصال بخدمة API." });
   });
 
-  it("uses Accept-Language when no forwarded locale is present", async () => {
+  it("keeps Arabic as the default when no forwarded locale is present", async () => {
     vi.stubEnv("ARCHIVE_API_BASE_URL", "");
 
     const response = await GET(new Request("http://next.test/api/v1/records", {
       headers: { "Accept-Language": "en-US,en;q=0.9" }
     }), context);
 
-    expect((await response.json()).error).toBe("The API service is not configured.");
+    expect((await response.json()).error).toBe("خدمة API غير مهيأة.");
   });
 
   it("uses the locale cookie when the proxy header is unavailable", async () => {

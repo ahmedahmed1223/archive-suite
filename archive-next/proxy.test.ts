@@ -22,14 +22,14 @@ describe("locale request forwarding", () => {
     expect(response.headers.get("x-middleware-request-x-archive-locale-cookie")).toBe("1");
   });
 
-  it("forwards the supported browser language when no locale cookie exists", () => {
+  it("keeps Arabic as the default when no locale cookie exists", () => {
     const request = new NextRequest("http://localhost/login", {
       headers: { "accept-language": "en-US,en;q=0.9" },
     });
 
     const response = proxy(request);
 
-    expect(forwardedLocale(response)).toBe("en");
+    expect(forwardedLocale(response)).toBe("ar");
     expect(response.headers.get("x-middleware-request-x-archive-locale-cookie")).toBe("0");
   });
 });

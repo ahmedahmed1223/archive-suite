@@ -18,6 +18,7 @@ import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack 
 import { Skeleton } from "@/components/ui/Skeleton";
 import { iconRegistry } from "@/lib/icon-registry";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
+import { hierarchyTreeCopy } from "@/lib/i18n/dictionaries/hierarchy-tree";
 
 type LoadState =
   | { status: "loading" }
@@ -34,9 +35,7 @@ export default function CollectionsPage() {
   const { locale, t } = useLocale();
   const copy = t.pages.collections;
   const hierarchyMoveCopy = copy.hierarchyMove;
-  const hierarchyTreeCopy = locale === "ar"
-    ? { expand: "توسيع أبناء {title}", collapse: "طي أبناء {title}", childCount: "{count} عقد تابعة" }
-    : { expand: "Expand children of {title}", collapse: "Collapse children of {title}", childCount: "{count} children" };
+  const hierarchyTreeLabels = hierarchyTreeCopy(locale);
   const authorityCopy = copy.authority;
   const authorityKindLabels: Record<AuthorityEntity["kind"], string> = copy.authorityKinds;
   const curatedCopy = copy.curated;
@@ -400,7 +399,7 @@ export default function CollectionsPage() {
         {archivalNodes.length > 0 ? (
           <ArchivalHierarchyTree
             nodes={archivalNodes}
-            copy={{ ...hierarchyTreeCopy, move: hierarchyMoveCopy.move, levelLabels: copy.hierarchyLevels }}
+            copy={{ ...hierarchyTreeLabels, move: hierarchyMoveCopy.move, levelLabels: copy.hierarchyLevels }}
             ariaLabel={copy.hierarchyTitle}
             onMove={canManageCollections ? (node) => { setMovingNodeId(node.id); setMoveParentId(node.parentId || ""); setMoveAffectedCount(null); } : undefined}
           />
