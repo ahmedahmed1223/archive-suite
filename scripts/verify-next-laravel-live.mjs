@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const containerName = `archive-laravel-e2e-${process.pid}`;
+const e2eDatabasePath = `/tmp/archive-laravel-e2e-${process.pid}.sqlite`;
+const e2eConfigCachePath = `/tmp/archive-laravel-e2e-${process.pid}-config.php`;
 // Built from the same Dockerfile.worker as scripts/laravel-docker.mjs and the
 // production images (V1-202) — composer.lock resolves league/flysystem-ftp,
 // which requires ext-ftp. Plain `composer:latest` lacks it and fails
@@ -157,6 +159,26 @@ async function main() {
       // be subject to the production-wide API limiter.
       "-e",
       "APP_ENV=testing",
+      // Never run migrations or queue traffic against the repository's local
+      // database.sqlite. The gate owns this per-container /tmp file and its
+      // lifecycle, so a failed test cannot alter a developer's local data.
+      "-e",
+      `DB_DATABASE=${e2eDatabasePath}`,
+      "-e",
+      `APP_CONFIG_CACHE=${e2eConfigCachePath}`,
+      "-e",
+      "DB_CONNECTION=sqlite",
+      "-e",
+      "DB_QUEUE_CONNECTION=sqlite",
+      // Keep HTTP session and scheduler-heartbeat cache state out of both
+      // SQLite files. They are infrastructure concerns for this disposable
+      // integration environment, not persistence under test.
+      "-e",
+      "CACHE_STORE=file",
+      "-e",
+      "SESSION_DRIVER=file",
+      "-e",
+      "QUEUE_CONNECTION=database",
       // The live gate deliberately runs the HTTP server, scheduler and a
       // database-backed queue worker against one throwaway SQLite file. WAL
       // plus a short busy timeout prevents transient writer contention from
@@ -175,7 +197,11 @@ async function main() {
       // actually draining scheduled-uploads — `php artisan serve` alone only
       // serves HTTP. Both run backgrounded inside this one container so the
       // due-now->completed scenario has something to complete it against.
-      "test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction; php artisan config:clear && php artisan migrate:fresh --seed --seeder=NextIntegrationSeeder --force && (php artisan reverb:start &) && (php artisan schedule:work &) && (php artisan queue:work --queue=scheduled-uploads,default --tries=3 --sleep=1 &) && php artisan serve --host=0.0.0.0 --port=8000",
+      // `php artisan serve` strips non-whitelisted environment variables
+      // before it starts PHP's built-in server. Run the Laravel router
+      // directly so the server inherits this harness's isolated database,
+      // cache, and session settings instead of falling back to .env.
+      `test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction; rm -f ${e2eDatabasePath} ${e2eConfigCachePath}; touch ${e2eDatabasePath}; php artisan config:clear && php artisan migrate:fresh --seed --seeder=NextIntegrationSeeder --force && php artisan config:cache && (php artisan reverb:start &) && (php artisan schedule:work &) && (php artisan queue:work --queue=scheduled-uploads,default --tries=3 --sleep=1 &) && cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php`,
     ]);
   }
 
