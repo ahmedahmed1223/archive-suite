@@ -16,6 +16,20 @@ export const mediaStudio = {
   attachmentLabel: "المرفق",
   shortcutsHint: "مسافة للتشغيل أو الإيقاف المؤقت · سهم يسار/يمين للتقديم أو التأخير 5 ثوانٍ — معطّل أثناء الكتابة.",
   mobileNotice: "عرض مبسّط: المشغّل والتفريغ والتعليقات. افتح الصفحة على شاشة أوسع للوصول إلى الإصدارات والمهام.",
+  readiness: {
+    title: "جاهزية المادة",
+    nextAction: "الإجراء التالي",
+    statusReady: "مكتمل",
+    statusNeedsAttention: "يتطلب استكمالًا",
+    openSource: "إضافة ملف المصدر",
+    openTechnicalCheck: "فتح مهام الفحص",
+    openMetadata: "فتح التوصيف",
+    items: {
+      source: "ملف المصدر",
+      technical: "الفحص التقني",
+      description: "التفريغ والوصف"
+    }
+  },
   techSpec: {
     title: "المواصفات التقنية",
     dimensionsLabel: "الأبعاد",

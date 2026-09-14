@@ -21,6 +21,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { AppDictionary } from "@/lib/i18n/dictionaries";
 import MediaDerivativesTree from "../../archive/[id]/MediaDerivativesTree";
 import StudioCommentsPanel from "./StudioCommentsPanel";
+import StudioReadinessStrip from "./StudioReadinessStrip";
 import StudioRecordTasks from "./StudioRecordTasks";
 import styles from "./studio.module.css";
 import "../media.css";
@@ -172,6 +173,16 @@ export default function MediaStudioPage() {
   const transcriptText = state.status === "ready" ? state.record.transcript ?? "" : "";
   const cues = useMemo(() => parseSubtitles(transcriptText), [transcriptText]);
   const activeCue = useMemo(() => getActiveCue(cues, currentTime), [cues, currentTime]);
+  const readinessAction =
+    state.status === "ready"
+      ? !state.sourcePath
+        ? { href: "/uploads", label: copy.readiness.openSource }
+        : techSpec.durationSeconds === null
+          ? { href: "/media/jobs", label: copy.readiness.openTechnicalCheck }
+          : !transcriptText.trim()
+            ? { href: `/metadata?recordId=${encodeURIComponent(state.record.id)}`, label: copy.readiness.openMetadata }
+            : null
+      : null;
 
   return (
     <AppShell subtitle={t.pageTitles.mediaStudio} contentClassName={styles.studioContent}>
@@ -221,6 +232,13 @@ export default function MediaStudioPage() {
 
       {state.status === "ready" ? (
         <>
+          <StudioReadinessStrip
+            hasSource={Boolean(state.sourcePath)}
+            hasTechnicalSpec={techSpec.durationSeconds !== null}
+            hasTranscript={Boolean(transcriptText.trim())}
+            copy={copy.readiness}
+            action={readinessAction ? <a className="button button-secondary" href={readinessAction.href}>{readinessAction.label}</a> : null}
+          />
           <p className={`helper-text ${styles.mobileNotice}`}>{copy.mobileNotice}</p>
 
           <div className={styles.studioGrid}>

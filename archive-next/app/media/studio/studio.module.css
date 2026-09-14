@@ -9,6 +9,72 @@
   display: block;
 }
 
+.readinessStrip {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-secondary);
+  border-inline-start: 3px solid var(--color-accent-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-secondary);
+}
+
+.readinessEyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.readinessList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.readinessList li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 var(--space-2);
+  align-items: center;
+  min-inline-size: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  font-size: var(--font-size-sm);
+}
+
+.readinessList li > span:first-child {
+  display: grid;
+  place-items: center;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border-radius: 50%;
+  font-weight: var(--font-weight-bold);
+}
+
+.readinessList small {
+  grid-column: 2;
+  color: var(--color-text-secondary);
+}
+
+.readinessReady > span:first-child { background: var(--color-status-success); color: var(--color-text-inverse); }
+.readinessNeedsAttention > span:first-child { background: var(--color-status-warning); color: var(--color-text-primary); }
+
+.nextAction {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
 .studioGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -116,5 +182,15 @@
   .advancedPanels {
     display: grid;
     gap: var(--space-4);
+  }
+}
+
+@media (max-width: 540px) {
+  .readinessList {
+    grid-template-columns: 1fr;
+  }
+
+  .nextAction .button {
+    inline-size: 100%;
   }
 }

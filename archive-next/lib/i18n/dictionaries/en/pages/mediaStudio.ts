@@ -16,6 +16,20 @@ export const mediaStudio = {
   attachmentLabel: "Attachment",
   shortcutsHint: "Space to play or pause · Left/Right arrow to seek 5 seconds — disabled while typing.",
   mobileNotice: "Simplified view: player, transcript, and comments. Open on a wider screen for versions and tasks.",
+  readiness: {
+    title: "Asset readiness",
+    nextAction: "Next action",
+    statusReady: "Complete",
+    statusNeedsAttention: "Needs attention",
+    openSource: "Add source file",
+    openTechnicalCheck: "Open check tasks",
+    openMetadata: "Open description",
+    items: {
+      source: "Source file",
+      technical: "Technical check",
+      description: "Transcript & description"
+    }
+  },
   techSpec: {
     title: "Technical specifications",
     dimensionsLabel: "Dimensions",
