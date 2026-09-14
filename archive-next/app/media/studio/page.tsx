@@ -21,6 +21,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { AppDictionary } from "@/lib/i18n/dictionaries";
 import MediaDerivativesTree from "../../archive/[id]/MediaDerivativesTree";
 import StudioCommentsPanel from "./StudioCommentsPanel";
+import StudioAdvancedPanels from "./StudioAdvancedPanels";
 import StudioReadinessStrip from "./StudioReadinessStrip";
 import StudioRecordTasks from "./StudioRecordTasks";
 import styles from "./studio.module.css";
@@ -291,7 +292,7 @@ export default function MediaStudioPage() {
             <div className={styles.sideColumn}>
               <StudioCommentsPanel recordId={state.record.id} store={state.record.store || "archive-items"} />
 
-              <div className={styles.advancedPanels}>
+              <StudioAdvancedPanels label={copy.advancedPanels.label}>
                 <MediaDerivativesTree record={state.record} />
                 <StudioTimelinePanel
                   recordId={state.record.id}
@@ -302,7 +303,7 @@ export default function MediaStudioPage() {
                   onSeek={seekTo}
                 />
                 <StudioRecordTasks recordId={state.record.id} />
-              </div>
+              </StudioAdvancedPanels>
             </div>
           </div>
         </>

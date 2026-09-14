@@ -16,6 +16,9 @@ export const mediaStudio = {
   attachmentLabel: "Attachment",
   shortcutsHint: "Space to play or pause · Left/Right arrow to seek 5 seconds — disabled while typing.",
   mobileNotice: "Simplified view: player, transcript, and comments. Open on a wider screen for versions and tasks.",
+  advancedPanels: {
+    label: "Versions, timeline, and tasks"
+  },
   readiness: {
     title: "Asset readiness",
     nextAction: "Next action",

@@ -106,8 +106,23 @@
   grid-column: 1;
 }
 
+.advancedDisclosure {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.advancedToggle {
+  inline-size: 100%;
+  justify-content: center;
+}
+
 .advancedPanels {
   display: none;
+}
+
+.advancedPanels.isOpen {
+  display: grid;
+  gap: var(--space-4);
 }
 
 /* V3-MEDIA-003: proportional 0..duration marker strip for timeline comments. */
@@ -182,6 +197,10 @@
   .advancedPanels {
     display: grid;
     gap: var(--space-4);
+  }
+
+  .advancedToggle {
+    display: none;
   }
 }
 
