@@ -7,6 +7,7 @@ import EmptyState from "@/components/EmptyState";
 import PageToolbar from "@/components/PageToolbar";
 import ChangeImpactPreview from "@/components/ChangeImpactPreview";
 import IconPicker from "@/components/IconPicker";
+import ArchivalHierarchyTree from "@/components/ArchivalHierarchyTree";
 import { useCapability } from "@/components/RoleGate";
 import { createArchiveApiClient, type ArchivalNode, type ArchiveRecord, type AuthorityEntity, type Collection, type CreateCollectionPayload, type CuratedCollection } from "@/lib/archive-api";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -33,6 +34,9 @@ export default function CollectionsPage() {
   const { locale, t } = useLocale();
   const copy = t.pages.collections;
   const hierarchyMoveCopy = copy.hierarchyMove;
+  const hierarchyTreeCopy = locale === "ar"
+    ? { expand: "توسيع أبناء {title}", collapse: "طي أبناء {title}", childCount: "{count} عقد تابعة" }
+    : { expand: "Expand children of {title}", collapse: "Collapse children of {title}", childCount: "{count} children" };
   const authorityCopy = copy.authority;
   const authorityKindLabels: Record<AuthorityEntity["kind"], string> = copy.authorityKinds;
   const curatedCopy = copy.curated;
@@ -394,15 +398,12 @@ export default function CollectionsPage() {
         ) : null}
         {!archivalNodesError && archivalNodes.length === 0 ? <p className="helper-text">{copy.hierarchyEmpty}</p> : null}
         {archivalNodes.length > 0 ? (
-          <ol className="mobile-field-list" aria-label={copy.hierarchyTitle}>
-            {archivalNodes.map((node) => (
-              <li key={node.id}>
-                <strong>{[...node.path.map((entry) => entry.title), node.title].join(" › ")}</strong>
-                <span>{node.referenceCode || node.level}</span>
-                {canManageCollections ? <button className="button button-secondary button-sm" type="button" onClick={() => { setMovingNodeId(node.id); setMoveParentId(node.parentId || ""); setMoveAffectedCount(null); }}>{hierarchyMoveCopy.move}</button> : null}
-              </li>
-            ))}
-          </ol>
+          <ArchivalHierarchyTree
+            nodes={archivalNodes}
+            copy={{ ...hierarchyTreeCopy, move: hierarchyMoveCopy.move, levelLabels: copy.hierarchyLevels }}
+            ariaLabel={copy.hierarchyTitle}
+            onMove={canManageCollections ? (node) => { setMovingNodeId(node.id); setMoveParentId(node.parentId || ""); setMoveAffectedCount(null); } : undefined}
+          />
         ) : null}
         {movingNodeId ? (
           <div className="panel panel-compact">
