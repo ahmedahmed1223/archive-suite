@@ -265,6 +265,11 @@ async function main() {
       ...process.env,
       E2E_BASE_URL: nextUrl,
       ARCHIVE_API_BASE_URL: apiBaseUrl,
+      // Keep both Playwright's per-test output and its HTML report in the
+      // ignored workspace. A successful live gate must not make a later
+      // repository-hygiene gate fail merely because it left QA artifacts.
+      PLAYWRIGHT_OUTPUT_DIR: process.env.PLAYWRIGHT_OUTPUT_DIR || path.join(ROOT, ".tmp", `playwright-live-${process.pid}`),
+      PLAYWRIGHT_HTML_OUTPUT_DIR: process.env.PLAYWRIGHT_HTML_OUTPUT_DIR || path.join(ROOT, ".tmp", `playwright-live-report-${process.pid}`),
     },
   });
 

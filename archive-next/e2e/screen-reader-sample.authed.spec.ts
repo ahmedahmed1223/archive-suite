@@ -32,7 +32,10 @@ const TARGET_ROUTES = [
 /** Enough to cross the nav and reach page content; not a full-page sweep. */
 const MAX_FOCUS_STOPS = 40;
 
-const EVIDENCE_DIR = path.resolve(process.cwd(), 'test-results/screen-reader-sample');
+const EVIDENCE_DIR = path.resolve(
+  process.env.PLAYWRIGHT_OUTPUT_DIR ?? path.resolve(process.cwd(), 'test-results'),
+  'screen-reader-sample',
+);
 
 interface FocusStop {
   readonly index: number;
