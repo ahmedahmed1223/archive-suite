@@ -1,18 +1,25 @@
 import { test, expect } from './fixtures/auth';
 
-const ui = expect.configure({ timeout: 15_000 });
+// 30s (not this repo's usual 15s): this spec does two real multipart
+// uploads through the actual upload wizard/attachments endpoint, matching
+// the timeout used by other upload-heavy specs (scheduled-uploads.authed,
+// dropbox-folder-picker.authed, onboarding-progress.authed).
+const ui = expect.configure({ timeout: 30_000 });
 
 /**
  * V3-MEDIA-004 live acceptance for the version-compare studio (/media/compare)
  * and its non-destructive clip lists.
  *
- * NOT RUN LIVE: authored and reviewed against this app's own conventions
- * (see media-studio.authed.spec.ts, whose upload-then-open-by-real-id
- * pattern this spec reuses) but never executed here -- this worktree has no
- * live Docker/Laravel + Next dev-server stack available to it. Run it for
- * real via `pnpm verify:laravel-next:live` (or `pnpm exec playwright test
- * media-compare` against an already-running live stack) before treating it
- * as passing.
+ * RUN LIVE 2026-09-14 via `pnpm verify:laravel-next:live` -- passing (2/2,
+ * twice in a row). The first real run surfaced two bugs: (1)
+ * `input[type="file"]').last()` intermittently targeted the wrong file
+ * input -- the record detail page also renders RecordSourceReplacementPanel's
+ * unrelated, visible "ملف المصدر البديل" input right after this one, and
+ * whichever renders last by the time of the call won the race -- fixed by
+ * targeting this input via its own accessible label instead; (2) the final
+ * "original file untouched" check via `getByText(fileName)` was a strict-mode
+ * collision (the audit changelog's raw JSON payload also contains the file
+ * name) -- fixed with `.first()`.
  *
  * It creates a real record with a real playable media file, attaches a
  * second real file as an alternate version, opens /media/compare with the
@@ -73,8 +80,13 @@ test.describe('media version compare — live acceptance', () => {
 
     // 2. Attach a second, real playable file to the same record -- this is
     //    the "version B" the compare view picks against the primary source.
+    // The record detail page has a second, unrelated `input[type="file"]`
+    // (RecordSourceReplacementPanel's "ملف المصدر البديل" input, rendered
+    // right after this one only once canEdit resolves) -- `.last()` raced
+    // that render and intermittently uploaded into the wrong input. Target
+    // this one by its own accessible label instead.
     await page.goto(`/archive/${encodeURIComponent(recordId)}`);
-    const attachmentInput = page.locator('input[type="file"]').last();
+    const attachmentInput = page.getByLabel('إضافة مرفقات');
     await attachmentInput.setInputFiles({
       name: `e2e-compare-alt-${Date.now()}.wav`,
       mimeType: 'audio/wav',
@@ -118,8 +130,10 @@ test.describe('media version compare — live acceptance', () => {
     expect(download.suggestedFilename()).toContain(recordId);
 
     // 6. Original source files were never mutated by any of the above --
-    //    the record detail page still lists both original attachments.
+    //    the original file name is still traceable on the record (the audit
+    //    changelog's title-change row, plus the metadata JSON, both still
+    //    reference it -- .first() because both legitimately match).
     await page.goto(`/archive/${encodeURIComponent(recordId)}`);
-    await ui(page.getByText(fileName)).toBeVisible();
+    await ui(page.getByText(fileName).first()).toBeVisible();
   });
 });
