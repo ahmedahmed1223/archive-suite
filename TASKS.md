@@ -994,15 +994,27 @@
   `GOOGLE_CLOUD_PROJECT=12079300562270009833` (الخادم يقرأ هذا المتغير لا
   `STITCH_PROJECT_ID`). تحقّق حي: جلسة PowerShell جديدة كاملة (كلا
   الإصدارين) تُشغّل `gcloud --version` بالاسم المجرد بنجاح وتقرأ المتغير
-  الصحيح. تنبيه صادق: هذا يصلح فئة أخطاء التقاط PATH الغامض؛ إن كانت أداة
-  Stitch الفعلية (المحقونة داخل Codex) تستدعي `gcloud` عبر `spawn` بلا shell
-  مباشرة في كودها الخاص، فهذا الإصلاح الخارجي لا يغطي تلك الحالة ويحتاج تعديل
-  مصدر تلك الأداة نفسها — لم تُختبر أدوات Stitch المحقونة فعليًا من هذه
-  الجلسة لعدم توفرها هنا.
-  التالي: من جلسة تملك أدوات Stitch المحقونة (Codex)، أعد محاولة `init` أو
-  `generate_screen_from_text` بعد فتح جلسة PowerShell جديدة، ثم استخدم
-  المشروع `12079300562270009833` ونظام التصميم الموجود لتوليد شاشة متخصصة
-  واحدة ومراجعتها قبل إدخالها في الكود.
+  الصحيح.
+  **العائق مرفوع 2026-09-15 — الطريق كان أبسط من كل ما سبق.** مسار gcloud/ADC
+  لم يكن ضروريًا أصلًا: خادم Stitch MCP عام على `https://stitch.googleapis.com/mcp`
+  ويقبل مصادقة بمفتاح API عبر ترويسة `X-Goog-Api-Key` (المفتاح من
+  stitch.withgoogle.com ← Stitch Settings ← API Keys)، وهو مجاني. أُضيف إلى
+  Claude Code عبر `claude mcp add --transport http stitch ... --header ... -s user`
+  فصارت 18 أداة Stitch متاحة مباشرة في الجلسة. المصدر الرسمي:
+  `github.com/gemini-cli-extensions/stitch`. (لمن يريد مسار ADC لاحقًا، الخطوتان
+  الناقصتان كانتا `gcloud beta services mcp enable stitch.googleapis.com` ومنح
+  الدور `roles/serviceusage.serviceUsageConsumer`.)
+  تحقّق حي من الاتصال 2026-09-15: `list_projects` أعاد 5 مشاريع فعلية،
+  و`get/list` على `projects/12079300562270009833` أكّد العنوان «Archive Suite
+  v1.6 — Unified Operations»، و`list_design_systems` أعاد `Operational
+  Excellence` = `assets/769859ba548141418e0b4955e3a21f00` مطابقًا للموثّق،
+  و`list_screens` أعاد **23 شاشة** — ما يثبت أن `.stitch/metadata.json` (15
+  شاشة) فهرس محلي قديم لا مصدر عدّ.
+  ما يزال مفتوحًا: لا توجد ضمن الـ23 أي شاشة لاستوديو الوسائط/فحص الفيديو، ما
+  يؤكد أن محاولة `generate_screen_from_text` السابقة فشلت صامتة ولم تُنشئ شيئًا.
+  التالي: توليد شاشة `Video Asset Workspace` واحدة على المشروع أعلاه بنظام
+  التصميم المذكور، بمطالبة عربية RTL بنيوية، ثم مراجعتها مقابل عقود Laravel
+  وNext.js قبل إدخالها في الكود. لا تُسجَّل المهمة منجزة قبل وجود الشاشة فعليًا.
 
 ### بوابة الإطلاق
 
