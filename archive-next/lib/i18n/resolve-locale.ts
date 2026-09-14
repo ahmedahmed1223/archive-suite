@@ -6,37 +6,17 @@ interface RequestLocaleInput {
   fallback?: AppLocale;
 }
 
-function browserLocale(acceptLanguage: string | null | undefined): AppLocale | null {
-  if (!acceptLanguage) return null;
-
-  const candidates = acceptLanguage
-    .split(",")
-    .map((entry, index) => {
-      const [languageRange = "", ...parameters] = entry.trim().split(";");
-      const qualityParameter = parameters.find((parameter) => parameter.trim().startsWith("q="));
-      const parsedQuality = qualityParameter ? Number.parseFloat(qualityParameter.trim().slice(2)) : 1;
-      const locale = languageRange.toLowerCase().split("-")[0];
-
-      return {
-        index,
-        locale: isAppLocale(locale) ? locale : null,
-        quality: Number.isFinite(parsedQuality) ? parsedQuality : 0,
-      };
-    })
-    .filter((candidate) => candidate.locale !== null && candidate.quality > 0)
-    .sort((left, right) => right.quality - left.quality || left.index - right.index);
-
-  return candidates[0]?.locale ?? null;
-}
-
 export function resolveRequestLocale({
   cookie,
-  acceptLanguage,
   fallback = "ar",
 }: RequestLocaleInput): AppLocale {
   if (isAppLocale(cookie)) return cookie;
 
-  return browserLocale(acceptLanguage) ?? fallback;
+  // Arabic is the product's intentional first-run language. Browser headers
+  // are an ambient preference, not an explicit workspace choice; a saved
+  // locale cookie remains the only way a returning visitor changes it before
+  // the client restores their deliberate local preference.
+  return fallback;
 }
 
 export function directionFor(locale: AppLocale): TextDirection {

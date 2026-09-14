@@ -13,14 +13,14 @@ describe("resolveRequestLocale", () => {
     ).toBe("en");
   });
 
-  it("chooses the highest-ranked supported browser language", () => {
+  it("keeps Arabic as the product default for a new visitor with an English browser", () => {
     expect(
       resolveRequestLocale({
         cookie: null,
         acceptLanguage: "fr-FR,en-US;q=0.8,ar;q=0.4",
         fallback: "ar",
       }),
-    ).toBe("en");
+    ).toBe("ar");
   });
 
   it("falls back to Arabic when stored and browser values are unsupported", () => {
