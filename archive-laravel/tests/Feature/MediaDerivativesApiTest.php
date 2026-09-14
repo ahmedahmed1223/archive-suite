@@ -294,6 +294,44 @@ class MediaDerivativesApiTest extends TestCase
             ->assertJsonPath('derivatives.0.derivativeType', 'waveform');
     }
 
+    public function test_media_representations_list_the_current_source_and_never_include_a_stale_derivative(): void
+    {
+        $disk = config('ingest.disk');
+        Storage::fake($disk);
+        Storage::disk($disk)->put('ingest/uploads/representation-source.txt', 'original');
+        $this->seedRecord(
+            'representation-record',
+            hash('sha256', 'original'),
+            'ingest/uploads/representation-source.txt',
+            'representation-source.txt',
+        );
+
+        $this->requestDerivative('representation-record', 'thumbnail', []);
+
+        $current = $this->getJson('/api/v1/records/representation-record/media-representations', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonCount(2, 'representations');
+
+        $this->assertSame(['source', 'thumbnail'], array_column($current->json('representations'), 'type'));
+        $this->assertSame(
+            ['record:'.hash('sha256', 'original'), 'record:'.hash('sha256', 'original')],
+            array_column($current->json('representations'), 'versionToken'),
+        );
+        $this->assertArrayNotHasKey('storageKey', $current->json('representations.0'));
+
+        $this->post('/api/v1/records/representation-record/source-replacements', [
+            'file' => UploadedFile::fake()->createWithContent('replacement.txt', 'replacement'),
+        ], $this->authHeaders())->assertOk();
+
+        $afterReplacement = $this->getJson('/api/v1/records/representation-record/media-representations', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonCount(1, 'representations');
+
+        $this->assertSame('source', $afterReplacement->json('representations.0.type'));
+        $this->assertSame('record:'.hash('sha256', 'replacement'), $afterReplacement->json('representations.0.versionToken'));
+    }
+
     public function test_a_failed_generation_can_be_retried_against_the_same_cache_key(): void
     {
         $this->seedRecord('record-11', 'checksum-11');

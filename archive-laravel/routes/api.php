@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\V1\IntakeTemplatesController;
 use App\Http\Controllers\Api\V1\InvitationsController;
 use App\Http\Controllers\Api\V1\LinkAuditController;
 use App\Http\Controllers\Api\V1\MediaDerivativesController;
+use App\Http\Controllers\Api\V1\MediaRepresentationsController;
 use App\Http\Controllers\Api\V1\MediaInspectionsController;
 use App\Http\Controllers\Api\V1\MediaQcOverridesController;
 use App\Http\Controllers\Api\V1\MontageInterchangeController;
@@ -449,6 +450,7 @@ Route::prefix('v1')->group(function (): void {
         // a record; /media-derivatives is the request+read endpoint keyed
         // by the derivative's own id.
         Route::get('/records/{id}/media-derivatives', [MediaDerivativesController::class, 'index']);
+        Route::get('/records/{id}/media-representations', [MediaRepresentationsController::class, 'index']);
           Route::get('/records/{id}/media-inspections', [MediaInspectionsController::class, 'index']);
         Route::post('/montage-projects/{id}/interchange/cmx-preview', [MontageInterchangeController::class, 'previewCmx']);
         Route::post('/montage-projects/{id}/interchange/cmx-apply', [MontageInterchangeController::class, 'applyCmx']);

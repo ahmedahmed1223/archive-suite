@@ -45,6 +45,15 @@ final class MediaDerivativeService
     }
 
     /**
+     * Exposes the live source identity for read-only representation views.
+     * Derivatives must use this same token to be included in the inventory.
+     */
+    public function resolveCurrentVersionToken(string $recordStore, string $recordUid): string
+    {
+        return $this->identity->resolveVersionToken($recordStore, $recordUid, null);
+    }
+
+    /**
      * Resolves (or creates) the MediaDerivative row for this exact
      * record/attachment + type + live version + settings combination.
      *

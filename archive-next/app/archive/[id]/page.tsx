@@ -14,6 +14,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { type AppDictionary } from "@/lib/i18n/dictionaries";
 import GeotagPanel from "./GeotagPanel";
 import MediaDerivativesTree from "./MediaDerivativesTree";
+import MediaRepresentationsPanel from "./MediaRepresentationsPanel";
 import MediaInspectionsPanel from "./MediaInspectionsPanel";
 import { RecordDescribeForm, type RecordDescribePatch } from "./RecordDescribeForm";
 import { RelationPreviewPanel } from "./RelationPreviewPanel";
@@ -896,6 +897,7 @@ export default function ArchiveDetailPage() {
 
           <div className="page-section">
             <MediaInspectionsPanel record={state.record} />
+            <MediaRepresentationsPanel record={state.record} />
             <MediaDerivativesTree record={state.record} />
             <RecordAttachmentsPanel recordId={id} store={state.record.store || "archive-items"} />
             <RecordSourceReplacementPanel recordId={id} canEdit={canEditRecords} />

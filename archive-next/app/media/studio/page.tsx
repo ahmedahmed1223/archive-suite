@@ -20,6 +20,7 @@ import { formatCueTime, getActiveCue, parseSubtitles } from "@/lib/media/subtitl
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { AppDictionary } from "@/lib/i18n/dictionaries";
 import MediaDerivativesTree from "../../archive/[id]/MediaDerivativesTree";
+import MediaRepresentationsPanel from "../../archive/[id]/MediaRepresentationsPanel";
 import MediaInspectionsPanel from "../../archive/[id]/MediaInspectionsPanel";
 import StudioCommentsPanel from "./StudioCommentsPanel";
 import StudioAdvancedPanels from "./StudioAdvancedPanels";
@@ -296,6 +297,7 @@ export default function MediaStudioPage() {
 
               <StudioAdvancedPanels label={copy.advancedPanels.label}>
                 <MediaDerivativesTree record={state.record} />
+                <MediaRepresentationsPanel record={state.record} />
                 <MediaInspectionsPanel record={state.record} />
                 <StudioRecordSegments recordId={state.record.id} onSeek={seekTo} />
                 <StudioTimelinePanel

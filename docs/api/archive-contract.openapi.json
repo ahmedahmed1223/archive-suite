@@ -5481,6 +5481,60 @@
         }
       }
     },
+    "/records/{id}/media-representations": {
+      "get": {
+        "tags": [
+          "Media Representations"
+        ],
+        "summary": "List the current source and current derived media representations for a record",
+        "description": "Returns only representations pinned to the record's live source version. It never invents preservation or mezzanine copies and never exposes storage paths or keys.",
+        "operationId": "listMediaRepresentations",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "store",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current media representations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaRepresentationsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/records/{id}/media-inspections": {
       "get": {
         "tags": [
@@ -25228,6 +25282,87 @@
           "thumbnail",
           "waveform",
           "proxy"
+        ]
+      },
+      "MediaRepresentationType": {
+        "type": "string",
+        "description": "Operational role of a media copy. Preservation and mezzanine are listed only once the system records an actual copy.",
+        "enum": [
+          "source",
+          "preservation",
+          "mezzanine",
+          "proxy",
+          "thumbnail",
+          "waveform",
+          "text",
+          "output"
+        ]
+      },
+      "MediaRepresentation": {
+        "type": "object",
+        "description": "A source or derived media copy pinned to the record's current source version. Storage paths and keys are intentionally absent.",
+        "required": [
+          "id",
+          "type",
+          "status",
+          "versionToken",
+          "isCurrentVersion",
+          "derivativeId",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MediaRepresentationType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MediaDerivativeStatus"
+          },
+          "versionToken": {
+            "type": "string"
+          },
+          "isCurrentVersion": {
+            "type": "boolean",
+            "const": true
+          },
+          "derivativeId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MediaRepresentationsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OkEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "representations"
+            ],
+            "properties": {
+              "representations": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MediaRepresentation"
+                }
+              }
+            }
+          }
         ]
       },
       "MediaDerivativeStatus": {

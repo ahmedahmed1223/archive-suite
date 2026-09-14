@@ -104,6 +104,8 @@ export type MediaDerivative = GeneratedSchemas["MediaDerivative"];
 export type MediaDerivativeType = GeneratedSchemas["MediaDerivativeType"];
 export type MediaDerivativeSettings = GeneratedSchemas["MediaDerivativeSettings"];
 export type MediaDerivativeRequestPayload = GeneratedSchemas["MediaDerivativeRequest"];
+export type MediaRepresentation = GeneratedSchemas["MediaRepresentation"];
+export type MediaRepresentationType = GeneratedSchemas["MediaRepresentationType"];
 
 export type ScheduledUploadStatus = GeneratedSchemas["ScheduledUploadStatus"];
 export type ScheduledUpload = GeneratedSchemas["ScheduledUpload"];
@@ -1439,6 +1441,11 @@ export interface ArchiveApiClient {
     params?: { store?: string; attachmentId?: string; type?: MediaDerivativeType },
     options?: AuthRequestOptions
   ): Promise<ApiEnvelope<{ derivatives: MediaDerivative[] }>>;
+  mediaRepresentations(
+    recordId: string,
+    params?: { store?: string },
+    options?: AuthRequestOptions
+  ): Promise<ApiEnvelope<{ representations: MediaRepresentation[] }>>;
   mediaInspections(
     recordId: string,
     params?: { store?: string },
@@ -2595,6 +2602,15 @@ export function createArchiveApiClient({
       return get<{ derivatives: MediaDerivative[] }>(
         `/records/${encodeURIComponent(recordId)}/media-derivatives${query ? `?${query}` : ""}`,
         options
+      );
+    },
+    mediaRepresentations: (recordId: string, params?: { store?: string }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.store) queryParams.set("store", params.store);
+      const query = queryParams.toString();
+      return get<{ representations: MediaRepresentation[] }>(
+        `/records/${encodeURIComponent(recordId)}/media-representations${query ? `?${query}` : ""}`,
+        options,
       );
     },
     mediaInspections: (recordId: string, params?: { store?: string }, options?: AuthRequestOptions) => {

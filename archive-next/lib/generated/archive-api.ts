@@ -2536,6 +2536,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/records/{id}/media-representations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the current source and current derived media representations for a record
+         * @description Returns only representations pinned to the record's live source version. It never invents preservation or mezzanine copies and never exposes storage paths or keys.
+         */
+        get: operations["listMediaRepresentations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/records/{id}/media-review-comments": {
         parameters: {
             query?: never;
@@ -6154,6 +6174,27 @@ export interface components {
             /** @enum {string} */
             status: "passed" | "warning" | "failed" | "waived";
         };
+        /** @description A source or derived media copy pinned to the record's current source version. Storage paths and keys are intentionally absent. */
+        MediaRepresentation: {
+            /** Format: date-time */
+            createdAt: string | null;
+            /** Format: uuid */
+            derivativeId: string | null;
+            id: string;
+            /** @constant */
+            isCurrentVersion: true;
+            status: components["schemas"]["MediaDerivativeStatus"];
+            type: components["schemas"]["MediaRepresentationType"];
+            versionToken: string;
+        };
+        MediaRepresentationsResponse: components["schemas"]["OkEnvelope"] & {
+            representations: components["schemas"]["MediaRepresentation"][];
+        };
+        /**
+         * @description Operational role of a media copy. Preservation and mezzanine are listed only once the system records an actual copy.
+         * @enum {string}
+         */
+        MediaRepresentationType: "source" | "preservation" | "mezzanine" | "proxy" | "thumbnail" | "waveform" | "text" | "output";
         MediaReviewComment: {
             /** Format: uuid */
             attachmentId: string | null;
@@ -13562,6 +13603,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MediaInspectionsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    listMediaRepresentations: {
+        parameters: {
+            query?: {
+                store?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current media representations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaRepresentationsResponse"];
                 };
             };
             401: components["responses"]["Error"];

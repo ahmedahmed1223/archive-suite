@@ -32,6 +32,7 @@ import { loading } from "./loading";
 import { login } from "./login";
 import { map } from "./map";
 import { mediaDerivativesTree } from "./mediaDerivativesTree";
+import { mediaRepresentations } from "./mediaRepresentations";
 import { mediaInspections } from "./mediaInspections";
 import { mediaCompare } from "./mediaCompare";
 import { mediaJobs } from "./mediaJobs";
@@ -122,6 +123,7 @@ export const pages = {
   login,
   map,
   mediaDerivativesTree,
+  mediaRepresentations,
   mediaInspections,
   mediaCompare,
   mediaJobs,

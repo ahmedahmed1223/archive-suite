@@ -86,6 +86,22 @@ describe("media inspections API client", () => {
   });
 });
 
+describe("media representations API client", () => {
+  it("loads only the current representation inventory for the selected record store", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, representations: [] }), { status: 200 }),
+    );
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    await api.mediaRepresentations("record / 1", { store: "archive items" });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "/api/v1/records/record%20%2F%201/media-representations?store=archive+items",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+});
+
 describe("archive API report exports", () => {
   it("uses the access token issued by login when downloading the compliance CSV", async () => {
     const fetchImpl = vi
