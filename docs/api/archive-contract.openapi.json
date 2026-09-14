@@ -25371,7 +25371,8 @@
           "pending",
           "processing",
           "ready",
-          "failed"
+          "failed",
+          "missing"
         ]
       },
       "MediaDerivativeSettings": {

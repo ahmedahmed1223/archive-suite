@@ -11,6 +11,7 @@ use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 /**
@@ -42,7 +43,7 @@ final class MediaRepresentationsController extends Controller
             $representations[] = [
                 'id' => 'source:'.hash('sha256', $recordStore.'|'.$recordUid.'|'.$versionToken),
                 'type' => 'source',
-                'status' => 'ready',
+                'status' => $this->sourceExists($data['filePath'] ?? null) ? 'ready' : 'missing',
                 'versionToken' => $versionToken,
                 'isCurrentVersion' => true,
                 'derivativeId' => null,
@@ -71,5 +72,24 @@ final class MediaRepresentationsController extends Controller
         }
 
         return response()->json(['ok' => true, 'representations' => $representations]);
+    }
+
+    /**
+     * A record can carry a filePath/fileName pointing at storage that was
+     * since removed out-of-band (disk cleanup, failed migration, manual
+     * deletion). Presenting it as 'ready' anyway would let the record and
+     * studio claim playback that will actually fail.
+     */
+    private function sourceExists(mixed $filePath): bool
+    {
+        if (! is_string($filePath) || $filePath === '') {
+            return false;
+        }
+
+        try {
+            return Storage::disk((string) config('ingest.disk'))->exists($filePath);
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

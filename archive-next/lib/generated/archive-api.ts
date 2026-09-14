@@ -6044,7 +6044,7 @@ export interface components {
             derivatives: components["schemas"]["MediaDerivative"][];
         };
         /** @enum {string} */
-        MediaDerivativeStatus: "pending" | "processing" | "ready" | "failed";
+        MediaDerivativeStatus: "pending" | "processing" | "ready" | "failed" | "missing";
         /** @enum {string} */
         MediaDerivativeType: "thumbnail" | "waveform" | "proxy";
         MediaInspection: {

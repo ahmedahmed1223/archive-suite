@@ -9,5 +9,5 @@ export const mediaRepresentations = {
   emptyDescription: "Add a source or run media processing to list actual copies here.",
   listAriaLabel: "Current media representations",
   types: { source: "Current source", preservation: "Preservation copy", mezzanine: "Mezzanine", proxy: "Access proxy", thumbnail: "Thumbnail", waveform: "Waveform", text: "Text", output: "Output" },
-  status: { pending: "Pending", processing: "Processing", ready: "Ready", failed: "Failed" },
+  status: { pending: "Pending", processing: "Processing", ready: "Ready", failed: "Failed", missing: "Missing" },
 } as const;

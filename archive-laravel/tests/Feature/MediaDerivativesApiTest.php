@@ -332,6 +332,16 @@ class MediaDerivativesApiTest extends TestCase
         $this->assertSame('record:'.hash('sha256', 'replacement'), $afterReplacement->json('representations.0.versionToken'));
     }
 
+    public function test_media_representations_report_a_missing_source_without_claiming_it_is_ready(): void
+    {
+        $this->seedRecord('missing-source-record', 'checksum-missing', 'ingest/uploads/no-longer-there.mov', 'no-longer-there.mov');
+
+        $this->getJson('/api/v1/records/missing-source-record/media-representations', $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('representations.0.type', 'source')
+            ->assertJsonPath('representations.0.status', 'missing');
+    }
+
     public function test_a_failed_generation_can_be_retried_against_the_same_cache_key(): void
     {
         $this->seedRecord('record-11', 'checksum-11');
