@@ -282,6 +282,7 @@ export function UploadForm() {
       templateId: templateId || undefined,
       checksum: uploaded.checksum,
       filePath: uploaded.filePath,
+      disk: uploaded.disk,
       source: "upload-wizard"
     };
 

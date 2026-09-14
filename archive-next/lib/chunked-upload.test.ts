@@ -28,6 +28,7 @@ const fakeRecord: UploadedRecord = {
   title: "clip.mp4",
   fileName: "clip.mp4",
   filePath: "ingest/uploads/record-1.mp4",
+  disk: "local",
   checksum: "abc123",
   source: "upload"
 };

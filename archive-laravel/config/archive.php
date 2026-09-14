@@ -23,6 +23,9 @@ return [
         'access_ttl_minutes' => (int) env('ARCHIVE_ACCESS_TTL_MINUTES', 15),
         'refresh_ttl_days' => (int) env('ARCHIVE_REFRESH_TTL_DAYS', 14),
         'refresh_cookie' => env('ARCHIVE_REFRESH_COOKIE', 'va_refresh'),
+        // A narrow HttpOnly credential for native <video>/<audio> requests.
+        // Unlike the refresh cookie, it is never sent to ordinary API routes.
+        'media_cookie' => env('ARCHIVE_MEDIA_COOKIE', 'va_media'),
         'session_cookie' => env('ARCHIVE_SESSION_COOKIE', 'va_session'),
         // V14-UX-REVIEW: seconds a just-rotated refresh token still resolves
         // (parallel tabs racing /auth/refresh must not log each other out).

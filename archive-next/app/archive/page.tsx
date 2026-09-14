@@ -350,6 +350,7 @@ function ArchivePageContent() {
         fileSize: file.size,
         checksum: uploaded.record.checksum,
         filePath: uploaded.record.filePath,
+        disk: uploaded.record.disk,
         source: "archive-drop"
       },
       updatedAt: new Date().toISOString()

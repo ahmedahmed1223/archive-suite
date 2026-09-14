@@ -20349,6 +20349,7 @@
           "title",
           "fileName",
           "filePath",
+          "disk",
           "checksum",
           "source"
         ],
@@ -20366,6 +20367,9 @@
             "type": "string"
           },
           "filePath": {
+            "type": "string"
+          },
+          "disk": {
             "type": "string"
           },
           "checksum": {

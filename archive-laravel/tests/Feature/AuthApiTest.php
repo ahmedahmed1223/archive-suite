@@ -14,7 +14,7 @@ class AuthApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_logs_in_sets_refresh_cookie_and_allows_bearer_access(): void
+    public function test_it_logs_in_sets_refresh_and_media_cookies_and_allows_bearer_access(): void
     {
         User::query()->create([
             'name' => 'Archive Admin',
@@ -28,11 +28,14 @@ class AuthApiTest extends TestCase
         ])
             ->assertOk()
             ->assertCookie('va_refresh')
+            ->assertCookie('va_media')
             ->assertCookie('va_session')
             ->assertJsonPath('ok', true)
             ->assertJsonPath('user.email', 'admin@example.test');
 
         $this->assertSame(0, $this->responseCookie($login, 'va_refresh')?->getExpiresTime());
+        $this->assertSame('/api/v1/files/stream', $this->responseCookie($login, 'va_media')?->getPath());
+        $this->assertTrue($this->responseCookie($login, 'va_media')?->isHttpOnly());
         $this->assertSame(0, $this->responseCookie($login, 'va_session')?->getExpiresTime());
 
         $accessToken = $login->json('accessToken');
@@ -43,6 +46,14 @@ class AuthApiTest extends TestCase
         ])
             ->assertOk()
             ->assertJsonPath('user.email', 'admin@example.test');
+
+        // The scoped playback credential is deliberately not a general API
+        // session: a browser media element can use it, but it must not grant
+        // access to ordinary JSON endpoints.
+        $this->call('GET', '/api/v1/auth/me', [], [
+            'va_media' => $this->responseCookieValue($login, 'va_media'),
+        ], [], ['HTTP_ACCEPT' => 'application/json'])
+            ->assertUnauthorized();
     }
 
     public function test_remember_me_persists_login_cookies_across_refreshes(): void
@@ -335,7 +346,8 @@ class AuthApiTest extends TestCase
             'Authorization' => 'Bearer '.$accessToken,
         ])
             ->assertOk()
-            ->assertCookieExpired('va_refresh');
+            ->assertCookieExpired('va_refresh')
+            ->assertCookieExpired('va_media');
 
         $this->assertSame(0, ApiSession::query()->count());
     }

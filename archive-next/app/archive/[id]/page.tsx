@@ -52,7 +52,7 @@ import RecordSourceReplacementPanel from "@/components/RecordSourceReplacementPa
 import RecordChangeImpactPanel from "@/components/RecordChangeImpactPanel";
 import VocabularyLinkedText, { VocabularyLinkToggle } from "@/components/VocabularyLinkedText";
 import DisclosureToolbar from "@/components/DisclosureToolbar";
-import { mediaComparisonHref } from "./media-workspace-links";
+import { mediaComparisonHref, mediaStudioHref } from "./media-workspace-links";
 
 export { RecordDescribeForm, type RecordDescribePatch };
 
@@ -631,6 +631,9 @@ export default function ArchiveDetailPage() {
               <DisclosureToolbar summary={copy.moreActionsLabel}>
             <Link href={`/copilot?recordId=${encodeURIComponent(id)}`} className="button button-secondary">
               {copy.askCopilot}
+            </Link>
+            <Link href={mediaStudioHref(id)} className="button button-secondary">
+              {copy.openStudio}
             </Link>
             {playerHref ? <Link href={playerHref} className="button button-secondary">{copy.playMedia}</Link> : null}
             {playerHref && state.status === "ready" ? (

@@ -131,6 +131,7 @@ class AuthController extends Controller
 
         return response()->json(['ok' => true])
             ->withoutCookie($this->cookieName(), self::REFRESH_COOKIE_PATH)
+            ->withoutCookie($this->mediaCookieName(), '/api/v1/files/stream')
             ->withoutCookie($this->sessionCookieName(), '/');
     }
 
@@ -195,6 +196,7 @@ class AuthController extends Controller
             'expiresAt' => $accessExpiresAt->toISOString(),
         ], $status)
             ->withCookie($this->refreshCookie($refreshToken, $refreshExpiresAt, $rememberMe))
+            ->withCookie($this->mediaCookie($accessToken, $accessExpiresAt, $rememberMe))
             ->withCookie($this->sessionCookie($refreshExpiresAt, $rememberMe));
     }
 
@@ -250,6 +252,27 @@ class AuthController extends Controller
         );
     }
 
+    /**
+     * Native media elements cannot attach the in-memory Bearer header used by
+     * the SPA. Keep a matching access credential in an HttpOnly cookie scoped
+     * only to the streaming endpoint, rather than broadening cookie-based API
+     * authentication to every route.
+     */
+    private function mediaCookie(string $token, mixed $expiresAt, bool $rememberMe): Cookie
+    {
+        return cookie(
+            name: $this->mediaCookieName(),
+            value: $token,
+            minutes: $rememberMe ? max(1, now()->diffInMinutes($expiresAt)) : 0,
+            path: '/api/v1/files/stream',
+            domain: null,
+            secure: (bool) config('archive.auth.secure_cookies'),
+            httpOnly: true,
+            raw: false,
+            sameSite: 'Strict',
+        );
+    }
+
     private function sessionCookie(mixed $expiresAt, bool $rememberMe): Cookie
     {
         return cookie(
@@ -288,5 +311,10 @@ class AuthController extends Controller
     private function sessionCookieName(): string
     {
         return (string) config('archive.auth.session_cookie');
+    }
+
+    private function mediaCookieName(): string
+    {
+        return (string) config('archive.auth.media_cookie');
     }
 }

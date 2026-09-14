@@ -26,7 +26,9 @@ class AuthenticateArchiveApiRequest
             return $next($request);
         }
 
-        $session = $this->sessionFromBearer($request) ?? $this->sessionFromCookie($request);
+        $session = $this->sessionFromBearer($request)
+            ?? $this->sessionFromMediaCookie($request)
+            ?? $this->sessionFromCookie($request);
 
         // In tests, actingAs() sets up Laravel's auth guard; support it as fallback
         if (! $session && app()->runningUnitTests() && auth()->check()) {
@@ -129,6 +131,28 @@ class AuthenticateArchiveApiRequest
         return ApiSession::query()
             ->where('refresh_token_hash', ApiToken::hash($token))
             ->where('refresh_expires_at', '>', now())
+            ->first();
+    }
+
+    /**
+     * A media element cannot send Authorization headers. The credential cookie
+     * is HttpOnly and path-scoped at issuance; enforce the same route/method
+     * boundary here so it can never become a general cookie API session.
+     */
+    private function sessionFromMediaCookie(Request $request): ?ApiSession
+    {
+        if (! $request->isMethod('GET') || ! $request->is('api/v1/files/stream')) {
+            return null;
+        }
+
+        $token = $request->cookie((string) config('archive.auth.media_cookie'));
+        if (! is_string($token) || $token === '') {
+            return null;
+        }
+
+        return ApiSession::query()
+            ->where('access_token_hash', ApiToken::hash($token))
+            ->where('access_expires_at', '>', now())
             ->first();
     }
 }

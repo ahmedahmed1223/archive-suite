@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -73,6 +74,32 @@ class FilesApiTest extends TestCase
 
         $response->assertOk();
         $this->assertSame('bytes', $response->headers->get('Accept-Ranges'));
+        $this->assertSame('archive clip', $response->streamedContent());
+    }
+
+    public function test_it_streams_media_with_the_path_scoped_playback_cookie(): void
+    {
+        \App\Models\User::query()->create([
+            'name' => 'Playback user',
+            'email' => 'playback@example.test',
+            'password' => Hash::make('secret-password'),
+        ]);
+
+        $login = $this->postJson('/api/v1/auth/login', [
+            'email' => 'playback@example.test',
+            'password' => 'secret-password',
+        ])->assertOk();
+
+        $mediaCookie = collect($login->headers->getCookies())
+            ->first(fn ($cookie) => $cookie->getName() === 'va_media');
+
+        $this->assertNotNull($mediaCookie);
+
+        $response = $this->call('GET', '/api/v1/files/stream?path=video/clip.txt', [], [
+            'va_media' => $mediaCookie->getValue(),
+        ]);
+
+        $response->assertOk();
         $this->assertSame('archive clip', $response->streamedContent());
     }
 

@@ -154,6 +154,7 @@ class ChunkedUploadTest extends TestCase
         $recordId = $response->json('record.id');
         $this->assertSame('clip.mp4', $response->json('record.fileName'));
         $this->assertSame(hash('sha256', $content), $response->json('record.checksum'));
+        $this->assertSame(config('ingest.disk'), $response->json('record.disk'));
 
         $this->assertDatabaseHas('storage_rows', ['store' => 'archive-items', 'uid' => $recordId]);
         $this->assertDatabaseHas('upload_sessions', ['id' => $session['id'], 'status' => 'completed']);

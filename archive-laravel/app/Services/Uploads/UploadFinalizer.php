@@ -67,6 +67,10 @@ class UploadFinalizer
             'title' => $fileName,
             'fileName' => $fileName,
             'filePath' => $storedPath,
+            // The path is relative to this disk. Persist both values so the
+            // authenticated media endpoint can resolve uploads that are not
+            // stored under ARCHIVE_FILE_ROOT.
+            'disk' => $disk,
             'checksum' => $checksum,
             'source' => 'upload',
             'createdAt' => $now->toIso8601String(),

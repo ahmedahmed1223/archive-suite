@@ -8078,6 +8078,7 @@ export interface components {
             checksum: string;
             /** Format: date-time */
             createdAt?: string;
+            disk: string;
             fileName: string;
             filePath: string;
             id: string;

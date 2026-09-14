@@ -38,6 +38,7 @@ class UploadsApiTest extends TestCase
         $recordId = $response->json('record.id');
         $this->assertIsString($recordId);
         $this->assertSame('report.pdf', $response->json('record.fileName'));
+        $this->assertSame(config('ingest.disk'), $response->json('record.disk'));
 
         $this->assertDatabaseHas('storage_rows', [
             'store' => 'archive-items',
