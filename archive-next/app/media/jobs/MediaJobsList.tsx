@@ -45,6 +45,11 @@ type CancelState =
   | { status: "canceling"; jobId: string }
   | { status: "error"; jobId: string; message: string };
 
+type RetryState =
+  | { status: "idle" }
+  | { status: "retrying"; jobId: string }
+  | { status: "error"; jobId: string; message: string };
+
 /** V3-PERF-005: matches StudioTimelinePanel's poll-when-disconnected fallback cadence. */
 const QUEUE_STATUS_POLL_INTERVAL_MS = 8000;
 
@@ -167,6 +172,7 @@ export function MediaJobsList() {
   ] as const;
   const [listState, setListState] = useState<ListState>({ status: "loading" });
   const [createState, setCreateState] = useState<CreateState>({ status: "idle" });
+  const [retryState, setRetryState] = useState<RetryState>({ status: "idle" });
   const [ingestState, setIngestState] = useState<IngestState>({ status: "idle" });
   const [cancelState, setCancelState] = useState<CancelState>({ status: "idle" });
   const [statusFilter, setStatusFilter] = useState<MediaJobStatus | "">("");
@@ -443,6 +449,26 @@ export function MediaJobsList() {
       void loadJobs();
     }, 1500);
   });
+
+  async function handleRetry(jobId: string) {
+    setRetryState({ status: "retrying", jobId });
+    const response = await api.retryMediaJob(jobId);
+
+    if (!response.ok) {
+      // Includes the service refusal: retrying into a service that is still
+      // down has to say so rather than look like a queue hiccup.
+      const outage = mediaServiceOutage(response);
+      setRetryState({
+        status: "error",
+        jobId,
+        message: outage ? `${copy.create.serviceUnavailableTitle} (${outage.service})` : response.error,
+      });
+      return;
+    }
+
+    setRetryState({ status: "idle" });
+    void loadJobs();
+  }
 
   async function handleIngestScan() {
     setIngestState({ status: "scanning" });

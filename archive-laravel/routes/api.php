@@ -448,6 +448,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/media/jobs/queue-status', [MediaJobsController::class, 'queueStatus']);
         Route::get('/media/jobs/{id}', [MediaJobsController::class, 'show']);
         Route::post('/media/jobs/{id}/cancel', [MediaJobsController::class, 'cancel']);
+        Route::post('/media/jobs/{id}/retry', [MediaJobsController::class, 'retry']);
 
         // V3-MEDIA-006: cached, version-pinned thumbnail/waveform/proxy
         // derivatives. /records/{id}/media-derivatives lists derivatives for

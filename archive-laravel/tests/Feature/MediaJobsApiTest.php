@@ -12,6 +12,7 @@ use App\Services\System\ServiceProbeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
@@ -68,6 +69,65 @@ class MediaJobsApiTest extends TestCase
             'recordId' => 'media-record-thumb',
             'operation' => 'thumbnail',
         ], $this->authHeaders())->assertStatus(202);
+
+        $this->assertDatabaseCount('media_jobs', 1);
+    }
+
+    /**
+     * V2-OPS-003 / V2-MEDIA-003: the remedy exists as an action, not as advice
+     * telling the operator to retype the job.
+     */
+    public function test_a_failed_job_is_retried_as_a_new_job_keeping_the_failure_readable(): void
+    {
+        Queue::fake();
+        $headers = $this->authHeaders();
+        $failed = MediaJob::query()->create([
+            'id' => (string) Str::uuid(),
+            'record_id' => 'media-record-retry',
+            'created_by' => User::query()->where('email', 'admin@example.test')->value('id'),
+            'operation' => 'thumbnail',
+            'status' => 'failed',
+            'queue' => 'default',
+            'executor' => 'fake',
+            'contract_version' => 1,
+            'source_path' => 'media/source.mp4',
+            'options' => ['atSec' => 12],
+            'error' => 'ffmpeg exited with code 1',
+            'queued_at' => now(),
+        ]);
+
+        $retry = $this->postJson("/api/v1/media/jobs/{$failed->id}/retry", [], $headers)
+            ->assertStatus(202)
+            ->assertJsonPath('job.status', 'queued')
+            ->assertJsonPath('job.operation', 'thumbnail')
+            ->json('job.id');
+
+        $this->assertNotSame($failed->id, $retry);
+        $this->assertDatabaseHas('media_jobs', ['id' => $retry, 'record_id' => 'media-record-retry', 'source_path' => 'media/source.mp4']);
+        // The original keeps its verdict: a retry must not erase the evidence.
+        $this->assertDatabaseHas('media_jobs', ['id' => $failed->id, 'status' => 'failed', 'error' => 'ffmpeg exited with code 1']);
+        Queue::assertPushed(ProcessMediaWorkflow::class);
+    }
+
+    public function test_a_job_that_did_not_fail_is_not_retryable(): void
+    {
+        Queue::fake();
+        $headers = $this->authHeaders();
+        $job = MediaJob::query()->create([
+            'id' => (string) Str::uuid(),
+            'record_id' => 'media-record-running',
+            'created_by' => User::query()->where('email', 'admin@example.test')->value('id'),
+            'operation' => 'thumbnail',
+            'status' => 'processing',
+            'queue' => 'default',
+            'executor' => 'fake',
+            'contract_version' => 1,
+            'queued_at' => now(),
+        ]);
+
+        $this->postJson("/api/v1/media/jobs/{$job->id}/retry", [], $headers)
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'processing');
 
         $this->assertDatabaseCount('media_jobs', 1);
     }

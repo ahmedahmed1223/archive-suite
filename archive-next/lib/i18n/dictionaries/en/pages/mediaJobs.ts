@@ -148,7 +148,9 @@ export const mediaJobs = {
     partialFailureDescription: "Other jobs continue. Review the error below, correct the source file or settings, then create a new job if needed.",
     failureLabel: "Failure details",
     retryGuidance: "Retry guidance",
-    retryGuidanceDescription: "Direct retry is not available for this job in the current interface. Correct the cause, then create a new processing job for the same record.",
+    retryAction: "Retry this job",
+    retryFailed: "The retry could not be queued.",
+    retryGuidanceDescription: "Correct the cause, then re-queue the same inputs. The failed attempt and its error stay on record.",
     realtimeUnavailable: "Realtime updates are unavailable",
     realtimeUnavailableDescription: "The list continues to refresh periodically until the live update connection returns."
   },

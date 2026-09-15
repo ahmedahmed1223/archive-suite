@@ -5503,6 +5503,38 @@
         }
       }
     },
+    "/media/jobs/{id}/cancel": {
+      "post": {
+        "tags": ["Media"],
+        "summary": "Cancel a queued or processing media job",
+        "operationId": "cancelMediaWorkflow",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Canceled job", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MediaJobResponse" } } } },
+          "400": { "$ref": "#/components/responses/Error" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/media/jobs/{id}/retry": {
+      "post": {
+        "tags": ["Media"],
+        "summary": "Re-queue a failed media job with the same inputs",
+        "operationId": "retryMediaWorkflow",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "202": { "description": "Retry queued as a new job; the failed one keeps its status and error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MediaJobResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" },
+          "503": { "description": "A service the operation depends on is unavailable, so nothing was queued", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MediaServiceUnavailableResponse" } } } }
+        }
+      }
+    },
     "/media/jobs/{id}": {
       "get": {
         "tags": [

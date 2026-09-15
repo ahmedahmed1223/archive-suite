@@ -171,6 +171,64 @@ class MediaJobsController extends Controller
     }
 
     /**
+     * The remedy for a failed job. Until now the interface could only tell the
+     * operator to rebuild the request by hand from a job whose inputs it was
+     * showing them -- so the same inputs are re-queued as a new job here,
+     * through the same service and capacity guards as any other dispatch.
+     *
+     * A new row rather than a reset one: the failure and its reason stay
+     * readable instead of being overwritten by the attempt that replaced it.
+     */
+    public function retry(Request $request, string $id): JsonResponse
+    {
+        $failed = MediaJob::query()->find($id);
+
+        if (! $failed || ! $this->canAccess($request, $failed)) {
+            return response()->json(ApiError::envelope('Media job not found.', 404), 404);
+        }
+
+        if ($failed->status !== 'failed') {
+            return response()->json([
+                ...ApiError::envelope('Only a failed job can be retried.', 422),
+                'status' => $failed->status,
+            ], 422);
+        }
+
+        if ($denied = $this->refuseUnavailableService((string) $failed->operation)) {
+            return $denied;
+        }
+
+        $queue = app(MediaJobQueueRouter::class)->queueFor((string) $failed->operation);
+        $maxQueued = (int) config('media.max_queued_jobs_per_queue', 50);
+        if ((app(MediaQueueStatusBroadcaster::class)->counts()[$queue] ?? 0) >= $maxQueued) {
+            return response()->json(
+                ApiError::envelope('Media processing queue is at capacity. Try again shortly.', 429),
+                429,
+                ['Retry-After' => '30'],
+            );
+        }
+
+        $retry = MediaJob::query()->create([
+            'id' => (string) Str::uuid(),
+            'record_id' => $failed->record_id,
+            'created_by' => $this->userId($request),
+            'operation' => $failed->operation,
+            'status' => 'queued',
+            'queue' => $queue,
+            'executor' => app(MediaJobExecutor::class)->name(),
+            'contract_version' => (int) config('media.job_contract_version', 1),
+            'source_path' => $failed->source_path,
+            'options' => $failed->options ?? [],
+            'queued_at' => now(),
+        ]);
+
+        ProcessMediaWorkflow::dispatch($retry->id, RequestCorrelation::id())->onQueue($queue);
+        app(MediaJobProgressBroadcaster::class)->notify($retry);
+
+        return response()->json(['ok' => true, 'job' => $this->payload($retry->refresh())], 202);
+    }
+
+    /**
      * Non-admins may only reach jobs they created; admins reach every job.
      */
     private function canAccess(Request $request, MediaJob $mediaJob): bool
