@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createArchiveApiClient, type ApiEnvelope, type BulkMacroRun, type BulkMacroStep, type SafetyPreviewRun } from "./archive-api";
+import { createArchiveApiClient, rightsRefusal, type ApiEnvelope, type BulkMacroRun, type BulkMacroStep, type SafetyPreviewRun } from "./archive-api";
 
 describe("archive API uploads", () => {
   it("uses the access token issued by login for multipart uploads", async () => {
@@ -357,5 +357,51 @@ describe("Arabic API error localization", () => {
     const response = await errorFor({ ok: false, error: "Record not found.", code: "not_found" }, 404, "en");
 
     expect(response.error).toBe("Item not found.");
+  });
+});
+
+// A rights refusal is the one 403 the user can act on, so the clause that
+// decided it has to survive the client instead of collapsing into "forbidden".
+describe("rights refusal envelopes", () => {
+  const refusalBody = {
+    ok: false,
+    error: "Access denied by rights enforcement.",
+    code: "FORBIDDEN",
+    itemId: "item-1",
+    reason: "لا توجد بيانات حقوق مسجّلة",
+    decidedBy: "no_record"
+  };
+
+  it("carries reason, clause and item through a JSON request", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify(refusalBody), { status: 403 }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    const response = await api.createShare({ itemIds: ["item-1"] });
+
+    expect(rightsRefusal(response)).toEqual({
+      reason: "لا توجد بيانات حقوق مسجّلة",
+      decidedBy: "no_record",
+      itemId: "item-1"
+    });
+  });
+
+  it("recovers the refusal from a refused binary download", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(refusalBody), { status: 403, headers: { "Content-Type": "application/json" } })
+    );
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    const response = await api.mediaDerivativeContent("derivative-1");
+
+    expect(rightsRefusal(response)?.decidedBy).toBe("no_record");
+  });
+
+  it("is null for an ordinary failure that names no clause", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: false, error: "Forbidden.", code: "FORBIDDEN" }), { status: 403 })
+    );
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    expect(rightsRefusal(await api.createShare({ itemIds: ["item-1"] }))).toBeNull();
   });
 });

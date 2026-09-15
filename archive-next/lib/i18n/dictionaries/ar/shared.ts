@@ -146,6 +146,16 @@ export const shared = {
     dismiss: "إخفاء",
     feedbackError: "تعذر حفظ تقييم الاقتراح."
   },
+  rightsRefusal: {
+    title: "مرفوض بحكم الحقوق",
+    reasonLabel: "السبب",
+    clauseLabel: "البند الحاسم",
+    itemLabel: "المادة",
+    openRights: "فتح الحقوق",
+    noRecord: "لا توجد بيانات حقوق مسجّلة لهذه المادة بعد.",
+    noWindowForUsage: "للمادة حقوق مسجّلة، لكن لا نافذة تغطي هذا الاستخدام.",
+    unknownWindow: "لم تطابق أي نافذة حقوق هذا الطلب.",
+  },
   vocabularyLinker: {
     toggleLabel: "ربط مصطلحات المفردات تلقائيًا",
     synonymOf: "مرادف لـ «{term}»",

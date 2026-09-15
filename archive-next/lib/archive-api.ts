@@ -50,7 +50,40 @@ export const ARCHIVE_UNAUTHORIZED_EVENT = "archive-next:unauthorized";
 
 export type ApiSuccess<T extends object = Record<string, unknown>> = { ok: true } & T;
 
-export type ApiError = { ok: false; error: string; code?: string; details?: unknown };
+export type ApiError = {
+  ok: false;
+  error: string;
+  code?: string;
+  details?: unknown;
+} & Partial<RightsRefusal>;
+
+/**
+ * A rights refusal is the one 403 the user can act on: it names the clause
+ * that decided it, so the interface can point at the rights entry to fix
+ * instead of showing "forbidden" and stopping there.
+ *
+ * `decidedBy` is either a rights window id or one of the decision codes the
+ * server uses when no window was reached at all.
+ */
+export type RightsRefusal = { reason: string; decidedBy: string; itemId?: string };
+
+export const RIGHTS_DECISION_CODES = ["no_record", "no_window_for_usage", "unknown_window"] as const;
+
+export type RightsDecisionCode = (typeof RIGHTS_DECISION_CODES)[number];
+
+/**
+ * Reads the refusal out of any failed envelope. Keyed on `decidedBy` because
+ * every 403 shares the FORBIDDEN code, and only a rights decision names the
+ * clause behind it.
+ */
+export function rightsRefusal(envelope: { ok: boolean } | ApiError): RightsRefusal | null {
+  if (envelope.ok !== false) return null;
+  const { reason, decidedBy, itemId } = envelope as ApiError;
+  if (typeof reason !== "string" || reason === "" || typeof decidedBy !== "string" || decidedBy === "") {
+    return null;
+  }
+  return itemId ? { reason, decidedBy, itemId } : { reason, decidedBy };
+}
 
 export type ApiEnvelope<T extends object = Record<string, unknown>> = ApiSuccess<T> | ApiError;
 
@@ -1950,7 +1983,17 @@ export function createArchiveApiClient({
     }
 
     if (!response.ok) {
-      return { ok: false, code: `http_${response.status}`, error: clientRequestError(currentLocale(), "http", response.status) };
+      // A refused download answers with the JSON rights envelope, not bytes.
+      // Without this the clause would be dropped on the floor here.
+      const refusal = response.headers.get("content-type")?.includes("application/json")
+        ? rightsRefusal(await response.json().catch(() => ({ ok: true })))
+        : null;
+      const failure: ApiError = {
+        ok: false,
+        code: `http_${response.status}`,
+        error: clientRequestError(currentLocale(), "http", response.status)
+      };
+      return refusal ? { ...failure, ...refusal } : failure;
     }
 
     return { ok: true, blob: await response.blob() };

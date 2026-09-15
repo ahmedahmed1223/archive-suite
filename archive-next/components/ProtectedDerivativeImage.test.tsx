@@ -2,10 +2,16 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import ProtectedDerivativeImage from "./ProtectedDerivativeImage";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 const api = vi.hoisted(() => ({ mediaDerivativeContent: vi.fn() }));
 
-vi.mock("@/lib/archive-api", () => ({
+// Only the client factory is faked: rightsRefusal stays real so this test
+// fails if the refusal contract drifts, instead of agreeing with a local copy
+// of it. The locale provider is real for the same reason -- the assertions
+// below are the shipped dictionary text, not a fixture's.
+vi.mock("@/lib/archive-api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/archive-api")>()),
   createArchiveApiClient: () => api,
 }));
 
@@ -31,7 +37,9 @@ afterEach(() => {
 describe("ProtectedDerivativeImage", () => {
   test("fetches a protected derivative with the session token and revokes its temporary URL", async () => {
     const view = render(
-      <ProtectedDerivativeImage derivativeId="derivative-1" accessToken="session-token" alt="لقطة من الفيديو" />,
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <ProtectedDerivativeImage derivativeId="derivative-1" accessToken="session-token" alt="لقطة من الفيديو" />
+      </LocaleProvider>,
     );
 
     const image = await screen.findByRole("img", { name: "لقطة من الفيديو" });
@@ -41,5 +49,25 @@ describe("ProtectedDerivativeImage", () => {
 
     view.unmount();
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledWith("blob:archive-thumbnail"));
+  });
+
+  test("shows localized rights refusal message when media is refused by rights policy", async () => {
+    api.mediaDerivativeContent.mockResolvedValueOnce({
+      ok: false,
+      error: "Rights refused",
+      code: "http_403",
+      reason: "لا توجد بيانات حقوق مسجّلة",
+      decidedBy: "no_record",
+    });
+
+    render(
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <ProtectedDerivativeImage derivativeId="derivative-1" accessToken="session-token" alt="لقطة من الفيديو" />
+      </LocaleProvider>,
+    );
+
+    const status = await screen.findByRole("status");
+    expect(status).toHaveAttribute("data-decided-by", "no_record");
+    expect(status).toHaveTextContent("لا توجد بيانات حقوق مسجّلة لهذه المادة بعد.");
   });
 });

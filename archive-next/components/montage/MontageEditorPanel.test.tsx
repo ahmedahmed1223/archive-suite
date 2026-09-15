@@ -3,19 +3,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import MontageEditorPanel from "./MontageEditorPanel";
 import { type EditorState } from "@/lib/montage-editor";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
-const { montageExportQc, collaborationPresence, montagePreviewCmx, montageApplyCmx } = vi.hoisted(() => ({
+const { montageExportQc, collaborationPresence, montagePreviewCmx, montageApplyCmx, montageRequestExport } = vi.hoisted(() => ({
   montageExportQc: vi.fn(),
   collaborationPresence: vi.fn(),
   montagePreviewCmx: vi.fn(),
   montageApplyCmx: vi.fn(),
+  montageRequestExport: vi.fn(),
 }));
 
 vi.mock("@/lib/archive-api", async () => {
   const actual = await vi.importActual<typeof import("@/lib/archive-api")>("@/lib/archive-api");
   return {
     ...actual,
-    createArchiveApiClient: () => ({ montageExportQc, collaborationPresence, montagePreviewCmx, montageApplyCmx }),
+    createArchiveApiClient: () => ({ montageExportQc, collaborationPresence, montagePreviewCmx, montageApplyCmx, montageRequestExport }),
   };
 });
 
@@ -87,17 +89,20 @@ beforeEach(() => {
     preview: { accepted: [{ event: 1, reel: "AX" }], rejected: [{ event: 2, reason: "audio_track_unsupported" }] },
   });
   montageApplyCmx.mockResolvedValue({ ok: true, revisionNumber: 2, clips: [] });
+  montageRequestExport.mockResolvedValue({ ok: true });
 });
 
 describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
   it("renders the editing surface with labelled regions", () => {
     render(
-      <MontageEditorPanel
-        projectId="p1"
-        initialState={makeState()}
-        materials={[]}
-        copy={copy}
-      />,
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <MontageEditorPanel
+          projectId="p1"
+          initialState={makeState()}
+          materials={[]}
+          copy={copy}
+        />
+      </LocaleProvider>,
     );
     // The panel and each sub-region expose an accessible name.
     expect(screen.getByRole("region", { name: copy.panelAriaLabel })).toBeInTheDocument();
@@ -107,12 +112,14 @@ describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
 
   it("exposes undo/redo + save with the toolbar semantics", () => {
     render(
-      <MontageEditorPanel
-        projectId="p1"
-        initialState={makeState()}
-        materials={[]}
-        copy={copy}
-      />,
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <MontageEditorPanel
+          projectId="p1"
+          initialState={makeState()}
+          materials={[]}
+          copy={copy}
+        />
+      </LocaleProvider>,
     );
     const undo = screen.getByRole("button", { name: copy.undoButton });
     const redo = screen.getByRole("button", { name: copy.redoButton });
@@ -155,12 +162,14 @@ describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
 
   it("enables export only after the editor QC check passes", async () => {
     render(
-      <MontageEditorPanel
-        projectId="p1"
-        initialState={makeState()}
-        materials={[]}
-        copy={copy}
-      />,
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <MontageEditorPanel
+          projectId="p1"
+          initialState={makeState()}
+          materials={[]}
+          copy={copy}
+        />
+      </LocaleProvider>,
     );
 
     const startExport = screen.getByRole("button", { name: copy.startExport });
@@ -190,12 +199,14 @@ describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
 
   it("previews a CMX edit list without implying that it was imported", () => {
     render(
-      <MontageEditorPanel
-        projectId="p1"
-        initialState={makeState()}
-        materials={[]}
-        copy={copy}
-      />,
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <MontageEditorPanel
+          projectId="p1"
+          initialState={makeState()}
+          materials={[]}
+          copy={copy}
+        />
+      </LocaleProvider>,
     );
 
     expect(screen.getByRole("button", { name: copy.previewCmx })).toBeInTheDocument();
@@ -205,12 +216,14 @@ describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
 
   it("sends an edit list for preview and shows accepted and rejected counts", async () => {
     render(
-      <MontageEditorPanel
-        projectId="p1"
-        initialState={makeState()}
-        materials={[]}
-        copy={copy}
-      />,
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <MontageEditorPanel
+          projectId="p1"
+          initialState={makeState()}
+          materials={[]}
+          copy={copy}
+        />
+      </LocaleProvider>,
     );
 
     fireEvent.change(screen.getByRole("textbox", { name: copy.previewCmx }), {
@@ -258,5 +271,104 @@ describe("MontageEditorPanel (Task 5/6) — structure & RTL baseline", () => {
     fireEvent.change(await screen.findByRole("combobox", { name: "Reel AX" }), { target: { value: "m1" } });
     fireEvent.click(screen.getByRole("button", { name: copy.applyCmx }));
     expect(await screen.findByText(copy.applyCmxFailed)).toBeInTheDocument();
+  });
+
+  it("renders a rights refusal notice when export is refused by rights enforcement", async () => {
+    montageRequestExport.mockResolvedValueOnce({
+      ok: false,
+      error: "Access denied by rights enforcement.",
+      code: "FORBIDDEN",
+      itemId: "record-1",
+      reason: "لا توجد بيانات حقوق مسجّلة",
+      decidedBy: "no_record",
+    });
+    render(
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <MontageEditorPanel
+          projectId="p1"
+          initialState={makeState()}
+          materials={[]}
+          copy={copy}
+        />
+      </LocaleProvider>,
+    );
+
+    // Find and click the start export button (need to pass QC first)
+    fireEvent.click(screen.getByRole("button", { name: copy.runQc }));
+    await waitFor(() => expect(screen.getByRole("button", { name: copy.startExport })).toBeEnabled());
+
+    // Click an export preset to trigger requestExport
+    const exportButton = screen.getByRole("button", { name: copy.startExport });
+    fireEvent.click(exportButton);
+
+    // Assert the refusal notice is rendered
+    const notice = await screen.findByRole("alert", { hidden: false });
+    expect(notice).toHaveAttribute("data-decided-by", "no_record");
+  });
+
+  it("renders a rights refusal notice when QC check is refused by rights enforcement", async () => {
+    montageExportQc.mockResolvedValueOnce({
+      ok: false,
+      error: "Access denied by rights enforcement.",
+      code: "FORBIDDEN",
+      itemId: "record-1",
+      reason: "لا توجد بيانات حقوق مسجّلة",
+      decidedBy: "no_record",
+    });
+    render(
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <MontageEditorPanel
+          projectId="p1"
+          initialState={makeState()}
+          materials={[]}
+          copy={copy}
+        />
+      </LocaleProvider>,
+    );
+
+    // Click the QC button
+    fireEvent.click(screen.getByRole("button", { name: copy.runQc }));
+
+    // Assert the refusal notice is rendered
+    const notice = await screen.findByRole("alert", { hidden: false });
+    expect(notice).toHaveAttribute("data-decided-by", "no_record");
+
+    // Assert export button is still disabled
+    expect(screen.getByRole("button", { name: copy.startExport })).toBeDisabled();
+  });
+
+  it("clears the refusal notice when QC succeeds after a previous refusal", async () => {
+    montageExportQc
+      .mockResolvedValueOnce({
+        ok: false,
+        error: "Access denied by rights enforcement.",
+        code: "FORBIDDEN",
+        itemId: "record-1",
+        reason: "لا توجد بيانات حقوق مسجّلة",
+        decidedBy: "no_record",
+      })
+      .mockResolvedValueOnce({ ok: true, ready: true, revisionNumber: 1 });
+
+    render(
+      <LocaleProvider initialLocale="ar" hasLocaleCookie>
+        <MontageEditorPanel
+          projectId="p1"
+          initialState={makeState()}
+          materials={[]}
+          copy={copy}
+        />
+      </LocaleProvider>,
+    );
+
+    // First QC run fails with refusal
+    fireEvent.click(screen.getByRole("button", { name: copy.runQc }));
+    await screen.findByRole("alert", { hidden: false });
+
+    // Second QC run succeeds
+    fireEvent.click(screen.getByRole("button", { name: copy.runQc }));
+    await waitFor(() => {
+      expect(screen.queryByRole("alert", { hidden: false })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: copy.startExport })).toBeEnabled();
+    });
   });
 });

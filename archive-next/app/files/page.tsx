@@ -11,7 +11,8 @@ import DataViewSwitcher, { type DataViewOption } from "@/components/DataViewSwit
 import EmptyState from "@/components/EmptyState";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ArchiveFile, type FileBrowserEntry } from "@/lib/archive-api";
+import { createArchiveApiClient, type ArchiveFile, type FileBrowserEntry, rightsRefusal, type RightsRefusal } from "@/lib/archive-api";
+import RightsRefusalNotice from "@/components/RightsRefusalNotice";
 import { addMintedLink } from "@/lib/minted-shares";
 import { defaultShareExpiryLocalValue, validateShareExpiry } from "@/lib/share-checklist";
 import { MOBILE_VIEWPORT_QUERY, matchesMediaQuery } from "@/lib/use-media-query";
@@ -46,7 +47,7 @@ type ShareState =
   | { status: "idle" }
   | { status: "creating" }
   | { status: "success"; token: string; url?: string }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; refusal?: RightsRefusal };
 
 /** V1-836: a lightweight pre-share checklist - final decision stays with the user, this only prompts them to confirm. */
 type ShareChecklistState = {
@@ -265,7 +266,10 @@ export default function FilesPage() {
     });
 
     if (!response.ok) {
-      setShareState({ status: "error", message: response.error });
+      // A rights refusal names the clause to fix, so it replaces the plain
+      // banner rather than collapsing into its generic message.
+      const refusal = rightsRefusal(response);
+      setShareState({ status: "error", message: response.error, ...(refusal && { refusal }) });
       return;
     }
 
@@ -666,10 +670,14 @@ export default function FilesPage() {
       ) : null}
 
       {shareState.status === "error" ? (
-        <div className="state-banner state-banner-error" role="alert">
-          <strong>{copy.shareError}</strong>
-          <span className="helper-text">{shareState.message}</span>
-        </div>
+        shareState.refusal ? (
+          <RightsRefusalNotice refusal={shareState.refusal} />
+        ) : (
+          <div className="state-banner state-banner-error" role="alert">
+            <strong>{copy.shareError}</strong>
+            <span className="helper-text">{shareState.message}</span>
+          </div>
+        )
       ) : null}
 
       {viewMode === "browser" ? (

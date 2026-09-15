@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createArchiveApiClient } from "@/lib/archive-api";
+import { createArchiveApiClient, rightsRefusal, type RightsRefusal } from "@/lib/archive-api";
 import MediaBin, { type MaterialBinItem } from "./MediaBin";
 import TimelineCanvas from "./TimelineCanvas";
 import ExportDrawer from "./ExportDrawer";
+import RightsRefusalNotice from "@/components/RightsRefusalNotice";
 import {
   buildPresenceSnapshot,
   type PresenceSnapshot,
@@ -97,6 +98,7 @@ export default function MontageEditorPanel({
   const [cmxStatus, setCmxStatus] = useState("");
   const [qcReady, setQcReady] = useState(false);
   const [presence, setPresence] = useState<PresenceSnapshot>({ projectId, editors: [] });
+  const [exportRefusal, setExportRefusal] = useState<RightsRefusal | null>(null);
 
   const dispatch = useCallback(
     (action: EditorAction) => setState((current) => reduceEditor(current, action, fps)),
@@ -168,10 +170,12 @@ export default function MontageEditorPanel({
 
   const requestExport = useCallback(
     async (preset: "web-1080p" | "web-4k" | "archive-master") => {
-      await api.montageRequestExport(projectId, {
+      const response = await api.montageRequestExport(projectId, {
         expectedRevision: state.revisionNumber,
         preset,
       });
+      // Null on success, which is also how a stale refusal gets cleared.
+      setExportRefusal(rightsRefusal(response));
     },
     [api, projectId, state.revisionNumber],
   );
@@ -194,7 +198,9 @@ export default function MontageEditorPanel({
       expectedRevision: state.revisionNumber,
       preset: "web-1080p",
     });
-    setQcReady(response.ok && response.ready === true);
+    const refusal = rightsRefusal(response);
+    setExportRefusal(refusal);
+    setQcReady(refusal === null && response.ok && response.ready === true);
   }, [api, projectId, state.revisionNumber, state.timeline]);
 
   const previewCmx = useCallback(async () => {
@@ -269,6 +275,8 @@ export default function MontageEditorPanel({
       </div>
 
       <p role="status" className="ui-visually-hidden montage-editor-panel__status">{saveStatus}</p>
+
+      {exportRefusal ? <RightsRefusalNotice refusal={exportRefusal} /> : null}
 
       <section aria-label={copy.interchangeTitle} className="card card-border bg-base-200 shadow-sm">
         <div className="card-body gap-3 p-4">

@@ -149,6 +149,18 @@ export const shared = {
     dismiss: "Hide",
     feedbackError: "Unable to save the suggestion feedback."
   },
+  rightsRefusal: {
+    title: "Refused by rights",
+    reasonLabel: "Reason",
+    clauseLabel: "Deciding clause",
+    itemLabel: "Item",
+    openRights: "Open rights",
+    // Used in place of the server's Arabic sentence when the decision is one
+    // of the known codes; a window id falls back to that sentence.
+    noRecord: "No rights record has been entered for this item yet.",
+    noWindowForUsage: "The item has rights, but no window covers this usage.",
+    unknownWindow: "No rights window matched this request.",
+  },
   vocabularyLinker: {
     toggleLabel: "Auto-link vocabulary terms",
     synonymOf: "Synonym of “{term}”",
