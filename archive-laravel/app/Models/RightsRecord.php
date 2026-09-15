@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RightsRecord extends Model
 {
+    use HasFactory;
+
     public $incrementing = false;
 
     protected $keyType = 'string';
@@ -30,5 +34,10 @@ class RightsRecord extends Model
             'expires_at' => 'datetime',
             'geo_restrictions' => 'array',
         ];
+    }
+
+    public function windows(): HasMany
+    {
+        return $this->hasMany(RightsWindow::class);
     }
 }
