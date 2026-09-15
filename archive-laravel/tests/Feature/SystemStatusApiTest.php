@@ -34,9 +34,17 @@ class SystemStatusApiTest extends TestCase
         $this->getJson('/api/v1/system/status', $this->adminHeaders())
             ->assertOk()
             ->assertJsonPath('ok', true)
+            ->assertJsonPath('preservation.layer.status', 'requires_setup')
+            ->assertJsonPath('preservation.layer.versioning', 'per_asset')
+            ->assertJsonPath('preservation.integrity.status', 'not_checked')
+            ->assertJsonPath('preservation.integrity.lastCheckedAt', null)
             ->assertJsonStructure([
                 'metrics' => ['cpuLoad', 'memory' => ['usedBytes', 'totalBytes'], 'disk' => ['usedBytes', 'totalBytes'], 'queueDepth'],
                 'dr' => ['lastBackupAt', 'lastBackupName', 'lastRestoreTestAt', 'lastRestoreTestOk'],
+                'preservation' => [
+                    'layer' => ['status'],
+                    'integrity' => ['status', 'lastCheckedAt'],
+                ],
             ]);
     }
 

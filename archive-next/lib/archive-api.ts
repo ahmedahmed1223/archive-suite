@@ -782,6 +782,7 @@ export interface DrDrillStatus {
 }
 
 export type DrProbe = GeneratedSchemas["DrProbe"];
+export type PreservationReadiness = GeneratedSchemas["PreservationReadiness"];
 
 /**
  * V1-760: raw per-queue counters as the API reports them. Structurally a
@@ -1342,7 +1343,7 @@ export interface ArchiveApiClient {
   verifyBackup(payload: { name: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ verification: BackupVerification }>>;
   runDrDrill(options?: AuthRequestOptions): Promise<ApiEnvelope<{ result: DrDrillResult }>>;
   getDrDrillStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ status: DrDrillStatus }>>;
-  systemStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ metrics: SystemMetrics; dr: DrProbe }>>;
+  systemStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ metrics: SystemMetrics; dr: DrProbe; preservation: PreservationReadiness }>>;
   systemMetricsHistory(params?: { days?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ samples: StorageSample[] }>>;
   drProbe(options?: AuthRequestOptions): Promise<ApiEnvelope<{ dr: DrProbe }>>;
   runSystemControlAction(action: SystemControlAction, options?: AuthRequestOptions): Promise<ApiEnvelope<{ result: SystemControlResult }>>;
@@ -2377,7 +2378,7 @@ export function createArchiveApiClient({
       post<{ result: DrDrillResult }>("/system/backups/dr-drill", undefined, options),
     getDrDrillStatus: (options?: AuthRequestOptions) =>
       get<{ status: DrDrillStatus }>("/system/backups/dr-status", options),
-    systemStatus: (options?: AuthRequestOptions) => get<{ metrics: SystemMetrics; dr: DrProbe }>("/system/status", options),
+    systemStatus: (options?: AuthRequestOptions) => get<{ metrics: SystemMetrics; dr: DrProbe; preservation: PreservationReadiness }>("/system/status", options),
     systemMetricsHistory: (params?: { days?: number }, options?: AuthRequestOptions) => {
       const query = params?.days ? `?days=${encodeURIComponent(String(params.days))}` : "";
       return get<{ samples: StorageSample[] }>(`/system/metrics/history${query}`, options);

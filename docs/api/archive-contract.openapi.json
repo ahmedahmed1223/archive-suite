@@ -29910,6 +29910,60 @@
           }
         }
       },
+      "PreservationReadiness": {
+        "type": "object",
+        "required": [
+          "layer",
+          "integrity"
+        ],
+        "properties": {
+          "layer": {
+            "type": "object",
+            "required": [
+              "status",
+              "versioning"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "requires_setup"
+                ],
+                "description": "A preservation-copy pipeline is not configured; this value never treats an access proxy as a preservation copy."
+              },
+              "versioning": {
+                "type": "string",
+                "enum": [
+                  "per_asset"
+                ],
+                "description": "Each media representation is tied to the current source version. Individual fingerprints are available only in the record context."
+              }
+            }
+          },
+          "integrity": {
+            "type": "object",
+            "required": [
+              "status",
+              "lastCheckedAt"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "not_checked",
+                  "verified",
+                  "attention"
+                ]
+              },
+              "lastCheckedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
       "DrProbeResponse": {
         "allOf": [
           {
@@ -30067,16 +30121,20 @@
           {
             "type": "object",
             "required": [
-              "metrics",
-              "dr"
+        "metrics",
+        "dr",
+        "preservation"
             ],
             "properties": {
               "metrics": {
                 "$ref": "#/components/schemas/SystemMetrics"
               },
-              "dr": {
-                "$ref": "#/components/schemas/DrProbe"
-              }
+        "dr": {
+          "$ref": "#/components/schemas/DrProbe"
+        },
+        "preservation": {
+          "$ref": "#/components/schemas/PreservationReadiness"
+        }
             }
           }
         ]

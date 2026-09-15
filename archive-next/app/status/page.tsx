@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ApiEnvelope, type DrProbe, type SystemMetrics } from "@/lib/archive-api";
+import { createArchiveApiClient, type ApiEnvelope, type DrProbe, type PreservationReadiness, type SystemMetrics } from "@/lib/archive-api";
 
 function IconServer() {
   return (
@@ -74,7 +74,7 @@ interface StatusState {
 
 type MetricsState =
   | { status: "loading" | "forbidden" }
-  | { status: "ready"; metrics: SystemMetrics; dr: DrProbe }
+  | { status: "ready"; metrics: SystemMetrics; dr: DrProbe; preservation: PreservationReadiness }
   | { status: "error"; message: string };
 
 function formatBytes(bytes: number): string {
@@ -156,7 +156,7 @@ export default function StatusPage() {
         setMetricsState({ status: "error", message: response.error || copy.errors.metricsLoad });
         return;
       }
-      setMetricsState({ status: "ready", metrics: response.metrics, dr: response.dr });
+      setMetricsState({ status: "ready", metrics: response.metrics, dr: response.dr, preservation: response.preservation });
     } catch (err) {
       setMetricsState({ status: "error", message: err instanceof Error ? err.message : copy.errors.unknown });
     }
@@ -381,6 +381,33 @@ export default function StatusPage() {
                   ? `${metricsState.dr.lastRestoreTestOk ? copy.disasterRecovery.succeeded : copy.disasterRecovery.failed} — ${formatDateTime(new Date(metricsState.dr.lastRestoreTestAt), locale)}`
                   : copy.disasterRecovery.notRun}
               </span>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {metricsState.status === "ready" ? (
+        <section className="panel" aria-label={copy.preservation.ariaLabel}>
+          <div className="panel-title-row">
+            <div>
+              <h2>{copy.preservation.title}</h2>
+              <p>{copy.preservation.description}</p>
+            </div>
+            <a className="button button-secondary" href="/backup">{copy.preservation.manageBackups}</a>
+          </div>
+          <div className="kv-grid">
+            <div className="kv-item">
+              <strong>{copy.preservation.layer}</strong>
+              <span>{copy.preservation.layerStatus[metricsState.preservation.layer.status]}</span>
+            </div>
+            <div className="kv-item">
+              <strong>{copy.preservation.versioning}</strong>
+              <span>{copy.preservation.versioningStatus[metricsState.preservation.layer.versioning]}</span>
+            </div>
+            <div className="kv-item">
+              <strong>{copy.preservation.integrity}</strong>
+              <span>{copy.preservation.integrityStatus[metricsState.preservation.integrity.status]}</span>
+              <span className="helper-text">{copy.preservation.lastChecked.replace("{date}", formatDateTime(metricsState.preservation.integrity.lastCheckedAt ? new Date(metricsState.preservation.integrity.lastCheckedAt) : null, locale))}</span>
             </div>
           </div>
         </section>

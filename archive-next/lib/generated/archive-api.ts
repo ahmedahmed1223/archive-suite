@@ -6668,6 +6668,26 @@ export interface components {
             fileSystemAccess: boolean;
             networkAccess: boolean;
         };
+        PreservationReadiness: {
+            integrity: {
+                /** Format: date-time */
+                lastCheckedAt: string | null;
+                /** @enum {string} */
+                status: "not_checked" | "verified" | "attention";
+            };
+            layer: {
+                /**
+                 * @description A preservation-copy pipeline is not configured; this value never treats an access proxy as a preservation copy.
+                 * @enum {string}
+                 */
+                status: "requires_setup";
+                /**
+                 * @description Each media representation is tied to the current source version. Individual fingerprints are available only in the record context.
+                 * @enum {string}
+                 */
+                versioning: "per_asset";
+            };
+        };
         Project: {
             /** Format: date-time */
             createdAt: string;
@@ -7822,6 +7842,7 @@ export interface components {
         SystemStatusResponse: components["schemas"]["OkEnvelope"] & {
             dr: components["schemas"]["DrProbe"];
             metrics: components["schemas"]["SystemMetrics"];
+            preservation: components["schemas"]["PreservationReadiness"];
         };
         TagNode: {
             /** Format: date-time */

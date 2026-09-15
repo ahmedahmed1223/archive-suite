@@ -7,13 +7,19 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\SystemMetricSample;
 use App\Services\Backup\DrReadinessService;
+use App\Services\Preservation\PreservationReadinessService;
 use App\Services\System\SystemMetricsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SystemStatusController extends Controller
 {
-    public function status(Request $request, SystemMetricsService $metrics, DrReadinessService $dr): JsonResponse
+    public function status(
+        Request $request,
+        SystemMetricsService $metrics,
+        DrReadinessService $dr,
+        PreservationReadinessService $preservation,
+    ): JsonResponse
     {
         if ($denied = $this->requireAdmin($request)) {
             return $denied;
@@ -23,6 +29,7 @@ class SystemStatusController extends Controller
             'ok' => true,
             'metrics' => $metrics->snapshot(),
             'dr' => $dr->probe(),
+            'preservation' => $preservation->summary(),
         ]);
     }
 
