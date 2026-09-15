@@ -12,6 +12,7 @@ use App\Models\ReviewComment;
 use App\Models\ReviewLink;
 use App\Models\User;
 use App\Services\Media\ExternalReviewService;
+use App\Services\RightsEnforcementService;
 use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,7 +27,10 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class ReviewLinksController extends Controller
 {
-    public function __construct(private readonly ExternalReviewService $externalReview) {}
+    public function __construct(
+        private readonly ExternalReviewService $externalReview,
+        private readonly RightsEnforcementService $rightsEnforcement,
+    ) {}
 
     public function store(string $mediaUid, StoreReviewLinkRequest $request): JsonResponse
     {
@@ -35,6 +39,17 @@ class ReviewLinksController extends Controller
         // ReviewLinksApiTest's plain (default "viewer" role) login() fixture.
         // Adding an editor requirement here would be a real, undocumented
         // behavior change, not something this task asked for.
+
+        // Enforce rights before creating external review link
+        $decision = $this->rightsEnforcement->enforceForItem($mediaUid, 'digital_public');
+        if (!$decision->allowed) {
+            return response()->json([
+                ...ApiError::envelope('Access denied by rights enforcement.', 403),
+                'reason' => $decision->reason,
+                'decidedBy' => $decision->decidedBy,
+            ], 403);
+        }
+
         try {
             $reviewLink = $this->externalReview->createLink($mediaUid, $request->validated(), $this->actor($request));
         } catch (RuntimeException $exception) {

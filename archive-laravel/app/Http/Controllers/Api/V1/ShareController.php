@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\ShareLink;
+use App\Services\RightsEnforcementService;
 use App\Support\ApiError;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,8 @@ use stdClass;
 
 class ShareController extends Controller
 {
+    public function __construct(private readonly RightsEnforcementService $rightsEnforcement) {}
+
     public function store(Request $request): JsonResponse
     {
         if ($denied = $this->requireEditor($request)) {
@@ -32,6 +35,19 @@ class ShareController extends Controller
             'expiresAt' => ['nullable', 'date'],
             'password' => ['nullable', 'string', 'min:8'],
         ]);
+
+        // Enforce rights for each item being shared externally
+        $itemIds = array_values(array_filter((array) ($validated['scope']['itemIds'] ?? []), 'is_string'));
+        foreach ($itemIds as $itemId) {
+            $decision = $this->rightsEnforcement->enforceForItem($itemId, 'digital_public');
+            if (!$decision->allowed) {
+                return response()->json([
+                    ...ApiError::envelope('Access denied by rights enforcement.', 403),
+                    'reason' => $decision->reason,
+                    'decidedBy' => $decision->decidedBy,
+                ], 403);
+            }
+        }
 
         $token = Str::random(40);
         $share = ShareLink::query()->create([

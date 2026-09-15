@@ -8,6 +8,7 @@ use App\Domain\Montage\MontageValidationException;
 use App\Http\Controllers\Controller;
 use App\Models\MontageExport;
 use App\Models\MontageProject;
+use App\Services\RightsEnforcementService;
 use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class MontageExportsController extends Controller
 {
     public function __construct(
         private readonly MontageExportService $exports,
+        private readonly RightsEnforcementService $rightsEnforcement,
     ) {}
 
     public function store(Request $request, string $id): JsonResponse
@@ -33,6 +35,19 @@ class MontageExportsController extends Controller
         $actor = $this->archiveUser($request);
         if ($actor === null || Gate::forUser($actor)->denies('requestExport', $project)) {
             return response()->json(ApiError::envelope('Forbidden.', 403), 403);
+        }
+
+        // Enforce rights for broadcast usage (montage exports for broadcast)
+        // ponytail: montage projects may be composed of multiple source items;
+        // this enforces at the project level. if clip-level enforcement is needed,
+        // fetch clips and check each.
+        $decision = $this->rightsEnforcement->enforceForItem($id, 'broadcast');
+        if (!$decision->allowed) {
+            return response()->json([
+                ...ApiError::envelope('Access denied by rights enforcement.', 403),
+                'reason' => $decision->reason,
+                'decidedBy' => $decision->decidedBy,
+            ], 403);
         }
 
         $data = $request->validate([

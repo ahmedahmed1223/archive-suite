@@ -14,6 +14,7 @@ use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaPathGuard;
 use App\Services\Media\MediaQueueStatusBroadcaster;
+use App\Services\RightsEnforcementService;
 use App\Support\ApiError;
 use App\Support\RequestCorrelation;
 use Closure;
@@ -36,7 +37,10 @@ class MediaDerivativesController extends Controller
 {
     private const TYPES = ['thumbnail', 'waveform', 'proxy'];
 
-    public function __construct(private readonly MediaDerivativeService $derivatives) {}
+    public function __construct(
+        private readonly MediaDerivativeService $derivatives,
+        private readonly RightsEnforcementService $rightsEnforcement,
+    ) {}
 
     public function index(Request $request, string $recordId): JsonResponse
     {
@@ -200,6 +204,16 @@ class MediaDerivativesController extends Controller
                 ApiError::envelope('This derivative is stale and cannot be served for the current record source.', 409),
                 409,
             );
+        }
+
+        // Enforce rights for editorial_reuse (internal export of derivatives)
+        $decision = $this->rightsEnforcement->enforceForItem($derivative->record_uid, 'editorial_reuse');
+        if (!$decision->allowed) {
+            return response()->json([
+                ...ApiError::envelope('Access denied by rights enforcement.', 403),
+                'reason' => $decision->reason,
+                'decidedBy' => $decision->decidedBy,
+            ], 403);
         }
 
         try {
