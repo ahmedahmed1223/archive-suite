@@ -142,8 +142,6 @@ class SearchController extends Controller
         $hasMore = $pageRecords->count() > $limit;
         $pageRecords = $pageRecords->take($limit)->values();
         $pageRecords = $this->withMediaSummaries($pageRecords);
-        // V2-MEDIA-004: attach matching moments (transcript + timed segments) to each record
-        $pageRecords = $this->withRecordSegments($pageRecords, $queryText, $mode, $isAdvancedQuery);
         $lastRecord = $pageRecords->last();
         $segmentMatches = $this->matchingTimedDescriptionSegments($queryText, $mode, $isAdvancedQuery, $limit, $validated);
 
@@ -215,8 +213,6 @@ class SearchController extends Controller
         $pageRecords = $records->slice($offset, $limit)->values();
         $hasMore = ($offset + $limit) < $records->count();
         $pageRecords = $this->withMediaSummaries($pageRecords);
-        // V2-MEDIA-004: attach matching moments (transcript + timed segments) to each record
-        $pageRecords = $this->withRecordSegments($pageRecords, $queryText, 'semantic', false);
 
         return [
             'ok' => true,
@@ -241,90 +237,6 @@ class SearchController extends Controller
                 'mediaSummary' => $summaries[RecordMediaSummaryService::key($store, $uid)] ?? null,
             ];
         })->values();
-    }
-
-    /**
-     * Build matching moments (hits) for each record from transcript and timed
-     * description segments. ponytail: inline timestamp conversion into both
-     * timecode and seconds for UI flexibility.
-     *
-     * @param Collection<int, array<string, mixed>> $records
-     * @return Collection<int, array<string, mixed>>
-     */
-    private function withRecordSegments(Collection $records, string $queryText, string $mode, bool $isAdvancedQuery): Collection
-    {
-        if ($queryText === '' || $isAdvancedQuery || $mode === 'transcript') {
-            return $records->map(fn (array $record): array => [...$record, 'recordSegments' => []])->values();
-        }
-
-        return $records->map(function (array $record) use ($queryText, $mode): array {
-            $hits = [];
-
-            // Match transcript cues
-            if (is_string($record['transcript'] ?? null) && $record['transcript'] !== '') {
-                $transcriptHits = $this->transcripts->findAll($record['transcript'], $queryText);
-                foreach ($transcriptHits as $hit) {
-                    $hits[] = [
-                        'kind' => 'transcript',
-                        'timecode' => $this->secondsToTimecode($hit['timestampSeconds']),
-                        'timestampSeconds' => $hit['timestampSeconds'],
-                        'text' => $hit['excerpt'],
-                    ];
-                }
-            }
-
-            // Match timed description segments for this record
-            $recordId = is_string($record['uid'] ?? null) ? $record['uid'] : (is_string($record['id'] ?? null) ? $record['id'] : null);
-            if ($recordId !== null) {
-                $segmentHits = TimedDescriptionSegment::query()
-                    ->where('record_id', $recordId)
-                    ->get()
-                    ->filter(fn (TimedDescriptionSegment $segment): bool => $this->matchesTimedDescriptionSegment($segment, $queryText))
-                    ->map(function (TimedDescriptionSegment $segment): array {
-                        return [
-                            'kind' => 'description',
-                            'timecode' => $this->framesToTimecode($segment->start_frame),
-                            'timestampSeconds' => $this->framesToSeconds($segment->start_frame),
-                            'text' => trim((string) ($segment->description ?? '')),
-                        ];
-                    })
-                    ->values()
-                    ->all();
-
-                $hits = array_merge($hits, $segmentHits);
-            }
-
-            // Sort hits by timecode
-            usort($hits, fn (array $a, array $b): int => $a['timestampSeconds'] <=> $b['timestampSeconds']);
-
-            return [
-                ...$record,
-                'recordSegments' => $hits,
-            ];
-        })->values();
-    }
-
-    private function secondsToTimecode(int $seconds): string
-    {
-        $hours = (int) ($seconds / 3600);
-        $minutes = (int) (($seconds % 3600) / 60);
-        $secs = $seconds % 60;
-
-        return sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
-    }
-
-    private function framesToTimecode(int $frames): string
-    {
-        // ponytail: assume 25fps (common for video)
-        $seconds = (int) ($frames / 25);
-
-        return $this->secondsToTimecode($seconds);
-    }
-
-    private function framesToSeconds(int $frames): int
-    {
-        // ponytail: assume 25fps (common for video)
-        return (int) ($frames / 25);
     }
 
     /**

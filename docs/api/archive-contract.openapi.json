@@ -17605,40 +17605,6 @@
           },
           "syncVersion": {
             "type": "integer"
-          },
-          "recordSegments": {
-            "type": "array",
-            "description": "Matching moments in the video for search results (transcripts + timed description segments). Empty when not in a keyword or semantic search mode.",
-            "items": {
-              "type": "object",
-              "required": [
-                "kind",
-                "timecode",
-                "timestampSeconds",
-                "text"
-              ],
-              "properties": {
-                "kind": {
-                  "type": "string",
-                  "enum": [
-                    "transcript",
-                    "description"
-                  ]
-                },
-                "timecode": {
-                  "type": "string",
-                  "description": "HH:MM:SS format"
-                },
-                "timestampSeconds": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "text": {
-                  "type": "string"
-                }
-              },
-              "additionalProperties": false
-            }
           }
         },
         "additionalProperties": true
