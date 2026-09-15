@@ -6,6 +6,7 @@ export const workInbox = {
       "Pending project tasks, review sessions awaiting a decision, rights nearing expiry, and unread notifications — each item links back to its real record.",
     addMaterial: "Add material",
     openDaily: "Daily",
+    openMaterialStages: "Material stages",
   },
   filters: {
     all: "All · {count}",
