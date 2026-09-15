@@ -55,7 +55,25 @@ export type ApiError = {
   error: string;
   code?: string;
   details?: unknown;
-} & Partial<RightsRefusal>;
+} & Partial<RightsRefusal> & Partial<MediaServiceOutage>;
+
+/**
+ * Why a media operation was refused before it was queued: the service it
+ * needs is down or unconfigured. The reason is the probe's own, so it names
+ * what an operator has to fix rather than what the request did wrong.
+ */
+export interface MediaServiceOutage {
+  service: string;
+  serviceState: "down" | "requires_setup";
+  reason?: string | null;
+}
+
+export function mediaServiceOutage(envelope: { ok: boolean } | ApiError): MediaServiceOutage | null {
+  if (envelope.ok !== false) return null;
+  const { service, serviceState } = envelope as ApiError;
+  if (typeof service !== "string" || (serviceState !== "down" && serviceState !== "requires_setup")) return null;
+  return { service, serviceState, reason: (envelope as ApiError).reason ?? null };
+}
 
 /**
  * A rights refusal is the one 403 the user can act on: it names the clause

@@ -8,7 +8,7 @@ import MetricStrip from "@/components/MetricStrip";
 import { ContextPanel } from "@/components/operations/ContextPanel";
 import { StateNotice } from "@/components/operations/StateNotice";
 import { FieldError } from "@/components/ui/Form";
-import { createArchiveApiClient, type MediaJob, type MediaJobStatus, type MediaOperation, type MediaProbeReport, type MediaQueueStatus, type PaginationMeta } from "@/lib/archive-api";
+import { createArchiveApiClient, mediaServiceOutage, type MediaJob, type MediaServiceOutage, type MediaJobStatus, type MediaOperation, type MediaProbeReport, type MediaQueueStatus, type PaginationMeta } from "@/lib/archive-api";
 import { getEchoClient, onConnectionStateChange, type EchoConnectionState } from "@/lib/echo";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { formatBytes, formatDuration, mediaProbeReportFromJobResult } from "@/lib/media-probe";
@@ -32,7 +32,7 @@ type CreateState =
   | { status: "idle" }
   | { status: "creating" }
   | { status: "success"; job: MediaJob }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; outage?: MediaServiceOutage };
 
 type IngestState =
   | { status: "idle" }
@@ -428,7 +428,11 @@ export function MediaJobsList() {
     });
 
     if (!response.ok) {
-      setCreateState({ status: "error", message: response.error });
+      // A refusal for an unavailable service names what to fix; the generic
+      // message alone would send the operator back to re-queue into the same
+      // wall.
+      const outage = mediaServiceOutage(response);
+      setCreateState({ status: "error", message: response.error, ...(outage && { outage }) });
       return;
     }
 
@@ -644,6 +648,17 @@ export function MediaJobsList() {
             {createState.status === "creating" ? copy.create.creating : copy.create.submit}
           </button>
 
+          {createState.status === "error" && createState.outage ? (
+            <div className="state-banner state-banner-error" role="alert" data-service={createState.outage.service}>
+              <strong>{copy.create.serviceUnavailableTitle}</strong>
+              <span className="helper-text">
+                {copy.create.serviceUnavailableBody
+                  .replace("{service}", createState.outage.service)
+                  .replace("{state}", createState.outage.serviceState === "down" ? copy.create.serviceDown : copy.create.serviceRequiresSetup)
+                  .replace("{reason}", createState.outage.reason ?? "")}
+              </span>
+            </div>
+          ) : null}
           <p className="form-status" role={createState.status === "error" ? "alert" : "status"}>
             {createState.status === "success"
               ? copy.create.success.replace("{status}", statusLabel(createState.job.status, copy))

@@ -6342,6 +6342,14 @@ export interface components {
             startSeconds?: number;
             type?: components["schemas"]["MediaReviewCommentType"];
         };
+        /** @description Refusal to queue work whose service is down or unconfigured. Carries the probe's own reason, which is what the operator has to fix. */
+        MediaServiceUnavailableResponse: components["schemas"]["ErrorEnvelope"] & {
+            reason?: string | null;
+            /** @enum {string} */
+            service: "ffmpeg" | "ffprobe" | "whisper";
+            /** @enum {string} */
+            serviceState: "down" | "requires_setup";
+        };
         MediaSummary: {
             durationSeconds: number | null;
             /** @enum {string} */
@@ -11755,6 +11763,15 @@ export interface operations {
             };
             400: components["responses"]["Error"];
             401: components["responses"]["Error"];
+            /** @description A service the operation depends on is unavailable, so nothing was queued */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaServiceUnavailableResponse"];
+                };
+            };
         };
     };
     getMediaWorkflow: {

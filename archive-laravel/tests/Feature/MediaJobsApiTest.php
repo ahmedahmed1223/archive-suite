@@ -8,6 +8,7 @@ use App\Models\MediaJob;
 use App\Models\User;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Security\SecuritySettingsService;
+use App\Services\System\ServiceProbeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
@@ -18,6 +19,58 @@ use Tests\TestCase;
 class MediaJobsApiTest extends TestCase
 {
     use AuthenticatesArchiveRequests, RefreshDatabase;
+
+    /**
+     * V2-OPS-003: a job for a service that cannot run is refused when it is
+     * asked for, not queued and failed minutes later. The refusal names the
+     * service and repeats the probe's own reason, which is the remedy.
+     */
+    public function test_a_job_is_refused_up_front_when_its_service_is_unavailable(): void
+    {
+        Queue::fake();
+        config(['media.processor' => 'real']);
+        $this->mock(ServiceProbeService::class, function ($mock): void {
+            $mock->shouldReceive('probe')->andReturn([
+                'ffmpeg' => ['state' => 'available', 'reason' => null],
+                'ffprobe' => ['state' => 'available', 'reason' => null],
+                'whisper' => ['state' => 'requires_setup', 'reason' => 'WHISPER_ENDPOINT not configured'],
+            ]);
+        });
+
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-transcribe',
+            'operation' => 'transcription',
+        ], $this->authHeaders())
+            ->assertStatus(503)
+            ->assertJsonPath('service', 'whisper')
+            ->assertJsonPath('serviceState', 'requires_setup')
+            ->assertJsonPath('reason', 'WHISPER_ENDPOINT not configured');
+
+        $this->assertDatabaseCount('media_jobs', 0);
+        Queue::assertNothingPushed();
+    }
+
+    public function test_an_operation_whose_services_are_up_is_still_queued(): void
+    {
+        Queue::fake();
+        config(['media.processor' => 'real']);
+        $this->mock(ServiceProbeService::class, function ($mock): void {
+            $mock->shouldReceive('probe')->andReturn([
+                'ffmpeg' => ['state' => 'available', 'reason' => null],
+                'ffprobe' => ['state' => 'available', 'reason' => null],
+                'whisper' => ['state' => 'down', 'reason' => 'Whisper health check failed'],
+            ]);
+        });
+
+        // A thumbnail needs ffmpeg only, so a dead Whisper is none of its
+        // business -- the guard must not become a blanket outage.
+        $this->postJson('/api/v1/media/jobs', [
+            'recordId' => 'media-record-thumb',
+            'operation' => 'thumbnail',
+        ], $this->authHeaders())->assertStatus(202);
+
+        $this->assertDatabaseCount('media_jobs', 1);
+    }
 
     public function test_media_job_creation_survives_broadcast_failure(): void
     {

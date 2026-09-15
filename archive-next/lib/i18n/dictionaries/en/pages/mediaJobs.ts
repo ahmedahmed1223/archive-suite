@@ -50,6 +50,11 @@ export const mediaJobs = {
     needsReview: "Needs review"
   },
   create: {
+    serviceUnavailableTitle: "Not queued: a required service is unavailable",
+    serviceUnavailableBody: "{service} is {state}. {reason}",
+    serviceDown: "not responding",
+    serviceRequiresSetup: "not configured yet",
+    openServiceStatus: "Service status",
     title: "Create media job",
     description: "Enter the record ID, then choose the appropriate processing operation.",
     badge: "Create",

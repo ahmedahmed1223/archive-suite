@@ -11,6 +11,7 @@ use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaJobQueueRouter;
 use App\Services\Media\MediaPathGuard;
 use App\Services\Media\MediaQueueStatusBroadcaster;
+use App\Services\System\ServiceProbeService;
 use App\Support\ApiError;
 use App\Support\RequestCorrelation;
 use Closure;
@@ -39,6 +40,10 @@ class MediaJobsController extends Controller
             'options.watermark' => ['nullable', 'array'],
             'options.watermark.path' => ['nullable', 'string', 'max:2048', $safePathRule],
         ]);
+
+        if ($denied = $this->refuseUnavailableService($validated['operation'])) {
+            return $denied;
+        }
 
         $executor = app(MediaJobExecutor::class);
         $queue = app(MediaJobQueueRouter::class)->queueFor($validated['operation']);
@@ -180,6 +185,56 @@ class MediaJobsController extends Controller
         $user = $request->attributes->get('archive_user');
 
         return $user instanceof User && $user->role === 'admin';
+    }
+
+    /**
+     * The services each operation cannot run without. ocr is absent on
+     * purpose: nothing probes its engine yet, and claiming to check something
+     * we do not check would be the same dishonesty this guards against.
+     *
+     * @var array<string, list<string>>
+     */
+    private const REQUIRED_SERVICES = [
+        'thumbnail' => ['ffmpeg'],
+        'transcode' => ['ffmpeg'],
+        'montage_export' => ['ffmpeg'],
+        'media_probe' => ['ffprobe'],
+        'media_qc' => ['ffmpeg', 'ffprobe'],
+        'transcription' => ['whisper'],
+    ];
+
+    /**
+     * Queuing work for a service that is down or unconfigured produced a job
+     * that sat in the queue looking healthy and then failed at execution. The
+     * refusal happens up front instead, naming the service and the reason so
+     * the operator can fix the cause rather than re-queue into the same wall.
+     *
+     * Only the real processor is checked: under the fake processor no external
+     * binary is involved, so a probe result would say nothing about the job.
+     */
+    private function refuseUnavailableService(string $operation): ?JsonResponse
+    {
+        if (config('media.processor') !== 'real') {
+            return null;
+        }
+
+        $services = app(ServiceProbeService::class)->probe();
+
+        foreach (self::REQUIRED_SERVICES[$operation] ?? [] as $service) {
+            $state = $services[$service]['state'] ?? 'available';
+            if ($state === 'available') {
+                continue;
+            }
+
+            return response()->json([
+                ...ApiError::envelope('This operation cannot run because a service it depends on is unavailable.', 503),
+                'service' => $service,
+                'serviceState' => $state,
+                'reason' => $services[$service]['reason'] ?? null,
+            ], 503);
+        }
+
+        return null;
     }
 
     private function userId(Request $request): ?string

@@ -50,6 +50,11 @@ export const mediaJobs = {
     needsReview: "تحتاج مراجعة"
   },
   create: {
+    serviceUnavailableTitle: "لم تُدرَج المهمة: خدمة لازمة غير متاحة",
+    serviceUnavailableBody: "{service} {state}. {reason}",
+    serviceDown: "لا يستجيب",
+    serviceRequiresSetup: "غير مُهيّأ بعد",
+    openServiceStatus: "حالة الخدمات",
     title: "إنشاء مهمة وسائط",
     description: "أدخل معرّف السجل، ثم اختر عملية المعالجة المناسبة.",
     badge: "إنشاء",

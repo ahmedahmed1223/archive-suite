@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createArchiveApiClient, rightsRefusal, type ApiEnvelope, type BulkMacroRun, type BulkMacroStep, type SafetyPreviewRun } from "./archive-api";
+import { createArchiveApiClient, mediaServiceOutage, rightsRefusal, type ApiEnvelope, type BulkMacroRun, type BulkMacroStep, type SafetyPreviewRun } from "./archive-api";
 
 describe("archive API uploads", () => {
   it("uses the access token issued by login for multipart uploads", async () => {
@@ -403,5 +403,38 @@ describe("rights refusal envelopes", () => {
     const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
 
     expect(rightsRefusal(await api.createShare({ itemIds: ["item-1"] }))).toBeNull();
+  });
+});
+
+describe("media service outage envelopes", () => {
+  const outageBody = {
+    ok: false,
+    error: "This operation cannot run because a service it depends on is unavailable.",
+    code: "FEATURE_DISABLED",
+    service: "whisper",
+    serviceState: "requires_setup",
+    reason: "WHISPER_ENDPOINT not configured"
+  };
+
+  it("carries the service, its state and the probe's reason", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify(outageBody), { status: 503 }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    const response = await api.createMediaJob({ recordId: "r-1", operation: "transcription" });
+
+    expect(mediaServiceOutage(response)).toEqual({
+      service: "whisper",
+      serviceState: "requires_setup",
+      reason: "WHISPER_ENDPOINT not configured"
+    });
+  });
+
+  it("is null for a failure that names no service", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: false, error: "Queue at capacity.", code: "RATE_LIMITED" }), { status: 429 })
+    );
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    expect(mediaServiceOutage(await api.createMediaJob({ recordId: "r-1", operation: "thumbnail" }))).toBeNull();
   });
 });

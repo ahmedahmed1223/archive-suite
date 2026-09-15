@@ -5489,6 +5489,16 @@
           },
           "401": {
             "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "description": "A service the operation depends on is unavailable, so nothing was queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaServiceUnavailableResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -20201,6 +20211,22 @@
                   { "type": "null" }
                 ]
               }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "MediaServiceUnavailableResponse": {
+        "description": "Refusal to queue work whose service is down or unconfigured. Carries the probe's own reason, which is what the operator has to fix.",
+        "allOf": [
+          { "$ref": "#/components/schemas/ErrorEnvelope" },
+          {
+            "type": "object",
+            "required": ["service", "serviceState"],
+            "properties": {
+              "service": { "type": "string", "enum": ["ffmpeg", "ffprobe", "whisper"] },
+              "serviceState": { "type": "string", "enum": ["down", "requires_setup"] },
+              "reason": { "type": ["string", "null"] }
             },
             "additionalProperties": false
           }
