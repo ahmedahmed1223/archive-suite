@@ -46,6 +46,13 @@ RUN pip3 install --no-cache-dir whisper-ctranslate2==0.5.3 \
     && ldconfig -p | grep -q 'libcudnn' \
     && whisper-ctranslate2 --help | grep -q -- '--device'
 
+# Required by ffmpeg drawtext for burned external-review previews. Kept after
+# the Whisper layer so the font addition does not force model CLI downloads.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-dejavu-core \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY composer.json composer.lock ./

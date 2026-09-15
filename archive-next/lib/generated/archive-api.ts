@@ -6088,10 +6088,12 @@ export interface components {
             color?: string;
             /** @description waveform height in pixels. */
             height?: number;
-            /** @description proxy: maximum output width. */
+            /** @description proxy: maximum output width; review_proxy is capped at 480px. */
             maxWidth?: number;
-            /** @description proxy: target video bitrate. */
+            /** @description proxy: target video bitrate; review_proxy is capped at 1200 Kbps. */
             videoBitrateKbps?: number;
+            /** @description review_proxy only: text burned into each video frame by ffmpeg. Required for review_proxy; never a browser-only overlay. */
+            watermarkText?: string;
             /** @description thumbnail/waveform width in pixels. */
             width?: number;
         };
@@ -6101,7 +6103,7 @@ export interface components {
         /** @enum {string} */
         MediaDerivativeStatus: "pending" | "processing" | "ready" | "failed" | "missing";
         /** @enum {string} */
-        MediaDerivativeType: "thumbnail" | "waveform" | "proxy";
+        MediaDerivativeType: "thumbnail" | "waveform" | "proxy" | "review_proxy";
         MediaInspection: {
             /** Format: date-time */
             completedAt: string | null;
@@ -6249,7 +6251,7 @@ export interface components {
          * @description Operational role of a media copy. Preservation and mezzanine are listed only once the system records an actual copy.
          * @enum {string}
          */
-        MediaRepresentationType: "source" | "preservation" | "mezzanine" | "proxy" | "thumbnail" | "waveform" | "text" | "output";
+        MediaRepresentationType: "source" | "preservation" | "mezzanine" | "proxy" | "review_proxy" | "thumbnail" | "waveform" | "text" | "output";
         MediaReviewComment: {
             /** Format: uuid */
             attachmentId: string | null;

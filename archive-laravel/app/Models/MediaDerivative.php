@@ -26,6 +26,7 @@ class MediaDerivative extends Model
         'settings_hash',
         'status',
         'storage_key',
+        'has_burned_in_watermark',
         'media_job_id',
         'error',
         'created_by',
@@ -38,6 +39,7 @@ class MediaDerivative extends Model
     {
         return [
             'settings' => 'array',
+            'has_burned_in_watermark' => 'boolean',
         ];
     }
 }

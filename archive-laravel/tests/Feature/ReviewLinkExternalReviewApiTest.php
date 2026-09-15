@@ -262,6 +262,71 @@ class ReviewLinkExternalReviewApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    public function test_visible_watermark_policy_refuses_a_review_proxy_without_worker_burn_evidence(): void
+    {
+        $this->seedRecord('record-unproven-review-proxy', 'checksum-unproven-review-proxy');
+        $this->writeFile('record-unproven-review-proxy/derivatives/review-proxy.mp4', 'unproven review preview bytes');
+        $derivativeId = (string) Str::uuid();
+
+        DB::table('media_derivatives')->insert([
+            'id' => $derivativeId,
+            'record_store' => 'archive-items',
+            'record_uid' => 'record-unproven-review-proxy',
+            'attachment_id' => null,
+            'derivative_type' => 'review_proxy',
+            'version_token' => 'record:checksum-unproven-review-proxy',
+            'settings' => json_encode(['watermarkText' => 'EXTERNAL REVIEW | 2026-09-15']),
+            'settings_hash' => hash('sha256', json_encode(['watermarkText' => 'EXTERNAL REVIEW | 2026-09-15'])),
+            'status' => 'ready',
+            'storage_key' => 'record-unproven-review-proxy/derivatives/review-proxy.mp4',
+            'has_burned_in_watermark' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $token = $this->postJson('/api/v1/media/record-unproven-review-proxy/review-links', [
+            'derivativeId' => $derivativeId,
+            'watermarkPolicy' => 'visible',
+        ], $this->authHeaders())->assertCreated()->json('token');
+
+        $this->getJson("/api/v1/review-links/{$token}/media")
+            ->assertNotFound()
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_visible_watermark_policy_streams_only_a_ready_current_burned_review_proxy(): void
+    {
+        $this->seedRecord('record-burned-review-proxy', 'checksum-burned-review-proxy');
+        $this->writeFile('record-burned-review-proxy/derivatives/review-proxy.mp4', 'burned review preview bytes');
+        $derivativeId = (string) Str::uuid();
+
+        DB::table('media_derivatives')->insert([
+            'id' => $derivativeId,
+            'record_store' => 'archive-items',
+            'record_uid' => 'record-burned-review-proxy',
+            'attachment_id' => null,
+            'derivative_type' => 'review_proxy',
+            'version_token' => 'record:checksum-burned-review-proxy',
+            'settings' => json_encode(['watermarkText' => 'EXTERNAL REVIEW | 2026-09-15']),
+            'settings_hash' => hash('sha256', json_encode(['watermarkText' => 'EXTERNAL REVIEW | 2026-09-15'])),
+            'status' => 'ready',
+            'storage_key' => 'record-burned-review-proxy/derivatives/review-proxy.mp4',
+            'has_burned_in_watermark' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $token = $this->postJson('/api/v1/media/record-burned-review-proxy/review-links', [
+            'derivativeId' => $derivativeId,
+            'watermarkPolicy' => 'visible',
+        ], $this->authHeaders())->assertCreated()->json('token');
+
+        $this->get("/api/v1/review-links/{$token}/media")
+            ->assertOk()
+            ->assertHeader('X-Review-Media-Kind', 'derivative:review_proxy')
+            ->assertHeader('X-Review-Watermark-Policy', 'visible');
+    }
+
     public function test_expiry_is_immediate_and_fails_closed_for_media_and_decisions(): void
     {
         $this->seedRecord('record-8', 'checksum-8');

@@ -152,6 +152,35 @@ class RealMediaProcessorFfmpegSmokeTest extends TestCase
         $this->assertStringContainsString('64', $probe['stdout']);
     }
 
+    public function test_real_ffmpeg_generates_a_burned_review_proxy_verified_by_ffprobe(): void
+    {
+        $job = $this->makeJob('review_proxy', 'smoke-review-proxy', [
+            'maxWidth' => 64,
+            'videoBitrateKbps' => 200,
+            'watermarkText' => 'EXTERNAL REVIEW 2026-09-15',
+        ]);
+
+        $artifacts = $this->processor->process($job);
+
+        $this->assertSame('derivative_review_proxy', $artifacts[0]['kind']);
+        $this->assertTrue($artifacts[0]['watermarkBurned']);
+        $outputPath = self::RECORD_ID.'/derivatives/smoke-review-proxy.mp4';
+        $this->assertFileExists($outputPath);
+
+        $runner = new SymfonyProcessRunner(30);
+        $probe = $runner->run([
+            'ffprobe', '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_entries', 'stream=width,codec_type',
+            '-of', 'csv=p=0',
+            $outputPath,
+        ]);
+
+        $this->assertSame(0, $probe['exitCode'], "ffprobe could not read the generated review proxy: {$probe['stderr']}");
+        $this->assertStringContainsString('video', $probe['stdout']);
+        $this->assertStringContainsString('64', $probe['stdout']);
+    }
+
     /**
      * @param  array<string, mixed>  $settings
      */

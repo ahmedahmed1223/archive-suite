@@ -94,17 +94,24 @@ class FakeMediaProcessor implements MediaProcessor
         $derivativeId = is_string($job->options['derivativeId'] ?? null) ? $job->options['derivativeId'] : $job->id;
         $extension = match ($type) {
             'waveform' => 'png',
-            'proxy' => 'mp4',
+            'proxy', 'review_proxy' => 'mp4',
             default => 'jpg',
         };
 
-        return [
-            [
-                'kind' => "derivative_{$type}",
-                'key' => "{$job->record_id}/derivatives/{$derivativeId}.{$extension}",
-                'url' => null,
-            ],
+        $artifact = [
+            'kind' => "derivative_{$type}",
+            'key' => "{$job->record_id}/derivatives/{$derivativeId}.{$extension}",
+            'url' => null,
         ];
+
+        if ($type === 'review_proxy') {
+            // Mirrors the real processor's explicit artifact assertion. The
+            // test executor never renders bytes, but it must exercise the
+            // same state transition as a successful burned-preview job.
+            $artifact['watermarkBurned'] = true;
+        }
+
+        return [$artifact];
     }
 
     /**

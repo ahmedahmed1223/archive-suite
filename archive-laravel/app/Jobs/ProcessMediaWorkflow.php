@@ -200,7 +200,11 @@ class ProcessMediaWorkflow implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        app(MediaDerivativeService::class)->markReady($derivative, $storageKey);
+        app(MediaDerivativeService::class)->markReady(
+            $derivative,
+            $storageKey,
+            ($artifacts[0]['watermarkBurned'] ?? false) === true,
+        );
     }
 
     private function syncDerivativeOnFailure(MediaJob $mediaJob, string $error): void

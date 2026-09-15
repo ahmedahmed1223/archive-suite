@@ -85,6 +85,14 @@ COPY docker/supervisor/all-in-one.conf /etc/supervisor/conf.d/all-in-one.conf
 # WHISPER_COMPUTE_TYPE at runtime — the same CLI supports CUDA if the host has it.
 RUN pip install --break-system-packages --no-cache-dir whisper-ctranslate2
 
+# Burned external-review previews use ffmpeg's drawtext filter. Keep this in
+# its own layer so adding the font does not invalidate the costly Whisper
+# package layer above during a routine image rebuild.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-dejavu-core \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy composer files

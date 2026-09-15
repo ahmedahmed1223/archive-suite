@@ -535,6 +535,61 @@ class RealMediaProcessorTest extends TestCase
         $this->assertNotContains('nvidia-smi', $this->runner->lastCommand());
     }
 
+    public function test_review_proxy_burns_a_safe_text_watermark_into_the_generated_video(): void
+    {
+        $this->stageDerivativeFixture('record-derivative', 'deriv-review-proxy-1', 'mp4');
+
+        $job = new MediaJob;
+        $job->id = 'job-derivative-review-proxy';
+        $job->record_id = 'record-derivative';
+        $job->operation = 'derivative';
+        $job->source_path = 'archive/source.mov';
+        $job->options = [
+            'derivativeId' => 'deriv-review-proxy-1',
+            'derivativeType' => 'review_proxy',
+            'settings' => [
+                'maxWidth' => 480,
+                'videoBitrateKbps' => 800,
+                'watermarkText' => 'EXTERNAL REVIEW | 2026-09-15',
+            ],
+        ];
+
+        $artifacts = $this->processor->process($job);
+
+        $this->assertSame('derivative_review_proxy', $artifacts[0]['kind']);
+        $this->assertTrue($artifacts[0]['watermarkBurned']);
+        $this->assertFileExists('record-derivative/derivatives/deriv-review-proxy-1.mp4');
+
+        $command = $this->runner->lastCommand();
+        $filterIndex = array_search('-vf', $command, true);
+        $this->assertNotFalse($filterIndex);
+        $this->assertStringContainsString('drawtext=', $command[$filterIndex + 1]);
+        $this->assertStringContainsString('EXTERNAL REVIEW', $command[$filterIndex + 1]);
+    }
+
+    public function test_review_proxy_escapes_filter_delimiters_in_watermark_text(): void
+    {
+        $this->stageDerivativeFixture('record-derivative', 'deriv-review-proxy-escape', 'mp4');
+
+        $job = new MediaJob;
+        $job->id = 'job-derivative-review-proxy-escape';
+        $job->record_id = 'record-derivative';
+        $job->operation = 'derivative';
+        $job->source_path = 'archive/source.mov';
+        $job->options = [
+            'derivativeId' => 'deriv-review-proxy-escape',
+            'derivativeType' => 'review_proxy',
+            'settings' => ['watermarkText' => "Reviewer: A's copy; [external]"],
+        ];
+
+        $this->processor->process($job);
+
+        $command = $this->runner->lastCommand();
+        $filterIndex = array_search('-vf', $command, true);
+        $this->assertNotFalse($filterIndex);
+        $this->assertStringContainsString("text='Reviewer\\: A\\'s copy\\; \\[external\\]'", $command[$filterIndex + 1]);
+    }
+
     /**
      * The fake runner's default nvidia-smi response reports a healthy GPU
      * (see FakeProcessRunner), so a proxy that asks for acceleration here

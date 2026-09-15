@@ -31,11 +31,10 @@ use RuntimeException;
  * DEFAULT_DURATION_HOURS so "time-bounded" holds unconditionally (spec
  * acceptance), not just when the caller remembers to set an expiry.
  *
- * Watermarking: a visible watermark must be burned into a dedicated preview
- * before any bytes can be streamed. The current derivative model cannot
- * prove that a file has such a burn-in, so visible-watermark links fail
- * closed until that preview pipeline supplies immutable evidence. The
- * Next.js overlay is presentation only and is never treated as protection.
+ * Watermarking: a visible watermark must be burned into the dedicated
+ * review_proxy rendition before any bytes can be streamed. The worker marks
+ * it only after ffmpeg successfully rendered the text into the staged file;
+ * ordinary proxies and browser overlays are never treated as protection.
  */
 final class ExternalReviewService
 {
@@ -105,12 +104,8 @@ final class ExternalReviewService
      */
     public function resolveMediaSource(ReviewLink $link): ?array
     {
-        // The current derivative model has no immutable evidence that a
-        // particular file has a watermark burned into its pixels. Refuse the
-        // visible-watermark policy until that dedicated preview pipeline is
-        // available rather than treating a browser overlay as protection.
         if ($link->watermark_policy === ReviewLink::WATERMARK_VISIBLE) {
-            return null;
+            return $this->resolveBurnedReviewProxy($link);
         }
 
         if ($link->derivative_id !== null) {
@@ -137,6 +132,37 @@ final class ExternalReviewService
         }
 
         return null;
+    }
+
+    /**
+     * A visible-watermark link is intentionally narrower than ordinary
+     * review delivery: it can only stream a current, ready review_proxy
+     * whose success artifact recorded a burned-in mark. It never falls back
+     * to the original source or to a generic proxy.
+     *
+     * @return array{absolutePath: string, kind: string}|null
+     */
+    private function resolveBurnedReviewProxy(ReviewLink $link): ?array
+    {
+        if ($link->derivative_id === null) {
+            return null;
+        }
+
+        $derivative = MediaDerivative::query()->find($link->derivative_id);
+        if (
+            ! $derivative instanceof MediaDerivative
+            || $derivative->derivative_type !== 'review_proxy'
+            || ! $derivative->has_burned_in_watermark
+            || $derivative->status !== 'ready'
+            || ! is_string($derivative->storage_key)
+            || ! $this->derivatives->isCurrentVersion($derivative)
+        ) {
+            return null;
+        }
+
+        $path = $this->safeExistingPath($derivative->storage_key);
+
+        return $path === null ? null : ['absolutePath' => $path, 'kind' => 'derivative:review_proxy'];
     }
 
     /**

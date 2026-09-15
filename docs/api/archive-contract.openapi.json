@@ -25498,7 +25498,8 @@
         "enum": [
           "thumbnail",
           "waveform",
-          "proxy"
+          "proxy",
+          "review_proxy"
         ]
       },
       "MediaRepresentationType": {
@@ -25509,6 +25510,7 @@
           "preservation",
           "mezzanine",
           "proxy",
+          "review_proxy",
           "thumbnail",
           "waveform",
           "text",
@@ -25622,17 +25624,23 @@
             "type": "integer",
             "minimum": 64,
             "maximum": 4096,
-            "description": "proxy: maximum output width."
+            "description": "proxy: maximum output width; review_proxy is capped at 480px."
           },
           "videoBitrateKbps": {
             "type": "integer",
             "minimum": 64,
             "maximum": 8000,
-            "description": "proxy: target video bitrate."
+            "description": "proxy: target video bitrate; review_proxy is capped at 1200 Kbps."
           },
           "accelerate": {
             "type": "boolean",
             "description": "proxy: request GPU (h264_nvenc) encoding. Only ever honored when the worker's NVIDIA runtime is verified healthy -- otherwise the job fails rather than silently falling back to CPU and misreporting the encoder used."
+          },
+          "watermarkText": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120,
+            "description": "review_proxy only: text burned into each video frame by ffmpeg. Required for review_proxy; never a browser-only overlay."
           }
         },
         "additionalProperties": false

@@ -151,6 +151,38 @@ class MediaDerivativesApiTest extends TestCase
         Queue::assertNotPushed(ProcessMediaWorkflow::class);
     }
 
+    public function test_review_proxy_requires_watermark_text_and_records_worker_evidence_when_ready(): void
+    {
+        $this->seedRecord('review-proxy-record', 'review-proxy-checksum');
+
+        $this->postJson('/api/v1/media-derivatives', [
+            'recordId' => 'review-proxy-record',
+            'type' => 'review_proxy',
+            'sourcePath' => 'archive/review-proxy-record.mov',
+            'settings' => ['maxWidth' => 480],
+        ], $this->authHeaders())->assertStatus(422);
+
+        $created = $this->postJson('/api/v1/media-derivatives', [
+            'recordId' => 'review-proxy-record',
+            'type' => 'review_proxy',
+            'sourcePath' => 'archive/review-proxy-record.mov',
+            'settings' => [
+                'maxWidth' => 480,
+                'videoBitrateKbps' => 800,
+                'watermarkText' => 'EXTERNAL REVIEW | 2026-09-15',
+            ],
+        ], $this->authHeaders())->assertStatus(202);
+
+        $created->assertJsonPath('derivative.derivativeType', 'review_proxy')
+            ->assertJsonPath('derivative.status', 'ready');
+
+        $this->assertDatabaseHas('media_derivatives', [
+            'id' => $created->json('derivative.id'),
+            'derivative_type' => 'review_proxy',
+            'has_burned_in_watermark' => true,
+        ]);
+    }
+
     public function test_replacing_the_source_makes_a_ready_derivative_report_stale_but_keeps_it_and_a_fresh_request_creates_a_new_one(): void
     {
         $disk = config('ingest.disk');

@@ -7,6 +7,8 @@ use App\Models\MediaJob;
 
 class RealMediaProcessor implements MediaProcessor
 {
+    private const REVIEW_WATERMARK_FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+
     private readonly MediaPathGuard $pathGuard;
 
     private readonly CudaCapabilityChecker $cudaCapability;
@@ -117,6 +119,7 @@ class RealMediaProcessor implements MediaProcessor
             'thumbnail' => $this->processDerivativeThumbnail($job, $settings),
             'waveform' => $this->processDerivativeWaveform($job, $settings),
             'proxy' => $this->processDerivativeProxy($job, $settings),
+            'review_proxy' => $this->processDerivativeReviewProxy($job, $settings),
             default => throw new \RuntimeException("Unknown derivative type: {$type}"),
         };
     }
@@ -263,6 +266,84 @@ class RealMediaProcessor implements MediaProcessor
                 'encoder' => $encoder,
             ],
         ];
+    }
+
+    /**
+     * A deliberately separate rendition for external review. Unlike a
+     * normal proxy, this always burns a constrained text watermark into the
+     * encoded video. The worker returns watermarkBurned=true only after
+     * ffmpeg succeeds and the staged file is atomically promoted; the
+     * review-link streaming path checks that evidence before serving it.
+     *
+     * @param  array<string, mixed>  $settings
+     * @return array<int, array<string, mixed>>
+     */
+    private function processDerivativeReviewProxy(MediaJob $job, array $settings): array
+    {
+        $sourcePath = $this->pathGuard->resolveInput($job->source_path, 'sourcePath');
+        $maxWidth = max(64, min((int) ($settings['maxWidth'] ?? 480), 480));
+        $videoBitrateKbps = max(64, min((int) ($settings['videoBitrateKbps'] ?? 600), 1200));
+        $watermarkText = $this->reviewWatermarkText($settings['watermarkText'] ?? null);
+        $outputKey = "{$job->record_id}/derivatives/{$this->derivativeId($job)}.mp4";
+        [$outputPath, $tempPath] = $this->stageDerivativeOutput($outputKey, 'review proxy derivative output');
+
+        $filter = sprintf(
+            "scale=min(%d\\,iw):-2,drawtext=fontfile=%s:text='%s':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=20:fontcolor=white@0.8:box=1:boxcolor=black@0.45:boxborderw=10",
+            $maxWidth,
+            self::REVIEW_WATERMARK_FONT,
+            $watermarkText,
+        );
+
+        $command = [
+            $this->ffmpegPath,
+            '-y',
+            '-i', $sourcePath,
+            '-vf', $filter,
+            '-c:v', 'libx264',
+            '-b:v', "{$videoBitrateKbps}k",
+            '-preset', 'veryfast',
+            '-c:a', 'aac',
+            '-b:a', '96k',
+            $tempPath,
+        ];
+
+        $result = $this->runner->run($command, null, fn (): bool => $this->isCanceled($job));
+        $this->throwIfCanceled($result);
+        if ($result['exitCode'] !== 0) {
+            $this->discardStagedOutput($tempPath);
+            throw new \RuntimeException("ffmpeg review proxy failed: {$result['stderr']}");
+        }
+        $this->promoteStagedOutput($tempPath, $outputPath);
+
+        return [[
+            'kind' => 'derivative_review_proxy',
+            'key' => $outputKey,
+            'url' => null,
+            'encoder' => 'libx264',
+            'watermarkBurned' => true,
+        ]];
+    }
+
+    private function reviewWatermarkText(mixed $value): string
+    {
+        if (! is_string($value)) {
+            throw new \RuntimeException('A review proxy requires watermark text.');
+        }
+
+        $text = preg_replace('/[\x00-\x1F\x7F]/u', ' ', trim($value));
+        $text = preg_replace('/\s+/u', ' ', (string) $text);
+        if ($text === null || mb_strlen($text) < 3 || mb_strlen($text) > 120) {
+            throw new \RuntimeException('Review watermark text must be between 3 and 120 characters.');
+        }
+
+        // The string is inserted into an ffmpeg filter expression, not a
+        // shell command. Escape filter and drawtext delimiters explicitly so
+        // an internal request cannot alter the filter graph or read a file.
+        return str_replace(
+            ['\\', "'", ':', '%', ',', ';', '[', ']'],
+            ['\\\\', "\\'", '\\:', '\\%', '\\,', '\\;', '\\[', '\\]'],
+            $text,
+        );
     }
 
     private function derivativeId(MediaJob $job): string

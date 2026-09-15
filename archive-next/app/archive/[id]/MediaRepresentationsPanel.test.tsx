@@ -20,6 +20,7 @@ describe("MediaRepresentationsPanel", () => {
     const representations: MediaRepresentation[] = [
       { id: "source-1", type: "source", status: "ready", versionToken: "record:checksum-1", isCurrentVersion: true, derivativeId: null, createdAt: null },
       { id: "thumbnail-1", type: "thumbnail", status: "ready", versionToken: "record:checksum-1", isCurrentVersion: true, derivativeId: "derivative-1", createdAt: "2026-09-14T10:00:00.000Z" },
+      { id: "review-proxy-1", type: "review_proxy", status: "ready", versionToken: "record:checksum-1", isCurrentVersion: true, derivativeId: "derivative-2", createdAt: "2026-09-15T10:00:00.000Z" },
     ];
     mediaRepresentations.mockResolvedValue({ ok: true, representations });
 
@@ -29,7 +30,8 @@ describe("MediaRepresentationsPanel", () => {
     expect(screen.getByRole("heading", { name: "تمثيلات الوسائط" })).toBeInTheDocument();
     expect(screen.getByText("المصدر الحالي")).toBeInTheDocument();
     expect(screen.getByText("صورة مصغرة")).toBeInTheDocument();
+    expect(screen.getByText("نسخة مراجعة مائية")).toBeInTheDocument();
     expect(screen.queryByText("نسخة حفظ")).not.toBeInTheDocument();
-    expect(screen.getAllByText("record:checksum-1")).toHaveLength(2);
+    expect(screen.getAllByText("record:checksum-1")).toHaveLength(3);
   });
 });

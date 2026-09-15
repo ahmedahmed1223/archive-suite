@@ -46,11 +46,6 @@ constraint and, where relevant, the path to lifting it.
 
 ## Media and workflow
 
-- **External review link watermarking** is not yet available as a burned-in
-  video or image preview. Links configured to require a visible watermark
-  fail closed and stream no media until the dedicated burned-preview
-  pipeline is delivered; the label in the public viewer is presentation
-  only and is never relied on as protection.
 - **Derivative generation** (thumbnails, waveforms, proxies) always runs on
   the same CPU queue as other media operations. Only transcription can route
   to the GPU queue, and only when the system Whisper device is set to

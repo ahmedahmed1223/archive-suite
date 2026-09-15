@@ -26,8 +26,8 @@ use RuntimeException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Cached, version-pinned media derivatives -- thumbnail, waveform, and
- * lightweight preview (proxy) copies (V3-MEDIA-006). See
+ * Cached, version-pinned media derivatives -- thumbnail, waveform, generic
+ * proxy, and burned-watermark review-proxy copies. See
  * MediaDerivativeService for the version + settings identity model this
  * reuses from review sessions (V3-MEDIA-002) and clips (V3-MEDIA-004), and
  * RealMediaProcessor::processDerivative() for how generation actually runs
@@ -35,7 +35,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class MediaDerivativesController extends Controller
 {
-    private const TYPES = ['thumbnail', 'waveform', 'proxy'];
+    private const TYPES = ['thumbnail', 'waveform', 'proxy', 'review_proxy'];
 
     public function __construct(
         private readonly MediaDerivativeService $derivatives,
@@ -86,6 +86,8 @@ class MediaDerivativesController extends Controller
             }
         };
 
+        $isReviewProxy = $request->input('type') === 'review_proxy';
+
         $validated = $request->validate([
             'recordId' => ['required', 'string', 'max:255'],
             'store' => ['nullable', 'string', 'max:255'],
@@ -97,9 +99,15 @@ class MediaDerivativesController extends Controller
             'settings.width' => ['nullable', 'integer', 'min:16', 'max:4096'],
             'settings.height' => ['nullable', 'integer', 'min:16', 'max:2048'],
             'settings.color' => ['nullable', 'string', 'max:6'],
-            'settings.maxWidth' => ['nullable', 'integer', 'min:64', 'max:4096'],
-            'settings.videoBitrateKbps' => ['nullable', 'integer', 'min:64', 'max:8000'],
-            'settings.accelerate' => ['nullable', 'boolean'],
+            'settings.maxWidth' => ['nullable', 'integer', 'min:64', $isReviewProxy ? 'max:480' : 'max:4096'],
+            'settings.videoBitrateKbps' => ['nullable', 'integer', 'min:64', $isReviewProxy ? 'max:1200' : 'max:8000'],
+            // Burned review previews use the reproducible CPU path. GPU
+            // acceleration is intentionally not accepted for this security
+            // sensitive rendition until it has its own verified profile.
+            'settings.accelerate' => $isReviewProxy ? ['prohibited'] : ['nullable', 'boolean'],
+            // A review_proxy is a distinct security-sensitive rendition. Its
+            // text is rendered by the worker; it is not a browser overlay.
+            'settings.watermarkText' => ['required_if:type,review_proxy', 'nullable', 'string', 'min:3', 'max:120'],
         ]);
 
         try {

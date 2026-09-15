@@ -146,11 +146,15 @@ final class MediaDerivativeService
         ])->save();
     }
 
-    public function markReady(MediaDerivative $derivative, string $storageKey): void
+    public function markReady(MediaDerivative $derivative, string $storageKey, bool $hasBurnedInWatermark = false): void
     {
         $derivative->forceFill([
             'status' => 'ready',
             'storage_key' => $storageKey,
+            // Set from the worker artifact, never from the HTTP generation
+            // request. External review links use it as server-side evidence
+            // that their dedicated preview was actually rendered.
+            'has_burned_in_watermark' => $hasBurnedInWatermark,
             'error' => null,
         ])->save();
     }
