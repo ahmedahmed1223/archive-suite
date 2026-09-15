@@ -28,6 +28,40 @@ class TranscriptSearchService
     }
 
     /**
+     * Every matching cue, not just the first. V2-MEDIA-004 shows a result's
+     * matching moments, so one hit per cue is the unit, and each carries the
+     * real time the cue itself declares -- VTT/SRT timecodes are exact, so no
+     * conversion and no assumption is involved here.
+     *
+     * @return list<array{excerpt: string, timestampSeconds: int}>
+     */
+    public function findAll(string $transcript, string $query, int $limit = 5): array
+    {
+        $needle = $this->normalize($query);
+
+        if ($needle === '' || trim($transcript) === '' || $limit < 1) {
+            return [];
+        }
+
+        $hits = [];
+
+        foreach ($this->cues($transcript) as $cue) {
+            if (str_contains($this->normalize($cue['text']), $needle)) {
+                $hits[] = [
+                    'excerpt' => $cue['text'],
+                    'timestampSeconds' => $cue['start'],
+                ];
+
+                if (count($hits) >= $limit) {
+                    break;
+                }
+            }
+        }
+
+        return $hits;
+    }
+
+    /**
      * @return list<array{start: int, text: string}>
      */
     private function cues(string $transcript): array
