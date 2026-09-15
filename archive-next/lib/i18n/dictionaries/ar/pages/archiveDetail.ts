@@ -1,5 +1,13 @@
 export const archiveDetail = {
   mentionSuggestionsAriaLabel: "اقتراحات الإشارة",
+  tabs: {
+    ariaLabel: "أقسام تفاصيل المادة",
+    overview: "نظرة عامة",
+    describe: "التوصيف",
+    media: "الوسائط",
+    rights: "الحقوق",
+    activity: "النشاط"
+  },
   page: {
       moreActionsLabel: "إجراءات أخرى",
     defaultTitle: "تفاصيل السجل",

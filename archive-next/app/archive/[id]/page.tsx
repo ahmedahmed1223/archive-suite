@@ -53,6 +53,7 @@ import RecordSourceReplacementPanel from "@/components/RecordSourceReplacementPa
 import RecordChangeImpactPanel from "@/components/RecordChangeImpactPanel";
 import VocabularyLinkedText, { VocabularyLinkToggle } from "@/components/VocabularyLinkedText";
 import DisclosureToolbar from "@/components/DisclosureToolbar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { mediaComparisonHref, mediaStudioHref } from "./media-workspace-links";
 
 export { RecordDescribeForm, type RecordDescribePatch };
@@ -78,6 +79,11 @@ type DetailState =
       historyError: string | null;
     }
   | { status: "error"; message: string };
+
+// V2-DESIGN: the detail page used to stack ~18 panels in one endless scroll.
+// They are now grouped into five tabs, with readiness and usage-rights status
+// pinned above the tablist because both govern what the user is allowed to do.
+type DetailTab = "overview" | "describe" | "media" | "rights" | "activity";
 
 type OcrState =
   | { status: "idle" }
@@ -201,11 +207,25 @@ export default function ArchiveDetailPage() {
   const [laterReviewDate, setLaterReviewDate] = useState("");
   const [ocrState, setOcrState] = useState<OcrState>({ status: "idle" });
   const [suggestions, setSuggestions] = useState<ArchiveSuggestion[]>([]);
+  const [activeTab, setActiveTab] = useState<DetailTab>("overview");
 
   // V1-832: the record-scoped shortcuts. Ctrl/Cmd+Enter deliberately still
   // fires inside a field -- saving from within the form is the whole point --
   // while the single-key jumps stay out of the way while typing.
   useEffect(() => {
+    // The shortcut targets now live inside tab panels, and only the active
+    // panel is mounted, so a jump shortcut has to open its tab first and focus
+    // on the next frame, once the panel has rendered.
+    const revealAndFocus = (tab: DetailTab, selector: string) => {
+      setActiveTab(tab);
+      requestAnimationFrame(() => {
+        const target = document.querySelector<HTMLElement>(selector);
+        if (!target) return;
+        target.focus();
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    };
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.isComposing) return;
 
@@ -221,22 +241,14 @@ export default function ArchiveDetailPage() {
       if (isTypingTarget(event.target)) return;
 
       if (matchesKeyEvent(event, getShortcut("focusComments"))) {
-        const comment = document.querySelector<HTMLTextAreaElement>("#record-comment-form textarea");
-        if (comment) {
-          event.preventDefault();
-          comment.focus();
-          comment.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
+        event.preventDefault();
+        revealAndFocus("activity", "#record-comment-form textarea");
         return;
       }
 
       if (matchesKeyEvent(event, getShortcut("focusTags"))) {
-        const tagsInput = document.getElementById("record-tags-input");
-        if (tagsInput instanceof HTMLInputElement) {
-          event.preventDefault();
-          tagsInput.focus();
-          tagsInput.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
+        event.preventDefault();
+        revealAndFocus("describe", "#record-tags-input");
       }
     };
 
@@ -705,8 +717,6 @@ export default function ArchiveDetailPage() {
           </>
         }
       />
-      {state.status === "ready" ? <RecordPresence recordId={id} /> : null}
-
       {state.status === "ready" && !deriveRecordSourcePath(state.record) && (
         <p className="helper-text">{copy.noSourcePathHelper}</p>
       )}
@@ -739,7 +749,7 @@ export default function ArchiveDetailPage() {
       )}
 
       {state.status === "ready" && (
-        <div className="split-layout archive-detail-layout" aria-label={copy.defaultTitle}>
+        <div className="page-section archive-detail-layout" aria-label={copy.defaultTitle}>
           <div className="page-section">
             {laterEntry ? (
               <div className="panel panel-compact" role="status">
@@ -795,6 +805,31 @@ export default function ArchiveDetailPage() {
               rights={state.rights}
               hasTeamComments={state.comments.length > 0}
             />
+            {/* Rights status stays pinned above the tabs: it decides what the
+                user may do with the item, so it must never sit behind a tab.
+                The full rights record lives in the rights tab. */}
+            <article className="panel panel-compact" aria-label={t.pages.archiveDetail.rights.title}>
+              <div className="panel-title-row">
+                <strong>{t.pages.archiveDetail.rights.title}</strong>
+                {state.rights ? <span className="badge">{state.rights.licenseType}</span> : null}
+                <span className="helper-text">
+                  {state.rights ? state.rights.rightsHolder : t.pages.archiveDetail.rights.emptyTitle}
+                </span>
+              </div>
+            </article>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DetailTab)}>
+            <TabsList aria-label={t.pages.archiveDetail.tabs.ariaLabel}>
+              <TabsTrigger value="overview">{t.pages.archiveDetail.tabs.overview}</TabsTrigger>
+              <TabsTrigger value="describe">{t.pages.archiveDetail.tabs.describe}</TabsTrigger>
+              <TabsTrigger value="media">{t.pages.archiveDetail.tabs.media}</TabsTrigger>
+              <TabsTrigger value="rights">{t.pages.archiveDetail.tabs.rights}</TabsTrigger>
+              <TabsTrigger value="activity">{t.pages.archiveDetail.tabs.activity}</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview">
+              <div className="page-section">
             <article className="panel">
               <div className="panel-section-header">
                 <h2>{t.pages.archiveDetail.recordInfo.title}</h2>
@@ -867,23 +902,17 @@ export default function ArchiveDetailPage() {
               ) : null}
             </article>
             <RecordReadSurfacePanel record={state.record} />
-            <RecordAiAssistPanel onAnalyze={handleAiAssist} canEdit={canEditRecords} />
-            <SuggestionsPanel suggestions={suggestions} title={copy.suggestionsTitle} onFeedback={handleSuggestionFeedback} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="describe">
+              <div className="page-section">
             {canEditRecords && <RecordDescribeForm key={id} record={state.record} onSave={handleSaveRecord} />}
             <TimedDescriptionSegmentsPanel recordId={id} />
-            <RecordNotesPanel
-              notes={state.notes}
-              loading={state.notesLoading}
-              error={state.notesError}
-              onCreate={handleCreateNote}
-              onDelete={handleDeleteNote}
-            />
-            <RecordCommentsPanel
-              comments={state.comments}
-              loading={state.commentsLoading}
-              error={state.commentsError}
-              onCreate={handleCreateComment}
-              onDelete={handleDeleteComment}
+            <RecordAuthorityEntitiesPanel recordId={id} canEdit={canEditRecords} />
+            <GeotagPanel
+              record={state.record}
+              onRecordUpdate={(updated) => setState((current) => (current.status === "ready" ? { ...current, record: updated } : current))}
             />
             <RecordFieldRequestsPanel
               requests={state.fieldRequests}
@@ -893,15 +922,25 @@ export default function ArchiveDetailPage() {
               onResolve={handleResolveFieldRequest}
               canEdit={canEditRecords}
             />
-          </div>
+            {/* V2 rule: AI output is assistive, never a production capability -
+                it sits last in the describing tab, below the real tools. */}
+            <SuggestionsPanel suggestions={suggestions} title={copy.suggestionsTitle} onFeedback={handleSuggestionFeedback} />
+            <RecordAiAssistPanel onAnalyze={handleAiAssist} canEdit={canEditRecords} />
+              </div>
+            </TabsContent>
 
-          <div className="page-section">
+            <TabsContent value="media">
+              <div className="page-section">
             <MediaInspectionsPanel record={state.record} />
             <MediaRepresentationsPanel record={state.record} />
             <MediaDerivativesTree record={state.record} />
             <RecordAttachmentsPanel recordId={id} store={state.record.store || "archive-items"} />
             <RecordSourceReplacementPanel recordId={id} canEdit={canEditRecords} />
-            <RecordChangeImpactPanel recordId={id} canEdit={canEditRecords} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="rights">
+              <div className="page-section">
             <article className="panel">
               <div className="panel-section-header">
                 <h2>{t.pages.archiveDetail.rights.title}</h2>
@@ -975,6 +1014,28 @@ export default function ArchiveDetailPage() {
                 />
               )}
             </article>
+            <BroadcastMetadataPanel recordId={id} />
+            <RecordChangeImpactPanel recordId={id} canEdit={canEditRecords} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="activity">
+              <div className="page-section">
+            <RecordPresence recordId={id} />
+            <RecordNotesPanel
+              notes={state.notes}
+              loading={state.notesLoading}
+              error={state.notesError}
+              onCreate={handleCreateNote}
+              onDelete={handleDeleteNote}
+            />
+            <RecordCommentsPanel
+              comments={state.comments}
+              loading={state.commentsLoading}
+              error={state.commentsError}
+              onCreate={handleCreateComment}
+              onDelete={handleDeleteComment}
+            />
             <RelationPreviewPanel
               graph={state.relationGraph}
               recordId={id}
@@ -983,18 +1044,14 @@ export default function ArchiveDetailPage() {
               onDelete={handleDeleteRelation}
               canEdit={canEditRecords}
             />
-            <RecordAuthorityEntitiesPanel recordId={id} canEdit={canEditRecords} />
-            <GeotagPanel
-              record={state.record}
-              onRecordUpdate={(updated) => setState((current) => (current.status === "ready" ? { ...current, record: updated } : current))}
-            />
             <RecordHistoryPanel
               entries={state.history}
               loading={state.historyLoading}
               error={state.historyError}
             />
-            <BroadcastMetadataPanel recordId={id} />
-          </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       )}
     </AppShell>

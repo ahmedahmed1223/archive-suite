@@ -1,5 +1,13 @@
 export const archiveDetail = {
   mentionSuggestionsAriaLabel: "Mention suggestions",
+  tabs: {
+    ariaLabel: "Record detail sections",
+    overview: "Overview",
+    describe: "Cataloguing",
+    media: "Media",
+    rights: "Rights",
+    activity: "Activity"
+  },
   page: {
       moreActionsLabel: "More actions",
     defaultTitle: "Record details",
