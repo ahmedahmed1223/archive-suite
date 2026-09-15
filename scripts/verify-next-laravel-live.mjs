@@ -189,6 +189,13 @@ async function main() {
       "DB_BUSY_TIMEOUT=5000",
       "-e",
       `ARCHIVE_CORS_ORIGINS=http://127.0.0.1:${nextPort},http://localhost:${nextPort}`,
+      // Default `fake` keeps the routine gate offline and fast: canned probe
+      // and QC reports, no ffmpeg process per upload. The release acceptance
+      // (e2e/v2-release-acceptance.authed.spec.ts) needs the real thing and is
+      // run as `MEDIA_PROCESSOR=real ... pnpm verify:laravel-next:live`; the
+      // image already carries ffmpeg/ffprobe, so only this flag was missing.
+      "-e",
+      `MEDIA_PROCESSOR=${process.env.MEDIA_PROCESSOR ?? "fake"}`,
       LARAVEL_RUNTIME_IMAGE,
       "sh",
       "-lc",
