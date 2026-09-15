@@ -97,6 +97,7 @@ class RouteScopeTest extends TestCase
         'POST api/v1/records/bulk' => self::V1,
         'POST api/v1/records/bulk-delete' => self::V1,
         'GET api/v1/records/export' => self::V1,
+        'GET api/v1/materials/inbox' => self::V1,
         'POST api/v1/records/import' => self::V1,
         'GET api/v1/trash' => self::V1,
         'POST api/v1/trash/restore' => self::V1,
@@ -407,6 +408,9 @@ class RouteScopeTest extends TestCase
         'DELETE api/v1/system/odbc/tables/{table}/rows' => self::EXPERIMENTAL,
         'GET api/v1/system/display-settings' => self::V1,
         'GET api/v1/system/capabilities' => self::V1,
+        // Read-only service probe behind the media jobs panel -- same bar as
+        // GET /media/jobs/queue-status, not the admin system surface.
+        'GET api/v1/system/services' => self::V1,
         'PATCH api/v1/system/capabilities' => self::ADMIN,
         'GET api/v1/system/security-settings' => self::ADMIN,
         'PATCH api/v1/system/security-settings' => self::ADMIN,
@@ -635,6 +639,7 @@ class RouteScopeTest extends TestCase
         // V1-714: export is a read, like GET /records; import writes existing
         // rows, same bar as records/bulk.
         'GET api/v1/records/export' => self::ROLE_ANY,
+        'GET api/v1/materials/inbox' => self::ROLE_ANY,
         'POST api/v1/records/import' => self::ROLE_EDITOR,
         // V1-731: browsing the trash is a read, like GET /records. Restore is
         // the editor's own undo; purge is the only irreversible step, so it
@@ -863,6 +868,7 @@ class RouteScopeTest extends TestCase
         'DELETE api/v1/system/odbc/tables/{table}/rows' => self::ROLE_ADMIN,
         'GET api/v1/system/display-settings' => self::ROLE_ANY,
         'GET api/v1/system/capabilities' => self::ROLE_ANY,
+        'GET api/v1/system/services' => self::ROLE_ANY,
         'PATCH api/v1/system/capabilities' => self::ROLE_ADMIN,
         'GET api/v1/system/security-settings' => self::ROLE_ADMIN,
         'PATCH api/v1/system/security-settings' => self::ROLE_ADMIN,
