@@ -50,6 +50,15 @@ function formatPlaybackTime(seconds: number) {
   return `${minutes}:${remaining}`;
 }
 
+/** HH:MM:SS for a moment's position, LTR like every other timecode in the app. */
+function formatMomentTime(seconds: number) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const rest = seconds % 60;
+
+  return [hours, minutes, rest].map((part) => String(part).padStart(2, "0")).join(":");
+}
+
 function uniqueTypes(records: ArchiveRecord[]) {
   return Array.from(new Set(records.map((record) => record.type).filter((type): type is string => Boolean(type)))).sort((a, b) =>
     a.localeCompare(b, "ar")
@@ -868,6 +877,36 @@ function SearchPageContent() {
                   <h2 id={headingId}>{record.title || searchCopy.untitled}</h2>
                 </div>
                 <p>{record.description || searchCopy.noDescription}</p>
+                {record.moments?.length ? (
+                  <section aria-label={searchCopy.momentsLabel} className="panel-section">
+                    <h3 className="helper-text">{searchCopy.momentsLabel}</h3>
+                    <ul className="record-note-list">
+                      {record.moments.map((moment, index) => (
+                        <li key={`${moment.kind}-${index}`}>
+                          <div>
+                            <span className="badge">
+                              {moment.kind === "transcript" ? searchCopy.momentFromTranscript : searchCopy.momentFromDescription}
+                            </span>
+                            <p>{moment.excerpt}</p>
+                          </div>
+                          {/* A moment without a resolvable time links to the record, not to a
+                              guessed position -- see docs/v2-design-gap-report.ar.md. */}
+                          {moment.timestampSeconds === null ? (
+                            <span className="helper-text">{searchCopy.momentTimeUnavailable}</span>
+                          ) : (
+                            <a
+                              className="button button-secondary button-sm"
+                              dir="ltr"
+                              href={`/media/studio?recordId=${encodeURIComponent(record.id)}&t=${moment.timestampSeconds}`}
+                            >
+                              {formatMomentTime(moment.timestampSeconds)}
+                            </a>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null}
                 <div className="kv-grid">
                   <div className="kv-item">
                     <strong>{searchCopy.store}</strong>

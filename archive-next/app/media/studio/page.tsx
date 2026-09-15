@@ -82,6 +82,9 @@ export default function MediaStudioPage() {
   const [mediaElement, setMediaElement] = useState<HTMLMediaElement | null>(null);
   const [techSpec, setTechSpec] = useState<MediaTechSpec>(EMPTY_TECH_SPEC);
   const [currentTime, setCurrentTime] = useState(0);
+  // V2-MEDIA-004: search results link to a matching moment, so the studio has
+  // to be able to open at a time rather than always at zero.
+  const [startAtSeconds, setStartAtSeconds] = useState<number | undefined>(undefined);
 
   // V14-UX-006 (Task 6): loading extracted so the error state's retry button
   // can re-run the exact same operation.
@@ -89,6 +92,8 @@ export default function MediaStudioPage() {
     const params = new URLSearchParams(window.location.search);
     const recordId = params.get("recordId")?.trim() ?? "";
     const attachmentId = params.get("attachmentId")?.trim() ?? "";
+    const requestedStart = Number.parseInt(params.get("t") ?? "", 10);
+    setStartAtSeconds(Number.isFinite(requestedStart) && requestedStart >= 0 ? requestedStart : undefined);
 
     if (!recordId) {
       setState({ status: "invalid" });
@@ -257,6 +262,7 @@ export default function MediaStudioPage() {
                       showTimeline
                       showTranscriptList={false}
                       transcriptText={transcriptText}
+                      initialTime={startAtSeconds}
                       onReady={setMediaElement}
                       onTimeUpdate={(element) => setCurrentTime(element.currentTime)}
                     />
