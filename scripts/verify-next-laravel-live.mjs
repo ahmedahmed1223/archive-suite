@@ -252,6 +252,11 @@ async function main() {
       "e2e/uploads-mobile.authed.spec.ts",
       "e2e/phone-first-screen.authed.spec.ts",
       "e2e/critical-journeys-console.authed.spec.ts",
+      "e2e/media-studio.authed.spec.ts",
+      "e2e/media-studio-timeline.authed.spec.ts",
+      "e2e/transcriber-cue-editor.authed.spec.ts",
+      "e2e/external-review.authed.spec.ts",
+      "e2e/approval-requests.authed.spec.ts",
     ];
   const e2eCommand = pnpmInvocation([
     "--filter",

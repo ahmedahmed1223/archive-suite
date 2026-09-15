@@ -19,6 +19,11 @@ test("live integration includes its authenticated visual and release acceptance 
   assert.match(source, /"e2e\/uploads-mobile\.authed\.spec\.ts"/);
   assert.match(source, /"e2e\/phone-first-screen\.authed\.spec\.ts"/);
   assert.match(source, /"e2e\/critical-journeys-console\.authed\.spec\.ts"/);
+  assert.match(source, /"e2e\/media-studio\.authed\.spec\.ts"/);
+  assert.match(source, /"e2e\/media-studio-timeline\.authed\.spec\.ts"/);
+  assert.match(source, /"e2e\/transcriber-cue-editor\.authed\.spec\.ts"/);
+  assert.match(source, /"e2e\/external-review\.authed\.spec\.ts"/);
+  assert.match(source, /"e2e\/approval-requests\.authed\.spec\.ts"/);
 });
 
 test("live integration starts Reverb for realtime events", () => {
