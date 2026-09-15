@@ -7,11 +7,12 @@ use App\Models\RightsWindow;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class RightsEnforcementTest extends TestCase
 {
-    use RefreshDatabase;
+    use AuthenticatesArchiveRequests, RefreshDatabase;
 
     private function createRightsRecord(string $itemId): RightsRecord
     {
@@ -29,8 +30,10 @@ class RightsEnforcementTest extends TestCase
             'id' => 'rw-'.$record->id,
             'rights_record_id' => $record->id,
             'usage' => 'digital_public',
-            'starts_at' => $now->subDay(),
-            'ends_at' => $now->addDay(),
+            // copy(): Carbon is mutable, so subDay()/addDay() on the same
+            // instance would cancel out and leave ends_at sitting on "now".
+            'starts_at' => $now->copy()->subDay(),
+            'ends_at' => $now->copy()->addDay(),
             'territories' => [],
             'platforms' => [],
             'granted' => true,
@@ -46,12 +49,10 @@ class RightsEnforcementTest extends TestCase
     {
         $itemId = 'item-no-rights';
 
-        $editor = $this->getEditorUser();
-
-        $response = $this->actingAs($editor)->postJson('/api/v1/share', [
+        $response = $this->postJson('/api/v1/share', [
             'scope' => ['itemIds' => [$itemId]],
             'permission' => 'view',
-        ]);
+        ], $this->authHeaders());
 
         $response->assertStatus(403);
         $this->assertTrue(isset($response->json()['reason']));
@@ -63,20 +64,13 @@ class RightsEnforcementTest extends TestCase
         $itemId = 'item-with-rights';
         $record = $this->createRightsRecord($itemId);
         $now = Carbon::now();
-        $window = $this->createGrantedWindow($record, $now);
+        $this->createGrantedWindow($record, $now);
 
-        $editor = $this->getEditorUser();
-
-        $response = $this->actingAs($editor)->postJson('/api/v1/share', [
+        $response = $this->postJson('/api/v1/share', [
             'scope' => ['itemIds' => [$itemId]],
             'permission' => 'view',
-        ]);
+        ], $this->authHeaders());
 
-        // Valid granted window should allow sharing
-        if ($response->status() !== 201) {
-            // Debug: output response for investigation
-            $this->fail('Expected 201 but got '.$response->status().': '.$response->json()['reason'] ?? json_encode($response->json()));
-        }
         $response->assertStatus(201);
         $this->assertNotNull($response->json('token'));
     }
