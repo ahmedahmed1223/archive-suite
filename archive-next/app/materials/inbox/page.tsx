@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import AppShell from '@/components/AppShell';
+import PageToolbar from '@/components/PageToolbar';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
 import { createArchiveApiClient, type MaterialStage, type MaterialInboxRecord } from '@/lib/archive-api';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -19,6 +21,12 @@ const STAGE_ORDER: MaterialStage[] = [
   'completed_today',
 ];
 
+/**
+ * V2-OPS-001: the stage view of a material's journey. It renders inside the
+ * app shell like every other daily destination -- before this it drew its own
+ * bare page with its own colours, so reaching it dropped the operator out of
+ * the navigation entirely, and the route was not even listed there.
+ */
 export default function MaterialsInboxPage() {
   const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
@@ -46,97 +54,75 @@ export default function MaterialsInboxPage() {
   }, [selectedStage]);
 
   const stageCounts = data?.stageCounts || {};
-  const records = data?.records || [];
+  const records: MaterialInboxRecord[] = data?.records || [];
 
-  if (error) {
-    return (
-      <div className="flex flex-col h-full" dir="rtl">
-        <header className="border-b border-gray-200 px-6 py-4">
-          <h1 className="text-2xl font-bold">{copy.title}</h1>
-          <p className="text-sm text-gray-600">{copy.description}</p>
-        </header>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">{copy.error}</p>
-            <button
-              onClick={() => refetch()}
-              className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
-            >
+  return (
+    <AppShell subtitle={copy.title} contentClassName="local-list-content">
+      <PageToolbar
+        eyebrow={<span className="badge">{copy.eyebrow}</span>}
+        title={copy.title}
+        description={copy.description}
+        actions={<><a className="button button-secondary" href="/work-inbox">{copy.openWorkInbox}</a><a className="button button-secondary" href="/uploads">{copy.openUploads}</a></>}
+      >
+        <div className="archive-toolbar-row" role="group" aria-label={copy.stagesAriaLabel}>
+          {STAGE_ORDER.map((stage) => {
+            const stageInfo = copy.stages[stage];
+            return (
+              <button
+                key={stage}
+                type="button"
+                className="badge"
+                data-active={selectedStage === stage ? 'true' : 'false'}
+                aria-pressed={selectedStage === stage}
+                onClick={() => handleStageSelect(stage)}
+              >
+                <span aria-hidden="true">{stageInfo.icon}</span> {stageInfo.label} <strong>{stageCounts[stage] || 0}</strong>
+              </button>
+            );
+          })}
+          {selectedStage ? (
+            <button type="button" className="button button-secondary button-sm" onClick={() => setSelectedStage(null)}>
+              {copy.clearStage}
+            </button>
+          ) : null}
+        </div>
+      </PageToolbar>
+
+      {error ? (
+        <div className="state-banner state-banner-error" role="alert">
+          <strong>{copy.error}</strong>
+          <span className="helper-text">{error instanceof Error ? error.message : copy.error}</span>
+          <div>
+            <button type="button" className="button button-secondary button-sm" onClick={() => void refetch()}>
               {copy.actions.retry}
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
+      ) : null}
 
-  return (
-    <div className="flex flex-col h-full" dir="rtl">
-      <header className="border-b border-gray-200 px-6 py-4">
-        <h1 className="text-2xl font-bold">{copy.title}</h1>
-        <p className="text-sm text-gray-600">{copy.description}</p>
-      </header>
+      {isLoading ? <div className="panel panel-compact"><Skeleton label={copy.loading} /></div> : null}
 
-      <div className="p-6 border-b border-gray-200">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {STAGE_ORDER.map((stage) => {
-            const stageInfo = copy.stages[stage];
-            const count = stageCounts[stage] || 0;
-            const isSelected = selectedStage === stage;
+      {!isLoading && !error && records.length === 0 ? (
+        <EmptyState title={copy.empty.title} description={copy.empty.description} />
+      ) : null}
 
-            return (
-              <button
-                key={stage}
-                onClick={() => handleStageSelect(stage)}
-                className={`p-3 rounded border text-right cursor-pointer transition ${
-                  isSelected
-                    ? 'border-teal-500 bg-teal-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="text-xs text-gray-600 flex items-center gap-1">
-                  <span>{stageInfo.icon}</span>
-                  <span>{stageInfo.label}</span>
-                </div>
-                <div className="text-2xl font-semibold mt-2">{count}</div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-auto">
-        {isLoading ? (
-          <Skeleton label={copy.loading} />
-        ) : records.length === 0 ? (
-          <EmptyState
-            title={copy.empty.title}
-            description={copy.empty.description}
-          />
-        ) : (
-          <div className="divide-y divide-gray-200">
+      {!isLoading && records.length > 0 ? (
+        <section className="panel" aria-label={copy.listAriaLabel}>
+          <ul className="record-note-list">
             {records.map((record) => (
-              <Link
-                key={record.uid}
-                href={`/archive/${record.id}`}
-                className="block px-6 py-4 hover:bg-gray-50 transition"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{record.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {(copy.stageReasons as Record<MaterialStage, string>)[record.stage]}
-                    </p>
-                  </div>
-                  <div className="text-xs text-gray-500 mr-4">
-                    {record.updatedAt && new Date(record.updatedAt).toLocaleDateString()}
-                  </div>
-                </div>
-              </Link>
+              <li key={record.uid}>
+                <Link className="text-accent" href={`/archive/${record.id}`}>{record.title}</Link>
+                <p className="helper-text">
+                  {(copy.stageReasons as Record<MaterialStage, string>)[record.stage]}
+                </p>
+                {record.updatedAt ? (
+                  <span className="helper-text" dir="ltr">{new Date(record.updatedAt).toISOString().slice(0, 10)}</span>
+                ) : null}
+              </li>
             ))}
-          </div>
-        )}
-      </div>
-    </div>
+          </ul>
+        </section>
+      ) : null}
+    </AppShell>
   );
 }

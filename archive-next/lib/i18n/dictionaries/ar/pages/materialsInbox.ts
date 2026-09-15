@@ -1,6 +1,12 @@
 export const materialsInbox = {
-  title: 'صندوق العمل الموحّد',
-  description: 'مراحل معالجة المادة في مكان واحد',
+  eyebrow: 'التشغيل اليومي',
+  stagesAriaLabel: 'مراحل المواد',
+  listAriaLabel: 'المواد في المرحلة المختارة',
+  clearStage: 'كل المراحل',
+  openWorkInbox: 'صندوق عملي',
+  openUploads: 'رفع مادة',
+  title: 'مراحل المواد',
+  description: 'رحلة المادة من الورود إلى الاعتماد، مرحلةً مرحلة.',
   stages: {
     new_receipt: { label: 'وارد جديد', icon: '⊕' },
     tech_check_failed: { label: 'فحص تقني فاشل', icon: '✘' },

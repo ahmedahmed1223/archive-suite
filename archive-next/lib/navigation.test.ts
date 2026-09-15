@@ -54,7 +54,7 @@ describe("V2 unified operations taxonomy", () => {
     const { items } = getLocalizedNavigation("ar");
 
     const expectedHrefs = [
-      "/uploads", "/uploads/scheduled", "/work-inbox", "/inbox", "/ingest", "/media/jobs", "/transcriber",
+      "/uploads", "/uploads/scheduled", "/work-inbox", "/inbox", "/materials/inbox", "/ingest", "/media/jobs", "/transcriber",
       "/", "/daily", "/archive", "/search", "/discover", "/favorites", "/reading-lists", "/timeline", "/graph", "/map", "/files",
       "/collections", "/types", "/vocabulary", "/tags", "/duplicates", "/trash", "/kanban", "/projects",
       "/shares", "/shares/with-me", "/collaboration", "/broadcast", "/automation", "/copilot", "/rights", "/safety-preview", "/approval-requests",

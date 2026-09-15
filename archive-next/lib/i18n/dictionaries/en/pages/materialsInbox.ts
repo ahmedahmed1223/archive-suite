@@ -1,6 +1,12 @@
 export const materialsInbox = {
-  title: 'Unified Work Inbox',
-  description: 'Material processing stages in one place',
+  eyebrow: 'Daily operations',
+  stagesAriaLabel: 'Material stages',
+  listAriaLabel: 'Materials in the selected stage',
+  clearStage: 'All stages',
+  openWorkInbox: 'My work inbox',
+  openUploads: 'Upload material',
+  title: 'Material stages',
+  description: 'A material’s journey from arrival to approval, stage by stage.',
   stages: {
     new_receipt: { label: 'New Receipt', icon: '⊕' },
     tech_check_failed: { label: 'Technical Check Failed', icon: '✘' },

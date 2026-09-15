@@ -4,6 +4,7 @@ export const nav = {
     "/uploads/scheduled": "Scheduled uploads",
     "/inbox": "Inbox",
     "/work-inbox": "Work inbox",
+    "/materials/inbox": "Material stages",
     "/ingest": "Import",
     "/media/jobs": "Media",
     "/transcriber": "Transcription",

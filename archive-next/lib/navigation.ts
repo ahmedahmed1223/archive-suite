@@ -10,6 +10,7 @@ const navItemMeta = [
   { href: "/daily", section: "dailyWork", icon: "Sunrise" },
   { href: "/work-inbox", section: "dailyWork", icon: "ListChecks" },
   { href: "/inbox", section: "dailyWork", icon: "Inbox" },
+  { href: "/materials/inbox", section: "dailyWork", icon: "Layers" },
   { href: "/activity", section: "dailyWork", icon: "Activity" },
   { href: "/kanban", section: "dailyWork", icon: "Columns3" },
   { href: "/approval-requests", section: "dailyWork", icon: "UserCheck" },
@@ -83,7 +84,7 @@ export function getLocalizedNavigation(locale: "ar" | "en") {
 }
 
 const dailyRoutes: Record<NavSection, readonly string[]> = {
-  dailyWork: ["/", "/daily", "/work-inbox", "/inbox", "/activity", "/kanban", "/approval-requests"],
+  dailyWork: ["/", "/daily", "/work-inbox", "/inbox", "/materials/inbox", "/activity", "/kanban", "/approval-requests"],
   ingest: ["/uploads", "/uploads/scheduled", "/ingest"],
   archiveDescription: ["/archive", "/collections", "/types", "/vocabulary", "/tags", "/duplicates", "/trash"],
   media: ["/media/jobs", "/transcriber"],

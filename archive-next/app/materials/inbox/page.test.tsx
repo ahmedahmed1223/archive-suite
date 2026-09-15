@@ -1,231 +1,128 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { cleanup, render, screen, fireEvent } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MaterialsInboxPage from './page';
-import { useLocale } from '@/lib/i18n/LocaleProvider';
-import * as archiveApi from '@/lib/archive-api';
+import { LocaleProvider } from '@/lib/i18n/LocaleProvider';
 
-// Mock the i18n provider
-vi.mock('@/lib/i18n/LocaleProvider', () => ({
-  useLocale: vi.fn(),
-}));
+const getMaterialsInbox = vi.hoisted(() => vi.fn());
 
-// Mock the API client
-vi.mock('@/lib/archive-api', () => ({
-  createArchiveApiClient: vi.fn(),
-  ...vi.importActual('@/lib/archive-api'),
-}));
-
-// Mock components
-vi.mock('@/components/ui/Skeleton', () => ({
-  default: ({ label }: { label: string }) => <div data-testid="skeleton">{label}</div>,
-  Skeleton: ({ label }: { label: string }) => <div data-testid="skeleton">{label}</div>,
-}));
-
-vi.mock('@/components/EmptyState', () => ({
-  default: ({ title, description }: { title: string; description: string }) => (
-    <div data-testid="empty-state">
-      <h3>{title}</h3>
-      <p>{description}</p>
-    </div>
+// Only the shells and the client are faked. The locale provider is real, so
+// these assertions read the shipped dictionary instead of a fixture that can
+// drift away from it.
+vi.mock('@/components/AppShell', () => ({ default: ({ children }: { children: ReactNode }) => <main>{children}</main> }));
+vi.mock('@/components/PageToolbar', () => ({
+  default: ({ children, title, actions }: { children: ReactNode; title: string; actions: ReactNode }) => (
+    <section aria-label={title}>{actions}{children}</section>
   ),
 }));
+vi.mock('@/lib/archive-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/archive-api')>()),
+  createArchiveApiClient: () => ({ getMaterialsInbox }),
+}));
 
-const mockT = {
-  materialsInbox: {
-    title: 'Unified Work Inbox',
-    description: 'Material processing stages in one place',
-    stages: {
-      new_receipt: { label: 'New Receipt', icon: '⊕' },
-      tech_check_failed: { label: 'Technical Check Failed', icon: '✘' },
-      incomplete_description: { label: 'Incomplete Description', icon: '◐' },
-      missing_rights: { label: 'Missing Rights', icon: '⚠' },
-      ready_for_approval: { label: 'Ready for Approval', icon: '✓' },
-      processing_failed: { label: 'Processing Failed', icon: '⚡' },
-      awaiting_peer: { label: 'Awaiting Peer Review', icon: '⟳' },
-      completed_today: { label: 'Completed Today', icon: '★' },
-    },
-    stageReasons: {
-      new_receipt: 'Recently added',
-      tech_check_failed: 'Media technical check failed',
-      incomplete_description: 'Missing fields',
-      missing_rights: 'Rights information not assigned',
-      ready_for_approval: 'Ready for review and approval',
-      processing_failed: 'Media processing failed',
-      awaiting_peer: 'Under review by colleague',
-      completed_today: 'Completed today',
-    },
-    actions: {
-      review: 'Review',
-      fix: 'Fix',
-      setRights: 'Set Rights',
-      viewDetails: 'View Details',
-      retry: 'Retry',
-    },
-    empty: {
-      title: 'No materials in this stage',
-      description: 'All materials are processed and ready.',
-    },
-    loading: 'Loading…',
-    error: 'An error occurred while loading materials. Please try again.',
-  },
+const EMPTY_COUNTS = {
+  new_receipt: 0,
+  tech_check_failed: 0,
+  incomplete_description: 0,
+  missing_rights: 0,
+  ready_for_approval: 0,
+  processing_failed: 0,
+  awaiting_peer: 0,
+  completed_today: 0,
 };
 
-describe('MaterialsInboxPage', () => {
-  let queryClient: QueryClient;
-  let mockApiClient: any;
-
-  beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
-    });
-
-    mockApiClient = {
-      getMaterialsInbox: vi.fn(),
-    };
-
-    (archiveApi.createArchiveApiClient as any).mockReturnValue(mockApiClient);
-    (useLocale as any).mockReturnValue({
-      t: { pages: mockT },
-      locale: 'en',
-    });
-  });
-
-  const renderPage = () => {
-    return render(
-      <QueryClientProvider client={queryClient}>
+function renderPage() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <LocaleProvider initialLocale="en" hasLocaleCookie>
         <MaterialsInboxPage />
-      </QueryClientProvider>
-    );
-  };
+      </LocaleProvider>
+    </QueryClientProvider>
+  );
+}
 
-  it('renders loading state', async () => {
-    mockApiClient.getMaterialsInbox.mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve({
-        ok: true,
-        records: [],
-        stageCounts: {},
-      }), 100))
-    );
+beforeEach(() => {
+  getMaterialsInbox.mockReset();
+});
+afterEach(cleanup);
 
-    renderPage();
-
-    expect(screen.getByTestId('skeleton')).toBeInTheDocument();
-  });
-
-  it('renders error state with retry button', async () => {
-    mockApiClient.getMaterialsInbox.mockRejectedValue(new Error('Network error'));
+describe('MaterialsInboxPage', () => {
+  it('keeps the page inside the app shell instead of drawing its own bare page', async () => {
+    getMaterialsInbox.mockResolvedValue({ ok: true, records: [], stageCounts: EMPTY_COUNTS });
 
     renderPage();
 
-    await expect(screen.findByText(/An error occurred/)).resolves.toBeInTheDocument();
-    expect(screen.getByText('Retry')).toBeInTheDocument();
+    // The toolbar carries the page title and the links onward, so the stage
+    // view is part of the daily journey rather than a dead end.
+    expect(await screen.findByRole('region', { name: 'Material stages' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'My work inbox' })).toHaveAttribute('href', '/work-inbox');
+    expect(screen.getByRole('link', { name: 'Upload material' })).toHaveAttribute('href', '/uploads');
   });
 
-  it('renders empty state when no records', async () => {
-    mockApiClient.getMaterialsInbox.mockResolvedValue({
+  it('shows the loading state while the stages are being fetched', async () => {
+    // Held open deliberately, then released: a promise that never settles
+    // leaves the query in flight and hangs the cleanup hook.
+    let release: (value: unknown) => void = () => {};
+    getMaterialsInbox.mockImplementation(() => new Promise((resolve) => { release = resolve; }));
+
+    renderPage();
+
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
+    release({ ok: true, records: [], stageCounts: EMPTY_COUNTS });
+    await screen.findByText('No materials in this stage');
+  });
+
+  it('reports a failure with a retry rather than an empty list', async () => {
+    getMaterialsInbox.mockRejectedValue(new Error('Network error'));
+
+    renderPage();
+
+    expect(await screen.findByRole('alert', {}, { timeout: 3000 })).toHaveTextContent(/An error occurred/);
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+  });
+
+  it('shows the empty state when the selected stage holds nothing', async () => {
+    getMaterialsInbox.mockResolvedValue({ ok: true, records: [], stageCounts: EMPTY_COUNTS });
+
+    renderPage();
+
+    expect(await screen.findByText('No materials in this stage')).toBeInTheDocument();
+  });
+
+  it('lists a material with the reason it sits in its stage', async () => {
+    getMaterialsInbox.mockResolvedValue({
       ok: true,
-      records: [],
-      stageCounts: {
-        new_receipt: 0,
-        tech_check_failed: 0,
-        incomplete_description: 0,
-        missing_rights: 0,
-        ready_for_approval: 0,
-        processing_failed: 0,
-        awaiting_peer: 0,
-        completed_today: 0,
-      },
+      records: [{ id: '123', uid: 'abc-123', title: 'Sample Material', stage: 'new_receipt', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T12:00:00Z' }],
+      stageCounts: { ...EMPTY_COUNTS, new_receipt: 1 },
     });
 
     renderPage();
 
-    await expect(screen.findByTestId('empty-state')).resolves.toBeInTheDocument();
-    expect(screen.getByText('No materials in this stage')).toBeInTheDocument();
-  });
-
-  it('renders populated list with records', async () => {
-    mockApiClient.getMaterialsInbox.mockResolvedValue({
-      ok: true,
-      records: [
-        {
-          id: '123',
-          uid: 'abc-123',
-          title: 'Sample Material',
-          stage: 'new_receipt' as const,
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T12:00:00Z',
-        },
-      ],
-      stageCounts: {
-        new_receipt: 1,
-        tech_check_failed: 0,
-        incomplete_description: 0,
-        missing_rights: 0,
-        ready_for_approval: 0,
-        processing_failed: 0,
-        awaiting_peer: 0,
-        completed_today: 0,
-      },
-    });
-
-    renderPage();
-
-    await expect(screen.findByText('Sample Material')).resolves.toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Sample Material' })).toHaveAttribute('href', '/archive/123');
     expect(screen.getByText('Recently added')).toBeInTheDocument();
   });
 
-  it('displays stage counters', async () => {
-    mockApiClient.getMaterialsInbox.mockResolvedValue({
+  it('counts each stage and refetches when one is selected', async () => {
+    getMaterialsInbox.mockResolvedValue({
       ok: true,
       records: [],
-      stageCounts: {
-        new_receipt: 5,
-        tech_check_failed: 2,
-        incomplete_description: 1,
-        missing_rights: 3,
-        ready_for_approval: 0,
-        processing_failed: 0,
-        awaiting_peer: 0,
-        completed_today: 10,
-      },
+      stageCounts: { ...EMPTY_COUNTS, new_receipt: 5, completed_today: 10 },
     });
 
     renderPage();
 
-    await expect(screen.findByText('5')).resolves.toBeInTheDocument();
-    await expect(screen.findByText('2')).resolves.toBeInTheDocument();
-    await expect(screen.findByText('10')).resolves.toBeInTheDocument();
-  });
+    const stageButton = await screen.findByRole('button', { name: /New Receipt/ });
+    await vi.waitFor(() => expect(stageButton).toHaveTextContent('5'));
+    expect(screen.getByRole('button', { name: /Completed Today/ })).toHaveTextContent('10');
 
-  it('filters records by stage when stage is selected', async () => {
-    mockApiClient.getMaterialsInbox.mockResolvedValue({
-      ok: true,
-      records: [],
-      stageCounts: {
-        new_receipt: 1,
-        tech_check_failed: 0,
-        incomplete_description: 0,
-        missing_rights: 0,
-        ready_for_approval: 0,
-        processing_failed: 0,
-        awaiting_peer: 0,
-        completed_today: 0,
-      },
-    });
+    fireEvent.click(stageButton);
 
-    renderPage();
-
-    // Verify the buttons are rendered and can be clicked
-    const buttons = await screen.findAllByRole('button', { name: /New Receipt/ });
-    expect(buttons.length).toBeGreaterThan(0);
-
-    fireEvent.click(buttons[0]!);
-
-    // Verify that the API was called (from the initial render)
-    expect(mockApiClient.getMaterialsInbox).toHaveBeenCalled();
+    expect(stageButton).toHaveAttribute('aria-pressed', 'true');
+    await vi.waitFor(() =>
+      expect(getMaterialsInbox).toHaveBeenLastCalledWith({ query: { store: 'archive-items', stage: 'new_receipt' } })
+    );
   });
 });
