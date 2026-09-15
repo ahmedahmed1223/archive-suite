@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
 class SystemServicesApiTest extends TestCase
 {
+    use AuthenticatesArchiveRequests, RefreshDatabase;
+
     public function test_system_services_endpoint_returns_all_services(): void
     {
-        $response = $this->getJson('/api/v1/system/services');
+        $response = $this->getJson('/api/v1/system/services', $this->authHeaders());
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -27,7 +31,7 @@ class SystemServicesApiTest extends TestCase
 
         $data = $response->json('services');
         foreach (['ffmpeg', 'ffprobe', 'whisper', 'reverb', 'gpu'] as $service) {
-            $this->assertIn($data[$service]['state'], ['available', 'requires_setup', 'down']);
+            $this->assertContains($data[$service]['state'], ['available', 'requires_setup', 'down']);
             $this->assertTrue(
                 is_string($data[$service]['reason']) || $data[$service]['reason'] === null,
                 "Reason for {$service} must be string or null"
@@ -37,7 +41,7 @@ class SystemServicesApiTest extends TestCase
 
     public function test_system_services_returns_valid_states(): void
     {
-        $response = $this->getJson('/api/v1/system/services');
+        $response = $this->getJson('/api/v1/system/services', $this->authHeaders());
         $response->assertOk();
 
         $data = $response->json('services');
@@ -45,7 +49,7 @@ class SystemServicesApiTest extends TestCase
 
         foreach ($data as $serviceName => $service) {
             if (is_array($service) && isset($service['state'])) {
-                $this->assertIn(
+                $this->assertContains(
                     $service['state'],
                     $validStates,
                     "Service {$serviceName} has invalid state: {$service['state']}"
@@ -56,9 +60,15 @@ class SystemServicesApiTest extends TestCase
 
     public function test_system_services_response_has_ok_flag(): void
     {
-        $response = $this->getJson('/api/v1/system/services');
+        $response = $this->getJson('/api/v1/system/services', $this->authHeaders());
 
         $response->assertOk()
             ->assertJson(['ok' => true]);
+    }
+
+    public function test_system_services_rejects_unauthenticated_requests(): void
+    {
+        // The panel reports infrastructure state; it must stay behind archive.auth.
+        $this->getJson('/api/v1/system/services')->assertStatus(401);
     }
 }
