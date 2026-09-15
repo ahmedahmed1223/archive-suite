@@ -250,6 +250,8 @@ async function main() {
       "e2e/scheduled-uploads.authed.spec.ts",
       "e2e/screen-reader-sample.authed.spec.ts",
       "e2e/uploads-mobile.authed.spec.ts",
+      "e2e/phone-first-screen.authed.spec.ts",
+      "e2e/critical-journeys-console.authed.spec.ts",
     ];
   const e2eCommand = pnpmInvocation([
     "--filter",

@@ -15,8 +15,10 @@ test("live integration repairs an incomplete vendor directory", () => {
   assert.doesNotMatch(source, /test -d vendor \|\| composer install/);
 });
 
-test("live integration includes the authenticated visual regression gate", () => {
+test("live integration includes its authenticated visual and release acceptance gates", () => {
   assert.match(source, /"e2e\/uploads-mobile\.authed\.spec\.ts"/);
+  assert.match(source, /"e2e\/phone-first-screen\.authed\.spec\.ts"/);
+  assert.match(source, /"e2e\/critical-journeys-console\.authed\.spec\.ts"/);
 });
 
 test("live integration starts Reverb for realtime events", () => {
