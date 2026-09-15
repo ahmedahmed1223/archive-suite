@@ -422,7 +422,7 @@ export default function CollectionsPage() {
       </section>
 
       <section className="panel panel-compact" aria-labelledby="curated-collections-heading">
-        <div className="toolbar-row toolbar-start"><div><span className="badge">{copy.eyebrow}</span><h2 id="curated-collections-heading" className="section-heading">{curatedCopy.title}</h2></div><strong className="metric-value">{curatedCollections.length}</strong></div>
+        <div className="toolbar-row toolbar-start"><div><span className="badge">{curatedCopy.badge}</span><h2 id="curated-collections-heading" className="section-heading">{curatedCopy.title}</h2></div><strong className="metric-value">{curatedCollections.length}</strong></div>
         <p className="helper-text">{curatedCopy.description}</p>{curatedError ? <p className="form-status" role="alert">{curatedError}</p> : null}
         {canManageCollections ? (showCuratedForm ? <form className="archive-toolbar-grid" onSubmit={createCuratedCollection}><label><span>{curatedCopy.label}</span><input className="search-input" value={curatedTitle} onChange={(event) => setCuratedTitle(event.target.value)} required /></label><label><span>{curatedCopy.intro}</span><textarea value={curatedIntroduction} onChange={(event) => setCuratedIntroduction(event.target.value)} /></label><div className="archive-toolbar-actions"><button className="button button-primary" type="submit">{curatedCopy.save}</button><button className="button button-secondary" type="button" onClick={() => setShowCuratedForm(false)}>{copy.cancel}</button></div></form> : <button className="button button-secondary button-sm" type="button" onClick={() => setShowCuratedForm(true)}>{curatedCopy.new}</button>) : null}
         {curatedCollections.length ? <div className="tags">{curatedCollections.map((collection) => <span className="tag" key={collection.id}>{collection.title} · {curatedStatusLabels[collection.status]}</span>)}</div> : null}
@@ -518,7 +518,7 @@ export default function CollectionsPage() {
       {canManageCollections && smartSuggestions.length > 0 ? (
         <section className="page-section" aria-labelledby="smart-collections-heading">
           <div className="toolbar-row toolbar-start">
-            <h2 id="smart-collections-heading" className="section-heading">{copy.suggestions}</h2><span className="badge">{copy.archiveData}</span>
+            <h2 id="smart-collections-heading" className="section-heading">{copy.suggestions}</h2><span className="badge">{copy.smartBadge}</span>
           </div>
           <div className="analytics-tag-list">
             {smartSuggestions.map((suggestion) => (
@@ -533,6 +533,10 @@ export default function CollectionsPage() {
           </div>
         </section>
       ) : null}
+
+      <section className="panel panel-compact" aria-labelledby="production-work-heading">
+        <p className="helper-text">{copy.projectsNote} <a href="/projects">{copy.projectsLink}</a></p>
+      </section>
     </AppShell>
   );
 }

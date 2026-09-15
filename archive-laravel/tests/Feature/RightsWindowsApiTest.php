@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\MediaDerivative;
 use App\Models\RightsRecord;
 use App\Models\RightsWindow;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -44,6 +47,46 @@ class RightsWindowsApiTest extends TestCase
             'rights_holder' => 'Test Holder',
             'license_type' => 'LICENSED',
         ]);
+    }
+
+    /**
+     * V2-GOV-001: every refusal leaves a trace. The request audit middleware
+     * only records unsafe methods, so this is checked on a GET -- the case it
+     * cannot see -- rather than on a share POST it would have logged anyway.
+     */
+    public function test_a_refused_derivative_download_is_audited_even_though_it_is_a_get(): void
+    {
+        // The stale-version gate runs before rights, so the derivative has to
+        // match a real record source or the refusal never gets that far.
+        DB::table('storage_rows')->insert([
+            'store' => 'archive-items',
+            'uid' => 'item-1',
+            'data' => json_encode(['uid' => 'item-1', 'title' => 'Item one', 'checksum' => 'checksum-1'], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $derivative = MediaDerivative::query()->create([
+            'id' => (string) Str::uuid(),
+            'record_store' => 'archive-items',
+            'record_uid' => 'item-1',
+            'derivative_type' => 'thumbnail',
+            'settings' => [],
+            'settings_hash' => 'hash-1',
+            'version_token' => 'record:checksum-1',
+            'status' => 'ready',
+            'storage_key' => 'item-1/derivatives/thumb.jpg',
+        ]);
+
+        $this->getJson("/api/v1/media-derivatives/{$derivative->id}/content", $this->authHeaders())
+            ->assertForbidden();
+
+        $log = DB::table('audit_logs')->where('event', 'rights.denied')->latest('id')->first();
+        $this->assertNotNull($log, 'A refused download left no audit trail.');
+        $this->assertSame('item-1', $log->resource_id);
+        $metadata = json_decode((string) $log->metadata, true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame('editorial_reuse', $metadata['usage']);
+        $this->assertSame('no_record', $metadata['decidedBy']);
     }
 
     public function test_an_editor_opens_a_window_and_the_item_becomes_shareable(): void

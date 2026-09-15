@@ -43,3 +43,49 @@ describe("curated collection membership", () => {
     expect(screen.getByText("Type: video")).toBeVisible();
   });
 });
+
+describe("hierarchy, collections, and projects distinctness", () => {
+  afterEach(() => cleanup());
+
+  test("labels the four organizational concepts distinctly in English", async () => {
+    render(<LocaleProvider initialLocale="en" hasLocaleCookie><CollectionsPage /></LocaleProvider>);
+
+    await waitFor(() => {
+      // Hierarchy: should use the same term ("Archival hierarchy") in both badge and heading
+      const hierarchyLabels = screen.getAllByText("Archival hierarchy");
+      expect(hierarchyLabels.length).toBeGreaterThanOrEqual(2); // appears in badge and heading
+
+      // Curated collections: should have its own distinct badge (appears in badge and heading)
+      const curatedLabels = screen.getAllByText("Curated collections");
+      expect(curatedLabels.length).toBeGreaterThanOrEqual(2);
+
+      // Smart suggestions: should have its own badge
+      expect(screen.getByText("Smart")).toBeVisible();
+
+      // Projects: should be mentioned with a link
+      expect(screen.getByText("For production work and montages, see")).toBeVisible();
+      expect(screen.getByRole("link", { name: "Projects" })).toHaveAttribute("href", "/projects");
+    });
+  });
+
+  test("labels the four organizational concepts distinctly in Arabic", async () => {
+    render(<LocaleProvider initialLocale="ar" hasLocaleCookie><CollectionsPage /></LocaleProvider>);
+
+    await waitFor(() => {
+      // Hierarchy: should use the same term ("الهيكل الأرشيفي") in both badge and heading
+      const hierarchyLabels = screen.getAllByText("الهيكل الأرشيفي");
+      expect(hierarchyLabels.length).toBeGreaterThanOrEqual(2);
+
+      // Curated collections: should have its own distinct badge (appears in badge and heading)
+      const curatedLabels = screen.getAllByText("المجموعات المنسقة");
+      expect(curatedLabels.length).toBeGreaterThanOrEqual(2);
+
+      // Smart suggestions: should have its own badge
+      expect(screen.getByText("ذكية")).toBeVisible();
+
+      // Projects: should be mentioned with a link
+      expect(screen.getByText("للعمل الإنتاجي والمونتاجات، انظر")).toBeVisible();
+      expect(screen.getByRole("link", { name: "المشاريع" })).toHaveAttribute("href", "/projects");
+    });
+  });
+});
