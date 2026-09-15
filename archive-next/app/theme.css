@@ -60,6 +60,9 @@
 
   --color-brand-primary: #0D9488;
   --color-brand-primary-strong: #14B8A6;
+  /* Brand colour for text on a light surface: #0D9488 measures 3.7:1 there,
+     under the 4.5:1 AA floor for the small wordmark. */
+  --color-brand-primary-readable: #0F766E;
   --color-brand-ink: #0F172A;
   --color-brand-warm: #F0FDFA;
   --color-brand-sand: #F8FAFC;
@@ -213,6 +216,8 @@
 
   --color-brand-primary: #E8B447;
   --color-brand-primary-strong: #F2C96D;
+  /* On the dark surface the brand amber already clears AA, so text keeps it. */
+  --color-brand-primary-readable: #E8B447;
   --color-brand-ink: #E4E7EC;
   --color-brand-warm: #2A2318;
   --color-brand-sand: #1A1610;

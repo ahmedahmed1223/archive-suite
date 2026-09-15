@@ -519,6 +519,15 @@ textarea.search-input {
   .page-action-row > :is(button, a, summary) {
     min-block-size: 44px;
   }
+
+  /* V2-UX-001: a badge that is a control is a touch target. The filter chips
+     on the operational pages measured 32px, which is under the WCAG 2.2
+     minimum -- the decorative <span> badges are untouched. */
+  :is(button, a).badge {
+    min-block-size: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 .form-status {

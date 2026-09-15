@@ -148,7 +148,7 @@ a:hover {
 }
 
 .brand-latin {
-  color: var(--color-brand-primary);
+  color: var(--color-brand-primary-readable);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;

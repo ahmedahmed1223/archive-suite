@@ -72,6 +72,38 @@ class NextIntegrationSeeder extends Seeder
         $currentPath = app(MediaPathGuard::class)->resolveOutput($currentStorageKey, 'live integration thumbnail');
         file_put_contents($currentPath, base64_decode('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQL/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/Aaf/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/Aaf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAY/Aqf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/If/EABQRAQAAAAAAAAAAAAAAAAAAABD/2gAIAQMBAT8h/8QAFBEBAAAAAAAAAAAAAAAAAAAAEP/aAAgBAgEBPyH/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/If/Z'));
 
+        // Rights are enforced closed: without a granted window the derivative
+        // download is refused and the card has no thumbnail to show. The
+        // fixture records the clearance the same way an operator would,
+        // rather than the enforcement being weakened for tests.
+        DB::table('rights_records')->updateOrInsert(
+            ['item_id' => $videoUid],
+            [
+                'id' => 'rr-next-laravel-video',
+                'rights_holder' => 'Integration Fixture',
+                'license_type' => 'OWNED',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
+
+        foreach (['editorial_reuse', 'digital_public'] as $index => $usage) {
+            DB::table('rights_windows')->updateOrInsert(
+                ['id' => 'rw-next-laravel-video-'.$index],
+                [
+                    'rights_record_id' => 'rr-next-laravel-video',
+                    'usage' => $usage,
+                    'starts_at' => $now->copy()->subDay(),
+                    'ends_at' => $now->copy()->addYear(),
+                    'territories' => json_encode([]),
+                    'platforms' => json_encode([]),
+                    'granted' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
+        }
+
         DB::table('media_derivatives')->updateOrInsert(
             ['id' => $currentThumbnailId],
             [

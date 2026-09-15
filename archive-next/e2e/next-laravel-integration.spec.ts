@@ -59,7 +59,10 @@ test('renders only the current video derivative in an operational archive card',
     response.url().includes(`/media-derivatives/${currentThumbnailId}/content`) && response.status() === 200,
   );
 
-  await page.goto('/archive', { waitUntil: 'networkidle' });
+  // The card view is requested explicitly: the desktop default became the
+  // table (see getInitialViewMode, V2-DESIGN-001), and what this test is
+  // about is the card's derivative handling, not which view opens first.
+  await page.goto('/archive?view=grid', { waitUntil: 'networkidle' });
 
   const card = page.locator('.record-card').filter({ hasText: 'نشرة تكامل الفيديو' });
   await expect(card.getByRole('img', { name: 'معاينة فيديو نشرة تكامل الفيديو' })).toBeVisible({ timeout: 15_000 });
