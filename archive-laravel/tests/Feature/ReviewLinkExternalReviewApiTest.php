@@ -216,7 +216,7 @@ class ReviewLinkExternalReviewApiTest extends TestCase
         $this->getJson("/api/v1/review-links/{$token}/media")->assertNotFound();
     }
 
-    public function test_watermark_policy_is_persisted_and_reflected_on_the_media_response(): void
+    public function test_visible_watermark_policy_never_falls_back_to_an_unwatermarked_source(): void
     {
         $this->seedRecord('record-7', 'checksum-7');
         $this->writeFile('record-7/source.mov', 'bytes');
@@ -226,9 +226,40 @@ class ReviewLinkExternalReviewApiTest extends TestCase
             'watermarkPolicy' => 'visible',
         ], $this->authHeaders())->assertCreated()->json('token');
 
-        $this->get("/api/v1/review-links/{$token}/media")
-            ->assertOk()
-            ->assertHeader('X-Review-Watermark-Policy', 'visible');
+        $this->getJson("/api/v1/review-links/{$token}/media")
+            ->assertNotFound()
+            ->assertJsonPath('ok', false);
+    }
+
+    public function test_visible_watermark_policy_refuses_an_ordinary_derivative_without_proof_of_burn_in(): void
+    {
+        $this->seedRecord('record-visible-derivative', 'checksum-visible-derivative');
+        $this->writeFile('record-visible-derivative/derivatives/preview.mp4', 'ordinary preview bytes');
+        $derivativeId = (string) Str::uuid();
+
+        DB::table('media_derivatives')->insert([
+            'id' => $derivativeId,
+            'record_store' => 'archive-items',
+            'record_uid' => 'record-visible-derivative',
+            'attachment_id' => null,
+            'derivative_type' => 'proxy',
+            'version_token' => 'record:checksum-visible-derivative',
+            'settings' => json_encode([]),
+            'settings_hash' => hash('sha256', json_encode([])),
+            'status' => 'ready',
+            'storage_key' => 'record-visible-derivative/derivatives/preview.mp4',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $token = $this->postJson('/api/v1/media/record-visible-derivative/review-links', [
+            'derivativeId' => $derivativeId,
+            'watermarkPolicy' => 'visible',
+        ], $this->authHeaders())->assertCreated()->json('token');
+
+        $this->getJson("/api/v1/review-links/{$token}/media")
+            ->assertNotFound()
+            ->assertJsonPath('ok', false);
     }
 
     public function test_expiry_is_immediate_and_fails_closed_for_media_and_decisions(): void

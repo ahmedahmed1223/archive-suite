@@ -31,15 +31,11 @@ use RuntimeException;
  * DEFAULT_DURATION_HOURS so "time-bounded" holds unconditionally (spec
  * acceptance), not just when the caller remembers to set an expiry.
  *
- * Watermarking: watermark_policy is stored/validated/reported and reflected
- * on the media response via the X-Review-Watermark-Policy header (consumed
- * by the Next.js viewer to render a visible on-screen overlay). Burning a
- * watermark into the actual pixel/frame data is deliberately NOT
- * implemented here -- this codebase has no image/video manipulation
- * dependency today (no GD usage, no intervention/image, and video burn-in
- * already has a real hook in RealMediaProcessor's ffmpeg overlay filter,
- * but wiring that into the derivative pipeline is V3-MEDIA-006 territory,
- * outside this task's exclusive lock). See ReviewLinksController::media().
+ * Watermarking: a visible watermark must be burned into a dedicated preview
+ * before any bytes can be streamed. The current derivative model cannot
+ * prove that a file has such a burn-in, so visible-watermark links fail
+ * closed until that preview pipeline supplies immutable evidence. The
+ * Next.js overlay is presentation only and is never treated as protection.
  */
 final class ExternalReviewService
 {
@@ -109,6 +105,14 @@ final class ExternalReviewService
      */
     public function resolveMediaSource(ReviewLink $link): ?array
     {
+        // The current derivative model has no immutable evidence that a
+        // particular file has a watermark burned into its pixels. Refuse the
+        // visible-watermark policy until that dedicated preview pipeline is
+        // available rather than treating a browser overlay as protection.
+        if ($link->watermark_policy === ReviewLink::WATERMARK_VISIBLE) {
+            return null;
+        }
+
         if ($link->derivative_id !== null) {
             $derivative = MediaDerivative::query()->find($link->derivative_id);
 
