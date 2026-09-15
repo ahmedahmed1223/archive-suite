@@ -143,6 +143,10 @@ class SearchController extends Controller
         $hasMore = $pageRecords->count() > $limit;
         $pageRecords = $pageRecords->take($limit)->values();
         $pageRecords = $this->withMediaSummaries($pageRecords);
+        // Moments were wired into the semantic path only, so ordinary keyword
+        // search -- the default, and what semantic falls back to -- returned
+        // none at all. Same page slice, same cost bound as the summaries above.
+        $pageRecords = $this->withMoments($pageRecords, $queryText);
         $lastRecord = $pageRecords->last();
         $segmentMatches = $this->matchingTimedDescriptionSegments($queryText, $mode, $isAdvancedQuery, $limit, $validated);
 

@@ -339,6 +339,67 @@ class SearchApiTest extends TestCase
             ->assertJsonPath('ok', false);
     }
 
+    /**
+     * V2-MEDIA-004 acceptance, end to end through the endpoint rather than the
+     * service alone: a transcript word and a description segment both come back
+     * as moments on their own record, and each one opens at a time it can
+     * justify. The transcript carries its own timecode; the segment is only
+     * given one because a real frame rate was probed.
+     */
+    public function test_search_returns_in_video_moments_for_transcript_and_description_hits(): void
+    {
+        $this->seedRecords();
+        // Not through /records/bulk: it silently drops an unknown transcript
+        // field, which would leave this test passing against zero moments.
+        DB::table('storage_rows')->where(['store' => 'archive-items', 'uid' => 'clip-001'])->update([
+            'data' => json_encode([
+                'uid' => 'clip-001',
+                'title' => 'Riyadh archive interview',
+                'description' => 'City planning',
+                'type' => 'video',
+                'transcript' => "00:00:05 --> 00:00:09
+Riyadh planning discussion
+",
+            ], JSON_THROW_ON_ERROR),
+        ]);
+
+        TimedDescriptionSegment::query()->create([
+            'id' => (string) Str::uuid(),
+            'record_id' => 'clip-001',
+            'start_frame' => 3000,
+            'end_frame' => 3100,
+            'title' => 'Riyadh planning shot',
+        ]);
+
+        DB::table('media_inspections')->insert([
+            'id' => (string) Str::uuid(),
+            'record_store' => 'archive-items',
+            'record_uid' => 'clip-001',
+            'inspection_type' => 'probe',
+            'status' => 'completed',
+            'version_token' => 'v1',
+            'report' => json_encode(['streams' => [
+                ['type' => 'video', 'frameRate' => ['numerator' => 30000, 'denominator' => 1001]],
+            ]], JSON_THROW_ON_ERROR),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $moments = $this->getJson('/api/v1/search?store=archive-items&q=riyadh&limit=10', $this->authHeaders())
+            ->assertOk()
+            ->json('records.0.moments');
+
+        $this->assertNotEmpty($moments, 'The endpoint returned no moments for a record that has both a transcript hit and a segment hit.');
+        $kinds = array_column($moments, 'kind');
+        $this->assertContains('transcript', $kinds);
+        $this->assertContains('description', $kinds);
+
+        $byKind = collect($moments)->keyBy('kind');
+        $this->assertSame(5, $byKind['transcript']['timestampSeconds']);
+        // 3000 frames at 30000/1001 is 100s, not the 120s a guessed 25fps gives.
+        $this->assertSame(100, $byKind['description']['timestampSeconds']);
+    }
+
     private function seedRecords(): void
     {
         $this->postJson('/api/v1/records/bulk', [

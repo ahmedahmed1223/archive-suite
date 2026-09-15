@@ -16,7 +16,7 @@ import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createArchiveApiClient, type ArchiveRecord, type ArchiveSuggestion, type SavedSearch, type SearchFacetBucket, type SearchFacets, type SuggestionFeedbackValue, type TimedDescriptionSegment } from "@/lib/archive-api";
 import { useAuthSession } from "@/lib/auth-session";
 import { deriveLocalSearchEnrichment } from "@/lib/local-enrichment";
-import { buildSearchPlaybackHref, buildActiveSearchFilters, resolveSearchSession as serializeSearchSession, describePreviewForScreenReader } from "@/lib/search";
+import { buildMomentHref, buildSearchPlaybackHref, buildActiveSearchFilters, resolveSearchSession as serializeSearchSession, describePreviewForScreenReader } from "@/lib/search";
 import ActiveFilterBar from "@/components/ActiveFilterBar";
 import SearchResultPreview from "@/components/SearchResultPreview";
 import { resolveSearchSession, resetSearchSession } from "@/lib/search-session";
@@ -897,7 +897,7 @@ function SearchPageContent() {
                             <a
                               className="button button-secondary button-sm"
                               dir="ltr"
-                              href={`/media/studio?recordId=${encodeURIComponent(record.id)}&t=${moment.timestampSeconds}`}
+                              href={buildMomentHref(record.id, moment.timestampSeconds) ?? "#"}
                             >
                               {formatMomentTime(moment.timestampSeconds)}
                             </a>

@@ -147,3 +147,14 @@ export function buildSearchPlaybackHref(record: ArchiveRecord, timestampSeconds:
 
   return `/media/play?${params.toString()}`;
 }
+
+/**
+ * V2-MEDIA-004: where a search moment opens. A moment whose time could not be
+ * justified (no probed frame rate for a description segment) gets no link at
+ * all rather than one that lands at zero and looks authoritative.
+ */
+export function buildMomentHref(recordId: string, timestampSeconds: number | null): string | null {
+  if (timestampSeconds === null || !Number.isFinite(timestampSeconds) || timestampSeconds < 0) return null;
+
+  return `/media/studio?recordId=${encodeURIComponent(recordId)}&t=${Math.floor(timestampSeconds)}`;
+}

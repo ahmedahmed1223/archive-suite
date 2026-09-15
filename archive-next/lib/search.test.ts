@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveSearchSession, describePreviewForScreenReader } from "./search";
+import { buildMomentHref, resolveSearchSession, describePreviewForScreenReader } from "./search";
 
 describe("resolveSearchSession (V15-SEARCH-001)", () => {
   it("is deterministic for identical inputs", () => {
@@ -65,5 +65,18 @@ describe("describePreviewForScreenReader (V15-SEARCH-004)", () => {
   it("keeps short descriptions intact", () => {
     const summary = describePreviewForScreenReader({ title: "تقرير", description: "ملخص قصير" }, copy);
     expect(summary?.descriptionSnippet).toBe("ملخص قصير");
+  });
+});
+
+describe("in-video moment links", () => {
+  it("opens the studio at the moment's own second", () => {
+    expect(buildMomentHref("clip 001", 100)).toBe("/media/studio?recordId=clip%20001&t=100");
+  });
+
+  it("refuses a link for a moment whose time could not be resolved", () => {
+    // A segment with no probed frame rate: a link here would silently open at
+    // zero while looking like a real cue point.
+    expect(buildMomentHref("clip-001", null)).toBeNull();
+    expect(buildMomentHref("clip-001", -1)).toBeNull();
   });
 });
