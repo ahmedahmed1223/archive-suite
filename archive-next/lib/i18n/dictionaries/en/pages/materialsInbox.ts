@@ -1,0 +1,45 @@
+export const materialsInbox = {
+  title: 'Unified Work Inbox',
+  description: 'Material processing stages in one place',
+  stages: {
+    new_receipt: { label: 'New Receipt', icon: '⊕' },
+    tech_check_failed: { label: 'Technical Check Failed', icon: '✘' },
+    incomplete_description: { label: 'Incomplete Description', icon: '◐' },
+    missing_rights: { label: 'Missing Rights', icon: '⚠' },
+    ready_for_approval: { label: 'Ready for Approval', icon: '✓' },
+    processing_failed: { label: 'Processing Failed', icon: '⚡' },
+    awaiting_peer: { label: 'Awaiting Peer Review', icon: '⟳' },
+    completed_today: { label: 'Completed Today', icon: '★' },
+  },
+  stageReasons: {
+    new_receipt: 'Recently added',
+    tech_check_failed: 'Media technical check failed',
+    incomplete_description: 'Missing {count, plural, one {field} other {fields}}: {fields}',
+    missing_rights: 'Rights information not assigned',
+    ready_for_approval: 'Ready for review and approval',
+    processing_failed: 'Media processing failed',
+    awaiting_peer: 'Under review by {name}',
+    completed_today: 'Completed today',
+  },
+  actions: {
+    review: 'Review',
+    fix: 'Fix',
+    setRights: 'Set Rights',
+    viewDetails: 'View Details',
+    retry: 'Retry',
+  },
+  filters: {
+    allStages: 'All Stages',
+    selectStage: 'Select a stage',
+  },
+  sorting: {
+    recentFirst: 'Recent First',
+    olderFirst: 'Older First',
+  },
+  empty: {
+    title: 'No materials in this stage',
+    description: 'All materials are processed and ready.',
+  },
+  loading: 'Loading…',
+  error: 'An error occurred while loading materials. Please try again.',
+};

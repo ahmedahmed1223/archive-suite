@@ -1,0 +1,45 @@
+export const materialsInbox = {
+  title: 'صندوق العمل الموحّد',
+  description: 'مراحل معالجة المادة في مكان واحد',
+  stages: {
+    new_receipt: { label: 'وارد جديد', icon: '⊕' },
+    tech_check_failed: { label: 'فحص تقني فاشل', icon: '✘' },
+    incomplete_description: { label: 'توصيف ناقص', icon: '◐' },
+    missing_rights: { label: 'حقوق ناقصة', icon: '⚠' },
+    ready_for_approval: { label: 'جاهز للاعتماد', icon: '✓' },
+    processing_failed: { label: 'معالجة فاشلة', icon: '⚡' },
+    awaiting_peer: { label: 'بانتظار زميل', icon: '⟳' },
+    completed_today: { label: 'مكتمل اليوم', icon: '★' },
+  },
+  stageReasons: {
+    new_receipt: 'وُجدت للتو',
+    tech_check_failed: 'فشل فحص الوسائط التقني',
+    incomplete_description: 'تحتاج إلى {count, plural, one {حقل} other {حقول}}: {fields}',
+    missing_rights: 'لم يتم تعيين حقوق الاستخدام',
+    ready_for_approval: 'جاهزة للمراجعة والاعتماد',
+    processing_failed: 'فشل معالجة الوسائط',
+    awaiting_peer: 'قيد المراجعة من قبل {name}',
+    completed_today: 'أُتمّت اليوم',
+  },
+  actions: {
+    review: 'مراجعة',
+    fix: 'إصلاح',
+    setRights: 'تعيين الحقوق',
+    viewDetails: 'عرض التفاصيل',
+    retry: 'إعادة محاولة',
+  },
+  filters: {
+    allStages: 'كل المراحل',
+    selectStage: 'اختر مرحلة',
+  },
+  sorting: {
+    recentFirst: 'الأحدث أولاً',
+    olderFirst: 'الأقدم أولاً',
+  },
+  empty: {
+    title: 'لا توجد مواد في هذه المرحلة',
+    description: 'جميع المواد معالجة وجاهزة.',
+  },
+  loading: 'جارٍ التحميل…',
+  error: 'حدث خطأ أثناء تحميل المواد. يرجى إعادة المحاولة.',
+};
