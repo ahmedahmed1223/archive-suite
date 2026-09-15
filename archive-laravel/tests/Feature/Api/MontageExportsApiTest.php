@@ -14,11 +14,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Tests\Support\GrantsRights;
 use Tests\TestCase;
 
 class MontageExportsApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use GrantsRights, RefreshDatabase;
 
     public function test_authorized_export_dispatches_one_media_workflow_with_a_server_resolved_manifest(): void
     {
@@ -39,6 +40,36 @@ class MontageExportsApiTest extends TestCase
         $this->assertSame('montage_export', $mediaJob->operation);
         $this->assertSame('media/source.mov', $mediaJob->options['clips'][0]['path']);
         Queue::assertPushedOn('default', ProcessMediaWorkflow::class, fn (ProcessMediaWorkflow $job): bool => $job->mediaJobId === $mediaJob->id);
+    }
+
+    public function test_export_is_refused_when_a_source_item_has_no_granted_broadcast_window(): void
+    {
+        Queue::fake();
+        $owner = User::factory()->create(['role' => 'editor']);
+        [$project] = $this->projectWithRevision($owner);
+        // The project id itself never carries rights; only its sources do, so
+        // strip the source's clearance and leave the project untouched.
+        DB::table('rights_windows')->delete();
+        DB::table('rights_records')->delete();
+
+        $this->actingAs($owner)->postJson("/api/v1/montage-projects/{$project->id}/exports", [
+            'expectedRevision' => 1,
+            'preset' => 'web-1080p',
+        ])
+            ->assertForbidden()
+            ->assertJsonPath('itemId', 'record-export-source')
+            ->assertJsonPath('decidedBy', 'no_record');
+
+        // Readiness reports the same refusal, so the editor sees it before
+        // queueing rather than after.
+        $this->actingAs($owner)->postJson("/api/v1/montage-projects/{$project->id}/exports/qc", [
+            'expectedRevision' => 1,
+            'preset' => 'web-1080p',
+        ])->assertForbidden();
+
+        $this->assertDatabaseCount('montage_exports', 0);
+        $this->assertDatabaseCount('media_jobs', 0);
+        Queue::assertNothingPushed();
     }
 
     public function test_pre_export_qc_uses_the_export_manifest_checks_without_creating_work(): void
@@ -242,6 +273,9 @@ class MontageExportsApiTest extends TestCase
     /** @return array{MontageProject, MontageProjectRevision} */
     private function projectWithRevision(User $owner): array
     {
+        // Every export path checks broadcast rights per source item, so the
+        // happy-path fixture has to clear the one item it cuts.
+        $this->grantRightsWindow('record-export-source', 'broadcast');
         Storage::fake('local');
         Storage::disk('local')->put('media/source.mov', 'source-content');
         DB::table('storage_rows')->insert([

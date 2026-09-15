@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Montage\MontageExportService;
 use App\Domain\Montage\MontageRevisionConflict;
+use App\Domain\Montage\MontageRightsDenied;
 use App\Domain\Montage\MontageValidationException;
 use App\Http\Controllers\Controller;
 use App\Models\MontageExport;
 use App\Models\MontageProject;
-use App\Services\RightsEnforcementService;
+use App\Models\MontageProjectRevision;
 use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,8 +19,18 @@ class MontageExportsController extends Controller
 {
     public function __construct(
         private readonly MontageExportService $exports,
-        private readonly RightsEnforcementService $rightsEnforcement,
     ) {}
+
+    /** Names the item and the clause that refused it, not just "forbidden". */
+    private function rightsDenied(MontageRightsDenied $denial): JsonResponse
+    {
+        return response()->json([
+            ...ApiError::envelope('Access denied by rights enforcement.', 403),
+            'itemId' => $denial->itemId,
+            'reason' => $denial->denialReason,
+            'decidedBy' => $denial->decidedBy,
+        ], 403);
+    }
 
     public function store(Request $request, string $id): JsonResponse
     {
@@ -35,19 +46,6 @@ class MontageExportsController extends Controller
         $actor = $this->archiveUser($request);
         if ($actor === null || Gate::forUser($actor)->denies('requestExport', $project)) {
             return response()->json(ApiError::envelope('Forbidden.', 403), 403);
-        }
-
-        // Enforce rights for broadcast usage (montage exports for broadcast)
-        // ponytail: montage projects may be composed of multiple source items;
-        // this enforces at the project level. if clip-level enforcement is needed,
-        // fetch clips and check each.
-        $decision = $this->rightsEnforcement->enforceForItem($id, 'broadcast');
-        if (!$decision->allowed) {
-            return response()->json([
-                ...ApiError::envelope('Access denied by rights enforcement.', 403),
-                'reason' => $decision->reason,
-                'decidedBy' => $decision->decidedBy,
-            ], 403);
         }
 
         $data = $request->validate([
@@ -73,6 +71,8 @@ class MontageExportsController extends Controller
                 ...ApiError::envelope('Montage validation failed.', 422),
                 'errors' => $e->errors,
             ], 422);
+        } catch (MontageRightsDenied $e) {
+            return $this->rightsDenied($e);
         }
 
         return response()->json($this->present($export), 201);
@@ -111,6 +111,8 @@ class MontageExportsController extends Controller
                 ...ApiError::envelope('Montage validation failed.', 422),
                 'errors' => $e->errors,
             ], 422);
+        } catch (MontageRightsDenied $e) {
+            return $this->rightsDenied($e);
         }
 
         return response()->json(['ok' => true, 'ready' => true, 'revisionNumber' => (int) $data['expectedRevision']]);
@@ -159,6 +161,19 @@ class MontageExportsController extends Controller
                 ...ApiError::envelope('Export is not retryable.', 422),
                 'status' => $failed->status,
             ], 422);
+        }
+
+        // A retry re-publishes the same cut, so it re-checks rights rather
+        // than inheriting the clearance the original request was given.
+        $revision = MontageProjectRevision::query()->find($failed->montage_project_revision_id);
+        if ($revision === null) {
+            return $this->notFound();
+        }
+
+        try {
+            $this->exports->assertBroadcastRights($revision);
+        } catch (MontageRightsDenied $e) {
+            return $this->rightsDenied($e);
         }
 
         $retry = MontageExport::create([

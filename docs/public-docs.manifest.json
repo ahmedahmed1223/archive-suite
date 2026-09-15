@@ -47,6 +47,7 @@
   ],
   "excludedTrees": [
     { "path": "archive-next/content/guide/", "lifecycle": "product-help-content" },
+    { "path": "docs/agent-briefs/", "lifecycle": "internal-task-tracking" },
     { "path": "docs/superpowers/", "lifecycle": "internal-design-record" }
   ],
   "excludedFiles": [
@@ -62,6 +63,9 @@
     { "path": "docs/v2-continuation.ar.md", "lifecycle": "internal-task-tracking" },
     { "path": "docs/v2-acceptance-audit.ar.md", "lifecycle": "internal-release-gate-evidence" },
     { "path": "docs/v2-ui-design-coverage.ar.md", "lifecycle": "internal-design-record" },
+    { "path": "docs/v2-design-gap-report.ar.md", "lifecycle": "internal-design-record" },
+    { "path": "docs/v2-rights-decision-design.ar.md", "lifecycle": "internal-design-record" },
+    { "path": "docs/v2-handoff-2026-09-15.ar.md", "lifecycle": "internal-task-tracking" },
     { "path": "TASKS.md", "lifecycle": "internal-task-tracking" }
   ]
 }

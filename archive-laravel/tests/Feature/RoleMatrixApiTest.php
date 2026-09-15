@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\GrantsRights;
 use Tests\TestCase;
 
 /**
@@ -28,7 +29,7 @@ use Tests\TestCase;
  */
 class RoleMatrixApiTest extends TestCase
 {
-    use RefreshDatabase;
+    use GrantsRights, RefreshDatabase;
 
     private string $backupDir;
 
@@ -71,6 +72,10 @@ class RoleMatrixApiTest extends TestCase
 
     public function test_editor_can_create_a_share_link(): void
     {
+        // The role gate runs before rights, so the viewer case above needs no
+        // clearance -- only this success path does.
+        $this->grantRightsWindow('item-1', 'digital_public');
+
         $this->postJson('/api/v1/share', [
             'scope' => ['itemIds' => ['item-1']],
         ], $this->editorHeaders())

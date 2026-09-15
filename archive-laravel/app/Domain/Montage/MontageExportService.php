@@ -7,11 +7,13 @@ use App\Models\MediaDerivative;
 use App\Models\MediaJob;
 use App\Models\MontageExport;
 use App\Models\MontageProject;
+use App\Models\MontageProjectRevision;
 use App\Models\User;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaJobQueueRouter;
 use App\Services\Media\MediaApprovalService;
+use App\Services\RightsEnforcementService;
 use App\Support\RequestCorrelation;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +28,7 @@ class MontageExportService
         private readonly MediaJobQueueRouter $queues,
         private readonly MediaJobProgressBroadcaster $progress,
         private readonly MediaApprovalService $mediaApprovals,
+        private readonly RightsEnforcementService $rights,
     ) {}
 
     /**
@@ -51,6 +54,12 @@ class MontageExportService
                 if ($revision === null) {
                     throw new MontageValidationException(['revision' => 'Project has no revision to export.']);
                 }
+
+                // Before the idempotency lookup on purpose: a window can lapse
+                // between the first request and a repeat, and returning the
+                // cached export row would hand back media that is no longer
+                // cleared for broadcast.
+                $this->assertBroadcastRights($revision);
 
                 // A stable DB-backed key closes the read-before-insert race for
                 // concurrent duplicate HTTP requests.
@@ -151,9 +160,39 @@ class MontageExportService
             throw new MontageValidationException(['revision' => 'Project has no revision to export.']);
         }
 
+        $this->assertBroadcastRights($revision);
         $manifest = $this->manifests->build($preset, $revision->id, $revision->clips ?? [], $actor);
         $this->qc->assertReady($revision, $manifest);
         $this->assertSourceQcReady($manifest);
+    }
+
+    /**
+     * A montage export publishes every source item it cuts together, so each
+     * one needs its own granted broadcast window -- the project id is not an
+     * archive item and never carries rights of its own.
+     */
+    public function assertBroadcastRights(MontageProjectRevision $revision): void
+    {
+        foreach ($this->sourceItemIds($revision) as $itemId) {
+            $decision = $this->rights->enforceForItem($itemId, 'broadcast');
+            if (! $decision->allowed) {
+                throw new MontageRightsDenied($itemId, $decision->reason, $decision->decidedBy);
+            }
+        }
+    }
+
+    /** @return list<string> distinct source record ids in timeline order */
+    private function sourceItemIds(MontageProjectRevision $revision): array
+    {
+        $ids = [];
+        foreach ($revision->clips ?? [] as $clip) {
+            $recordId = $clip['source']['recordId'] ?? null;
+            if (is_string($recordId) && $recordId !== '' && ! in_array($recordId, $ids, true)) {
+                $ids[] = $recordId;
+            }
+        }
+
+        return $ids;
     }
 
     private function assertSourceQcReady(MontageRenderManifest $manifest): void

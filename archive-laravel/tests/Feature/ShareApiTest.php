@@ -4,11 +4,21 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\AuthenticatesArchiveRequests;
+use Tests\Support\GrantsRights;
 use Tests\TestCase;
 
 class ShareApiTest extends TestCase
 {
-    use AuthenticatesArchiveRequests, RefreshDatabase;
+    use AuthenticatesArchiveRequests, GrantsRights, RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Sharing is refused for an item with no recorded rights, so the item
+        // these cases share is cleared for public digital use up front. The
+        // refusal itself is covered by RightsEnforcementTest.
+        $this->grantRightsWindow('item-1', 'digital_public');
+    }
 
     public function test_editor_can_revoke_a_share_immediately(): void
     {
