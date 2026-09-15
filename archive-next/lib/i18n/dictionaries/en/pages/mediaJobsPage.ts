@@ -8,6 +8,8 @@ export const mediaJobsPage = {
   mediaStudioLink: "Media studio",
   toolsAriaLabel: "Media job management tools",
   serviceStatusTitle: "Service status",
+  serviceStatusLoading: "Loading service status…",
+  serviceStatusFailed: "Could not read service status.",
   ffmpeg: "FFmpeg",
   ffprobe: "FFprobe",
   whisper: "Whisper",

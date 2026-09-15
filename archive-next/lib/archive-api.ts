@@ -1415,6 +1415,7 @@ export interface ArchiveApiClient {
   upsertRights(payload: Omit<RightsRecord, "id" | "createdAt" | "updatedAt">, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
   expiringRights(params?: { days?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ records: RightsRecord[] }>>;
   rightsEnforcement(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<RightsEnforcementStatus>>;
+  systemServices(options?: AuthRequestOptions): Promise<ApiEnvelope<{ services: Record<string, { state: "available" | "requires_setup" | "down"; reason: string | null }> }>>;
   rightsWindows(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ windows: RightsWindow[] }>>;
   createRightsWindow(itemId: string, payload: RightsWindowInput & { usage: RightsUsage }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ window: RightsWindow }>>;
   updateRightsWindow(id: string, payload: RightsWindowInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ window: RightsWindow }>>;
@@ -2460,6 +2461,8 @@ export function createArchiveApiClient({
     },
     rightsEnforcement: (itemId: string, options?: AuthRequestOptions) =>
       get<RightsEnforcementStatus>(`/rights/${encodeURIComponent(itemId)}/enforcement`, options),
+    systemServices: (options?: AuthRequestOptions) =>
+      get<{ services: Record<string, { state: "available" | "requires_setup" | "down"; reason: string | null }> }>("/system/services", options),
     rightsWindows: (itemId: string, options?: AuthRequestOptions) =>
       get<{ windows: RightsWindow[] }>(`/rights/${encodeURIComponent(itemId)}/windows`, options),
     createRightsWindow: (itemId: string, payload: RightsWindowInput & { usage: RightsUsage }, options?: AuthRequestOptions) =>

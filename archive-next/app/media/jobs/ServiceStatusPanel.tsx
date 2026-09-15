@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createArchiveApiClient } from "@/lib/archive-api";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import type { paths } from "@/lib/generated/archive-api";
 import styles from "./jobs.module.css";
@@ -15,31 +16,36 @@ interface Service {
 export function ServiceStatusPanel() {
   const { t } = useLocale();
   const copy = t.pages.mediaJobsPage;
+  const api = useMemo(() => createArchiveApiClient(), []);
   const [services, setServices] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Through the API client, which carries the session. A raw fetch() sent
+    // no credentials, so this panel answered 401 on every load and every
+    // refresh: the service states it exists to show were never read.
+    let active = true;
     const fetchServices = async () => {
-      try {
-        const response = await fetch("/api/v1/system/services");
-        if (!response.ok) {
-          throw new Error("Failed to fetch service status");
-        }
-        const data = await response.json();
-        setServices(data.services || {});
+      const response = await api.systemServices();
+      if (!active) return;
+
+      if (!response.ok) {
+        setError(response.error || copy.serviceStatusFailed);
+      } else {
+        setServices(response.services || {});
         setError(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Unknown error");
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
-    fetchServices();
-    const interval = setInterval(fetchServices, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
-  }, []);
+    void fetchServices();
+    const interval = setInterval(() => void fetchServices(), 30000); // Refresh every 30 seconds
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [api, copy.serviceStatusFailed]);
 
   const getBadgeColor = (state: ServiceState): string => {
     switch (state) {
@@ -94,7 +100,7 @@ export function ServiceStatusPanel() {
       <div className={`card ${styles.servicePanel}`}>
         <h3 className="text-md font-semibold">{copy.serviceStatusTitle}</h3>
         <div className={styles.servicesContainer}>
-          <div>Loading service status...</div>
+          <div>{copy.serviceStatusLoading}</div>
         </div>
       </div>
     );
@@ -105,7 +111,7 @@ export function ServiceStatusPanel() {
       <div className={`card ${styles.servicePanel}`}>
         <h3 className="text-md font-semibold">{copy.serviceStatusTitle}</h3>
         <div className={styles.servicesContainer}>
-          <div className="text-sm text-error">Error: {error}</div>
+          <div className="text-sm text-error" role="alert">{error}</div>
         </div>
       </div>
     );
