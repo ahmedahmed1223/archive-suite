@@ -815,7 +815,8 @@
 
   .mobile-primary-nav a[aria-current="page"] {
     color: var(--color-text-inverse);
-    background: var(--color-brand-primary);
+    /* Same AA gap as the view switcher: white needs the readable teal. */
+    background: var(--color-brand-primary-readable);
   }
 
   .mobile-primary-nav__command {
@@ -1412,7 +1413,8 @@
 
 .dashboard-recent__card-type {
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  /* Tertiary is 4.34:1 on the subtle card surface, under AA for this size. */
+  color: var(--color-text-secondary);
 }
 
 .dashboard-recent__card-title {
@@ -1428,7 +1430,7 @@
 
 .dashboard-recent__card-date {
   font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   margin-block-start: auto;
 }
 

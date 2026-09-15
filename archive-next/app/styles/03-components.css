@@ -291,7 +291,9 @@
 
 a.badge,
 button.badge {
-  color: var(--color-accent-primary);
+  /* The accent teal on the badge's own tint is 3.35:1; the readable variant
+     clears AA at 4.9:1 on the same background. */
+  color: var(--color-brand-primary-readable);
   border-color: color-mix(in srgb, var(--color-accent-primary) 38%, var(--color-border-secondary));
   background: color-mix(in srgb, var(--color-accent-primary) 9%, var(--color-bg-secondary));
 }
@@ -305,8 +307,8 @@ button.badge:hover {
 
 .badge[data-active="true"] {
   color: var(--color-text-inverse);
-  border-color: var(--color-brand-primary);
-  background: var(--color-brand-primary);
+  border-color: var(--color-brand-primary-readable);
+  background: var(--color-brand-primary-readable);
 }
 
 .badge-danger {

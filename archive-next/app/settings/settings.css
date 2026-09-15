@@ -100,7 +100,8 @@
 }
 
 .shortcut-info small {
-  color: var(--color-text-tertiary);
+  /* Tertiary measures 4.34:1 on the subtle surface this row sits on. */
+  color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 }
 

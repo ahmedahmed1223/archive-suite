@@ -1,12 +1,13 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
-import { expect, test } from './fixtures/auth';
+import { expect, roleData, test } from './fixtures/auth';
 import {
   DYNAMIC_ROUTE_PARAMS,
   ROUTE_COVERAGE,
   type RouteState,
 } from './fixtures/route-inventory';
 import type { RoleName } from './fixtures/roles';
+import { mediaReview } from '../lib/i18n/dictionaries/ar/pages/mediaReview';
 
 /**
  * V1-303C: axe over the authenticated classified routes.
@@ -188,8 +189,16 @@ test.describe('Arabic RTL audit (V1-791)', () => {
     await visit(page, '/search', 'ready');
     await expect(page.locator('#advanced-search-hint code[dir="ltr"]')).toContainText('type:video');
 
-    await visit(page, '/media/review', 'ready');
-    await expect(page.locator('input[placeholder="media/file.mp4"]')).toHaveAttribute('dir', 'ltr');
+    // The source-path field this used to read was removed on 2026-09-06 when
+    // /media/review began requiring an explicit review context, and the
+    // assertion has been looking for a missing element ever since — it only
+    // went unnoticed because nothing ran this spec outside mobile-375. The
+    // surviving technical identifier is the media UID, and it only renders
+    // once the page has a context to review. Label comes from the shipped
+    // dictionary so a rewording cannot leave this asserting a dead string.
+    const adminRecordUid = roleData('admin').recordUid;
+    await visit(page, `/media/review?mediaUid=${encodeURIComponent(adminRecordUid)}`, 'ready');
+    await expect(page.getByLabel(mediaReview.media.contextLabel)).toHaveAttribute('dir', 'ltr');
 
     await visit(page, '/plugins', 'ready');
     const permissionScope = page.getByTestId('plugin-permission-scope').first();

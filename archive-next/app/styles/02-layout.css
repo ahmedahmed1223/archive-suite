@@ -200,7 +200,8 @@
 
 .view-switcher__button[aria-pressed="true"] {
   color: var(--color-text-inverse);
-  background: var(--color-brand-primary);
+  /* White on the brand teal is 3.74:1; the readable variant carries it to 5.47:1. */
+  background: var(--color-brand-primary-readable);
 }
 
 .view-switcher__button:focus-visible {

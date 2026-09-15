@@ -362,9 +362,11 @@
   overflow-wrap: anywhere;
 }
 
+/* The row's <strong> is its tag name, so rendering it lighter than the plain
+   text beside it inverted the hierarchy as well as failing AA. */
 .analytics-tag-row strong,
 .report-roadmap__item span {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
 }
@@ -496,7 +498,9 @@
 .ingest-source-tabs .badge span,
 .sync-filter-strip .badge span {
   color: currentColor;
-  opacity: 0.76;
+  /* No opacity: fading white to 76% on the active badge's teal measured
+     3.87:1. The smaller mono face already sets the count apart without
+     taking it under AA. */
   font-family: var(--font-family-mono);
   font-size: var(--font-size-xs);
 }

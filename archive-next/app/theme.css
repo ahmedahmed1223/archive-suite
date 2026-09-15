@@ -86,10 +86,17 @@
 
   --color-text-primary: #0F172A;
   --color-text-secondary: #475569;
-  --color-text-tertiary: #64748B;
+  /* #64748B measures 4.34:1 on --color-surface-subtle (#F1F5F9), which is where
+     most muted labels actually sit — three separate AA failures today came from
+     that one pair. #5D6B80 is the same grey four percent darker and clears
+     4.87:1 there. The dark palette's tertiary already measures 6.1:1. */
+  --color-text-tertiary: #5D6B80;
   --color-text-muted: var(--color-text-tertiary);
   --color-text-inverse: #FFFFFF;
-  --color-text-link: #0D9488;
+  /* The brand teal measures 3.74:1 on white, so every link, .text-accent and
+     row button painted with it was below AA. The readable variant clears
+     5.47:1 on white and 4.87:1 on the selected-row tint. */
+  --color-text-link: var(--color-brand-primary-readable);
 
   --color-border-primary: #E2E8F0;
   --color-border-secondary: #F1F5F9;
