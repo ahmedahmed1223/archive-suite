@@ -114,7 +114,10 @@ export function getInitialViewMode(params: URLSearchParams): ArchiveViewMode {
     return "list";
   }
 
-  return "grid";
+  // V2-DESIGN-001: the table is the default on desktop. Cards fit ~4 records
+  // per 1280px screen; the 40px table rows fit 15+, which is what the archive
+  // list is actually used for. Every other mode stays one click away.
+  return "details";
 }
 
 export function getInitialItemSize(params: URLSearchParams): ArchiveItemSize {

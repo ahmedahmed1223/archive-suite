@@ -178,8 +178,13 @@
 
 .badge-success {
   /* --color-success is undefined; the old #1a7f37 fallback failed WCAG on
-     dark surfaces (V1-303C axe gate). Use the real status token. */
+     dark surfaces (V1-303C axe gate). Use the real status token.
+     V2-DESIGN-002: tinted border/background to match badge-danger,
+     badge-warning and badge-info -- a green that only recoloured the text read
+     as neutral next to them. */
   color: var(--color-status-success);
+  border-color: color-mix(in srgb, var(--color-status-success) 42%, var(--color-border-primary));
+  background: color-mix(in srgb, var(--color-status-success) 8%, var(--color-bg-secondary));
 }
 
 .badge-error {

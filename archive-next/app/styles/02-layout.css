@@ -189,6 +189,15 @@
   cursor: pointer;
 }
 
+/* V2-DESIGN-002: icon-only toggles are square, so the row of view/density
+   controls stays compact instead of spanning the toolbar as text chips. */
+.view-switcher__button[data-icon-only="true"] {
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--control-height);
+  padding: 0;
+}
+
 .view-switcher__button[aria-pressed="true"] {
   color: var(--color-text-inverse);
   background: var(--color-brand-primary);

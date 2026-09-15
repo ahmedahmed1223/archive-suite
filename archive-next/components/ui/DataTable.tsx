@@ -34,6 +34,13 @@ export interface DataTableProps<TData> {
    * needs `.scroll-x` on narrow viewports, instead of starting off-screen.
    */
   stickyLastColumn?: boolean;
+  /**
+   * Row height the virtualizer assumes, in px. Only matters when
+   * `virtualized` is set: rows are not re-measured, so a table with a
+   * non-default row height (e.g. the 40px archive table) must say so or the
+   * scroll window drifts. Defaults to the standard 56px row.
+   */
+  estimatedRowHeight?: number;
 }
 
 function columnLabel<TData>(column: { id: string; columnDef: ColumnDef<TData, unknown> }): string {
@@ -58,7 +65,8 @@ export default function DataTable<TData>({
   virtualized = false,
   wrapperClassName,
   columnVisibilityStorageKey,
-  stickyLastColumn = false
+  stickyLastColumn = false,
+  estimatedRowHeight = 56
 }: DataTableProps<TData>) {
   const { t } = useLocale();
   const copy = t.shared.dataTable;
@@ -121,7 +129,7 @@ export default function DataTable<TData>({
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 56,
+    estimateSize: () => estimatedRowHeight,
     overscan: 8,
     enabled: virtualized
   });

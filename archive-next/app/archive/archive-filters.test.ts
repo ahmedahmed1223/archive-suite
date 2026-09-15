@@ -87,9 +87,11 @@ describe("getUniqueValues", () => {
 });
 
 describe("getInitial* URL param readers", () => {
-  test("getInitialViewMode returns a valid mode from the URL or defaults to grid", () => {
+  test("getInitialViewMode returns a valid mode from the URL or defaults to the table", () => {
     expect(getInitialViewMode(new URLSearchParams("view=list"))).toBe("list");
-    expect(getInitialViewMode(new URLSearchParams("view=not-a-mode"))).toBe("grid");
+    // V2-DESIGN-001: desktop default is the dense table, not the card grid.
+    expect(getInitialViewMode(new URLSearchParams("view=not-a-mode"))).toBe("details");
+    expect(getInitialViewMode(new URLSearchParams(""))).toBe("details");
   });
 
   test("getInitialItemSize defaults to compact for unknown values", () => {

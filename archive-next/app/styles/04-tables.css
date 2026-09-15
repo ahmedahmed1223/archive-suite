@@ -539,6 +539,21 @@
   inline-size: 3rem;
 }
 
+/* V2-DESIGN-001: the table is the archive list's default view, so its rows are
+   pinned to the 2.5rem (40px) baseline -- ~15 records above the fold on a
+   1280px screen instead of the ~4 the cards managed. Cells must not wrap:
+   a single wrapped title is what used to double a row's height. */
+.archive-table th,
+.archive-table td {
+  block-size: var(--focus-row-min-height);
+  padding-block: 0;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+}
+
 .empty-state-rich {
   display: grid;
   gap: var(--space-2);

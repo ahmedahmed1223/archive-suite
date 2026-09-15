@@ -65,6 +65,7 @@ export const archiveList = {
   selectAllVisible: "تحديد كل النتائج الظاهرة",
   selectRecord: "تحديد {title}",
   fallbackRecordLabel: "السجل",
+  statusColumn: "الحالة",
   columnAction: "إجراء",
   savedViewLoadError: "تعذر تحميل العروض المحفوظة.",
   saveViewDialogTitle: "حفظ العرض",

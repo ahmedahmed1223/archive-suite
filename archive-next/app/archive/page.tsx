@@ -1,9 +1,10 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import type { LucideIcon } from "lucide-react";
 import type { DragEvent, FormEvent, MouseEvent as ReactMouseEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Archive, Filter, FolderSearch, PanelRightOpen, Search, SlidersHorizontal } from "lucide-react";
+import { AlignJustify, Archive, Columns2, Filter, FolderSearch, Images, LayoutGrid, List, PanelRightOpen, Rows2, Rows3, Rows4, Search, SlidersHorizontal, Table2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { ArchiveRecordCard } from "./ArchiveRecordCard";
@@ -24,6 +25,8 @@ import { toastError, toastSuccess } from "@/lib/toast";
 import { canRedo, canUndo, emptyUndoStack, pushUndo, redo, undo, type UndoStack } from "@/lib/undo-stack";
 import { isIncompleteRecord } from "@/lib/work-lists";
 import { formatKvValue } from "@/lib/kv-format";
+import { badgeClass, recordStatusTone } from "@/lib/badge-tone";
+import { deriveRecordStatus } from "@/lib/record-status";
 import { readWorkspacePreferences, updateWorkspacePreferences, WORKSPACE_PREFERENCES_STORAGE_KEY } from "@/lib/workspace-preferences";
 import styles from "./archive.module.css";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -77,6 +80,25 @@ interface DeleteBatch {
   count: number;
 }
 
+// V2-DESIGN-002: 6 view modes x 3 densities used to shout as 9 text chips in
+// one row. Same 9 options, rendered as two compact icon toggles instead --
+// nothing removed, each still keyboard-reachable with its Arabic label as the
+// accessible name.
+const VIEW_MODE_ICONS: Record<ArchiveViewMode, LucideIcon> = {
+  grid: LayoutGrid,
+  gallery: Images,
+  compact: AlignJustify,
+  list: List,
+  details: Table2,
+  split: Columns2
+};
+
+const ITEM_SIZE_ICONS: Record<ArchiveItemSize, LucideIcon> = {
+  compact: Rows4,
+  comfortable: Rows3,
+  large: Rows2
+};
+
 type ArchiveState =
   | { status: "loading" }
   | { status: "ready"; records: ArchiveRecord[]; facets?: SearchFacets }
@@ -92,12 +114,17 @@ function ArchivePageContent() {
     () => VIEW_MODE_VALUES.map((value) => ({
       value,
       label: t.pages.archiveList.viewModes[value].label,
-      shortLabel: t.pages.archiveList.viewModes[value].shortLabel
+      shortLabel: t.pages.archiveList.viewModes[value].shortLabel,
+      icon: VIEW_MODE_ICONS[value]
     })),
     [t]
   );
   const itemSizeOptions = useMemo<DataViewOption<ArchiveItemSize>[]>(
-    () => ITEM_SIZE_VALUES.map((value) => ({ value, label: t.pages.archiveList.itemSizes[value] })),
+    () => ITEM_SIZE_VALUES.map((value) => ({
+      value,
+      label: t.pages.archiveList.itemSizes[value],
+      icon: ITEM_SIZE_ICONS[value]
+    })),
     [t]
   );
   const dialogs = useConfirmDialog();
@@ -258,7 +285,7 @@ function ArchivePageContent() {
     if (type !== "all") params.set("type", type);
     if (workflowStatus !== "all") params.set("status", workflowStatus);
     if (incompleteOnly) params.set("completion", "incomplete");
-    if (viewMode !== "grid") params.set("view", viewMode);
+    if (viewMode !== "details") params.set("view", viewMode);
     if (itemSize !== "compact") params.set("size", itemSize);
     if (sortField !== "updatedAt") params.set("sort", sortField);
     if (sortDirection !== "desc") params.set("dir", sortDirection);
@@ -533,6 +560,22 @@ function ArchivePageContent() {
         accessorKey: "type",
         header: t.pages.archiveList.typeLabel,
         cell: ({ row }) => row.original.type || t.pages.archiveList.notSpecified
+      },
+      {
+        // V2-DESIGN-002: the table is now the default view, so record state has
+        // to be scannable here, not only on the cards. Same derived status and
+        // same tone map the cards use.
+        id: "status",
+        header: t.pages.archiveList.statusColumn,
+        accessorFn: (record) => deriveRecordStatus(record, locale).label,
+        cell: ({ row }) => {
+          const status = deriveRecordStatus(row.original, locale);
+          return (
+            <span className={badgeClass(recordStatusTone(status.kind))} data-record-status={status.kind} title={status.reason}>
+              {status.label}
+            </span>
+          );
+        }
       },
       {
         id: "updated",
@@ -1180,6 +1223,7 @@ function ArchivePageContent() {
                   getRowId={(record) => record.id}
                   tableClassName="archive-table"
                   virtualized={visibleRecords.length > 60}
+                  estimatedRowHeight={40}
                   columnVisibilityStorageKey="archive"
                 />
               ) : viewMode === "split" ? (

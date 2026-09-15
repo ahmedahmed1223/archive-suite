@@ -65,6 +65,7 @@ export const archiveList = {
   selectAllVisible: "Select all visible results",
   selectRecord: "Select {title}",
   fallbackRecordLabel: "record",
+  statusColumn: "Status",
   columnAction: "Action",
   savedViewLoadError: "Could not load saved views.",
   saveViewDialogTitle: "Save view",

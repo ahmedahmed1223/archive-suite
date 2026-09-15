@@ -5,6 +5,7 @@ import { ContextMenu, type ContextMenuPosition } from "@/components/ui/ContextMe
 import ProtectedDerivativeImage from "@/components/ProtectedDerivativeImage";
 import type { ArchiveRecord } from "@/lib/archive-api";
 import { deriveRecordStatus } from "@/lib/record-status";
+import { badgeClass, describeCompletionTone, inspectionStatusTone, proxyStatusTone, recordStatusTone } from "@/lib/badge-tone";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import { formatDate, type ArchiveItemSize } from "./archive-filters";
 import type { SelectClickModifiers } from "./selection";
@@ -144,8 +145,8 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, acces
             {mediaDuration ? <time dir="ltr">{mediaDuration}</time> : null}
           </div>
           <div className="record-card__media-status">
-            <span className="badge" data-proxy-status={mediaSummary.proxyStatus}>{proxyLabel}</span>
-            <span className="badge" data-inspection-status={mediaSummary.inspectionStatus}>{inspectionLabel}</span>
+            <span className={badgeClass(proxyStatusTone(mediaSummary.proxyStatus))} data-proxy-status={mediaSummary.proxyStatus}>{proxyLabel}</span>
+            <span className={badgeClass(inspectionStatusTone(mediaSummary.inspectionStatus))} data-inspection-status={mediaSummary.inspectionStatus}>{inspectionLabel}</span>
           </div>
         </section>
       ) : null}
@@ -199,11 +200,11 @@ export function ArchiveRecordCard({ record, itemSize, isSelected, canEdit, acces
           {record.store ? <span className="badge">{record.store}</span> : null}
           {record.type ? <span className="badge">{record.type}</span> : null}
           {record.subtype ? <span className="badge">{record.subtype}</span> : null}
-          <span className="badge" data-record-status={status.kind} aria-label={`${status.label}: ${status.reason}`} title={status.reason}>
+          <span className={badgeClass(recordStatusTone(status.kind))} data-record-status={status.kind} aria-label={`${status.label}: ${status.reason}`} title={status.reason}>
             {status.label}
           </span>
           {describeStatus ? (
-            <span className="badge" data-describe={describeStatus} title={describeLabel}>
+            <span className={badgeClass(describeCompletionTone(describeStatus))} data-describe={describeStatus} title={describeLabel}>
               {describeLabel}
             </span>
           ) : null}
