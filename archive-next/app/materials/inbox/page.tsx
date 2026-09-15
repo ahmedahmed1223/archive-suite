@@ -4,33 +4,9 @@ import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale } from '@/lib/i18n/LocaleProvider';
-import { createArchiveApiClient } from '@/lib/archive-api';
-
-type MaterialStage =
-  | 'new_receipt'
-  | 'tech_check_failed'
-  | 'incomplete_description'
-  | 'missing_rights'
-  | 'ready_for_approval'
-  | 'processing_failed'
-  | 'awaiting_peer'
-  | 'completed_today';
-
-interface MaterialInboxRecord {
-  id: string;
-  uid: string;
-  title: string;
-  stage: MaterialStage;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface MaterialsInboxResponse {
-  ok: boolean;
-  records: MaterialInboxRecord[];
-  stageCounts: Record<MaterialStage, number>;
-  nextCursor?: string | null;
-}
+import { createArchiveApiClient, type MaterialStage, type MaterialInboxRecord } from '@/lib/archive-api';
+import { Skeleton } from '@/components/ui/Skeleton';
+import EmptyState from '@/components/EmptyState';
 
 const STAGE_ORDER: MaterialStage[] = [
   'new_receipt',
@@ -47,8 +23,9 @@ export default function MaterialsInboxPage() {
   const { t } = useLocale();
   const api = useMemo(() => createArchiveApiClient(), []);
   const [selectedStage, setSelectedStage] = useState<MaterialStage | null>(null);
+  const copy = t.pages.materialsInbox;
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['materials-inbox', selectedStage],
     queryFn: async () => {
       const response = await api.getMaterialsInbox({
@@ -57,7 +34,10 @@ export default function MaterialsInboxPage() {
           ...(selectedStage && { stage: selectedStage }),
         },
       });
-      return response.ok ? response : null;
+      if (!response.ok) {
+        throw new Error(response.error || 'Failed to load materials');
+      }
+      return response;
     },
   });
 
@@ -65,28 +45,42 @@ export default function MaterialsInboxPage() {
     setSelectedStage(selectedStage === stage ? null : stage);
   }, [selectedStage]);
 
+  const stageCounts = data?.stageCounts || {};
+  const records = data?.records || [];
+
   if (error) {
     return (
-      <div className="p-6">
-        <div className="text-red-600">{t.materialsInbox.error}</div>
+      <div className="flex flex-col h-full" dir="rtl">
+        <header className="border-b border-gray-200 px-6 py-4">
+          <h1 className="text-2xl font-bold">{copy.title}</h1>
+          <p className="text-sm text-gray-600">{copy.description}</p>
+        </header>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{copy.error}</p>
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
+            >
+              {copy.actions.retry}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const stageCounts = data?.stageCounts || {};
-  const records = data?.records || [];
-
   return (
     <div className="flex flex-col h-full" dir="rtl">
       <header className="border-b border-gray-200 px-6 py-4">
-        <h1 className="text-2xl font-bold">{t.materialsInbox.title}</h1>
-        <p className="text-sm text-gray-600">{t.materialsInbox.description}</p>
+        <h1 className="text-2xl font-bold">{copy.title}</h1>
+        <p className="text-sm text-gray-600">{copy.description}</p>
       </header>
 
       <div className="p-6 border-b border-gray-200">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {STAGE_ORDER.map((stage) => {
-            const stageInfo = t.materialsInbox.stages[stage];
+            const stageInfo = copy.stages[stage];
             const count = stageCounts[stage] || 0;
             const isSelected = selectedStage === stage;
 
@@ -113,12 +107,12 @@ export default function MaterialsInboxPage() {
 
       <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="p-6 text-center text-gray-600">{t.materialsInbox.loading}</div>
+          <Skeleton label={copy.loading} />
         ) : records.length === 0 ? (
-          <div className="p-12 text-center">
-            <h3 className="text-lg font-semibold text-gray-900">{t.materialsInbox.empty.title}</h3>
-            <p className="text-sm text-gray-600 mt-2">{t.materialsInbox.empty.description}</p>
-          </div>
+          <EmptyState
+            title={copy.empty.title}
+            description={copy.empty.description}
+          />
         ) : (
           <div className="divide-y divide-gray-200">
             {records.map((record) => (
@@ -131,11 +125,11 @@ export default function MaterialsInboxPage() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">{record.title}</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      {t.materialsInbox.stageReasons[record.stage]}
+                      {(copy.stageReasons as Record<MaterialStage, string>)[record.stage]}
                     </p>
                   </div>
                   <div className="text-xs text-gray-500 mr-4">
-                    {new Date(record.updatedAt).toLocaleDateString()}
+                    {record.updatedAt && new Date(record.updatedAt).toLocaleDateString()}
                   </div>
                 </div>
               </Link>

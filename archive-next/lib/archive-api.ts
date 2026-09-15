@@ -100,6 +100,10 @@ export type WorkInboxItemType = GeneratedSchemas["WorkInboxItemType"];
 export type WorkInboxItem = GeneratedSchemas["WorkInboxItem"];
 export type WorkInboxCounts = GeneratedSchemas["WorkInboxCounts"];
 
+export type MaterialInboxRecord = GeneratedSchemas["MaterialInboxRecord"];
+export type MaterialStage = MaterialInboxRecord["stage"];
+export type StageCounts = GeneratedSchemas["StageCounts"];
+
 export type MediaDerivative = GeneratedSchemas["MediaDerivative"];
 export type MediaDerivativeType = GeneratedSchemas["MediaDerivativeType"];
 export type MediaDerivativeSettings = GeneratedSchemas["MediaDerivativeSettings"];
@@ -1555,6 +1559,7 @@ export interface ArchiveApiClient {
   deleteInboxItem(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   previewInboxDepartmentRouting(id: string, departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<DepartmentRoutingPreview>>;
   routeInboxDepartment(id: string, departmentId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ departmentId: string; routingHistory: InboxItem["routingHistory"] }>>;
+  getMaterialsInbox(params?: { query?: { store: string; stage?: string; cursor?: string; limit?: number } }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ records: MaterialInboxRecord[]; stageCounts: StageCounts; nextCursor?: string | null }>>;
   vocabularyTerms(departmentId?: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ terms: VocabularyTerm[]; preferredTermIds: string[] }>>;
   vocabularyKinds(options?: AuthRequestOptions): Promise<ApiEnvelope<{ kinds: VocabularyKindDefinition[] }>>;
   replaceVocabularyKinds(kinds: Array<Omit<VocabularyKindDefinition, "builtIn">>, options?: AuthRequestOptions): Promise<ApiEnvelope<{ kinds: VocabularyKindDefinition[] }>>;
@@ -2805,6 +2810,15 @@ export function createArchiveApiClient({
       post<DepartmentRoutingPreview>(`/inbox/${encodeURIComponent(id)}/department-routing/preview`, { departmentId }, options),
     routeInboxDepartment: (id: string, departmentId: string, options?: AuthRequestOptions) =>
       post<{ departmentId: string; routingHistory: InboxItem["routingHistory"] }>(`/inbox/${encodeURIComponent(id)}/department-routing`, { departmentId }, options),
+    getMaterialsInbox: (params?: { query?: { store: string; stage?: string; cursor?: string; limit?: number } }, options?: AuthRequestOptions) => {
+      const queryParams = new URLSearchParams();
+      if (params?.query?.store) queryParams.set("store", params.query.store);
+      if (params?.query?.stage) queryParams.set("stage", params.query.stage);
+      if (params?.query?.cursor) queryParams.set("cursor", params.query.cursor);
+      if (params?.query?.limit) queryParams.set("limit", String(params.query.limit));
+      const query = queryParams.toString();
+      return get<{ records: MaterialInboxRecord[]; stageCounts: StageCounts; nextCursor?: string | null }>(`/materials/inbox${query ? `?${query}` : ""}`, options);
+    },
     vocabularyTerms: (departmentId?: string, options?: AuthRequestOptions) =>
       get<{ terms: VocabularyTerm[]; preferredTermIds: string[] }>(`/vocabulary${departmentId ? `?departmentId=${encodeURIComponent(departmentId)}` : ""}`, options),
     vocabularyKinds: (options?: AuthRequestOptions) =>
