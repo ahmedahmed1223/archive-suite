@@ -258,6 +258,14 @@ async function main() {
       "e2e/screen-reader-sample.authed.spec.ts",
       "e2e/uploads-mobile.authed.spec.ts",
       "e2e/phone-first-screen.authed.spec.ts",
+      // The public-route axe spec above was in this list; its authenticated
+      // counterpart never was, so nothing ran the classified routes outside a
+      // hand-typed --grep. When it was finally run at all four viewports on
+      // 2026-09-15 it found thirteen AA contrast failures and an assertion
+      // that had been looking for a deleted element since 2026-09-06. It costs
+      // about eighteen minutes: split it into its own scheduled gate if that
+      // is too much for every run, but do not leave it unrun again.
+      "e2e/accessibility-authenticated.authed.spec.ts",
       "e2e/critical-journeys-console.authed.spec.ts",
       "e2e/media-studio.authed.spec.ts",
       "e2e/media-studio-timeline.authed.spec.ts",
