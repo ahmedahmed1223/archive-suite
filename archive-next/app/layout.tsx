@@ -60,7 +60,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const hasLocaleCookie = requestHeaders.get("x-archive-locale-cookie") === "1";
 
   return (
-    <html lang={locale} dir={directionFor(locale)} data-theme="dark" className={plexArabic.variable} suppressHydrationWarning>
+    <html lang={locale} dir={directionFor(locale)} data-theme="light" className={plexArabic.variable} suppressHydrationWarning>
       <body>
         <AppProviders initialLocale={locale} hasLocaleCookie={hasLocaleCookie}>
           <ClientErrorReporter />

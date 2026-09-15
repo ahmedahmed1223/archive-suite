@@ -118,7 +118,11 @@ export type ValidatedAppearanceSettings = z.infer<typeof AppearanceSettingsSchem
 
 // Default appearance settings
 const DEFAULT_SETTINGS: AppearanceSettings = {
-  currentPreset: "cinematic-dark",
+  // V2-DESIGN-002: the institutional light identity is the product default.
+  // getPreferredThemeMode() derives the mode from this preset, so changing
+  // data-theme on <html> alone is not enough -- ThemeProvider overwrites it
+  // on mount from here.
+  currentPreset: "neutral-light",
   customTokens: {},
   scheduledRules: [],
   schedulingEnabled: false
