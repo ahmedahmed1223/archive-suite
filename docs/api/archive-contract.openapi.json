@@ -17509,6 +17509,26 @@
           "mediaSummary": {
             "$ref": "#/components/schemas/MediaSummary"
           },
+          "moments": {
+            "type": "array",
+            "description": "Matching moments inside the material for the current search. Present only on search results. timestampSeconds is null when the material has not been probed, because a description segment stores frames and converting them needs the real frame rate — no time is invented in its absence.",
+            "items": {
+              "type": "object",
+              "required": ["kind", "excerpt", "timestampSeconds"],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": ["transcript", "description"]
+                },
+                "excerpt": {
+                  "type": "string"
+                },
+                "timestampSeconds": {
+                  "type": ["integer", "null"]
+                }
+              }
+            }
+          },
           "tags": {
             "type": "array",
             "items": {

@@ -4847,6 +4847,13 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             };
+            /** @description Matching moments inside the material for the current search. Present only on search results. timestampSeconds is null when the material has not been probed, because a description segment stores frames and converting them needs the real frame rate — no time is invented in its absence. */
+            moments?: {
+                excerpt: string;
+                /** @enum {string} */
+                kind: "transcript" | "description";
+                timestampSeconds: number | null;
+            }[];
             path?: string;
             store?: string;
             subtype?: string | null;

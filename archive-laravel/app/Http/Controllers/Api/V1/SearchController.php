@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TimedDescriptionSegment;
 use App\Repositories\StorageRowRepository;
 use App\Services\Search\EmbeddingService;
+use App\Services\Search\RecordMomentsService;
 use App\Services\Search\TranscriptSearchService;
 use App\Services\Media\RecordMediaSummaryService;
 use App\Support\StorageRowPayload;
@@ -212,7 +213,10 @@ class SearchController extends Controller
 
         $pageRecords = $records->slice($offset, $limit)->values();
         $hasMore = ($offset + $limit) < $records->count();
+        // Both enrichments run on the page slice, never on the whole pool:
+        // attaching before the slice is how mediaSummary was lost once before.
         $pageRecords = $this->withMediaSummaries($pageRecords);
+        $pageRecords = $this->withMoments($pageRecords, (string) ($validated['q'] ?? ''));
 
         return [
             'ok' => true,
@@ -221,6 +225,37 @@ class SearchController extends Controller
             'facets' => $facets,
             'nextCursor' => $hasMore ? StorageRowPayload::encodeCursor((string) ($offset + $limit)) : null,
         ];
+    }
+
+    /**
+     * V2-MEDIA-004: attach each result's matching moments inside the material.
+     * Runs on the page slice only, so the cost scales with the page and not
+     * with the size of the archive.
+     *
+     * @param Collection<int, array<string, mixed>> $records
+     */
+    private function withMoments(Collection $records, string $query): Collection
+    {
+        if (trim($query) === '') {
+            return $records;
+        }
+
+        $moments = app(RecordMomentsService::class);
+
+        return $records->map(function (array $record) use ($moments, $query): array {
+            $store = is_string($record['store'] ?? null) ? $record['store'] : '';
+            $uid = is_string($record['uid'] ?? null) ? $record['uid'] : '';
+            $transcript = is_string($record['transcript'] ?? null) ? $record['transcript'] : null;
+
+            if ($uid === '') {
+                return $record;
+            }
+
+            return [
+                ...$record,
+                'moments' => $moments->forRecord($store, $uid, $transcript, $query),
+            ];
+        })->values();
     }
 
     /** @param Collection<int, array<string, mixed>> $records */
