@@ -5993,13 +5993,24 @@ export interface components {
         };
         /** @enum {string} */
         InboxStatus: "new" | "triage" | "ready" | "done";
+        /** @description Why one file was not ingested. A duplicate and an unreadable file are different outcomes, not one "skipped" number. */
+        IngestBatchOutcome: {
+            file: string;
+            /** @enum {string} */
+            outcome: "skipped" | "failed";
+            reason?: string;
+        };
         IngestedFile: {
             checksum: string;
             fileName: string;
             id: string;
         };
         IngestScanResponse: components["schemas"]["OkEnvelope"] & {
+            /** @description The batch every file in this run belongs to. Null only when the ingest directory does not exist, so nothing was scanned. */
+            batchId?: string | null;
+            failed?: number;
             ingested: components["schemas"]["IngestedFile"][];
+            outcomes?: components["schemas"]["IngestBatchOutcome"][];
             skipped: number;
         };
         IntakeTemplate: {

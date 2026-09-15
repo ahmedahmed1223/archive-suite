@@ -20,6 +20,41 @@ class IngestApiTest extends TestCase
         Storage::fake(config('ingest.disk'));
     }
 
+    /**
+     * V2-OPS-002: every ingested file belongs to a batch, and the batch keeps
+     * a per-file outcome so a duplicate is not reported as the same thing as
+     * a file that could not be read.
+     */
+    public function test_a_scan_ties_every_file_to_a_batch_and_records_why_one_was_skipped(): void
+    {
+        $disk = config('ingest.disk');
+        $dir = config('ingest.directory');
+        Storage::disk($disk)->put("$dir/first.txt", 'content');
+
+        $batchId = $this->postJson('/api/v1/ingest/scan', [], $this->authHeaders())
+            ->assertOk()
+            ->assertJsonPath('failed', 0)
+            ->json('batchId');
+
+        $this->assertIsString($batchId);
+        $record = DB::table('storage_rows')->where('store', 'archive-items')->first();
+        $data = json_decode((string) $record->data, true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame($batchId, $data['batchId'], 'An ingested record is not tied to the batch that brought it in.');
+        $this->assertDatabaseHas('ingest_batches', ['id' => $batchId, 'source' => 'scan', 'ingested_count' => 1, 'skipped_count' => 0]);
+
+        // The same bytes under a new name: a duplicate, and the batch says so.
+        Storage::disk($disk)->put("$dir/copy.txt", 'content');
+        $second = $this->postJson('/api/v1/ingest/scan', [], $this->authHeaders())->assertOk();
+
+        // Both files now match an ingested checksum: the original and its copy.
+        $this->assertSame(2, $second->json('skipped'));
+        $this->assertSame(0, $second->json('failed'));
+        foreach ($second->json('outcomes') as $outcome) {
+            $this->assertSame('skipped', $outcome['outcome']);
+            $this->assertSame('duplicate_checksum', $outcome['reason']);
+        }
+    }
+
     public function test_scan_creates_records_for_new_files(): void
     {
         $disk = config('ingest.disk');

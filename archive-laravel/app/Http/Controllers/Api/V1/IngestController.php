@@ -52,8 +52,11 @@ class IngestController extends Controller
 
         return response()->json([
             'ok' => true,
+            'batchId' => $result['batchId'],
             'ingested' => $result['ingested'],
             'skipped' => $result['skipped'],
+            'failed' => $result['failed'],
+            'outcomes' => $result['outcomes'],
         ]);
     }
 

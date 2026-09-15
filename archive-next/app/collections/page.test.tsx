@@ -55,9 +55,10 @@ describe("hierarchy, collections, and projects distinctness", () => {
       const hierarchyLabels = screen.getAllByText("Archival hierarchy");
       expect(hierarchyLabels.length).toBeGreaterThanOrEqual(2); // appears in badge and heading
 
-      // Curated collections: should have its own distinct badge (appears in badge and heading)
-      const curatedLabels = screen.getAllByText("Curated collections");
-      expect(curatedLabels.length).toBeGreaterThanOrEqual(2);
+      // Curated collections: its badge names the kind rather than repeating
+      // the heading, so the two read as label and section, not as an echo.
+      expect(screen.getByText("Curated")).toBeVisible();
+      expect(screen.getByText("Curated collections")).toBeVisible();
 
       // Smart suggestions: should have its own badge
       expect(screen.getByText("Smart")).toBeVisible();
@@ -76,15 +77,15 @@ describe("hierarchy, collections, and projects distinctness", () => {
       const hierarchyLabels = screen.getAllByText("الهيكل الأرشيفي");
       expect(hierarchyLabels.length).toBeGreaterThanOrEqual(2);
 
-      // Curated collections: should have its own distinct badge (appears in badge and heading)
-      const curatedLabels = screen.getAllByText("المجموعات المنسقة");
-      expect(curatedLabels.length).toBeGreaterThanOrEqual(2);
+      // شارة النوع لا تكرّر العنوان حرفيًا.
+      expect(screen.getByText("منسقة")).toBeVisible();
+      expect(screen.getByText("المجموعات المنسقة")).toBeVisible();
 
       // Smart suggestions: should have its own badge
       expect(screen.getByText("ذكية")).toBeVisible();
 
       // Projects: should be mentioned with a link
-      expect(screen.getByText("للعمل الإنتاجي والمونتاجات، انظر")).toBeVisible();
+      expect(screen.getByText("للعمل الإنتاجي والمونتاجات، انظر صفحة")).toBeVisible();
       expect(screen.getByRole("link", { name: "المشاريع" })).toHaveAttribute("href", "/projects");
     });
   });

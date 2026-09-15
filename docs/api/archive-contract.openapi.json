@@ -27465,6 +27465,17 @@
           }
         ]
       },
+      "IngestBatchOutcome": {
+        "description": "Why one file was not ingested. A duplicate and an unreadable file are different outcomes, not one \"skipped\" number.",
+        "type": "object",
+        "required": ["file", "outcome"],
+        "properties": {
+          "file": { "type": "string" },
+          "outcome": { "type": "string", "enum": ["skipped", "failed"] },
+          "reason": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
       "IngestScanResponse": {
         "allOf": [
           {
@@ -27477,6 +27488,10 @@
               "skipped"
             ],
             "properties": {
+              "batchId": {
+                "description": "The batch every file in this run belongs to. Null only when the ingest directory does not exist, so nothing was scanned.",
+                "type": ["string", "null"]
+              },
               "ingested": {
                 "type": "array",
                 "items": {
@@ -27486,6 +27501,14 @@
               "skipped": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "failed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "outcomes": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/IngestBatchOutcome" }
               }
             }
           }

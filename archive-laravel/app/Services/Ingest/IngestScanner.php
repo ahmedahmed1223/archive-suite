@@ -27,7 +27,7 @@ class IngestScanner
     /**
      * Scan ingest directory and create records for new files.
      *
-     * @return array{ingested: array<int, array<string, string>>, skipped: int}
+     * @return array{batchId: string|null, ingested: array<int, array<string, string>>, skipped: int, failed: int, outcomes: list<array<string, string>>}
      */
     public function scan(?string $subdir = null): array
     {
@@ -45,17 +45,35 @@ class IngestScanner
         $scanPath = $subdir ? "{$this->directory}/{$subdir}" : $this->directory;
 
         if (! $storage->exists($scanPath)) {
-            return ['ingested' => [], 'skipped' => 0];
+            return ['batchId' => null, 'ingested' => [], 'skipped' => 0, 'failed' => 0, 'outcomes' => []];
         }
 
         $files = $storage->files($scanPath);
         $ingested = [];
         $skipped = 0;
+        $failed = 0;
+        // Why each file was refused. A duplicate and a broken file were both
+        // counted as "skipped" before, which made a failing ingest look like a
+        // tidy no-op.
+        $outcomes = [];
+        $batchId = (string) Str::uuid();
+        $startedAt = now();
+
+        DB::table('ingest_batches')->insert([
+            'id' => $batchId,
+            'source' => $requireStable ? 'watched' : 'scan',
+            'disk' => $this->disk,
+            'directory' => $scanPath,
+            'started_at' => $startedAt,
+            'created_at' => $startedAt,
+            'updated_at' => $startedAt,
+        ]);
 
         foreach ($files as $filePath) {
             try {
                 if ($requireStable && ! $this->isStable($storage, $filePath)) {
                     $skipped++;
+                    $outcomes[] = ['file' => basename($filePath), 'outcome' => 'skipped', 'reason' => 'still_changing'];
 
                     continue;
                 }
@@ -69,6 +87,7 @@ class IngestScanner
 
                 if ($existing) {
                     $skipped++;
+                    $outcomes[] = ['file' => basename($filePath), 'outcome' => 'skipped', 'reason' => 'duplicate_checksum'];
 
                     continue;
                 }
@@ -86,6 +105,7 @@ class IngestScanner
                     'filePath' => $filePath,
                     'checksum' => $checksum,
                     'source' => 'ingest',
+                    'batchId' => $batchId,
                     'createdAt' => $now->toIso8601String(),
                     'updatedAt' => $now->toIso8601String(),
                 ];
@@ -109,13 +129,24 @@ class IngestScanner
                     'fileName' => $fileName,
                     'checksum' => $checksum,
                 ];
-            } catch (Throwable) {
-                // Skip files that fail checksum computation
-                $skipped++;
+            } catch (Throwable $error) {
+                // A file that could not be read is a failure, not a skip: the
+                // operator has something to fix, and the batch says what.
+                $failed++;
+                $outcomes[] = ['file' => basename($filePath), 'outcome' => 'failed', 'reason' => class_basename($error)];
             }
         }
 
-        return ['ingested' => $ingested, 'skipped' => $skipped];
+        DB::table('ingest_batches')->where('id', $batchId)->update([
+            'ingested_count' => count($ingested),
+            'skipped_count' => $skipped,
+            'failed_count' => $failed,
+            'outcomes' => json_encode($outcomes, JSON_THROW_ON_ERROR),
+            'completed_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return ['batchId' => $batchId, 'ingested' => $ingested, 'skipped' => $skipped, 'failed' => $failed, 'outcomes' => $outcomes];
     }
 
     private function isStable($storage, string $filePath): bool
