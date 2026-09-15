@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const SHA256 = /^[a-f0-9]{64}$/i;
@@ -64,9 +64,16 @@ function defaultExtractPgvector({ archive, destination }) {
 
 function defaultExtractArchive({ archive, destination, format, label }) {
   mkdirSync(destination, { recursive: true });
+  // GNU tar reads an absolute Windows path as host:path and tries to resolve
+  // "C:" as a remote machine, so the archive is always addressed by name from
+  // its own directory. The extraction target keeps its drive letter but not
+  // its backslashes, which the same tar cannot chdir into.
+  const archiveDir = dirname(archive);
+  const archiveName = basename(archive);
+  const target = destination.replaceAll("\\", "/");
   const listing = format === "zip" && process.platform !== "win32"
-    ? spawnSync("unzip", ["-Z1", archive], { encoding: "utf8", shell: false })
-    : spawnSync("tar", ["-tzf", archive], { encoding: "utf8", shell: false });
+    ? spawnSync("unzip", ["-Z1", archiveName], { cwd: archiveDir, encoding: "utf8", shell: false })
+    : spawnSync("tar", ["-tzf", archiveName], { cwd: archiveDir, encoding: "utf8", shell: false });
   if (listing.status !== 0) throw new Error(`${label} archive listing failed with exit code ${listing.status}.`);
   for (const entry of String(listing.stdout || "").split(/\r?\n/).filter(Boolean)) {
     const normalized = entry.replaceAll("\\", "/");
@@ -78,8 +85,8 @@ function defaultExtractArchive({ archive, destination, format, label }) {
     }
   }
   const command = format === "zip" && process.platform !== "win32" ? "unzip" : "tar";
-  const args = command === "unzip" ? ["-q", archive, "-d", destination] : ["--no-same-owner", "--no-same-permissions", "-xf", archive, "-C", destination];
-  const result = spawnSync(command, args, { stdio: "inherit", shell: false });
+  const args = command === "unzip" ? ["-q", archiveName, "-d", target] : ["--no-same-owner", "--no-same-permissions", "-xf", archiveName, "-C", target];
+  const result = spawnSync(command, args, { cwd: archiveDir, stdio: "inherit", shell: false });
   if (result.status !== 0) throw new Error(`${label} archive extraction failed with exit code ${result.status}.`);
 }
 

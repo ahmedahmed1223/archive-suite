@@ -125,10 +125,13 @@ test("downloads and extracts verified Linux Native data-service archives", async
 test("extracts a verified Linux archive with tar root and directory entries", async () => {
   const outDir = mkdtempSync(join(tmpdir(), "native-linux-root-"));
   const sourceDir = mkdtempSync(join(tmpdir(), "native-linux-source-"));
-  const archivePath = join(tmpdir(), `native-linux-${Date.now()}.tar.gz`);
+  const archiveName = `native-linux-${Date.now()}.tar.gz`;
+  const archivePath = join(tmpdir(), archiveName);
   mkdirSync(join(sourceDir, "bin"));
   writeFileSync(join(sourceDir, "bin", "payload"), "verified");
-  execFileSync("tar", ["-czf", archivePath, "-C", sourceDir, "."]);
+  // Named from its own directory: GNU tar reads an absolute Windows path as
+  // host:path and tries to resolve "C:" as a remote machine.
+  execFileSync("tar", ["-czf", archiveName, "-C", sourceDir, "."], { cwd: tmpdir() });
   const archive = readFileSync(archivePath);
   const env = Object.fromEntries(["POSTGRES", "PGVECTOR", "REDIS"].flatMap((name) => [
     [`${name}_URL`, `https://example.test/${name.toLowerCase()}.tar.gz`],
