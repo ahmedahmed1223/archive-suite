@@ -378,14 +378,18 @@ button.badge:hover {
 }
 
 .button-primary {
-  border-color: var(--color-brand-primary);
-  background: var(--color-brand-primary);
+  /* White on the brand teal is 3.7:1 -- under AA for anything but large
+     text, which is why this passed at desktop sizes and failed at 375px.
+     The readable variant carries the same identity at 5.5:1, and is
+     unchanged in the dark theme. */
+  border-color: var(--color-brand-primary-readable);
+  background: var(--color-brand-primary-readable);
   color: var(--color-text-inverse);
 }
 
 .button-primary:hover {
-  border-color: var(--color-accent-primary-hover);
-  background: var(--color-accent-primary-hover);
+  border-color: var(--color-brand-primary-readable-hover);
+  background: var(--color-brand-primary-readable-hover);
   color: var(--color-text-inverse);
 }
 
