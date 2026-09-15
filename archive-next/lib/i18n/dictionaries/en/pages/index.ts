@@ -31,6 +31,7 @@ import { kanban } from "./kanban";
 import { loading } from "./loading";
 import { login } from "./login";
 import { map } from "./map";
+import { materialsInbox } from "./materialsInbox";
 import { mediaDerivativesTree } from "./mediaDerivativesTree";
 import { mediaRepresentations } from "./mediaRepresentations";
 import { mediaInspections } from "./mediaInspections";
@@ -122,6 +123,7 @@ export const pages = {
   loading,
   login,
   map,
+  materialsInbox,
   mediaDerivativesTree,
   mediaRepresentations,
   mediaInspections,

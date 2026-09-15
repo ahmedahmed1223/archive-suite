@@ -6,5 +6,15 @@ export const mediaJobsPage = {
   queueMonitoringBadge: "Queue monitoring",
   filesLink: "Files",
   mediaStudioLink: "Media studio",
-  toolsAriaLabel: "Media job management tools"
+  toolsAriaLabel: "Media job management tools",
+  serviceStatusTitle: "Service status",
+  ffmpeg: "FFmpeg",
+  ffprobe: "FFprobe",
+  whisper: "Whisper",
+  reverb: "Reverb",
+  gpu: "GPU",
+  storage: "Storage connectors",
+  serviceAvailable: "Available",
+  serviceRequiresSetup: "Setup required",
+  serviceDown: "Unavailable"
 } as const;

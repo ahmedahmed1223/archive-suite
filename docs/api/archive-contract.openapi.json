@@ -3642,6 +3642,73 @@
         }
       }
     },
+    "/materials/inbox": {
+      "get": {
+        "tags": [
+          "Records"
+        ],
+        "summary": "List records grouped by material processing stage",
+        "operationId": "getMaterialsInbox",
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "description": "Filter by stage: new_receipt, tech_check_failed, incomplete_description, missing_rights, ready_for_approval, processing_failed, awaiting_peer, completed_today",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Records with derived stages and stage counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialsInboxResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/safety-preview/scenarios": {
       "get": {
         "tags": [
@@ -13475,6 +13542,27 @@
         }
       }
     },
+    "/system/services": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Read service status and availability",
+        "operationId": "systemServices",
+        "responses": {
+          "200": {
+            "description": "Service statuses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemServicesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/system/metrics/history": {
       "get": {
         "tags": [
@@ -17829,6 +17917,115 @@
             }
           }
         ]
+      },
+      "MaterialsInboxResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OkEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "records",
+              "stageCounts"
+            ],
+            "properties": {
+              "records": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MaterialInboxRecord"
+                }
+              },
+              "stageCounts": {
+                "$ref": "#/components/schemas/StageCounts"
+              },
+              "nextCursor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "MaterialInboxRecord": {
+        "type": "object",
+        "required": [
+          "id",
+          "uid",
+          "title",
+          "stage"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "new_receipt",
+              "tech_check_failed",
+              "incomplete_description",
+              "missing_rights",
+              "ready_for_approval",
+              "processing_failed",
+              "awaiting_peer",
+              "completed_today"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "StageCounts": {
+        "type": "object",
+        "properties": {
+          "new_receipt": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tech_check_failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "incomplete_description": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "missing_rights": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ready_for_approval": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "processing_failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "awaiting_peer": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed_today": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
       },
       "BulkRecordsRequest": {
         "type": "object",
@@ -29863,6 +30060,78 @@
             }
           }
         ]
+      },
+      "SystemServicesResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OkEnvelope"
+          },
+          {
+            "type": "object",
+            "required": [
+              "services"
+            ],
+            "properties": {
+              "services": {
+                "type": "object",
+                "required": [
+                  "ffmpeg",
+                  "ffprobe",
+                  "whisper",
+                  "reverb",
+                  "gpu",
+                  "storage"
+                ],
+                "properties": {
+                  "ffmpeg": {
+                    "$ref": "#/components/schemas/ServiceProbe"
+                  },
+                  "ffprobe": {
+                    "$ref": "#/components/schemas/ServiceProbe"
+                  },
+                  "whisper": {
+                    "$ref": "#/components/schemas/ServiceProbe"
+                  },
+                  "reverb": {
+                    "$ref": "#/components/schemas/ServiceProbe"
+                  },
+                  "gpu": {
+                    "$ref": "#/components/schemas/ServiceProbe"
+                  },
+                  "storage": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "$ref": "#/components/schemas/ServiceProbe"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ServiceProbe": {
+        "type": "object",
+        "required": [
+          "state",
+          "reason"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "available",
+              "requires_setup",
+              "down"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
       },
       "SystemControlResponse": {
         "allOf": [

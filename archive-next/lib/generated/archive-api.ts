@@ -1377,6 +1377,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/materials/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List records grouped by material processing stage */
+        get: operations["getMaterialsInbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/media-derivatives": {
         parameters: {
             query?: never;
@@ -3858,6 +3875,23 @@ export interface paths {
         patch: operations["updateSecuritySettings"];
         trace?: never;
     };
+    "/system/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read service status and availability */
+        get: operations["systemServices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/system/status": {
         parameters: {
             query?: never;
@@ -5937,6 +5971,22 @@ export interface components {
             rememberMe?: boolean;
             totp?: string;
         };
+        MaterialInboxRecord: {
+            /** Format: date-time */
+            createdAt?: string;
+            id: string;
+            /** @enum {string} */
+            stage: "new_receipt" | "tech_check_failed" | "incomplete_description" | "missing_rights" | "ready_for_approval" | "processing_failed" | "awaiting_peer" | "completed_today";
+            title: string;
+            uid: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        MaterialsInboxResponse: components["schemas"]["OkEnvelope"] & {
+            nextCursor?: string | null;
+            records: components["schemas"]["MaterialInboxRecord"][];
+            stageCounts: components["schemas"]["StageCounts"];
+        };
         MediaClip: {
             /** Format: uuid */
             attachmentId: string | null;
@@ -7565,6 +7615,11 @@ export interface components {
         SensitiveOperationPolicyResponse: components["schemas"]["OkEnvelope"] & {
             policy: components["schemas"]["SensitiveOperationPolicy"];
         };
+        ServiceProbe: {
+            reason: string | null;
+            /** @enum {string} */
+            state: "available" | "requires_setup" | "down";
+        };
         SettingLockedError: components["schemas"]["ErrorEnvelope"] & {
             /** @constant */
             code: "SETTING_LOCKED";
@@ -7597,6 +7652,16 @@ export interface components {
             path?: string;
             share: string;
             user: string;
+        };
+        StageCounts: {
+            awaiting_peer?: number;
+            completed_today?: number;
+            incomplete_description?: number;
+            missing_rights?: number;
+            new_receipt?: number;
+            processing_failed?: number;
+            ready_for_approval?: number;
+            tech_check_failed?: number;
         };
         StorageBrowseResponse: components["schemas"]["OkEnvelope"] & {
             items: {
@@ -7734,6 +7799,18 @@ export interface components {
         SystemMetricsHistoryResponse: components["schemas"]["OkEnvelope"] & {
             /** @description V1-756: storage measurements, oldest first. An unreadable disk is skipped at capture rather than stored as a zero, so the series never contains a fabricated collapse. */
             samples: components["schemas"]["StorageSample"][];
+        };
+        SystemServicesResponse: components["schemas"]["OkEnvelope"] & {
+            services: {
+                ffmpeg: components["schemas"]["ServiceProbe"];
+                ffprobe: components["schemas"]["ServiceProbe"];
+                gpu: components["schemas"]["ServiceProbe"];
+                reverb: components["schemas"]["ServiceProbe"];
+                storage: {
+                    [key: string]: components["schemas"]["ServiceProbe"];
+                };
+                whisper: components["schemas"]["ServiceProbe"];
+            };
         };
         SystemStatusResponse: components["schemas"]["OkEnvelope"] & {
             dr: components["schemas"]["DrProbe"];
@@ -11212,6 +11289,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LinkAuditResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+        };
+    };
+    getMaterialsInbox: {
+        parameters: {
+            query: {
+                cursor?: string;
+                limit?: number;
+                /** @description Filter by stage: new_receipt, tech_check_failed, incomplete_description, missing_rights, ready_for_approval, processing_failed, awaiting_peer, completed_today */
+                stage?: string;
+                store: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Records with derived stages and stage counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialsInboxResponse"];
                 };
             };
             401: components["responses"]["Error"];
@@ -16138,6 +16242,26 @@ export interface operations {
             401: components["responses"]["Error"];
             403: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    systemServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service statuses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemServicesResponse"];
+                };
+            };
         };
     };
     systemStatus: {

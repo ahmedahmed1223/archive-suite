@@ -48,6 +48,7 @@ use App\Http\Controllers\Api\V1\MontageInterchangeController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
 use App\Http\Controllers\Api\V1\MediaReviewCommentsController;
 use App\Http\Controllers\Api\V1\MetadataTemplatesController;
+use App\Http\Controllers\Api\V1\MaterialStagesController;
 use App\Http\Controllers\Api\V1\MontageExportsController;
 use App\Http\Controllers\Api\V1\MontageMaterialsController;
 use App\Http\Controllers\Api\V1\MontageProjectsController;
@@ -98,6 +99,7 @@ use App\Http\Controllers\Api\V1\SuggestionsController;
 use App\Http\Controllers\Api\V1\SyncController;
 use App\Http\Controllers\Api\V1\SystemControlController;
 use App\Http\Controllers\Api\V1\SystemController;
+use App\Http\Controllers\Api\V1\SystemServicesController;
 use App\Http\Controllers\Api\V1\SystemStatusController;
 use App\Http\Controllers\Api\V1\TagNodesController;
 use App\Http\Controllers\Api\V1\TaskEscalationPolicyController;
@@ -289,6 +291,7 @@ Route::prefix('v1')->group(function (): void {
         // export must be registered before the /records/{id} wildcard below,
         // or Laravel matches "export" as {id} and returns a 404 record lookup.
         Route::get('/records/export', [RecordsBulkCsvController::class, 'export']);
+        Route::get('/materials/inbox', [MaterialStagesController::class, 'inbox']);
         Route::post('/records', [RecordsController::class, 'store']);
         Route::get('/records/{id}', [RecordsController::class, 'show']);
         Route::post('/records/{id}/change-impact', [RecordChangeImpactController::class, 'preview']);
@@ -711,6 +714,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/system/status', [SystemStatusController::class, 'status']);
         Route::get('/system/metrics/history', [SystemStatusController::class, 'metricsHistory']);
         Route::get('/system/dr-probe', [SystemStatusController::class, 'drProbe']);
+        Route::get('/system/services', SystemServicesController::class);
         Route::post('/system/control/{action}', [SystemControlController::class, 'run']);
 
         Route::get('/account/export', [AccountExportController::class, 'export']);

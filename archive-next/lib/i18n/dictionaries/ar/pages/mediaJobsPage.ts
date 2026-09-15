@@ -6,5 +6,15 @@ export const mediaJobsPage = {
   queueMonitoringBadge: "مراقبة قائمة الانتظار",
   filesLink: "الملفات",
   mediaStudioLink: "استديو الوسائط",
-  toolsAriaLabel: "أدوات إدارة مهام الوسائط"
+  toolsAriaLabel: "أدوات إدارة مهام الوسائط",
+  serviceStatusTitle: "حالة الخدمات",
+  ffmpeg: "FFmpeg",
+  ffprobe: "FFprobe",
+  whisper: "Whisper",
+  reverb: "Reverb",
+  gpu: "معالج الرسوميات (GPU)",
+  storage: "موصلات التخزين",
+  serviceAvailable: "متاح",
+  serviceRequiresSetup: "يتطلب إعداد",
+  serviceDown: "غير متاح"
 } as const;
