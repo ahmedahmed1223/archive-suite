@@ -87,6 +87,7 @@ use App\Http\Controllers\Api\V1\ReviewCommentsController;
 use App\Http\Controllers\Api\V1\ReviewLinksController;
 use App\Http\Controllers\Api\V1\ReviewSessionsController;
 use App\Http\Controllers\Api\V1\RightsController;
+use App\Http\Controllers\Api\V1\RightsWindowsController;
 use App\Http\Controllers\Api\V1\SafetyPreviewController;
 use App\Http\Controllers\Api\V1\SavedSearchesController;
 use App\Http\Controllers\Api\V1\ScheduledUploadsController;
@@ -483,6 +484,10 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/rights/expiring', [RightsController::class, 'expiring']);
         Route::get('/rights/{itemId}/enforcement', [RightsController::class, 'enforcement']);
+        Route::get('/rights/{itemId}/windows', [RightsWindowsController::class, 'index']);
+        Route::post('/rights/{itemId}/windows', [RightsWindowsController::class, 'store']);
+        Route::patch('/rights-windows/{id}', [RightsWindowsController::class, 'update']);
+        Route::delete('/rights-windows/{id}', [RightsWindowsController::class, 'destroy']);
         Route::get('/rights', [RightsController::class, 'show']);
         Route::post('/rights', [RightsController::class, 'store']);
 

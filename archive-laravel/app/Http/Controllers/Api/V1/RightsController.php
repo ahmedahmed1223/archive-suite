@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\RightsRecord;
+use App\Services\RightsDecisionService;
 use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -67,45 +68,43 @@ class RightsController extends Controller
         return response()->json(['ok' => true, 'records' => $records]);
     }
 
-    public function enforcement(string $itemId): JsonResponse
+    /**
+     * The decision an operator sees before sharing or exporting must be the
+     * decision the server will actually make. This used to answer from the
+     * record's own embargo/expiry columns and reported "allowed" for an item
+     * with no rights at all -- the exact opposite of what the enforcement
+     * path does, so the interface promised a share that the API then refused.
+     *
+     * There is no single answer without a usage, so every usage is decided
+     * here through the same RightsDecisionService the boundaries call.
+     */
+    public function enforcement(string $itemId, RightsDecisionService $decisions): JsonResponse
     {
         $record = RightsRecord::query()->where('item_id', $itemId)->first();
         $now = now();
+
+        $usageDecisions = [];
+        foreach (RightsWindowsController::USAGES as $usage) {
+            $decision = $decisions->decide($record, $usage, 'global', 'web', $now);
+            $usageDecisions[] = [
+                'usage' => $usage,
+                'allowed' => $decision->allowed,
+                'reason' => $decision->reason,
+                'decidedBy' => $decision->decidedBy,
+            ];
+        }
+
         $warnings = [];
-        $allowed = true;
-        $reason = 'allowed';
-
-        if (! $record) {
-            return response()->json([
-                'ok' => true,
-                'allowed' => true,
-                'blocked' => false,
-                'reason' => 'no_rights_record',
-                'warnings' => ['No rights record exists for this item.'],
-            ]);
-        }
-
-        if ($record->expires_at && $record->expires_at->lessThanOrEqualTo($now)) {
-            $allowed = false;
-            $reason = 'expired';
-        }
-
-        if ($record->embargo_start && $record->embargo_end && $now->between($record->embargo_start, $record->embargo_end)) {
-            $allowed = false;
-            $reason = 'embargoed';
-        }
-
-        if ($record->expires_at && $record->expires_at->greaterThan($now) && $record->expires_at->lessThanOrEqualTo($now->copy()->addDays(30))) {
+        if ($record?->expires_at !== null && $record->expires_at->greaterThan($now) && $record->expires_at->lessThanOrEqualTo($now->copy()->addDays(30))) {
             $warnings[] = 'Rights expire within 30 days.';
         }
 
         return response()->json([
             'ok' => true,
-            'allowed' => $allowed,
-            'blocked' => ! $allowed,
-            'reason' => $reason,
+            'itemId' => $itemId,
+            'decisions' => $usageDecisions,
             'warnings' => $warnings,
-            'record' => $this->formatRecord($record),
+            'record' => $record ? $this->formatRecord($record) : null,
         ]);
     }
 

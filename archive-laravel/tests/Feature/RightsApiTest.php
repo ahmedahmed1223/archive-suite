@@ -63,11 +63,17 @@ class RightsApiTest extends TestCase
             'expiresAt' => now()->subDay()->toISOString(),
         ], $this->authHeaders())->assertCreated();
 
-        $this->getJson('/api/v1/rights/item-expired/enforcement', $this->authHeaders())
+        // An expired licence closes every usage, not just the one asked for,
+        // and the preview reports the same clause the boundaries will cite.
+        $decisions = $this->getJson('/api/v1/rights/item-expired/enforcement', $this->authHeaders())
             ->assertOk()
-            ->assertJsonPath('allowed', false)
-            ->assertJsonPath('blocked', true)
-            ->assertJsonPath('reason', 'expired');
+            ->json('decisions');
+
+        $this->assertNotEmpty($decisions);
+        foreach ($decisions as $decision) {
+            $this->assertFalse($decision['allowed']);
+            $this->assertSame('record_expired', $decision['decidedBy']);
+        }
     }
 
     public function test_it_rejects_unauthenticated_rights_requests(): void

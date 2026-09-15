@@ -755,12 +755,40 @@ export interface RightsRecord {
   updatedAt: string;
 }
 
-export interface RightsEnforcementStatus {
+export type RightsUsage = "broadcast" | "digital_public" | "internal_archive" | "editorial_reuse";
+
+export interface RightsWindow {
+  id: string;
+  rightsRecordId: string;
+  usage: RightsUsage;
+  startsAt: string | null;
+  endsAt: string | null;
+  /** Empty means unrestricted, never "nothing allowed". */
+  territories: string[];
+  platforms: string[];
+  granted: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export type RightsWindowInput = Partial<Omit<RightsWindow, "id" | "rightsRecordId" | "usage" | "createdAt" | "updatedAt">> & {
+  usage?: RightsUsage;
+};
+
+export interface RightsDecision {
+  usage: RightsUsage;
   allowed: boolean;
-  blocked?: boolean;
-  reason?: string;
+  reason: string;
+  /** A window id, or a code such as no_record / no_window_for_usage. */
+  decidedBy: string;
+}
+
+/** One decision per usage: there is no single answer without one. */
+export interface RightsEnforcementStatus {
+  itemId: string;
+  decisions: RightsDecision[];
   warnings?: string[];
-  record?: RightsRecord;
+  record?: RightsRecord | null;
 }
 
 export interface BackupInfo {
@@ -1369,6 +1397,10 @@ export interface ArchiveApiClient {
   upsertRights(payload: Omit<RightsRecord, "id" | "createdAt" | "updatedAt">, options?: AuthRequestOptions): Promise<ApiEnvelope<{ record: RightsRecord }>>;
   expiringRights(params?: { days?: number }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ records: RightsRecord[] }>>;
   rightsEnforcement(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<RightsEnforcementStatus>>;
+  rightsWindows(itemId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ windows: RightsWindow[] }>>;
+  createRightsWindow(itemId: string, payload: RightsWindowInput & { usage: RightsUsage }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ window: RightsWindow }>>;
+  updateRightsWindow(id: string, payload: RightsWindowInput, options?: AuthRequestOptions): Promise<ApiEnvelope<{ window: RightsWindow }>>;
+  deleteRightsWindow(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ deleted: boolean }>>;
   listBackups(options?: AuthRequestOptions): Promise<ApiEnvelope<{ backups: BackupInfo[] }>>;
   runBackup(options?: AuthRequestOptions): Promise<ApiEnvelope<{ backup: BackupRunResult }>>;
   previewBackup(payload: { name: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ preview: BackupPreview }>>;
@@ -2409,6 +2441,14 @@ export function createArchiveApiClient({
     },
     rightsEnforcement: (itemId: string, options?: AuthRequestOptions) =>
       get<RightsEnforcementStatus>(`/rights/${encodeURIComponent(itemId)}/enforcement`, options),
+    rightsWindows: (itemId: string, options?: AuthRequestOptions) =>
+      get<{ windows: RightsWindow[] }>(`/rights/${encodeURIComponent(itemId)}/windows`, options),
+    createRightsWindow: (itemId: string, payload: RightsWindowInput & { usage: RightsUsage }, options?: AuthRequestOptions) =>
+      post<{ window: RightsWindow }>(`/rights/${encodeURIComponent(itemId)}/windows`, payload, options),
+    updateRightsWindow: (id: string, payload: RightsWindowInput, options?: AuthRequestOptions) =>
+      patch<{ window: RightsWindow }>(`/rights-windows/${encodeURIComponent(id)}`, payload, options),
+    deleteRightsWindow: (id: string, options?: AuthRequestOptions) =>
+      del<{ deleted: boolean }>(`/rights-windows/${encodeURIComponent(id)}`, undefined, options),
     listBackups: (options?: AuthRequestOptions) => get<{ backups: BackupInfo[] }>("/system/backups", options),
     runBackup: (options?: AuthRequestOptions) => post<{ backup: BackupRunResult }>("/system/backups/run", undefined, options),
     previewBackup: (payload: { name: string }, options?: AuthRequestOptions) =>

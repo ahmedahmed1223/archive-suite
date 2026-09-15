@@ -296,4 +296,41 @@ class RightsDecisionServiceTest extends TestCase
 
         $this->assertTrue($decision->allowed);
     }
+
+    /**
+     * An embargo on the record outranks any window hanging from it: the
+     * licence is what the window depends on, so a live embargo closes the
+     * item even where a usage was granted.
+     */
+    public function test_an_active_record_embargo_outranks_a_granted_window(): void
+    {
+        $now = Carbon::now();
+        $record = RightsRecord::query()->create([
+            'id' => 'rr-embargoed',
+            'item_id' => 'item-embargoed',
+            'rights_holder' => 'Test Holder',
+            'license_type' => 'LICENSED',
+            'embargo_start' => $now->copy()->subDay(),
+            'embargo_end' => $now->copy()->addDay(),
+        ]);
+        RightsWindow::query()->create([
+            'id' => 'rw-embargoed',
+            'rights_record_id' => $record->id,
+            'usage' => 'broadcast',
+            'territories' => [],
+            'platforms' => [],
+            'granted' => true,
+        ]);
+
+        $decision = $this->service->decide(
+            record: $record->fresh(),
+            usage: 'broadcast',
+            territory: 'US',
+            platform: 'web',
+            requestTime: $now,
+        );
+
+        $this->assertFalse($decision->allowed);
+        $this->assertEquals('record_embargoed', $decision->decidedBy);
+    }
 }

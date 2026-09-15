@@ -5256,12 +5256,71 @@
         }
       }
     },
+    "/rights/{itemId}/windows": {
+      "get": {
+        "tags": ["Rights"],
+        "summary": "List the rights windows recorded for an item",
+        "operationId": "listRightsWindows",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "itemId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Rights windows", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RightsWindowsResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "post": {
+        "tags": ["Rights"],
+        "summary": "Open a rights window for an item",
+        "operationId": "createRightsWindow",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "itemId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RightsWindowInput" } } } },
+        "responses": {
+          "201": { "description": "Created window", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RightsWindowResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/rights-windows/{id}": {
+      "patch": {
+        "tags": ["Rights"],
+        "summary": "Change or revoke a rights window",
+        "operationId": "updateRightsWindow",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RightsWindowInput" } } } },
+        "responses": {
+          "200": { "description": "Updated window", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RightsWindowResponse" } } } },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Rights"],
+        "summary": "Delete a rights window",
+        "operationId": "deleteRightsWindow",
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Ok" },
+          "401": { "$ref": "#/components/responses/Error" },
+          "403": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
     "/rights/{itemId}/enforcement": {
       "get": {
         "tags": [
           "Rights"
         ],
-        "summary": "Return rights enforcement status for an item",
+        "summary": "Return the decision the enforcement boundaries will make, per usage",
         "operationId": "getRightsEnforcement",
         "security": [
           {
@@ -20015,37 +20074,135 @@
           }
         ]
       },
+      "RightsUsage": {
+        "description": "Usage a rights window can grant. The decision service recognizes no others.",
+        "type": "string",
+        "enum": [
+          "broadcast",
+          "digital_public",
+          "internal_archive",
+          "editorial_reuse"
+        ]
+      },
+      "RightsWindow": {
+        "type": "object",
+        "required": [
+          "id",
+          "rightsRecordId",
+          "usage",
+          "granted",
+          "territories",
+          "platforms"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "rightsRecordId": { "type": "string" },
+          "usage": { "$ref": "#/components/schemas/RightsUsage" },
+          "startsAt": { "type": ["string", "null"], "format": "date-time" },
+          "endsAt": { "type": ["string", "null"], "format": "date-time" },
+          "territories": {
+            "description": "Allowed territories as ISO 3166-1 alpha-2 codes. An empty list means unrestricted, never \"nothing allowed\".",
+            "type": "array",
+            "items": { "type": "string", "minLength": 2, "maxLength": 2 }
+          },
+          "platforms": {
+            "description": "Allowed platforms. An empty list means unrestricted.",
+            "type": "array",
+            "items": { "type": "string", "maxLength": 64 }
+          },
+          "granted": { "type": "boolean" },
+          "createdAt": { "type": ["string", "null"], "format": "date-time" },
+          "updatedAt": { "type": ["string", "null"], "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "RightsWindowInput": {
+        "type": "object",
+        "required": [
+          "usage"
+        ],
+        "properties": {
+          "usage": { "$ref": "#/components/schemas/RightsUsage" },
+          "startsAt": { "type": ["string", "null"], "format": "date-time" },
+          "endsAt": { "type": ["string", "null"], "format": "date-time" },
+          "territories": { "type": "array", "items": { "type": "string", "minLength": 2, "maxLength": 2 } },
+          "platforms": { "type": "array", "items": { "type": "string", "maxLength": 64 } },
+          "granted": { "type": "boolean", "default": true }
+        },
+        "additionalProperties": false
+      },
+      "RightsWindowResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["window"],
+            "properties": { "window": { "$ref": "#/components/schemas/RightsWindow" } },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "RightsWindowsResponse": {
+        "allOf": [
+          { "$ref": "#/components/schemas/OkEnvelope" },
+          {
+            "type": "object",
+            "required": ["windows"],
+            "properties": { "windows": { "type": "array", "items": { "$ref": "#/components/schemas/RightsWindow" } } },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "RightsDecision": {
+        "description": "The decision the enforcement boundaries will make for one usage, including the clause that decided it.",
+        "type": "object",
+        "required": [
+          "usage",
+          "allowed",
+          "reason",
+          "decidedBy"
+        ],
+        "properties": {
+          "usage": { "$ref": "#/components/schemas/RightsUsage" },
+          "allowed": { "type": "boolean" },
+          "reason": { "type": "string" },
+          "decidedBy": {
+            "description": "A rights window id, or a decision code such as no_record or no_window_for_usage when no window was reached.",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "RightsEnforcementResponse": {
         "allOf": [
           {
             "$ref": "#/components/schemas/OkEnvelope"
           },
           {
+            "description": "There is no single answer without a usage, so every usage is decided here through the same service the enforcement boundaries call.",
             "type": "object",
             "required": [
-              "allowed"
+              "itemId",
+              "decisions"
             ],
             "properties": {
-              "allowed": {
-                "type": "boolean"
-              },
-              "blocked": {
-                "type": "boolean"
-              },
-              "reason": {
-                "type": "string"
+              "itemId": { "type": "string" },
+              "decisions": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/RightsDecision" }
               },
               "warnings": {
                 "type": "array",
-                "items": {
-                  "type": "string"
-                }
+                "items": { "type": "string" }
               },
               "record": {
-                "$ref": "#/components/schemas/RightsRecord"
+                "oneOf": [
+                  { "$ref": "#/components/schemas/RightsRecord" },
+                  { "type": "null" }
+                ]
               }
             },
-            "additionalProperties": true
+            "additionalProperties": false
           }
         ]
       },

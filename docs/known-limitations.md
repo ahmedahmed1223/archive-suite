@@ -50,8 +50,9 @@ constraint and, where relevant, the path to lifting it.
   links, derivative downloads, and montage exports all refuse an item that
   has no granted rights window for that usage, so an archive migrated
   without rights data cannot publish anything externally until the windows
-  are entered. The refusal names the item and the deciding clause, but there
-  is no bulk rights entry yet, so the backlog has to be filled in per item.
+  are entered. The refusal names the item and the deciding clause, and windows
+  are opened per item, but there is no bulk rights entry yet, so a migrated
+  backlog has to be cleared one item at a time.
 - **Derivative generation** (thumbnails, waveforms, proxies) always runs on
   the same CPU queue as other media operations. Only transcription can route
   to the GPU queue, and only when the system Whisper device is set to

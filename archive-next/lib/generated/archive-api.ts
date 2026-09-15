@@ -3286,6 +3286,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rights-windows/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a rights window */
+        delete: operations["deleteRightsWindow"];
+        options?: never;
+        head?: never;
+        /** Change or revoke a rights window */
+        patch: operations["updateRightsWindow"];
+        trace?: never;
+    };
     "/rights/{itemId}/enforcement": {
         parameters: {
             query?: never;
@@ -3293,10 +3311,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Return rights enforcement status for an item */
+        /** Return the decision the enforcement boundaries will make, per usage */
         get: operations["getRightsEnforcement"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rights/{itemId}/windows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the rights windows recorded for an item */
+        get: operations["listRightsWindows"];
+        put?: never;
+        /** Open a rights window for an item */
+        post: operations["createRightsWindow"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7387,15 +7423,20 @@ export interface components {
         ReviewSessionUpdateRequest: {
             notes: string | null;
         };
-        RightsEnforcementResponse: components["schemas"]["OkEnvelope"] & ({
+        /** @description The decision the enforcement boundaries will make for one usage, including the clause that decided it. */
+        RightsDecision: {
             allowed: boolean;
-            blocked?: boolean;
-            reason?: string;
-            record?: components["schemas"]["RightsRecord"];
+            /** @description A rights window id, or a decision code such as no_record or no_window_for_usage when no window was reached. */
+            decidedBy: string;
+            reason: string;
+            usage: components["schemas"]["RightsUsage"];
+        };
+        RightsEnforcementResponse: components["schemas"]["OkEnvelope"] & {
+            decisions: components["schemas"]["RightsDecision"][];
+            itemId: string;
+            record?: components["schemas"]["RightsRecord"] | null;
             warnings?: string[];
-        } & {
-            [key: string]: unknown;
-        });
+        };
         RightsRecord: components["schemas"]["RightsRecordInput"] & {
             /** Format: date-time */
             createdAt: string;
@@ -7421,6 +7462,46 @@ export interface components {
         };
         RightsRecordResponse: components["schemas"]["OkEnvelope"] & {
             record: components["schemas"]["RightsRecord"];
+        };
+        /**
+         * @description Usage a rights window can grant. The decision service recognizes no others.
+         * @enum {string}
+         */
+        RightsUsage: "broadcast" | "digital_public" | "internal_archive" | "editorial_reuse";
+        RightsWindow: {
+            /** Format: date-time */
+            createdAt?: string | null;
+            /** Format: date-time */
+            endsAt?: string | null;
+            granted: boolean;
+            id: string;
+            /** @description Allowed platforms. An empty list means unrestricted. */
+            platforms: string[];
+            rightsRecordId: string;
+            /** Format: date-time */
+            startsAt?: string | null;
+            /** @description Allowed territories as ISO 3166-1 alpha-2 codes. An empty list means unrestricted, never "nothing allowed". */
+            territories: string[];
+            /** Format: date-time */
+            updatedAt?: string | null;
+            usage: components["schemas"]["RightsUsage"];
+        };
+        RightsWindowInput: {
+            /** Format: date-time */
+            endsAt?: string | null;
+            /** @default true */
+            granted?: boolean;
+            platforms?: string[];
+            /** Format: date-time */
+            startsAt?: string | null;
+            territories?: string[];
+            usage: components["schemas"]["RightsUsage"];
+        };
+        RightsWindowResponse: components["schemas"]["OkEnvelope"] & {
+            window: components["schemas"]["RightsWindow"];
+        };
+        RightsWindowsResponse: components["schemas"]["OkEnvelope"] & {
+            windows: components["schemas"]["RightsWindow"][];
         };
         RunBulkMacroRequest: components["schemas"]["BulkMacroTargetsRequest"] & {
             previewToken: string;
@@ -15226,6 +15307,53 @@ export interface operations {
             401: components["responses"]["Error"];
         };
     };
+    deleteRightsWindow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    updateRightsWindow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RightsWindowInput"];
+            };
+        };
+        responses: {
+            /** @description Updated window */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RightsWindowResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
     getRightsEnforcement: {
         parameters: {
             query?: never;
@@ -15247,6 +15375,60 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+        };
+    };
+    listRightsWindows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rights windows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RightsWindowsResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+        };
+    };
+    createRightsWindow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RightsWindowInput"];
+            };
+        };
+        responses: {
+            /** @description Created window */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RightsWindowResponse"];
+                };
+            };
+            401: components["responses"]["Error"];
+            403: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
         };
     };
     listExpiringRights: {

@@ -26,6 +26,29 @@ class RightsDecisionService
             );
         }
 
+        // The record's own expiry and embargo predate windows and are still
+        // editable in the rights form, so they must still bite: a window
+        // cannot outlive the licence it hangs from.
+        if ($record->expires_at !== null && $record->expires_at->lessThanOrEqualTo($requestTime)) {
+            return new RightsDecision(
+                allowed: false,
+                reason: 'انتهت صلاحية الحقوق المسجّلة لهذه المادة',
+                decidedBy: 'record_expired',
+            );
+        }
+
+        if (
+            $record->embargo_start !== null
+            && $record->embargo_end !== null
+            && $requestTime->between($record->embargo_start, $record->embargo_end)
+        ) {
+            return new RightsDecision(
+                allowed: false,
+                reason: 'المادة ضمن فترة حظر نشر سارية',
+                decidedBy: 'record_embargoed',
+            );
+        }
+
         // Find windows for this usage
         $windows = $record->windows()
             ->where('usage', $usage)
