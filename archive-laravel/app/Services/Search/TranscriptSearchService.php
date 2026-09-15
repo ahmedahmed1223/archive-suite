@@ -28,6 +28,34 @@ class TranscriptSearchService
     }
 
     /**
+     * Find all matching cues in the transcript for a given query.
+     * ponytail: used for building in-video search hits. Returns multiple matches
+     * rather than just the first one.
+     *
+     * @return list<array{excerpt: string, timestampSeconds: int}>
+     */
+    public function findAll(string $transcript, string $query): array
+    {
+        $needle = $this->normalize($query);
+
+        if ($needle === '' || trim($transcript) === '') {
+            return [];
+        }
+
+        $hits = [];
+        foreach ($this->cues($transcript) as $cue) {
+            if (str_contains($this->normalize($cue['text']), $needle)) {
+                $hits[] = [
+                    'excerpt' => $cue['text'],
+                    'timestampSeconds' => $cue['start'],
+                ];
+            }
+        }
+
+        return $hits;
+    }
+
+    /**
      * @return list<array{start: int, text: string}>
      */
     private function cues(string $transcript): array
