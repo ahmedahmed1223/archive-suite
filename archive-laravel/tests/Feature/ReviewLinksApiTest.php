@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\ReviewComment;
+use App\Models\RightsRecord;
+use App\Models\RightsWindow;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +17,26 @@ class ReviewLinksApiTest extends TestCase
     use RefreshDatabase;
 
     private string $mediaUid = 'media-123';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        RightsRecord::query()->create([
+            'id' => 'rights-media-123',
+            'item_id' => $this->mediaUid,
+            'rights_holder' => 'Archive Suite test fixture',
+            'license_type' => 'OWNED',
+        ]);
+        RightsWindow::query()->create([
+            'id' => 'window-media-123',
+            'rights_record_id' => 'rights-media-123',
+            'usage' => 'digital_public',
+            'granted' => true,
+            'territories' => [],
+            'platforms' => [],
+        ]);
+    }
 
     private function login(): string
     {

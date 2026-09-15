@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\RightsRecord;
+use App\Models\RightsWindow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -67,6 +69,7 @@ class ReviewLinkExternalReviewApiTest extends TestCase
     {
         // No seeded record for "opaque-media-uid" -- the pre-V3-MEDIA-007
         // flow (ReviewLinksApiTest) must keep working unchanged.
+        $this->grantDigitalPublicAccess('opaque-media-uid');
         $response = $this->postJson('/api/v1/media/opaque-media-uid/review-links', [
             'permission' => 'comment',
         ], $this->authHeaders())->assertCreated();
@@ -185,8 +188,28 @@ class ReviewLinkExternalReviewApiTest extends TestCase
         $this->assertSame('source', $media->headers->get('X-Review-Media-Kind'));
     }
 
+    public function test_media_endpoint_rechecks_digital_public_rights_when_streaming(): void
+    {
+        $this->seedRecord('record-rights-revoked', 'checksum-rights-revoked');
+        $this->writeFile('record-rights-revoked/source.mov', 'restricted bytes');
+
+        $token = $this->postJson('/api/v1/media/record-rights-revoked/review-links', [
+            'sourcePath' => 'record-rights-revoked/source.mov',
+        ], $this->authHeaders())->assertCreated()->json('token');
+
+        RightsWindow::query()
+            ->where('rights_record_id', 'rights-record-rights-revoked')
+            ->update(['granted' => false]);
+
+        $this->getJson("/api/v1/review-links/{$token}/media")
+            ->assertForbidden()
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('decidedBy', 'window-record-rights-revoked');
+    }
+
     public function test_media_endpoint_404s_when_nothing_is_available(): void
     {
+        $this->grantDigitalPublicAccess('record-6');
         $token = $this->postJson('/api/v1/media/record-6/review-links', [], $this->authHeaders())
             ->assertCreated()->json('token');
 
@@ -425,6 +448,27 @@ class ReviewLinkExternalReviewApiTest extends TestCase
             ], JSON_THROW_ON_ERROR),
             'created_at' => now(),
             'updated_at' => now(),
+        ]);
+
+        $this->grantDigitalPublicAccess($uid);
+    }
+
+    private function grantDigitalPublicAccess(string $uid): void
+    {
+        RightsRecord::query()->create([
+            'id' => 'rights-'.$uid,
+            'item_id' => $uid,
+            'rights_holder' => 'Archive Suite test fixture',
+            'license_type' => 'OWNED',
+        ]);
+
+        RightsWindow::query()->create([
+            'id' => 'window-'.$uid,
+            'rights_record_id' => 'rights-'.$uid,
+            'usage' => 'digital_public',
+            'granted' => true,
+            'territories' => [],
+            'platforms' => [],
         ]);
     }
 

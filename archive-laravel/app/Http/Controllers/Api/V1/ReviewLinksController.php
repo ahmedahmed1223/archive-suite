@@ -107,6 +107,18 @@ class ReviewLinksController extends Controller
             return response()->json(ApiError::envelope('Review link not found.', 404), 404);
         }
 
+        // A link is only a time-bounded delivery mechanism, not a durable
+        // grant. Re-evaluate the live public-rights decision before a byte
+        // is resolved so expiry or revocation takes effect immediately.
+        $decision = $this->rightsEnforcement->enforceForItem($reviewLink->media_uid, 'digital_public');
+        if (! $decision->allowed) {
+            return response()->json([
+                ...ApiError::envelope('Access denied by rights enforcement.', 403),
+                'reason' => $decision->reason,
+                'decidedBy' => $decision->decidedBy,
+            ], 403);
+        }
+
         $resolved = $this->externalReview->resolveMediaSource($reviewLink);
         if ($resolved === null) {
             return response()->json(ApiError::envelope('Media is not available for this review link.', 404), 404);
