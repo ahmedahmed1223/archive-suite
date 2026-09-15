@@ -1,0 +1,2 @@
+$ node scripts/verify-api-contracts.mjs
+ok - api contracts

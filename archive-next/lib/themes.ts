@@ -69,14 +69,14 @@ export const THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: "neutral-light",
-    name: "Neutral Light",
+    name: "Operational Excellence",
     tokens: {
-      "color-bg-primary": "#FAFBFC",
-      "color-bg-secondary": "#F0F3F8",
-      "color-bg-tertiary": "#E5EBF3",
-      "color-text-primary": "#1A1F2E",
-      "color-accent-primary": "#D4943A",
-      "color-status-success": "#27AE60"
+      "color-bg-primary": "#F8FAFC",
+      "color-bg-secondary": "#FFFFFF",
+      "color-bg-tertiary": "#F1F5F9",
+      "color-text-primary": "#0F172A",
+      "color-accent-primary": "#0D9488",
+      "color-status-success": "#065F46"
     }
   },
   {

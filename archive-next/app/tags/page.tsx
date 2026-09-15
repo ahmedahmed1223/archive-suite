@@ -28,7 +28,8 @@ type TagsLoadState =
 
 
 // V14-AUDIT-033: named default instead of an inline magic value.
-const DEFAULT_TAG_COLOR = "#808080";
+// Neutral gray for tag icons, works across light and dark themes.
+const DEFAULT_TAG_COLOR = "#94A3B8";
 
 export default function TagsPage() {
   const { locale, t } = useLocale();

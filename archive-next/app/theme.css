@@ -1,4 +1,156 @@
-:root,
+:root {
+  color-scheme: light;
+
+  --font-family-display: var(--font-arabic, "Segoe UI"), "Segoe UI", Tahoma, sans-serif;
+  --font-family-body: var(--font-arabic, "Segoe UI"), "Segoe UI", Tahoma, sans-serif;
+  --font-family-mono: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  --font-mono: var(--font-family-mono);
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.75rem;
+  --font-size-3xl: 2.25rem;
+  --font-size-4xl: 3rem;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+  --line-height-loose: var(--line-height-relaxed);
+  --letter-spacing-normal: 0;
+
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+  --space-10: 8rem;
+  --space-11: 12rem;
+  --space-12: 16rem;
+
+  /* ── Operational Excellence light palette ── */
+  --color-anthracite: #F8FAFC;
+  --color-anthracite-light: #FFFFFF;
+  --color-anthracite-lighter: #F1F5F9;
+  --color-anthracite-surface: #E2E8F0;
+  --color-anthracite-elevated: #FFFFFF;
+
+  --color-silver: #0F172A;
+  --color-silver-dim: #475569;
+  --color-silver-muted: #64748B;
+  --color-silver-faint: #94A3B8;
+
+  --color-amber: #0D9488;
+  --color-amber-light: #14B8A6;
+  --color-amber-dim: #0F766E;
+  --color-amber-glow: rgba(13, 148, 136, 0.1);
+
+  --color-brand-primary: #0D9488;
+  --color-brand-primary-strong: #14B8A6;
+  --color-brand-ink: #0F172A;
+  --color-brand-warm: #F0FDFA;
+  --color-brand-sand: #F8FAFC;
+  --color-brand-indigo: #1E40AF;
+  --color-brand-gold: #0D9488;
+  --color-brand-teal: #0F766E;
+  --color-shadow: #0F172A;
+
+  --color-bg-primary: #F8FAFC;
+  --color-bg-secondary: #FFFFFF;
+  --color-bg-tertiary: #F1F5F9;
+  --color-bg-inverse: #0F172A;
+  --color-surface-elevated: #FFFFFF;
+  --color-surface-subtle: #F1F5F9;
+  --color-surface-selected: rgba(13, 148, 136, 0.08);
+  --color-surface-primary: var(--color-bg-secondary);
+  --color-brand-soft: var(--color-surface-selected);
+
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #64748B;
+  --color-text-muted: var(--color-text-tertiary);
+  --color-text-inverse: #FFFFFF;
+  --color-text-link: #0D9488;
+
+  --color-border-primary: #E2E8F0;
+  --color-border-secondary: #F1F5F9;
+  --color-border-strong: #CBD5E1;
+  --color-border-focus: #0D9488;
+
+  --color-accent-primary: #0D9488;
+  --color-accent-primary-hover: #0F766E;
+  --color-accent-primary-active: #0D5F59;
+  --color-accent-secondary: #1E40AF;
+  --color-accent-tertiary: #0F766E;
+  --color-accent-rose: #DC2626;
+
+  --color-status-success: #065F46;
+  --color-status-warning: #92400E;
+  --color-status-error: #991B1B;
+  --color-danger: var(--color-status-error);
+  --color-status-info: #1E40AF;
+  --color-status-processing: #0D9488;
+
+  --color-surface-overlay: rgba(15, 23, 42, 0.5);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 999px;
+  --radius-pill: var(--radius-full);
+
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 16px 48px rgba(15, 23, 42, 0.12);
+  --shadow-focus: 0 0 0 3px rgba(13, 148, 136, 0.2);
+  --shadow-glow: 0 0 20px rgba(13, 148, 136, 0.1);
+
+  --duration-instant: 50ms;
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+  --duration-slower: 600ms;
+  --easing-default: cubic-bezier(0.2, 0, 0, 1);
+  --easing-out: cubic-bezier(0, 0, 0.2, 1);
+
+  --max-width-content: 72ch;
+  --max-width-wide: 1120px;
+  --max-width-page: 1440px;
+  --control-height: 2.75rem;
+
+  --sidebar-width: 64px;
+  --topbar-height: 56px;
+  --player-height: 340px;
+
+  --va-bg: var(--color-bg-primary);
+  --va-surface: var(--color-bg-secondary);
+  --va-surface-2: var(--color-bg-tertiary);
+  --va-text: var(--color-text-primary);
+  --va-text-2: var(--color-text-secondary);
+  --va-text-muted: var(--color-text-tertiary);
+  --va-border-soft: var(--color-border-secondary);
+  --va-accent: var(--color-accent-primary);
+  --va-accent-strong: var(--color-accent-primary);
+  --va-danger: var(--color-status-error);
+  --va-success: var(--color-status-success);
+  --va-shadow: var(--shadow-sm);
+}
+
 :root[data-theme="dark"] {
   color-scheme: dark;
 
@@ -154,87 +306,6 @@
   --va-shadow: var(--shadow-sm);
 }
 
-/* The light palette is complete rather than relying on a handful of preset
-   overrides. This keeps every shared surface, border and state legible when
-   the active mode changes, including pages that consume the Metric UI tokens. */
-:root[data-theme="light"] {
-  color-scheme: light;
-
-  /* ── Masar warm light palette (design-authoritative, from the prototype handoff) ──
-     Cream/sand surfaces with warm neutrals. Brand accent + status hues are kept
-     constant across dark/light per the design tokens; only surfaces/text reflow. */
-  --color-anthracite: #f5f2ec;
-  --color-anthracite-light: #ffffff;
-  --color-anthracite-lighter: #f1eee6;
-  --color-anthracite-surface: #eae5d9;
-  --color-anthracite-elevated: #e3ded2;
-
-  --color-silver: #1e1b16;
-  --color-silver-dim: #5b564c;
-  --color-silver-muted: #8b8578;
-  --color-silver-faint: #a39c8b;
-
-  --color-amber: #d4943a;
-  --color-amber-light: #e5ad5a;
-  --color-amber-dim: #b07a2e;
-  --color-amber-glow: rgb(212 148 58 / 14%);
-
-  --color-brand-primary: #b67813;
-  --color-brand-primary-strong: #d49324;
-  --color-brand-ink: #1e1b16;
-  --color-brand-warm: #efe7d6;
-  --color-brand-sand: #fbf7ef;
-  --color-brand-indigo: #28458c;
-  --color-brand-gold: #b67813;
-  --color-brand-teal: #176b78;
-  --color-shadow: #1e1b16;
-
-  --color-bg-primary: #f5f2ec;
-  --color-bg-secondary: #ffffff;
-  --color-bg-tertiary: #f1eee6;
-  --color-bg-inverse: #1e1b16;
-  --color-surface-elevated: #ffffff;
-  --color-surface-subtle: #f1eee6;
-  --color-surface-selected: rgb(212 148 58 / 12%);
-  --color-surface-primary: var(--color-bg-secondary);
-  --color-brand-soft: var(--color-surface-selected);
-
-  --color-text-primary: #1e1b16;
-  --color-text-secondary: #5b564c;
-  --color-text-tertiary: #8b8578;
-  --color-text-muted: var(--color-text-tertiary);
-  --color-text-inverse: #111318;
-  /* Link *text* uses a darker amber so it stays legible on cream (the flat
-     #d4943a accent is reserved for button/pill backgrounds with dark text). */
-  --color-text-link: #9a5d0d;
-
-  --color-border-primary: #e3ded2;
-  --color-border-secondary: #ece7dc;
-  --color-border-strong: #d2cbba;
-  --color-border-focus: #d4943a;
-
-  --color-accent-primary: #b67813;
-  --color-accent-primary-hover: #d49324;
-  --color-accent-primary-active: #92580b;
-  --color-accent-secondary: #28458c;
-  --color-accent-tertiary: #176b78;
-  --color-accent-rose: #c45b5b;
-
-  --color-status-success: #3f9142;
-  --color-status-warning: #b07a2e;
-  --color-status-error: #c45b5b;
-  --color-danger: var(--color-status-error);
-  --color-status-info: #5b7baa;
-  --color-status-processing: #d4943a;
-  --color-surface-overlay: rgb(30 27 22 / 45%);
-
-  --shadow-sm: 0 1px 3px rgb(30 27 22 / 10%);
-  --shadow-xs: 0 1px 2px rgb(30 27 22 / 8%);
-  --shadow-md: 0 8px 24px rgb(30 27 22 / 12%);
-  --shadow-lg: 0 16px 48px rgb(30 27 22 / 16%);
-  --shadow-focus: 0 0 0 3px rgb(212 148 58 / 32%);
-  --shadow-glow: 0 0 20px rgb(212 148 58 / 14%);
-}
 
 @media (prefers-reduced-motion: reduce) {
   :root {
