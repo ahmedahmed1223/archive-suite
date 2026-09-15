@@ -5858,7 +5858,7 @@
         "tags": [
           "Media Derivatives"
         ],
-        "summary": "Read a derivative's status and storage key",
+        "summary": "Read a derivative's status without exposing its storage key",
         "operationId": "getMediaDerivative",
         "security": [
           {
@@ -25692,7 +25692,6 @@
           "isCurrentVersion",
           "settings",
           "status",
-          "storageKey",
           "mediaJobId",
           "error",
           "createdBy",
@@ -25732,13 +25731,6 @@
           },
           "status": {
             "$ref": "#/components/schemas/MediaDerivativeStatus"
-          },
-          "storageKey": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Set once status is ready."
           },
           "mediaJobId": {
             "type": [

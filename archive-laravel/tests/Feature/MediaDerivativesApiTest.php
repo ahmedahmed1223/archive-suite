@@ -7,6 +7,8 @@ namespace Tests\Feature;
 use App\Jobs\ProcessMediaWorkflow;
 use App\Models\MediaDerivative;
 use App\Models\MediaJob;
+use App\Models\RightsRecord;
+use App\Models\RightsWindow;
 use App\Models\User;
 use App\Services\Media\MediaPathGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -51,7 +53,7 @@ class MediaDerivativesApiTest extends TestCase
             ->assertJsonPath('derivative.versionToken', 'record:checksum-1')
             ->assertJsonPath('derivative.isCurrentVersion', true)
             ->assertJsonPath('derivative.status', 'ready')
-            ->assertJsonPath('derivative.storageKey', 'record-1/derivatives/'.$response->json('derivative.id').'.jpg');
+            ->assertJsonMissingPath('derivative.storageKey');
 
         $this->assertDatabaseHas('media_derivatives', [
             'id' => $response->json('derivative.id'),
@@ -64,6 +66,7 @@ class MediaDerivativesApiTest extends TestCase
     public function test_a_ready_current_thumbnail_can_be_streamed_without_exposing_its_storage_key(): void
     {
         $this->seedRecord('stream-record', 'stream-checksum');
+        $this->grantEditorialReuse('stream-record');
 
         $created = $this->requestDerivative('stream-record', 'thumbnail', ['atSec' => 0]);
         $derivativeId = $created->json('derivative.id');
@@ -166,7 +169,8 @@ class MediaDerivativesApiTest extends TestCase
         $this->assertFalse($stale->json('derivative.isCurrentVersion'));
         $this->assertSame('ready', $stale->json('derivative.status'));
         // Never silently served as current -- but not deleted either.
-        $this->assertNotNull($stale->json('derivative.storageKey'));
+        $this->assertNull($stale->json('derivative.storageKey'));
+        $stale->assertJsonMissingPath('derivative.storageKey');
 
         $fresh = $this->requestDerivative('record-4', 'thumbnail', ['atSec' => 0]);
         $this->assertNotSame($readyId, $fresh->json('derivative.id'));
@@ -423,6 +427,25 @@ class MediaDerivativesApiTest extends TestCase
         $path = app(MediaPathGuard::class)->resolveOutput((string) $derivative->storage_key, 'test derivative');
 
         file_put_contents($path, "\xFF\xD8\xFF\xDBtest thumbnail");
+    }
+
+    private function grantEditorialReuse(string $recordId): void
+    {
+        $rights = RightsRecord::query()->create([
+            'id' => 'rights-'.$recordId,
+            'item_id' => $recordId,
+            'rights_holder' => 'Archive Suite test fixture',
+            'license_type' => 'OWNED',
+        ]);
+
+        RightsWindow::query()->create([
+            'id' => 'window-'.$recordId,
+            'rights_record_id' => $rights->id,
+            'usage' => 'editorial_reuse',
+            'granted' => true,
+            'territories' => [],
+            'platforms' => [],
+        ]);
     }
 
     /**

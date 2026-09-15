@@ -171,10 +171,9 @@ class MediaDerivativesController extends Controller
 
     /**
      * Reads a derivative by id. isCurrentVersion is always computed fresh
-     * against the live source -- a stale derivative is still returned (the
-     * caller may still want its storageKey/status) but never with
-     * isCurrentVersion silently true, mirroring ReviewSessionsController and
-     * ClipsController.
+     * against the live source -- a stale derivative is still returned, but
+     * its storage location remains server-side and it is never represented
+     * as matching the current source.
      */
     public function show(Request $request, string $id): JsonResponse
     {
@@ -276,7 +275,6 @@ class MediaDerivativesController extends Controller
             'isCurrentVersion' => $this->derivatives->isCurrentVersion($derivative),
             'settings' => $derivative->settings,
             'status' => $derivative->status,
-            'storageKey' => $derivative->storage_key,
             'mediaJobId' => $derivative->media_job_id,
             'error' => $derivative->error,
             'createdBy' => $derivative->created_by,

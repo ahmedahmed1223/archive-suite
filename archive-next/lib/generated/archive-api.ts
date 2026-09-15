@@ -1421,7 +1421,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read a derivative's status and storage key */
+        /** Read a derivative's status without exposing its storage key */
         get: operations["getMediaDerivative"];
         put?: never;
         post?: never;
@@ -6060,8 +6060,6 @@ export interface components {
             recordUid: string;
             settings: components["schemas"]["MediaDerivativeSettings"];
             status: components["schemas"]["MediaDerivativeStatus"];
-            /** @description Set once status is ready. */
-            storageKey: string | null;
             /** Format: date-time */
             updatedAt: string | null;
             /** @description Same checksum-derived identity as ReviewSession.versionToken / MediaClip.versionToken -- pinned when this derivative was generated. */
