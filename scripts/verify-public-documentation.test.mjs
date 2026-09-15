@@ -39,6 +39,19 @@ test("classifies the v1.5.1 release notes as a public bilingual release record",
   });
 });
 
+test("classifies the v2.0.0 release notes as a public bilingual release record", () => {
+  const releaseNotes = loadPublicManifest().documents.find((document) => document.id === "release-v2-0-0");
+
+  assert.deepEqual(releaseNotes, {
+    id: "release-v2-0-0",
+    audience: ["user", "operator", "developer"],
+    lifecycle: "release-history",
+    english: "docs/release-notes/v2.0.0.md",
+    arabic: "docs/release-notes/v2.0.0.ar.md",
+    sourceOfTruth: ["package.json", ".github/workflows/release.yml"],
+  });
+});
+
 test("reports a missing relative Markdown target", () => {
   const result = validateDocumentation({
     files: new Set(["docs/README.md", "docs/README.ar.md"]),
