@@ -29,6 +29,7 @@
     "verify:laravel": "node scripts/laravel-docker.mjs test",
     "lint:laravel": "node scripts/laravel-docker.mjs lint",
     "verify:laravel-next:live": "node scripts/verify-next-laravel-live.mjs",
+    "verify:a11y:live": "node scripts/verify-next-laravel-live.mjs --specs e2e/accessibility-authenticated.authed.spec.ts",
     "e2e:next": "pnpm --filter @archive/next exec playwright test e2e/next-migration-shell.spec.ts",
     "e2e:next:integration": "pnpm --filter @archive/next exec playwright test e2e/next-laravel-integration.spec.ts",
     "e2e:next:a11y": "pnpm --filter @archive/next exec playwright test e2e/accessibility.spec.ts",

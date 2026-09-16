@@ -247,8 +247,14 @@ async function main() {
 
   await waitForJson(`${nextUrl}/api/v1/health`, "Next.js rewrite");
 
-  const e2eSpecs = process.env.ARCHIVE_E2E_SPECS
-    ? process.env.ARCHIVE_E2E_SPECS.split(",").map((spec) => spec.trim()).filter(Boolean)
+  // `--specs a,b` is the cross-platform equivalent of ARCHIVE_E2E_SPECS: npm
+  // scripts cannot set an environment variable portably without a dependency.
+  const specsFlag = process.argv.indexOf("--specs");
+  const specsArgument = specsFlag === -1 ? undefined : process.argv[specsFlag + 1];
+  const requestedSpecs = specsArgument ?? process.env.ARCHIVE_E2E_SPECS;
+
+  const e2eSpecs = requestedSpecs
+    ? requestedSpecs.split(",").map((spec) => spec.trim()).filter(Boolean)
     : [
       "e2e/next-laravel-integration.spec.ts",
       "e2e/accessibility.spec.ts",
@@ -258,14 +264,13 @@ async function main() {
       "e2e/screen-reader-sample.authed.spec.ts",
       "e2e/uploads-mobile.authed.spec.ts",
       "e2e/phone-first-screen.authed.spec.ts",
-      // The public-route axe spec above was in this list; its authenticated
-      // counterpart never was, so nothing ran the classified routes outside a
-      // hand-typed --grep. When it was finally run at all four viewports on
-      // 2026-09-15 it found thirteen AA contrast failures and an assertion
-      // that had been looking for a deleted element since 2026-09-06. It costs
-      // about eighteen minutes: split it into its own scheduled gate if that
-      // is too much for every run, but do not leave it unrun again.
-      "e2e/accessibility-authenticated.authed.spec.ts",
+      // e2e/accessibility-authenticated.authed.spec.ts is NOT here on purpose,
+      // and not because it is slow. It loads ~1000 pages, every one of which
+      // boots the SPA and rotates the shared role contexts' va_refresh cookie,
+      // which destabilised the session-dependent acceptance specs running
+      // beside it. It has its own gate — `pnpm verify:a11y:live` — so it still
+      // runs, without standing on the other specs' sessions. Do not fold it
+      // back in without isolating its worker first.
       "e2e/critical-journeys-console.authed.spec.ts",
       "e2e/media-studio.authed.spec.ts",
       "e2e/media-studio-timeline.authed.spec.ts",
