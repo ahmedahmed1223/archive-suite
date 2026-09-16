@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/auth';
+import { transcriber } from '../lib/i18n/dictionaries/ar/pages/transcriber';
 
 const ui = expect.configure({ timeout: 15_000 });
 
@@ -72,8 +73,12 @@ test.describe('transcriber cue editor — live acceptance', () => {
 
     // 2. Open the transcriber and load the (empty) transcript for this record.
     await page.goto('/transcriber');
-    await page.getByLabel('معرّف المادة').fill(recordId);
-    await page.getByRole('button', { name: /تحميل النص وسجل الإصدارات/ }).click();
+    // exact: true — the subtitles panel's own field is labelled
+    // "معرّف المادة للحفظ", which contains this label, and Playwright matches
+    // accessible names by substring. Filling the wrong field left the cue
+    // editor's id empty and its load button disabled forever.
+    await page.getByLabel(transcriber.cueEditor.recordIdLabel, { exact: true }).fill(recordId);
+    await page.getByRole('button', { name: transcriber.cueEditor.loadButton, exact: true }).click();
 
     // 3. Add two Arabic cues via the cue editor.
     await page.getByRole('button', { name: 'إضافة مقطع' }).click();

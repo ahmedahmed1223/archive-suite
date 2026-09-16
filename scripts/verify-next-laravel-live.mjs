@@ -208,7 +208,7 @@ async function main() {
       // before it starts PHP's built-in server. Run the Laravel router
       // directly so the server inherits this harness's isolated database,
       // cache, and session settings instead of falling back to .env.
-      `test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction; rm -f ${e2eDatabasePath} ${e2eConfigCachePath}; touch ${e2eDatabasePath}; php artisan config:clear && php artisan migrate:fresh --seed --seeder=NextIntegrationSeeder --force && php artisan config:cache && (php artisan reverb:start &) && (php artisan schedule:work &) && (php artisan queue:work --queue=scheduled-uploads,default --tries=3 --sleep=1 &) && cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php`,
+      `test -f .env || cp .env.example .env; test -f vendor/autoload.php || composer install --no-interaction; rm -f ${e2eDatabasePath} ${e2eConfigCachePath}; touch ${e2eDatabasePath}; php artisan config:clear && php artisan cache:clear && php artisan migrate:fresh --seed --seeder=NextIntegrationSeeder --force && php artisan config:cache && (php artisan reverb:start &) && (php artisan schedule:work &) && (php artisan queue:work --queue=scheduled-uploads,default --tries=3 --sleep=1 &) && cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php`,
     ]);
   }
 
