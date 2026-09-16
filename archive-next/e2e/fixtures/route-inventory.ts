@@ -20,7 +20,14 @@ import type { RoleName } from './roles';
  * shell, so admin surfaces are exercised as admin.
  */
 
-export type RouteState = 'loading' | 'empty' | 'error' | 'ready';
+/**
+ * `no-permission` is a state in its own right, not a variant of `error`. The
+ * server repeats a 403 for every retry, so a page that renders one as a
+ * retryable fault sends the reader round a loop that cannot end. It was the
+ * one state named in the V2-UX-002 acceptance that this inventory never
+ * declared, so no gate could exercise it.
+ */
+export type RouteState = 'loading' | 'empty' | 'error' | 'no-permission' | 'ready';
 
 export interface RouteCoverage {
   /** Concrete, navigable URL path (dynamic segments already substituted). */
@@ -33,7 +40,7 @@ export interface RouteCoverage {
   readonly states: readonly RouteState[];
 }
 
-export const ALL_STATES: readonly RouteState[] = ['loading', 'empty', 'error', 'ready'] as const;
+export const ALL_STATES: readonly RouteState[] = ['loading', 'empty', 'error', 'no-permission', 'ready'] as const;
 
 /**
  * Routes reachable without a session. Covered by V1-303A's public axe gate

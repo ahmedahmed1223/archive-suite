@@ -8,6 +8,7 @@ import {
 } from './fixtures/route-inventory';
 import type { RoleName } from './fixtures/roles';
 import { mediaReview } from '../lib/i18n/dictionaries/ar/pages/mediaReview';
+import { FORBIDDEN_ENVELOPE } from './fixtures/route-states';
 
 /**
  * V1-303C: axe over the authenticated classified routes.
@@ -76,6 +77,15 @@ async function applyState(page: Page, state: RouteState): Promise<void> {
         status: 500,
         contentType: 'application/json',
         body: JSON.stringify({ ok: false, code: 'INTERNAL', error: 'حدث خطأ في الخادم.' }),
+      });
+      return;
+    }
+
+    if (state === 'no-permission') {
+      await route.fulfill({
+        status: 403,
+        contentType: 'application/json',
+        body: JSON.stringify(FORBIDDEN_ENVELOPE),
       });
       return;
     }
