@@ -77,7 +77,7 @@ function NotificationCard({ notification, onRead, onDelete, locale, copy }: {
 export default function NotificationsPage() {
   const { locale, t } = useLocale();
   const copy = t.pages.notifications;
-  const { notifications, unreadCount, isLoading, error, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications(locale);
+  const { notifications, unreadCount, isLoading, error, forbidden, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications(locale);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const dialog = useConfirmDialog();
 
@@ -134,9 +134,14 @@ export default function NotificationsPage() {
 
       <div className="notifications-page__content">
         {error ? (
-          <div className="state-banner state-banner-error" role="alert">
-            <strong>{copy.error}</strong>
-            <span className="helper-text">{redactAdminSecrets(error)} — {copy.errorHelp}</span>
+          <div
+            className={`state-banner ${forbidden ? "state-banner-info" : "state-banner-error"}`}
+            role="alert"
+          >
+            <strong>{forbidden ? copy.forbiddenTitle : copy.error}</strong>
+            <span className="helper-text">
+              {redactAdminSecrets(error)} — {forbidden ? copy.forbiddenHelp : copy.errorHelp}
+            </span>
             <div><button className="button button-secondary button-sm" type="button" onClick={() => void fetchNotifications()}>{copy.retry}</button></div>
           </div>
         ) : null}

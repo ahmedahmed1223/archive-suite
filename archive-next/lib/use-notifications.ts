@@ -145,6 +145,10 @@ export function useNotifications(locale: AppLocale = "ar") {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Kept beside `error` rather than folded into it: a refusal and a fault read
+  // the same to this hook's callers otherwise, and they must not offer the
+  // same "try again" to a 403 the server repeats every time.
+  const [forbidden, setForbidden] = useState(false);
   // Tracks notifications across polls so we can diff for newly-arrived task
   // completions. Starts as `null` so the first load (existing history) never
   // fires alerts — only notifications that arrive after mount do.
@@ -154,10 +158,12 @@ export function useNotifications(locale: AppLocale = "ar") {
     try {
       setIsLoading(true);
       setError(null);
+      setForbidden(false);
       const response = await fetch(`/api/v1/notifications?page=${page}&limit=${limit}`, {
         headers: notificationRequestHeaders(accessToken),
       });
       if (!response.ok) {
+        if (response.status === 403) setForbidden(true);
         throw new Error(notificationErrorMessage("load", locale));
       }
       const data: NotificationsResponse = await response.json();
@@ -284,6 +290,7 @@ export function useNotifications(locale: AppLocale = "ar") {
     unreadCount,
     isLoading,
     error,
+    forbidden,
     fetchNotifications,
     markAsRead,
     markAllAsRead,

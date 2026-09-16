@@ -18,6 +18,8 @@ export const activity = {
   loadError: "Could not load activity",
   loadErrorMessage: "Could not load the activity log.",
   errorHelp: "Check the filters and your access, then try again.",
+  forbiddenTitle: "The activity log needs a higher level of access",
+  forbiddenHelp: "Ask an administrator for access; retrying will not change the answer.",
   emptyTitle: "No matching activity.",
   emptyDescription: "Change the filters or perform a tracked change to see it here.",
   log: "Activity log",

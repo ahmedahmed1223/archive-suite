@@ -13,7 +13,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 type ActivityState =
   | { status: "loading" }
   | { status: "ready"; entries: RecordHistoryEntry[]; pagination?: PaginationMeta }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; forbidden: boolean };
 
 function labelFor(labels: object, value: string): string {
   const label = (labels as Record<string, unknown>)[value];
@@ -113,7 +113,13 @@ export default function ActivityPage() {
     const response = await api.activity({ ...nextFilters, page: 1 });
 
     if (!response.ok) {
-      setState({ status: "error", message: response.error || copy.loadErrorMessage });
+      // A refusal is not a fault: the server answers 403 to every retry, so
+      // the banner must not send the reader back round the same request.
+      setState({
+        status: "error",
+        message: response.error || copy.loadErrorMessage,
+        forbidden: response.code === "FORBIDDEN",
+      });
       return;
     }
 
@@ -224,9 +230,14 @@ export default function ActivityPage() {
       ) : null}
 
       {state.status === "error" ? (
-        <div className="state-banner state-banner-error" role="alert">
-          <strong>{copy.loadError}</strong>
-          <span className="helper-text">{redactAdminSecrets(state.message)} — {copy.errorHelp}</span>
+        <div
+          className={`state-banner ${state.forbidden ? "state-banner-info" : "state-banner-error"}`}
+          role="alert"
+        >
+          <strong>{state.forbidden ? copy.forbiddenTitle : copy.loadError}</strong>
+          <span className="helper-text">
+            {redactAdminSecrets(state.message)} — {state.forbidden ? copy.forbiddenHelp : copy.errorHelp}
+          </span>
         </div>
       ) : null}
 

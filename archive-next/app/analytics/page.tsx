@@ -114,7 +114,12 @@ export default function AnalyticsPage() {
     queryFn: async (): Promise<ArchiveRecord[]> => {
       const response = await api.search({ q: "", limit: 500 });
       if (!response.ok) {
-        throw new Error(response.error || copy.loadError);
+        // react-query only carries an Error across, and the envelope's code is
+        // what separates "the server is down, retry" from "you may not read
+        // this, retrying is pointless". Pin it to the Error rather than lose it.
+        const failure: Error & { forbidden?: boolean } = new Error(response.error || copy.loadError);
+        failure.forbidden = response.code === "FORBIDDEN";
+        throw failure;
       }
 
       return response.records;
@@ -123,6 +128,7 @@ export default function AnalyticsPage() {
   const records = useMemo(() => recordsQuery.data || [], [recordsQuery.data]);
   const isLoading = recordsQuery.isLoading;
   const loadError = recordsQuery.error instanceof Error ? recordsQuery.error.message : null;
+  const loadForbidden = (recordsQuery.error as (Error & { forbidden?: boolean }) | null)?.forbidden === true;
 
   const daysAgo = useMemo(() => {
     switch (timeRange) {
@@ -205,9 +211,15 @@ export default function AnalyticsPage() {
       ) : null}
 
       {loadError ? (
-        <section className="state-banner state-banner-error" role="alert">
-          <strong>{copy.errorTitle}</strong>
-          <p>{copy.errorDescription.replace("{error}", redactAdminSecrets(loadError))}</p>
+        <section
+          className={`state-banner ${loadForbidden ? "state-banner-info" : "state-banner-error"}`}
+          role="alert"
+        >
+          <strong>{loadForbidden ? copy.forbiddenTitle : copy.errorTitle}</strong>
+          <p>
+            {(loadForbidden ? copy.forbiddenDescription : copy.errorDescription)
+              .replace("{error}", redactAdminSecrets(loadError))}
+          </p>
         </section>
       ) : null}
 

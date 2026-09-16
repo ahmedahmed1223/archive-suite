@@ -10,6 +10,8 @@ export const notifications = {
   unreadOnly: "Unread",
   error: "Could not complete the notifications request",
   errorHelp: "Check your connection, then try again.",
+  forbiddenTitle: "Notifications need a higher level of access",
+  forbiddenHelp: "Ask an administrator for access; retrying will not change the answer.",
   retry: "Try again",
   loading: "Loading notifications…",
   noUnread: "No new notifications",

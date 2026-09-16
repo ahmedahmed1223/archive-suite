@@ -70,6 +70,15 @@ for (const viewport of VIEWPORTS) {
  * by an admin — which means nobody had ever looked at what the refusal itself
  * looks like. These are the images for that state.
  */
+
+/**
+ * V2-UX-004. The routes whose load-failure banner used to append retry
+ * guidance unconditionally, so a 403 read as a fault the reader could clear by
+ * trying again. Listed explicitly rather than asserted everywhere: pages that
+ * attach this phrase to a button the user pressed are right to keep it.
+ */
+const RETRY_PHRASE = 'أعد المحاولة';
+const NO_RETRY_ON_REFUSAL: readonly string[] = ['/activity', '/notifications', '/analytics'];
 for (const viewport of VIEWPORTS) {
   test.describe(`authenticated no-permission surface @ ${viewport.name}`, () => {
     for (const coverage of ROUTE_COVERAGE) {
@@ -98,6 +107,15 @@ for (const viewport of VIEWPORTS) {
           `${url} [${coverage.role}/no-permission] @ ${viewport.name}: content scrolls ` +
             `horizontally (scrollWidth ${scrollWidth}px > clientWidth ${clientWidth}px)`,
         ).toBeLessThanOrEqual(clientWidth);
+
+        if (NO_RETRY_ON_REFUSAL.includes(coverage.route)) {
+          const body = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
+          expect(
+            body,
+            `${url} [${coverage.role}] @ ${viewport.name}: the refusal still invites a retry, ` +
+              'but the server answers 403 to every one of them',
+          ).not.toContain(RETRY_PHRASE);
+        }
 
         const safeName = coverage.route.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'home';
         await page.screenshot({
