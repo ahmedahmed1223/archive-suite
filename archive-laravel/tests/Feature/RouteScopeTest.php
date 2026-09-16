@@ -416,6 +416,7 @@ class RouteScopeTest extends TestCase
         // Read-only service probe behind the media jobs panel -- same bar as
         // GET /media/jobs/queue-status, not the admin system surface.
         'GET api/v1/system/services' => self::V1,
+        'GET api/v1/system/media-toolchain' => self::V1,
         'PATCH api/v1/system/capabilities' => self::ADMIN,
         'GET api/v1/system/security-settings' => self::ADMIN,
         'PATCH api/v1/system/security-settings' => self::ADMIN,
@@ -881,6 +882,7 @@ class RouteScopeTest extends TestCase
         'GET api/v1/system/display-settings' => self::ROLE_ANY,
         'GET api/v1/system/capabilities' => self::ROLE_ANY,
         'GET api/v1/system/services' => self::ROLE_ANY,
+        'GET api/v1/system/media-toolchain' => self::ROLE_ANY,
         'PATCH api/v1/system/capabilities' => self::ROLE_ADMIN,
         'GET api/v1/system/security-settings' => self::ROLE_ADMIN,
         'PATCH api/v1/system/security-settings' => self::ROLE_ADMIN,
