@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { accessSync, constants, createReadStream, createWriteStream, existsSync, mkdirSync, openSync, readFileSync, renameSync, statfsSync, unlinkSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve, sep } from 'node:path';
 import { cpus, totalmem } from 'node:os';
 import { createServer } from 'node:net';
 import { createHash } from 'node:crypto';
@@ -79,12 +79,19 @@ export async function acquireBundle({ version, mode, platform, source, cache, do
 }
 export function extractBundle(archive, destination) {
   if (existsSync(destination)) throw new Error('The extraction directory already exists. Choose a new installation or use repair.');
-  const options = { cwd: dirname(resolve(archive)) };
-  const file = resolve(archive);
+  // GNU tar reads an absolute "C:/..." archive path as host:path and tries to
+  // resolve the drive letter as a remote host, and it cannot chdir into a
+  // backslash target either. Run from the archive's own directory, name the
+  // archive relatively, and hand -C forward slashes. Same fix as
+  // scripts/fetch-native-release-inputs.mjs (6e9331bc).
+  const resolved = resolve(archive);
+  const options = { cwd: dirname(resolved) };
+  const file = basename(resolved);
+  const target = resolve(destination).split(sep).join('/');
   const names = run('tar', ['-tzf', file], options);
   const verbose = run('tar', ['-tvzf', file], options);
   validateArchiveListing(names, verbose);
   mkdirSync(destination, { recursive: true, mode: 0o700 });
-  run('tar', ['-xzf', file, '-C', destination], options);
+  run('tar', ['-xzf', file, '-C', target], options);
   return destination;
 }

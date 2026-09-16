@@ -11,7 +11,9 @@ test('verified split archives are merged in order and extracted with real tar', 
   writeFileSync(join(source, 'hello.txt'), 'verified payload');
   const archiveName = 'archive-suite-offline-v1.5.2.tar.gz';
   const archive = join(root, archiveName);
-  run('tar', ['-czf', archive, '-C', source, '.']);
+  // Same Windows tar constraint the code under test works around: name the
+  // archive relatively from its own directory rather than by absolute path.
+  run('tar', ['-czf', archiveName, '-C', 'source', '.'], { cwd: root });
   const bytes = readFileSync(archive), half = Math.floor(bytes.length / 2);
   const parts = [`${archiveName}.part-00`, `${archiveName}.part-01`];
   writeFileSync(join(root, parts[0]), bytes.subarray(0, half));
