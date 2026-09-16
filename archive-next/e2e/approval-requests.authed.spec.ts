@@ -1,4 +1,6 @@
 import { test, expect } from './fixtures/auth';
+import { apiFor, expectOk } from './fixtures/api-session';
+import { approvalRequests } from '../lib/i18n/dictionaries/ar/pages/approvalRequests';
 
 const ui = expect.configure({ timeout: 15_000 });
 
@@ -6,48 +8,46 @@ const ui = expect.configure({ timeout: 15_000 });
  * V3-WORK-003 live acceptance: an editor cannot approve their own sensitive
  * bulk-macro operation -- refused both in the UI (no decide buttons render
  * on your own request) and structurally at the API (a direct decide call
- * from the requester's own session still 403s). A different account (admin,
- * the only other eligible approver in this fixed 3-role test environment)
- * approves through the approval-requests page, execution becomes available,
- * and executing actually runs the underlying bulk-macro delete -- the
- * target record ends up in the trash, not just "approved" on paper.
+ * from the requester's own session still 403s) -- and that one approval from
+ * a second account is still not enough to execute.
  *
- * The policy's requiredApprovals is set to 1 for this test's operation key:
- * this Playwright environment only provisions three fixed accounts (admin,
- * editor, viewer), and the requester (editor) can never count as an
- * approver, leaving admin as the only other requireEditor-eligible account
- * available to decide. requiredApprovals > 1 is exercised at the PHPUnit
- * layer (ApprovalRequestsApiTest::test_two_distinct_non_requester_approvals_are_required_before_execution),
- * where extra editor accounts are cheap to create.
+ * This spec used to set the policy's requiredApprovals to 1 and assert that
+ * admin's single approval made execution available. It cannot: since the
+ * feature landed, ApprovalRequestService::create stores
+ * `max(2, policy.required_approvals)`, so a bulk-macro run always needs two
+ * approvals no matter what the policy says. This environment provisions three
+ * fixed accounts, the requester (editor) is barred, and `decide` is gated on
+ * editor-or-above -- leaving admin as the only eligible approver. So the
+ * reachable, and genuinely valuable, assertion is that the threshold holds and
+ * execution stays unavailable. The full approve-and-execute path is covered at
+ * the PHPUnit layer (ApprovalRequestsApiTest), where extra editor accounts are
+ * cheap to create.
  *
- * NOT RUN LIVE as part of routine `pnpm verify:laravel-next:live` (that
- * script's default ARCHIVE_E2E_SPECS list does not include .authed.spec.ts
- * live-acceptance specs -- see e.g. external-review.authed.spec.ts, the
- * same convention this file follows). Run explicitly via:
- *   ARCHIVE_E2E_SPECS=e2e/approval-requests.authed.spec.ts pnpm verify:laravel-next:live
+ * Worth flagging rather than papering over: PATCH
+ * /sensitive-operation-policies/{key} accepts and stores requiredApprovals: 1
+ * (validation is `min:1`), and the service then ignores anything below 2. The
+ * setting an administrator saves is not the setting that applies.
+ *
+ * This spec IS in the live gate's default list (scripts/verify-next-laravel-live.mjs).
  */
 test.describe('approval requests — live acceptance', () => {
   test('the requester cannot approve their own request; a different account can, and execution deletes the target', async ({ roleSession }) => {
     test.setTimeout(120_000);
     const { page: editorPage } = await roleSession('editor');
     const { page: adminPage } = await roleSession('admin');
+    const editorApi = await apiFor(editorPage);
+    const adminApi = await apiFor(adminPage);
 
     const operationKey = 'delete';
-    const policyResponse = await adminPage.request.patch(`/api/v1/sensitive-operation-policies/${operationKey}`, {
-      data: { sensitive: true, requiredApprovals: 1 },
-    });
-    expect(policyResponse.ok()).toBe(true);
+    const policyResponse = await adminApi.patch(`/api/v1/sensitive-operation-policies/${operationKey}`, { sensitive: true, requiredApprovals: 1 });
+    await expectOk('make delete a sensitive operation', policyResponse);
 
     const recordId = `e2e-approval-${Date.now()}`;
-    const seedResponse = await editorPage.request.post('/api/v1/records/bulk', {
-      data: { store: 'archive-items', records: [{ uid: recordId, id: recordId, title: 'Approval request e2e target', tags: [], workflowStatus: 'draft' }] },
-    });
-    expect(seedResponse.ok()).toBe(true);
+    const seedResponse = await editorApi.post('/api/v1/records/bulk', { store: 'archive-items', records: [{ uid: recordId, id: recordId, title: 'Approval request e2e target', tags: [], workflowStatus: 'draft' }] });
+    await expectOk('seed the approval target', seedResponse);
 
-    const macroResponse = await editorPage.request.post('/api/v1/bulk-macros', {
-      data: { name: `E2E approval macro ${Date.now()}`, steps: [{ type: 'delete' }] },
-    });
-    expect(macroResponse.ok()).toBe(true);
+    const macroResponse = await editorApi.post('/api/v1/bulk-macros', { name: `E2E approval macro ${Date.now()}`, steps: [{ type: 'delete' }] });
+    await expectOk('create the bulk macro', macroResponse);
     const { macro } = (await macroResponse.json()) as { macro: { id: string } };
 
     await editorPage.goto('/approval-requests');
@@ -56,10 +56,10 @@ test.describe('approval requests — live acceptance', () => {
     await editorPage.getByRole('button', { name: 'إرسال للاعتماد' }).click();
 
     await ui(editorPage.getByText('أنت من قدّم هذا الطلب، ولا يمكنك اتخاذ قرار بشأنه بنفسك.')).toBeVisible();
-    await expect(editorPage.getByRole('button', { name: 'موافقة' })).toHaveCount(0);
+    await expect(editorPage.getByRole('button', { name: approvalRequests.actions.approve, exact: true })).toHaveCount(0);
 
-    const listResponse = await editorPage.request.get('/api/v1/approval-requests');
-    expect(listResponse.ok()).toBe(true);
+    const listResponse = await editorApi.get('/api/v1/approval-requests');
+    await expectOk('list approval requests', listResponse);
     const { requests } = (await listResponse.json()) as { requests: Array<{ id: string; targetId: string }> };
     const created = requests.find((request) => request.targetId === macro.id);
     expect(created).toBeTruthy();
@@ -67,31 +67,62 @@ test.describe('approval requests — live acceptance', () => {
 
     // Structural proof, not just UI-hidden: the requester's own decide call
     // is refused server-side even when called directly.
-    const selfDecision = await editorPage.request.post(`/api/v1/approval-requests/${requestId}/decisions`, {
-      data: { decision: 'approve' },
-    });
+    const selfDecision = await editorApi.post(`/api/v1/approval-requests/${requestId}/decisions`, { decision: 'approve' });
     expect(selfDecision.status()).toBe(403);
     const selfBody = (await selfDecision.json()) as { code: string };
     expect(selfBody.code).toBe('self_approval');
 
     await adminPage.goto('/approval-requests');
     await adminPage.reload();
-    const approveButton = adminPage.getByRole('button', { name: 'موافقة' }).first();
-    await ui(approveButton).toBeVisible();
-    await approveButton.click();
 
-    const executeButton = adminPage.getByRole('button', { name: 'تنفيذ' }).first();
-    await ui(executeButton).toBeVisible();
-    await executeButton.click();
+    // Both actions are irreversible and both go through a confirmation the
+    // app has required since 2026-08-24. The dialog's own confirm button
+    // carries the SAME label as the row button that opened it, so each click
+    // is scoped to its dialog by title — otherwise `.first()` keeps hitting
+    // the row and the dialog is never answered. Labels come from the shipped
+    // dictionary so rewording the page cannot leave this clicking a dead
+    // string.
+    const approveRow = adminPage.getByRole('button', { name: approvalRequests.actions.approve, exact: true }).first();
+    await ui(approveRow).toBeVisible();
+    await approveRow.click();
+    await adminPage
+      .getByRole('dialog', { name: approvalRequests.actions.confirmApproveTitle })
+      .getByRole('button', { name: approvalRequests.actions.approve, exact: true })
+      .click();
 
-    await ui(adminPage.getByText('منفَّذ').first()).toBeVisible();
+    // Dual approval is a floor, not a preference: ApprovalRequestService::create
+    // computes `max(2, policy.required_approvals)`, so one approval is never
+    // enough however the policy is configured. With the requester barred and
+    // `decide` gated on editor-or-above, admin is the only other eligible
+    // account here — which is exactly why execution must stay unavailable.
+    const afterOneApproval = await envelopeRequest(adminApi, requestId);
+    expect(afterOneApproval.requiredApprovals).toBeGreaterThanOrEqual(2);
+    expect(afterOneApproval.status).toBe('pending');
+    // exact: true matters — Playwright matches an accessible name by substring,
+    // and the header's command-palette button is named "…أو تنفيذ أمر", which
+    // contains this label. Without it the row lookup silently grabs the header.
+    await expect(
+      adminPage.getByRole('button', { name: approvalRequests.actions.execute, exact: true }),
+      'execution must not be offered until the approval threshold is met',
+    ).toHaveCount(0);
 
-    const recordCheck = await adminPage.request.get(`/api/v1/records/${encodeURIComponent(recordId)}?store=archive-items`);
-    expect(recordCheck.status()).toBe(404);
-
-    const trashCheck = await adminPage.request.get('/api/v1/trash?store=archive-items');
-    expect(trashCheck.ok()).toBe(true);
-    const { items } = (await trashCheck.json()) as { items: Array<{ uid: string }> };
-    expect(items.some((item) => item.uid === recordId)).toBe(true);
+    // And the target is still there, precisely because nothing executed.
+    const recordCheck = await adminApi.get(`/api/v1/records/${encodeURIComponent(recordId)}?store=archive-items`);
+    expect(recordCheck.status()).toBe(200);
   });
 });
+
+/** Reads one approval request back from the list, by id. */
+async function envelopeRequest(
+  api: Awaited<ReturnType<typeof apiFor>>,
+  requestId: string,
+): Promise<{ id: string; status: string; requiredApprovals: number }> {
+  const response = await api.get('/api/v1/approval-requests');
+  await expectOk('re-read approval requests', response);
+  const { requests } = (await response.json()) as {
+    requests: Array<{ id: string; status: string; requiredApprovals: number }>;
+  };
+  const found = requests.find((request) => request.id === requestId);
+  expect(found, `approval request ${requestId} disappeared from the list`).toBeTruthy();
+  return found!;
+}

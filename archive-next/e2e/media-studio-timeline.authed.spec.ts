@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/auth';
+import { mediaStudio } from '../lib/i18n/dictionaries/ar/pages/mediaStudio';
 
 const ui = expect.configure({ timeout: 15_000 });
 
@@ -78,7 +79,9 @@ async function uploadRecordAndOpenStudio(page: import('@playwright/test').Page, 
   // therefore the marker strip + server-side duration cache) is populated.
   const mediaLocator = page.locator('audio, video').first();
   await ui(mediaLocator).toBeVisible();
-  await ui(page.getByText('المدة')).toBeVisible();
+  // Scoped to the client-side tech-spec card — the technical-inspection panel
+  // renders the same word since the media toolchain work landed.
+  await ui(page.getByLabel(mediaStudio.techSpec.title).getByText('المدة')).toBeVisible();
 
   return { recordId, recordTitle };
 }

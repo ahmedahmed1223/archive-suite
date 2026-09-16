@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/auth';
+import { apiFor, expectOk, type ApiSession } from './fixtures/api-session';
 
 const ui = expect.configure({ timeout: 15_000 });
 
@@ -66,16 +67,42 @@ async function uploadRecord(page: import('@playwright/test').Page, titlePrefix: 
   return recordId;
 }
 
+/**
+ * A freshly uploaded record carries no rights, and review links are enforced
+ * for `digital_public` — so deny-by-default refuses to mint one. That refusal
+ * is the approved v2 behaviour (docs/v2-rights-decision-design.ar.md), not a
+ * bug to route around: what an operator has to do first is grant the window,
+ * so that is what this does. Territories and platforms stay empty because the
+ * enforcement boundary asks for territory `global` / platform `web`.
+ */
+async function grantPublicRights(api: ApiSession, itemId: string): Promise<void> {
+  await expectOk(
+    'create the rights record',
+    await api.post('/api/v1/rights', {
+      itemId,
+      rightsHolder: 'أرشيف مسار',
+      licenseType: 'OWNED',
+    }),
+  );
+  await expectOk(
+    'grant the digital_public window',
+    await api.post(`/api/v1/rights/${encodeURIComponent(itemId)}/windows`, {
+      usage: 'digital_public',
+      granted: true,
+    }),
+  );
+}
+
 test.describe('external review link — live acceptance', () => {
   test('an anonymous reviewer approves through the public link and the editor report proves it', async ({ roleSession, browser }) => {
     test.setTimeout(120_000);
     const { page: editorPage } = await roleSession('editor');
+    const editorApi = await apiFor(editorPage);
     const recordId = await uploadRecord(editorPage, 'مراجعة خارجية');
+    await grantPublicRights(editorApi, recordId);
 
-    const createResponse = await editorPage.request.post(`/api/v1/media/${encodeURIComponent(recordId)}/review-links`, {
-      data: { permission: 'comment', durationHours: 1, watermarkPolicy: 'visible' },
-    });
-    expect(createResponse.ok()).toBe(true);
+    const createResponse = await editorApi.post(`/api/v1/media/${encodeURIComponent(recordId)}/review-links`, { permission: 'comment', durationHours: 1, watermarkPolicy: 'visible' });
+    await expectOk('mint the review link', createResponse);
     const { token } = (await createResponse.json()) as { token: string };
     expect(token.length).toBeGreaterThan(0);
 
@@ -95,8 +122,8 @@ test.describe('external review link — live acceptance', () => {
     await ui(reviewerPage.getByText('Decision recorded').or(reviewerPage.getByText('تم تسجيل القرار'))).toBeVisible();
     await reviewerContext.close();
 
-    const reportResponse = await editorPage.request.get(`/api/v1/review-links/${token}/report`);
-    expect(reportResponse.ok()).toBe(true);
+    const reportResponse = await editorApi.get(`/api/v1/review-links/${token}/report`);
+    await expectOk('read the review-link report', reportResponse);
     const { report } = (await reportResponse.json()) as {
       report: { versionToken: string; reviewers: Array<{ reviewerName: string; decision: string }>; session: { state: string } };
     };
@@ -110,12 +137,12 @@ test.describe('external review link — live acceptance', () => {
   test('an expired link fails closed for both the read and the decision endpoint', async ({ roleSession, browser }) => {
     test.setTimeout(60_000);
     const { page: editorPage } = await roleSession('editor');
+    const editorApi = await apiFor(editorPage);
     const recordId = await uploadRecord(editorPage, 'رابط منتهي');
+    await grantPublicRights(editorApi, recordId);
 
-    const createResponse = await editorPage.request.post(`/api/v1/media/${encodeURIComponent(recordId)}/review-links`, {
-      data: { expiresAt: new Date(Date.now() - 60_000).toISOString() },
-    });
-    expect(createResponse.ok()).toBe(true);
+    const createResponse = await editorApi.post(`/api/v1/media/${encodeURIComponent(recordId)}/review-links`, { expiresAt: new Date(Date.now() - 60_000).toISOString() });
+    await expectOk('mint the review link', createResponse);
     const { token } = (await createResponse.json()) as { token: string };
 
     const reviewerContext = await browser.newContext();

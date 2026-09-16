@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures/auth';
+import { mediaStudio } from '../lib/i18n/dictionaries/ar/pages/mediaStudio';
 
 const ui = expect.configure({ timeout: 15_000 });
 
@@ -102,7 +103,10 @@ test.describe('media studio — live acceptance', () => {
 
     // 5. Tech spec card measures real, client-side metadata -- no ffprobe,
     //    no server round trip -- once the browser has decoded the file.
-    await ui(page.getByText('المدة')).toBeVisible();
+    // Scoped to the client-side tech-spec card: the technical-inspection
+    // panel that arrived with the media toolchain work renders the same word,
+    // and an unscoped getByText now matches both.
+    await ui(page.getByLabel(mediaStudio.techSpec.title).getByText('المدة')).toBeVisible();
     // Bitrate is estimated from file size + duration and must say so.
     const bitrateEstimateBadge = page.getByText('تقديري');
     if (await bitrateEstimateBadge.count()) {
