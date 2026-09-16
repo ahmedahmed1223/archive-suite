@@ -22,17 +22,9 @@ export const ingest = {
   watchedAppliedEmpty: "لم تُنشأ سجلات لأن الدفعة لا تحتوي على مواد",
   eyebrowLabel: "عمليات الاستيراد",
   pageTitle: "استيراد المحتوى للأرشيف",
-  pageDescription: "فحص مجلد الاستيراد المحلي، أو سحب ملفات من مصادر FTP وSMB مباشرة إلى مخازن الأرشيف.",
+  pageDescription: "معالج استقبال واحد: اختر المصدر، عاين ما سيُستقبل، سجّل البيانات والحقوق، اطلب الفحص الفني، ثم اقبل النتيجة أو احجرها.",
   filesBrowserLink: "مستعرض الملفات",
   sourceTabsAriaLabel: "مصادر الاستيراد",
-  overviewAriaLabel: "ملخص مصادر الاستيراد",
-  scanHint: "فحص مباشر للملفات الجديدة",
-  watchedHint: "معاينة ثم موافقة صريحة",
-  ftpHint: "بيانات الاتصال غير محفوظة",
-  smbHint: "سحب من مشاركة داخلية",
-  dropboxHint: "سحب قابل للاستئناف من المجلد المتصل",
-  preflightTitle: "فحص ما قبل التنفيذ",
-  preflightDescription: "اختر المصدر، راجع المسار وبيانات الاتصال، ثم نفّذ. تعرض النتيجة عدد العناصر المدخلة والمتجاوزة كمعاينة تشغيلية؛ لا توجد محاكاة dry-run في الـAPI الحالي.",
   scanPanelAriaLabel: "فحص مجلد الاستيراد",
   scanPanelTitle: "فحص مجلد الاستيراد",
   scanPanelDescription: "يفحص مجلد الاستيراد على الخادم ويُنشئ سجلات أرشيف للملفات الجديدة.",
@@ -80,54 +72,75 @@ export const ingest = {
   dropboxPullButton: "سحب من Dropbox",
   connectionSettingsLink: "إعدادات الاتصال",
   dropboxNoPermission: "لا تملك صلاحية السحب من Dropbox.",
-  workspace: {
-    ariaLabel: "مساحة عمل دفعة الاستقبال",
-    currentStageAriaLabel: "مرحلة الاستقبال الحالية",
-    contextAriaLabel: "سياق الدفعة",
-    batchLabel: "الدفعة النشطة",
-    noBatch: "لم تُنشأ دفعة بعد",
-    sourceLabel: "المصدر",
-    materialsLabel: "المواد",
-    acceptedLabel: "المقبولة",
-    reviewLabel: "تحتاج مراجعة",
-    materialCount: "{count} مادة",
-    acceptedCount: "{count} مقبولة",
-    reviewCount: "{count} تحتاج مراجعة",
-    stages: {
-      source: "المصدر",
-      inventory: "الجرد والمعاينة",
-      metadata: "البيانات والحقوق",
-      processing: "المعالجة",
-      review: "المراجعة والقرار"
+  wizard: {
+    ariaLabel: "معالج الاستقبال",
+    stepperAriaLabel: "خطوات الاستقبال",
+    currentStepAriaLabel: "الخطوة الحالية",
+    currentStepAnnouncement: "الخطوة الحالية: {label}",
+    backButton: "السابق",
+    nextButton: "التالي",
+    stepUnreachableHint: "أكمل الخطوات السابقة أولاً.",
+    stepIncompleteHint: "أكمل هذه الخطوة للاستمرار.",
+    context: {
+      title: "ملخص الاستقبال",
+      ariaLabel: "ملخص الخطوة الحالية",
+      sourceLabel: "المصدر",
+      noSource: "لم يُحدَّد مصدر بعد",
+      materialsLabel: "المواد",
+      materialCount: "{count} مادة",
+      acceptedLabel: "المقبولة",
+      acceptedCount: "{count} مقبولة",
+      reviewLabel: "تحتاج مراجعة",
+      reviewCount: "{count} تحتاج مراجعة",
+      decisionLabel: "القرار",
+      decisionPending: "لم يُتّخذ قرار بعد"
     },
-    stageDescriptions: {
-      source: "اختر المصدر وأدخل بيانات الاتصال اللازمة لهذه العملية فقط.",
-      inventory: "راجع المواد المكتشفة واعزل التعارضات قبل إنشاء سجلات الأرشيف.",
-      inventoryReady: "جرد الدفعة ظاهر أدناه؛ تبقى المواد المؤجلة والمحجورة خارج التطبيق.",
-      metadata: "يُستكمل التوصيف والحقوق في سجل الأرشيف بعد استلام المادة.",
-      processing: "يستمر الفحص الفني وإنشاء المشتقات في مهام الوسائط دون تعطيل مساحة العمل.",
-      review: "يُسجّل القبول أو الحجر لكل مادة بعد المعالجة ومراجعة الحقوق."
+    steps: {
+      source: "مصدر",
+      preview: "معاينة",
+      metadata: "بيانات وحقوق",
+      inspection: "فحص",
+      decision: "قبول/حجر"
+    },
+    stepStatus: {
+      current: "الخطوة الحالية",
+      complete: "مكتملة",
+      blocked: "غير متاحة بعد",
+      pending: "لم تبدأ"
+    },
+    source: {
+      title: "اختر المصدر",
+      description: "حدّد مصدر هذه المادة، وأدخل فقط بيانات الاتصال التي يحتاجها هذا المصدر."
+    },
+    preview: {
+      title: "المعاينة",
+      noDryRunNotice: "لا توجد محاكاة dry-run مستقلة في الـAPI الحالي لهذا المصدر؛ تشغيله أدناه يعاين وينشئ السجلات معًا.",
+      watchedNotice: "لم يُنشأ شيء بعد. راجع الملفات المستقرة أدناه، ثم اعتمد الدفعة في الخطوة التالية.",
+      completeHint: "اكتملت المعاينة. تابع إلى البيانات والحقوق."
+    },
+    metadata: {
+      title: "البيانات والحقوق",
+      description: "حدّد وجهة هذه المادة وأكّد حقوقها قبل الاستمرار.",
+      destinationLabel: "المشروع أو المجموعة الوجهة *",
+      destinationPlaceholder: "مثال: تسجيلات ميدانية 2026",
+      rightsLabel: "أؤكد أن حقوق هذه المادة وترخيصها قد رُوجعت وأُقرّت للأرشفة.",
+      rightsHint: "الخطوات التالية محجوبة حتى يُؤكَّد هذا.",
+      watchedApplyHint: "اعتماد الدفعة هنا يُنشئ سجلات أرشيف للمُدخلات المقبولة فيها."
+    },
+    inspection: {
+      title: "الفحص الفني",
+      description: "يجري الفحص الفني وإنشاء المشتقات في مهام الوسائط، خارج هذا المعالج.",
+      acknowledgeLabel: "طلبتُ، أو راجعتُ، الفحص الفني لهذه المادة في مهام الوسائط.",
+      jobsLink: "فتح مهام الوسائط"
+    },
+    decision: {
+      title: "قبول أو حجر",
+      description: "سجّل قرارًا صريحًا لهذا الاستقبال. لا يُختار أي من الخيارين تلقائيًا.",
+      acceptButton: "قبول في الأرشيف",
+      quarantineButton: "حجر للمراجعة",
+      acceptedBanner: "تم القبول في الأرشيف.",
+      quarantinedBanner: "تم الحجر للمراجعة.",
+      startOverButton: "بدء استقبال جديد"
     }
-  },
-  workflow: {
-    ariaLabel: "مسار إدخال الفيديو إلى الأرشيف",
-    actionsLabel: "إجراءات مسار الإدخال",
-    receive: "استلام المادة",
-    record: "إنشاء سجل الأرشيف",
-    technical: "طلب الفحص الفني",
-    review: "مراجعة السجل",
-    sourceSelected: "المصدر المحدد: {source}",
-    sourceRunning: "العملية قيد التنفيذ",
-    sourceCompleted: "اكتملت العملية للمصدر المحدد",
-    sourceNeedsReview: "تتطلب العملية مراجعة",
-    recordPending: "يُنشأ السجل عند إدخال مادة جديدة",
-    recordCreated: "أنشأت العملية سجلات للمواد المدخلة",
-    technicalPending: "بعد ظهور السجل، اطلب الفحص الفني من مهام الوسائط",
-    reviewPending: "تابع إلى مساحة المراجعة عند اكتمال المعالجة",
-    jobsLink: "فتح مهام الوسائط",
-    watchedEmptyTitle: "لا توجد مواد ثابتة في الدفعة بعد",
-    watchedEmptyDescription: "انتظر حتى تستقر الملفات ثم أعد معاينة المجلد المراقَب.",
-    watchedPartialTitle: "تحتاج بعض ملفات الدفعة إلى متابعة",
-    watchedPartialDescription: "لن تُطبّق الملفات المؤجلة أو المعزولة حتى تُراجع سببها وقاعدة التوجيه."
   }
 } as const;

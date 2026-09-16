@@ -162,5 +162,30 @@ export const mediaJobs = {
     deviceCpu: "المعالج (CPU)",
     deviceCuda: "كرت الرسوميات (CUDA)",
     resourceFailure: "تعذّر تنفيذ آخر مهمة GPU: {error}"
+  },
+  toolchainStatus: {
+    ariaLabel: "حالة أدوات معالجة الوسائط",
+    title: "حالة أدوات المعالجة",
+    description: "حالة مستقلة لكل مكوّن من أدوات معالجة الوسائط، مستمدة من إعدادات النشر الفعلية.",
+    loading: "جارٍ فحص أدوات معالجة الوسائط...",
+    empty: "لا تتوفر بيانات حالة لأدوات المعالجة حاليًا.",
+    emptyDescription: "أعد تحميل اللوحة أو تحقق من أن الخادم يستجيب.",
+    loadError: "تعذّر تحميل حالة أدوات المعالجة: {error}",
+    refresh: "تحديث",
+    retry: "إعادة المحاولة",
+    checkedAtLabel: "آخر فحص",
+    components: {
+      ffmpeg: "FFmpeg",
+      ffprobe: "FFprobe",
+      whisper: "Whisper",
+      reverb: "Reverb",
+      gpu: "كرت الرسوميات (GPU)",
+      connectors: "موصلات الاستقبال"
+    },
+    statuses: {
+      available: "متاح",
+      needs_configuration: "يتطلب إعدادًا",
+      stopped: "متوقف"
+    }
   }
 } as const;

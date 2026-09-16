@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "1.0",
+  "id": "real-media-operations",
+  "title": "مركز عمليات الوسائط",
+  "routes": ["/media/jobs", "/status"],
+  "direction": "rtl",
+  "locale": "ar",
+  "designReference": ".stitch/DESIGN.md",
+  "implementation": {
+    "page": "archive-next/app/media/jobs/page.tsx",
+    "components": [
+      "archive-next/app/media/jobs/MediaToolchainStatus.tsx",
+      "archive-next/app/media/jobs/MediaJobsList.tsx",
+      "archive-next/app/media/jobs/MediaJobLookup.tsx"
+    ],
+    "dictionaries": [
+      "archive-next/lib/i18n/dictionaries/ar/pages/mediaJobsPage.ts",
+      "archive-next/lib/i18n/dictionaries/ar/pages/mediaJobs.ts"
+    ]
+  },
+  "prompt": "شاشة مكتبية عربية RTL لمركز عمليات الوسائط في أرشيف فيديو مؤسسي. شريط جانبي ثابت 272px. المنطقة الرئيسية تضم: لوحة حالة أدوات المعالجة المستقلة، ثم ملخص عمق الطابور، ثم جدول مهام الوسائط مع لوحة إنشاء مهمة. كل حالة تحمل نصًا وأيقونة لا لونًا وحده.",
+  "surfaces": [
+    {
+      "id": "toolchain-status",
+      "title": "حالة أدوات المعالجة",
+      "kind": "status-panel",
+      "requirement": "لوحة مستقلة تعرض كل مكوّن على حدة مع حالته وتفصيل مقروء وطابع آخر فحص.",
+      "components": ["ffmpeg", "ffprobe", "whisper", "reverb", "gpu", "connectors"],
+      "states": [
+        { "key": "available", "label": "متاح" },
+        { "key": "needs_configuration", "label": "يتطلب إعدادًا" },
+        { "key": "stopped", "label": "متوقف" }
+      ],
+      "screenStates": ["loading", "empty", "error"]
+    },
+    {
+      "id": "queue-depth",
+      "title": "عمق الطابور",
+      "kind": "metrics-summary",
+      "requirement": "ملخص الطابور العام وطابور GPU وجهاز التفريغ النصي.",
+      "screenStates": ["loading", "empty", "error"]
+    },
+    {
+      "id": "jobs-table",
+      "title": "مهام الوسائط",
+      "kind": "operational-table",
+      "requirement": "العمليات القائمة: probe، thumbnail، تحويل، تفريغ، OCR، فحص جودة، تصدير مونتاج — مع الإلغاء وإعادة المحاولة والفشل الجزئي الموجَّه.",
+      "screenStates": ["loading", "empty", "error", "readOnly"]
+    }
+  ],
+  "renders": []
+}

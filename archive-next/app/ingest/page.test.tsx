@@ -8,7 +8,8 @@ import IngestPage from "./page";
 const mocks = vi.hoisted(() => ({
   ingestScan: vi.fn(),
   previewWatchedIngest: vi.fn(),
-  applyWatchedIngestBatch: vi.fn()
+  applyWatchedIngestBatch: vi.fn(),
+  useCapability: vi.fn(() => true)
 }));
 
 vi.mock("@/components/AppShell", () => ({
@@ -16,7 +17,7 @@ vi.mock("@/components/AppShell", () => ({
 }));
 
 vi.mock("@/components/RoleGate", () => ({
-  useCapability: () => true
+  useCapability: mocks.useCapability
 }));
 
 vi.mock("@/lib/archive-api", async (importOriginal) => {
@@ -42,9 +43,30 @@ function renderIngest() {
   );
 }
 
-describe("ingest workflow workspace", () => {
+/** Drives the wizard from an empty draft up to (and including) a completed scan preview. */
+async function advanceScanToPreview() {
+  fireEvent.click(screen.getByRole("button", { name: "Server folder" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  mocks.ingestScan.mockResolvedValue({ ok: true, ingested: [{ id: "record-9", fileName: "reel.mov" }], skipped: 0 });
+  fireEvent.click(screen.getByRole("button", { name: "Start scan" }));
+  await screen.findByText("Scan the ingest folder completed");
+}
+
+/** Drives the wizard all the way to the decision step (scan source). */
+async function advanceScanToDecision() {
+  await advanceScanToPreview();
+  fireEvent.click(screen.getByRole("button", { name: "Next" })); // -> metadata
+  fireEvent.change(screen.getByLabelText("Destination project or collection *"), { target: { value: "2026 field recordings" } });
+  fireEvent.click(screen.getByLabelText(/confirm the rights/));
+  fireEvent.click(screen.getByRole("button", { name: "Next" })); // -> inspection
+  fireEvent.click(screen.getByLabelText(/requested, or reviewed, the technical probe/));
+  fireEvent.click(screen.getByRole("button", { name: "Next" })); // -> decision
+}
+
+describe("ingest intake wizard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.useCapability.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -52,55 +74,131 @@ describe("ingest workflow workspace", () => {
     vi.restoreAllMocks();
   });
 
-  test("shows the actual next workflow stage and keeps media job continuation reachable", () => {
+  test("renders the five ordered steps with the source step current", () => {
     renderIngest();
 
-    expect(screen.getByRole("list", { name: "Ingest workflow" })).toHaveTextContent("Receive source");
-    expect(screen.getByRole("link", { name: "Open media jobs" })).toHaveAttribute("href", "/media/jobs");
+    const stepper = screen.getByRole("list", { name: "Intake steps" });
+    expect(stepper).toHaveTextContent("Source");
+    expect(stepper).toHaveTextContent("Preview");
+    expect(stepper).toHaveTextContent("Metadata & rights");
+    expect(stepper).toHaveTextContent("Inspection");
+    expect(stepper).toHaveTextContent("Accept/quarantine");
+
+    expect(screen.getByRole("button", { name: /^Source/ })).toHaveAttribute("aria-current", "step");
   });
 
-  test("presents one flexible five-stage batch workspace", () => {
+  test("blocks advancing past the source step until a source is chosen and configured", () => {
     renderIngest();
 
-    const workspace = screen.getByRole("region", { name: "Ingest batch workspace" });
-    expect(workspace).toHaveTextContent("Source");
-    expect(workspace).toHaveTextContent("Inventory and preview");
-    expect(workspace).toHaveTextContent("Metadata and rights");
-    expect(workspace).toHaveTextContent("Processing");
-    expect(workspace).toHaveTextContent("Review and decision");
-    expect(workspace).toHaveTextContent("No batch created yet");
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Server folder" }));
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
 
-  test("lets an operator revisit a reachable workflow stage without starting an operation", () => {
+  test("keeps a connection-parameter source blocked until its required fields are filled in", () => {
     renderIngest();
 
-    fireEvent.click(screen.getByRole("button", { name: "Metadata and rights" }));
+    fireEvent.click(screen.getByRole("button", { name: "SMB" }));
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
-    expect(screen.getByRole("region", { name: "Current ingest stage" })).toHaveTextContent(
-      "Metadata is completed on the archive record after material is received."
-    );
-    expect(mocks.ingestScan).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Share *"), { target: { value: "\\\\server\\share" } });
+    fireEvent.change(screen.getByLabelText("User *"), { target: { value: "operator" } });
+    fireEvent.change(screen.getByLabelText("Password *"), { target: { value: "secret" } });
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
+  });
+
+  test("cannot jump ahead to an unreached step from the stepper", () => {
+    renderIngest();
+
+    // Inspection is three steps ahead of an unconfigured source -- clicking it must not move the wizard.
+    fireEvent.click(screen.getByRole("button", { name: /^Inspection/ }));
+    expect(screen.getByRole("button", { name: /^Source/ })).toHaveAttribute("aria-current", "step");
+  });
+
+  test("advances through preview, metadata, inspection to the decision step", async () => {
+    renderIngest();
+    await advanceScanToDecision();
+
+    expect(screen.getByRole("button", { name: /^Accept\/quarantine/ })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("button", { name: "Accept into the archive" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Quarantine for review" })).toBeInTheDocument();
+  });
+
+  test("records an explicit accept decision -- never a default", async () => {
+    renderIngest();
+    await advanceScanToDecision();
+
+    fireEvent.click(screen.getByRole("button", { name: "Accept into the archive" }));
+    expect((await screen.findAllByText("Accepted into the archive.")).length).toBeGreaterThan(0);
+  });
+
+  test("records an explicit quarantine decision as an equally reachable terminal", async () => {
+    renderIngest();
+    await advanceScanToDecision();
+
+    fireEvent.click(screen.getByRole("button", { name: "Quarantine for review" }));
+    expect((await screen.findAllByText("Quarantined for review.")).length).toBeGreaterThan(0);
+  });
+
+  test("back-navigation to an earlier step invalidates the steps after it", async () => {
+    renderIngest();
+    await advanceScanToPreview();
+    fireEvent.click(screen.getByRole("button", { name: "Next" })); // -> metadata
+    fireEvent.change(screen.getByLabelText("Destination project or collection *"), { target: { value: "2026 field recordings" } });
+    fireEvent.click(screen.getByLabelText(/confirm the rights/));
+
+    // Jump back to the source step -- everything after it, including this rights confirmation, must be cleared.
+    fireEvent.click(screen.getByRole("button", { name: /^Source/ }));
+    expect(screen.getByRole("button", { name: /^Source/ })).toHaveAttribute("aria-current", "step");
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" })); // -> preview again
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled(); // preview must be redone
+
+    mocks.ingestScan.mockResolvedValue({ ok: true, ingested: [], skipped: 1 });
+    fireEvent.click(screen.getByRole("button", { name: "Start scan" }));
+    await screen.findByText("Scan the ingest folder completed");
+    fireEvent.click(screen.getByRole("button", { name: "Next" })); // -> metadata
+
+    // The previously confirmed rights checkbox is gone -- nothing carried over.
+    expect(screen.getByLabelText(/confirm the rights/)).not.toBeChecked();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+  });
+
+  test("switching source invalidates a completed preview", async () => {
+    renderIngest();
+    await advanceScanToPreview();
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" })); // -> metadata, preview was valid
+    fireEvent.click(screen.getByRole("button", { name: /^Source/ }));
+    fireEvent.click(screen.getByRole("button", { name: "FTP/FTPS" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" })); // blocked: FTP has no connection details yet
+    expect(screen.getByRole("button", { name: /^Source/ })).toHaveAttribute("aria-current", "step");
   });
 
   test("uses an explicit operation error state when an ingest scan fails", async () => {
     mocks.ingestScan.mockResolvedValue({ ok: false, error: "The ingest directory is unavailable." });
     renderIngest();
 
+    fireEvent.click(screen.getByRole("button", { name: "Server folder" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
     fireEvent.click(screen.getByRole("button", { name: "Start scan" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("The ingest directory is unavailable.");
+    // A failed preview keeps the wizard from advancing.
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
 
   test("links each received record directly into its description and inspection work", async () => {
-    mocks.ingestScan.mockResolvedValue({ ok: true, ingested: [{ id: "record-9", fileName: "reel.mov" }], skipped: 0 });
     renderIngest();
+    await advanceScanToPreview();
 
-    fireEvent.click(screen.getByRole("button", { name: "Start scan" }));
-
-    expect(await screen.findByRole("link", { name: "Open reel.mov" })).toHaveAttribute("href", "/archive/record-9");
+    expect(screen.getByRole("link", { name: "Open reel.mov" })).toHaveAttribute("href", "/archive/record-9");
+    expect(screen.getByRole("link", { name: "Open media jobs" })).toHaveAttribute("href", "/media/jobs");
   });
 
-  test("keeps watched-folder preview separate from record creation", async () => {
+  test("keeps watched-folder preview separate from record creation, and gates approval on confirmed rights", async () => {
     mocks.previewWatchedIngest.mockResolvedValue({
       ok: true,
       batch: {
@@ -111,25 +209,19 @@ describe("ingest workflow workspace", () => {
     });
 
     renderIngest();
-    fireEvent.click(screen.getByRole("button", { name: /Watched folder/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Watched folder" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
     fireEvent.click(screen.getByRole("button", { name: "Preview batch" }));
-
     expect((await screen.findAllByText("Preview ready for approval")).length).toBeGreaterThan(0);
-    expect(screen.getByRole("list", { name: "Ingest workflow" })).toHaveTextContent("A record is created when new material is ingested");
-    expect(screen.getByRole("list", { name: "Ingest workflow" })).not.toHaveTextContent("The operation created records for ingested material");
-    expect(screen.getByRole("region", { name: "Ingest batch workspace" })).toHaveTextContent("1 material");
-    expect(screen.getByRole("region", { name: "Ingest batch workspace" })).toHaveTextContent("0 accepted");
-  });
 
-  test("marks records created only for applied watched entries", async () => {
-    mocks.previewWatchedIngest.mockResolvedValue({
-      ok: true,
-      batch: {
-        id: "batch-1",
-        status: "pending",
-        entries: [{ id: "entry-1", fileName: "reel.mov", status: "pending", routing: null, reason: null }]
-      }
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Next" })); // -> metadata
+    fireEvent.change(screen.getByLabelText("Destination project or collection *"), { target: { value: "Watched intake" } });
+
+    // Approval is blocked until rights are confirmed.
+    expect(screen.getByRole("button", { name: "Approve and ingest" })).toBeDisabled();
+    fireEvent.click(screen.getByLabelText(/confirm the rights/));
+    expect(screen.getByRole("button", { name: "Approve and ingest" })).toBeEnabled();
+
     mocks.applyWatchedIngestBatch.mockResolvedValue({
       ok: true,
       batch: {
@@ -138,61 +230,18 @@ describe("ingest workflow workspace", () => {
         entries: [{ id: "entry-1", fileName: "reel.mov", status: "applied", recordId: "record-9", routing: null, reason: null }]
       }
     });
-
-    renderIngest();
-    fireEvent.click(screen.getByRole("button", { name: /Watched folder/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Preview batch" }));
-    await screen.findAllByText("Preview ready for approval");
     fireEvent.click(screen.getByRole("button", { name: "Approve and ingest" }));
 
-    expect(await screen.findByText("The operation created records for ingested material")).toBeVisible();
-    expect((await screen.findAllByText("1 ingested")).length).toBeGreaterThan(0);
+    expect(await screen.findByText("Watched folder completed")).toBeVisible();
     expect(screen.getByRole("link", { name: "Open reel.mov" })).toHaveAttribute("href", "/archive/record-9");
   });
 
-  test("keeps record creation pending when an applied watched batch is empty", async () => {
-    mocks.previewWatchedIngest.mockResolvedValue({ ok: true, batch: { id: "batch-1", status: "pending", entries: [] } });
-    mocks.applyWatchedIngestBatch.mockResolvedValue({ ok: true, batch: { id: "batch-1", status: "applied", entries: [] } });
-
+  test("respects the ingest.manage capability by explaining why actions are unavailable, without a bare disabled button", () => {
+    mocks.useCapability.mockReturnValue(false);
     renderIngest();
-    fireEvent.click(screen.getByRole("button", { name: /Watched folder/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Preview batch" }));
-    await screen.findByText("No stable material is in this batch yet");
-    fireEvent.click(screen.getByRole("button", { name: "Approve and ingest" }));
 
-    expect(await screen.findByText("No records were created because this batch has no material")).toBeVisible();
-    expect(screen.getByRole("list", { name: "Ingest workflow" })).toHaveTextContent("A record is created when new material is ingested");
-  });
-
-  test("keeps the applied count honest when other watched entries need review", async () => {
-    mocks.previewWatchedIngest.mockResolvedValue({
-      ok: true,
-      batch: {
-        id: "batch-1", status: "pending",
-        entries: [
-          { id: "entry-1", fileName: "reel.mov", status: "pending", routing: null, reason: null },
-          { id: "entry-2", fileName: "bad.mov", status: "quarantined", routing: null, reason: "Unreadable" }
-        ]
-      }
-    });
-    mocks.applyWatchedIngestBatch.mockResolvedValue({
-      ok: true,
-      batch: {
-        id: "batch-1", status: "applied",
-        entries: [
-          { id: "entry-1", fileName: "reel.mov", status: "applied", routing: null, reason: null },
-          { id: "entry-2", fileName: "bad.mov", status: "quarantined", routing: null, reason: "Unreadable" }
-        ]
-      }
-    });
-
-    renderIngest();
-    fireEvent.click(screen.getByRole("button", { name: /Watched folder/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Preview batch" }));
-    await screen.findByText("Some batch files need attention");
-    fireEvent.click(screen.getByRole("button", { name: "Approve and ingest" }));
-
-    expect((await screen.findAllByText("1 ingested")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Ingested 1 items and skipped 1.")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Server folder" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("You do not have permission to run ingest; you can only review results.")).toBeVisible();
   });
 });

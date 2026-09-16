@@ -1,6 +1,36 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import type { components, operations, paths } from "./generated/archive-api";
 
+type MediaToolchainComponent = components["schemas"]["MediaToolchainComponent"];
+type MediaToolchainStatusResponse = components["schemas"]["MediaToolchainStatusResponse"];
+type GetMediaToolchainStatus = operations["getMediaToolchainStatus"];
+
+/**
+ * Media-operations toolchain status panel contract (.stitch/SYSTEM_COVERAGE.md's
+ * "لم يُنفَّذ بعد" gap): six independent components, each reporting one of
+ * available/needs_configuration/stopped.
+ */
+describe("media toolchain status contract", () => {
+  it("names exactly the six independent toolchain components", () => {
+    const key: MediaToolchainComponent["key"] = "ffmpeg";
+    expect(["ffmpeg", "ffprobe", "whisper", "reverb", "gpu", "connectors"]).toContain(key);
+  });
+
+  it("reports one of the three documented statuses per component", () => {
+    const status: MediaToolchainComponent["status"] = "needs_configuration";
+    expect(["available", "needs_configuration", "stopped"]).toContain(status);
+  });
+
+  it("always includes a checkedAt timestamp alongside the component list", () => {
+    expectTypeOf<MediaToolchainStatusResponse["checkedAt"]>().toBeString();
+    expectTypeOf<MediaToolchainStatusResponse["components"]>().toMatchTypeOf<MediaToolchainComponent[]>();
+  });
+
+  it("generates the read-only status route", () => {
+    expectTypeOf<paths["/system/media-toolchain"]["get"]>().toEqualTypeOf<GetMediaToolchainStatus>();
+  });
+});
+
 type MontageSource = components["schemas"]["MontageSource"];
 type MontageClip = components["schemas"]["MontageClip"];
 type MontageProjectRevision = components["schemas"]["MontageProjectRevision"];

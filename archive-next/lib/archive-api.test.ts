@@ -102,6 +102,28 @@ describe("media representations API client", () => {
   });
 });
 
+describe("media toolchain status API client", () => {
+  it("reads the independent toolchain status panel from its own read-only route", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      ok: true,
+      checkedAt: "2026-09-13T10:00:00+00:00",
+      components: [
+        { key: "ffmpeg", status: "available", detail: "ffmpeg مثبّت ومتاح على هذا الخادم.", configHint: null }
+      ]
+    }), { status: 200 }));
+    const api = createArchiveApiClient({ baseUrl: "/api/v1", fetchImpl });
+
+    const response = await api.mediaToolchainStatus();
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "/api/v1/system/media-toolchain",
+      expect.objectContaining({ method: "GET" }),
+    );
+    if (!response.ok) throw new Error("Expected a successful toolchain status response");
+    expect(response.components[0]).toMatchObject({ key: "ffmpeg", status: "available" });
+  });
+});
+
 describe("archive API report exports", () => {
   it("uses the access token issued by login when downloading the compliance CSV", async () => {
     const fetchImpl = vi

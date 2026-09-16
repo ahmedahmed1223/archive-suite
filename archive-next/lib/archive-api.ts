@@ -996,6 +996,10 @@ export type MediaQcReport = GeneratedSchemas["MediaQcReport"];
 export type MediaQcOverride = GeneratedSchemas["MediaQcOverride"];
 export type RationalFrameRate = GeneratedSchemas["RationalFrameRate"];
 
+export type MediaToolchainComponentKey = GeneratedSchemas["MediaToolchainComponentKey"];
+export type MediaToolchainComponentStatus = GeneratedSchemas["MediaToolchainComponentStatus"];
+export type MediaToolchainComponent = GeneratedSchemas["MediaToolchainComponent"];
+
 export interface CreateMediaJobPayload {
   recordId: string;
   operation: MediaOperation;
@@ -1448,6 +1452,7 @@ export interface ArchiveApiClient {
   cancelMediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   retryMediaJob(id: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ job: MediaJob }>>;
   mediaJobQueueStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ status: MediaQueueStatus }>>;
+  mediaToolchainStatus(options?: AuthRequestOptions): Promise<ApiEnvelope<{ checkedAt: string; components: MediaToolchainComponent[] }>>;
   broadcastMetadata(recordId: string, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   updateBroadcastMetadata(recordId: string, payload: BroadcastMetadataPayload, options?: AuthRequestOptions): Promise<ApiEnvelope<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>>;
   ingestScan(payload?: { subdir?: string }, options?: AuthRequestOptions): Promise<ApiEnvelope<{ ingested: unknown[]; skipped: number }>>;
@@ -2533,6 +2538,8 @@ export function createArchiveApiClient({
       post<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}/cancel`, {}, options),
     retryMediaJob: (id: string, options?: AuthRequestOptions) =>
       post<{ job: MediaJob }>(`/media/jobs/${encodeURIComponent(id)}/retry`, {}, options),
+    mediaToolchainStatus: (options?: AuthRequestOptions) =>
+      get<{ checkedAt: string; components: MediaToolchainComponent[] }>("/system/media-toolchain", options),
     broadcastMetadata: (recordId: string, options?: AuthRequestOptions) =>
       get<{ configured: boolean; integrations: { mos: boolean; mxf: boolean }; metadata: BroadcastMetadata | null }>(
         `/records/${encodeURIComponent(recordId)}/broadcast-metadata`,

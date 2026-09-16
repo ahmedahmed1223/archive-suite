@@ -6,6 +6,7 @@ import { FolderSearch, MonitorPlay } from "lucide-react";
 import { MediaJobLookup } from "./MediaJobLookup";
 import { MediaJobsList } from "./MediaJobsList";
 import { ServiceStatusPanel } from "./ServiceStatusPanel";
+import { MediaToolchainStatus } from "./MediaToolchainStatus";
 import styles from "./jobs.module.css";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
@@ -39,6 +40,7 @@ export default function MediaJobsPage() {
         )}
       >
         <ServiceStatusPanel />
+        <MediaToolchainStatus />
         <div className={`split-layout ${styles.operationsConsole}`}>
           <div className={styles.creationPanel}>
             <MediaJobLookup />

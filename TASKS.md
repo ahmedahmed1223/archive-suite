@@ -1,9 +1,9 @@
 # لوحة عمل مسار 1.4
 
-> هذه لوحة التنفيذ النشطة فقط. الخطة التفصيلية، وواجهات المهام، وأوامر
-> التحقق موجودة في
-> [`docs/superpowers/plans/2026-08-20-v1.4.0-daily-ux-refresh.md`](docs/superpowers/plans/2026-08-20-v1.4.0-daily-ux-refresh.md).
-> تاريخ مهام 1.3 محفوظ في [`CHANGELOG.md`](CHANGELOG.md).
+> هذه لوحة التنفيذ النشطة فقط. الخطط التفصيلية كانت مادة تطوير داخلية أُزيلت
+> من المستودع العام في `83bd5991`، ويمنع حارس `scripts/verify-repo-hygiene.mjs`
+> إعادة تتبّعها؛ لذلك تُسجَّل هنا الملفات والتحقق والقرارات تحت كل مهمة بدل
+> الإحالة إلى ملف خطة غير موجود. تاريخ الإصدارات في `docs/release-notes/`.
 
 ## قواعد الالتقاط
 
@@ -596,10 +596,9 @@
 
 ## 1.5-NLE — المرحلة الثانية: التوسع التشغيلي ومحرر NLE
 
-> مصدر الخطة:
-> [`docs/superpowers/plans/2026-08-26-v1.5.0-operational-nle-expansion.md`](docs/superpowers/plans/2026-08-26-v1.5.0-operational-nle-expansion.md).
-> بنيت على عقد 1.5 الأساسي (commits 6765ce4a..ce1e13ed). المراجع الرجعية للنظام:
-> `CLAUDE.md` و`AGENTS.md` (canonical = archive-next + archive-laravel + docs/api).
+> مصدر الخطة كان ملفًا داخليًا أُزيل من المستودع العام؛ نطاق المرحلة موثّق
+> بالكامل في المهام أدناه. بنيت على عقد 1.5 الأساسي (commits 6765ce4a..ce1e13ed).
+> المرجع المعتمد للنظام: `archive-next` + `archive-laravel` + `docs/api`.
 
 - [x] **1.5-NLE-1 — عقد Montage المُراجَع + مخطط DB + OpenAPI + توليد العميل.**
   المالك: ox-alpha (هذا الوكيل)
@@ -835,9 +834,8 @@
     وuninstall، مع تنظيف كامل (dockerResourcesAbsent وservicesAbsent
     وapplicationRootAbsent) بعد الاختبار؛ docs/native-installation{,.ar}.md
     موجودان.
-  ملاحظة اعتمادية: قسم "1.5.1-NATIVE-001" في docs/superpowers/plans/
-    2026-08-30-v1.5.1-native-dependencies.md (توريد PostgreSQL/pgvector/
-    Redis الأصلية) نُفّذ فعليًا: كل الاثني عشر متغيّر مستودع (WINDOWS_*
+  ملاحظة اعتمادية: بند توريد التبعيات الأصلية لـ"1.5.1-NATIVE-001"
+    (PostgreSQL/pgvector/Redis) نُفّذ فعليًا: كل الاثني عشر متغيّر مستودع (WINDOWS_*
     وLINUX_* لكل من postgres/pgvector/redis) موجودة عبر gh variable list،
     وإصدار native-dependencies-v1.5.1 منشور. سير عمل
     .github/workflows/native-dependencies.yml غير موجود كملف دائم على

@@ -22,17 +22,9 @@ export const ingest = {
   watchedAppliedEmpty: "No records were created because this batch has no material",
   eyebrowLabel: "Ingest operations",
   pageTitle: "Import content into the archive",
-  pageDescription: "Scan the local ingest folder, or pull files from FTP and SMB sources directly into archive storage.",
+  pageDescription: "A single intake wizard: choose a source, preview what it would bring in, record metadata and rights, request the technical inspection, then accept or quarantine the result.",
   filesBrowserLink: "File browser",
   sourceTabsAriaLabel: "Ingest sources",
-  overviewAriaLabel: "Ingest sources overview",
-  scanHint: "Direct scan for new files",
-  watchedHint: "Preview then explicit approval",
-  ftpHint: "Connection details are not stored",
-  smbHint: "Pull from an internal share",
-  dropboxHint: "Resumable pull from the connected folder",
-  preflightTitle: "Pre-run check",
-  preflightDescription: "Choose the source, review the path and connection details, then run it. The result shows the number of items ingested and skipped as an operational preview; there is no dry-run simulation in the current API.",
   scanPanelAriaLabel: "Scan the ingest folder",
   scanPanelTitle: "Scan the ingest folder",
   scanPanelDescription: "Scans the ingest folder on the server and creates archive records for new files.",
@@ -80,54 +72,75 @@ export const ingest = {
   dropboxPullButton: "Pull from Dropbox",
   connectionSettingsLink: "Connection settings",
   dropboxNoPermission: "You do not have permission to pull from Dropbox.",
-  workspace: {
-    ariaLabel: "Ingest batch workspace",
-    currentStageAriaLabel: "Current ingest stage",
-    contextAriaLabel: "Batch context",
-    batchLabel: "Active batch",
-    noBatch: "No batch created yet",
-    sourceLabel: "Source",
-    materialsLabel: "Materials",
-    acceptedLabel: "Accepted",
-    reviewLabel: "Needs review",
-    materialCount: "{count} material",
-    acceptedCount: "{count} accepted",
-    reviewCount: "{count} needs review",
-    stages: {
-      source: "Source",
-      inventory: "Inventory and preview",
-      metadata: "Metadata and rights",
-      processing: "Processing",
-      review: "Review and decision"
+  wizard: {
+    ariaLabel: "Intake wizard",
+    stepperAriaLabel: "Intake steps",
+    currentStepAriaLabel: "Current step",
+    currentStepAnnouncement: "Current step: {label}",
+    backButton: "Back",
+    nextButton: "Next",
+    stepUnreachableHint: "Complete the previous steps first.",
+    stepIncompleteHint: "Complete this step before continuing.",
+    context: {
+      title: "Intake summary",
+      ariaLabel: "Current step summary",
+      sourceLabel: "Source",
+      noSource: "No source chosen yet",
+      materialsLabel: "Materials",
+      materialCount: "{count} material",
+      acceptedLabel: "Accepted",
+      acceptedCount: "{count} accepted",
+      reviewLabel: "Needs review",
+      reviewCount: "{count} needs review",
+      decisionLabel: "Decision",
+      decisionPending: "Not decided yet"
     },
-    stageDescriptions: {
-      source: "Choose a source and provide only the connection details required for this operation.",
-      inventory: "Review the discovered materials and isolate conflicts before creating archive records.",
-      inventoryReady: "The batch inventory is available below; deferred and quarantined materials remain excluded.",
-      metadata: "Metadata is completed on the archive record after material is received.",
-      processing: "Technical probe and derivative work continue in Media jobs without blocking this workspace.",
-      review: "Acceptance or quarantine is recorded per material after processing and rights review."
+    steps: {
+      source: "Source",
+      preview: "Preview",
+      metadata: "Metadata & rights",
+      inspection: "Inspection",
+      decision: "Accept/quarantine"
+    },
+    stepStatus: {
+      current: "Current step",
+      complete: "Completed",
+      blocked: "Not reachable yet",
+      pending: "Not started"
+    },
+    source: {
+      title: "Choose a source",
+      description: "Pick where this material is coming from, and fill in only the connection details that source needs."
+    },
+    preview: {
+      title: "Preview",
+      noDryRunNotice: "There is no separate dry-run in the current API for this source; running it below both previews and creates records at once.",
+      watchedNotice: "Nothing is created yet. Review the stable files below, then approve the batch in the next step.",
+      completeHint: "Preview completed. Continue to metadata and rights."
+    },
+    metadata: {
+      title: "Metadata and rights",
+      description: "Name the destination for this material and confirm its rights before continuing.",
+      destinationLabel: "Destination project or collection *",
+      destinationPlaceholder: "e.g. 2026 field recordings",
+      rightsLabel: "I confirm the rights and licensing for this material have been checked and cleared for archiving.",
+      rightsHint: "The next steps are blocked until this is confirmed.",
+      watchedApplyHint: "Approving the batch here creates archive records for its accepted entries."
+    },
+    inspection: {
+      title: "Technical inspection",
+      description: "Technical probing and derivative generation run in Media jobs, outside this wizard.",
+      acknowledgeLabel: "I have requested, or reviewed, the technical probe for this material in Media jobs.",
+      jobsLink: "Open media jobs"
+    },
+    decision: {
+      title: "Accept or quarantine",
+      description: "Record an explicit decision for this intake. Neither option is chosen for you.",
+      acceptButton: "Accept into the archive",
+      quarantineButton: "Quarantine for review",
+      acceptedBanner: "Accepted into the archive.",
+      quarantinedBanner: "Quarantined for review.",
+      startOverButton: "Start a new intake"
     }
-  },
-  workflow: {
-    ariaLabel: "Ingest workflow",
-    actionsLabel: "Ingest workflow actions",
-    receive: "Receive source",
-    record: "Create archive record",
-    technical: "Request technical probe",
-    review: "Review record",
-    sourceSelected: "Selected source: {source}",
-    sourceRunning: "Operation is running",
-    sourceCompleted: "Operation completed for the selected source",
-    sourceNeedsReview: "Operation needs review",
-    recordPending: "A record is created when new material is ingested",
-    recordCreated: "The operation created records for ingested material",
-    technicalPending: "After the record appears, request a technical probe from Media jobs",
-    reviewPending: "Continue to the review workspace after processing finishes",
-    jobsLink: "Open media jobs",
-    watchedEmptyTitle: "No stable material is in this batch yet",
-    watchedEmptyDescription: "Wait for files to settle, then preview the watched folder again.",
-    watchedPartialTitle: "Some batch files need attention",
-    watchedPartialDescription: "Deferred or quarantined files will not be applied until you review their reason and routing rule."
   }
 } as const;

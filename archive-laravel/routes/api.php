@@ -46,6 +46,7 @@ use App\Http\Controllers\Api\V1\MediaInspectionsController;
 use App\Http\Controllers\Api\V1\MediaQcOverridesController;
 use App\Http\Controllers\Api\V1\MontageInterchangeController;
 use App\Http\Controllers\Api\V1\MediaJobsController;
+use App\Http\Controllers\Api\V1\MediaToolchainStatusController;
 use App\Http\Controllers\Api\V1\MediaReviewCommentsController;
 use App\Http\Controllers\Api\V1\MetadataTemplatesController;
 use App\Http\Controllers\Api\V1\MaterialStagesController;
@@ -689,6 +690,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/system/display-settings', [SystemController::class, 'getDisplaySettings']);
         Route::get('/system/security-settings', [SystemController::class, 'getSecuritySettings']);
         Route::get('/system/capabilities', [CapabilitiesController::class, 'index']);
+        Route::get('/system/media-toolchain', [MediaToolchainStatusController::class, 'index']);
         Route::get('/system/dropbox', [DropboxController::class, 'show']);
         Route::post('/system/dropbox/authorize', [DropboxController::class, 'authorize']);
         Route::post('/system/dropbox/callback', [DropboxController::class, 'callback']);
