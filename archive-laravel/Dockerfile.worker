@@ -83,7 +83,15 @@ COPY docker/supervisor/all-in-one.conf /etc/supervisor/conf.d/all-in-one.conf
 # WhisperTranscriber builds (--model/--language/--output_format/--output_dir/
 # --device/--compute_type/--hf_token). GPU deploys can override WHISPER_DEVICE/
 # WHISPER_COMPUTE_TYPE at runtime — the same CLI supports CUDA if the host has it.
-RUN pip install --break-system-packages --no-cache-dir whisper-ctranslate2
+# Same intermittent CI network failure the apt layer above already documents:
+# a silent, no-output `exit code: 1` on GitHub Actions. This install pulls
+# ~500MB across 26 wheels (onnxruntime, ctranslate2, numpy, av, tokenizers),
+# so it has far more chances to be dropped mid-fetch than apt does. Retry on
+# the same terms; a genuine failure still fails after the third attempt.
+RUN for i in 1 2 3; do \
+      pip install --break-system-packages --no-cache-dir whisper-ctranslate2 \
+      && break || { echo "pip attempt $i failed, retrying..."; sleep 10; }; \
+    done
 
 # Burned external-review previews use ffmpeg's drawtext filter. Keep this in
 # its own layer so adding the font does not invalidate the costly Whisper
