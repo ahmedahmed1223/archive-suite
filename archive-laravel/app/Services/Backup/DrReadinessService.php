@@ -13,8 +13,10 @@ use Illuminate\Support\Facades\DB;
  * tiny JSON file written by BackupService::restore() callers (SystemController)
  * so this stays infra-free (no new table, no new dependency).
  *
- * ponytail: DR drill restores to a temp directory and rolls back. No new
- * infrastructure; just temp file cleanup on success/failure.
+ * The DR drill does NOT roll back, whatever this comment used to claim: it
+ * performs a real restore over the current database, because that is the only
+ * way to measure a real RTO. It therefore requires explicit consent and must
+ * be pointed at a disposable environment. See runDrDrill().
  */
 class DrReadinessService
 {
@@ -98,8 +100,23 @@ class DrReadinessService
      *
      * @return array{status: string, message: string, latestBackupName: string|null, drillAt: string, passed: bool, durationSeconds: float}
      */
-    public function runDrDrill(BackupService $backups): array
+    public function runDrDrill(BackupService $backups, bool $consented = false): array
     {
+        // A drill is a REAL restore over whatever is in the database right now.
+        // It was previously described as rolling back to a temp state; it never
+        // did — it deleted every storage_rows row afterwards, which is worse
+        // than leaving the restore in place. There is no safe way to time a
+        // restore without performing one, so the caller states plainly that
+        // this database is disposable instead of the command pretending.
+        if (! $consented) {
+            throw new BackupException(
+                'A DR drill performs a real restore over the current database. '
+                .'Run it only against a disposable environment, and pass explicit consent '
+                .'(--force on backup:dr-drill, or "confirm": true on the endpoint).',
+                422
+            );
+        }
+
         $startedAt = microtime(true);
 
         $backupList = $backups->list();
@@ -119,19 +136,12 @@ class DrReadinessService
             return $status;
         }
 
-        // Store the original DB state (row count per store)
-        $originalCounts = $this->countStorageByStore();
-
         try {
-            // Attempt restore
+            // The measurement is the point: this duration becomes the reported
+            // RTO instead of a guessed number.
             $backups->restore($latest['name']);
 
-            // Verify the restore succeeded by checking counts changed
             $restoredCounts = $this->countStorageByStore();
-
-            // Restore original state
-            $this->restoreStorageState($originalCounts);
-
             $passed = count($restoredCounts) > 0;
 
             $status = [
@@ -143,9 +153,9 @@ class DrReadinessService
                 'durationSeconds' => round(microtime(true) - $startedAt, 3),
             ];
         } catch (\Exception $e) {
-            // Restore original state and mark as failed
-            $this->restoreStorageState($originalCounts);
-
+            // The restore's own integrity gate aborts before touching live data
+            // on a checksum mismatch, so a failure here leaves the database as
+            // it was rather than half-written.
             $status = [
                 'status' => 'failed',
                 'message' => 'DR drill failed: '.$e->getMessage(),
@@ -246,14 +256,6 @@ class DrReadinessService
      *
      * @param  array<string, int>  $originalCounts
      */
-    private function restoreStorageState(array $originalCounts): void
-    {
-        // ponytail: Minimal restoration — just clear the drill data.
-        // In a production DR scenario, you'd restore from a snapshot.
-        // For now, clear all storage_rows to reset the DB to pre-drill state.
-        DB::table('storage_rows')->delete();
-    }
-
     private function directory(): string
     {
         $dir = (string) config('archive.backup_path');

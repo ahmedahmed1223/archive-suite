@@ -307,6 +307,26 @@ class BackupsApiTest extends TestCase
         $this->postJson('/api/v1/system/backups/dr-drill', [], $headers)->assertForbidden();
     }
 
+    public function test_dr_drill_refuses_without_explicit_consent(): void
+    {
+        // The drill restores the latest backup over the current database. It
+        // used to accept a bare POST and then delete every storage_rows row
+        // afterwards, calling that a rollback. An admin running the documented
+        // readiness check would have emptied the archive.
+        $headers = $this->adminHeaders();
+
+        $this->seedRecords(['keep-me' => 'سجل يجب ألا يختفي']);
+
+        $this->postJson('/api/v1/system/backups/dr-drill', [], $headers)
+            ->assertStatus(422);
+
+        $this->assertSame(
+            1,
+            DB::table('storage_rows')->count(),
+            'a refused DR drill must not touch stored records'
+        );
+    }
+
     public function test_unauthenticated_backup_requests_are_rejected(): void
     {
         $this->getJson('/api/v1/system/backups')->assertUnauthorized();

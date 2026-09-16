@@ -140,8 +140,14 @@ class BackupsController extends Controller
             return $denied;
         }
 
+        // Consent is explicit because the drill restores over the current
+        // database; the service refuses without it.
+        $validated = $request->validate([
+            'confirm' => ['required', 'accepted'],
+        ]);
+
         try {
-            $result = $dr->runDrDrill($service);
+            $result = $dr->runDrDrill($service, (bool) $validated['confirm']);
 
             return response()->json(['ok' => true, 'result' => $result]);
         } catch (BackupException $e) {

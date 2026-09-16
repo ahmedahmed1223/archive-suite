@@ -2479,8 +2479,10 @@ export function createArchiveApiClient({
       post<{ result: BackupRestoreResult }>("/system/backups/restore", payload, options),
     verifyBackup: (payload: { name: string }, options?: AuthRequestOptions) =>
       post<{ verification: BackupVerification }>("/system/backups/verify", payload, options),
+    // The drill restores over the current database, so the endpoint requires
+    // consent in the body rather than accepting a bare POST.
     runDrDrill: (options?: AuthRequestOptions) =>
-      post<{ result: DrDrillResult }>("/system/backups/dr-drill", undefined, options),
+      post<{ result: DrDrillResult }>("/system/backups/dr-drill", { confirm: true }, options),
     getDrDrillStatus: (options?: AuthRequestOptions) =>
       get<{ status: DrDrillStatus }>("/system/backups/dr-status", options),
     systemStatus: (options?: AuthRequestOptions) => get<{ metrics: SystemMetrics; dr: DrProbe; preservation: PreservationReadiness }>("/system/status", options),

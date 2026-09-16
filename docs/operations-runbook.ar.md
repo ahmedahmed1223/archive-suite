@@ -49,11 +49,12 @@
 | `sessions:prune` و`audit:prune` و`metrics:prune` و`trash:prune` و`media:prune-jobs` | يوميًا | تقليم البيانات المنتهية |
 | `audit:verify-chain` | يوميًا | التحقق من سلسلة سجل التدقيق |
 | `files:verify-integrity` | يوميًا | مطابقة بصمات الملفات |
-| `backup:cleanup` | يوميًا | حذف النسخ الأقدم من مدة الاحتفاظ |
+| `archive:backup-run` | يوميًا 03:00 | إنشاء النسخة الاحتياطية |
+| `backup:cleanup` | يوميًا 04:00 | حذف النسخ الأقدم من مدة الاحتفاظ |
 
-**`archive:backup-run` ليس ضمن المجدول.** التنظيف مجدول والإنشاء ليس كذلك، أي
-أن **النسخ الاحتياطي لا يحدث تلقائيًا**: على المشغّل جدولته بنفسه قبل الإطلاق.
-هذا شرط سابق للإطلاق لا ملاحظة تشغيلية.
+الإنشاء يسبق التنظيف بساعة عمدًا. وكان التنظيف وحده مجدولًا قبل 2026-09-16،
+أي أن السَّحب كان يعمل ولا شيء ينشئ نسخًا — فيبقى RPO غير محدود على أي تنصيب
+لم يضف cron خاصًا به.
 
 ## الروتين اليومي
 
@@ -73,7 +74,6 @@
 php artisan archive:backup-run --json        # نسخة احتياطية الآن
 php artisan archive:backup-list --json       # النسخ المتاحة
 php artisan archive:backup-verify <name>     # التحقق من سلامة نسخة
-php artisan backup:dr-drill                  # تمرين استعادة يقيس RTO
 php artisan dr:report                        # تقرير RPO/RTO
 php artisan files:verify-integrity --json    # مطابقة بصمات الملفات
 php artisan audit:verify-chain --json        # سلامة سلسلة التدقيق
@@ -82,6 +82,9 @@ php artisan archive:migrate-safe             # ترحيل مع نسخة احتي
 
 `archive:migrate-safe` يأخذ نسخة قبل الترحيل ويُبقي وضع الصيانة مفعّلًا ويخرج
 بقيمة غير صفرية إذا فشل الترحيل — استخدمه بدل `migrate` المجرّد عند الترقية.
+
+`backup:dr-drill` خارج هذه القائمة عمدًا: إنه يستعيد فوق قاعدة البيانات
+الحالية ومكانه نسخة قابلة للاستهلاك. انظر [خطة الاستعادة](restore-plan.ar.md).
 
 ## أعراض شائعة
 

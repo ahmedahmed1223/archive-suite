@@ -67,20 +67,28 @@ the account that ran it.
   not-yet-measured rather than as an invented figure.
 
 ```
-php artisan dr:report        # RPO, RTO, and the source of each
-php artisan backup:dr-drill  # a restore drill that actually measures RTO
+php artisan dr:report                 # RPO, RTO, and the source of each
+php artisan backup:dr-drill --force   # disposable environments only
 ```
+
+> **The drill is a real restore over the current database.** There is no way
+> to measure a restore's duration without performing one. The command
+> therefore requires `--force`, the endpoint requires `"confirm": true`, and
+> neither belongs on production. Measure RTO on a copy of production, not on
+> production.
 
 `GET /api/v1/system/dr-probe` (admin) returns `lastBackupAt`,
 `lastBackupName`, `lastRestoreTestAt`, `lastRestoreTestOk` and `rpoHours`.
 
 ## Prerequisites before launch
 
-1. **Schedule `archive:backup-run`.** The scheduler carries the daily
-   `backup:cleanup` and not the creation: cleanup runs, backups do not. Without
-   an explicit schedule, RPO stays unbounded forever.
-2. **Run `backup:dr-drill` at least once.** Until then RTO is meaningless, and
-   there is no evidence that restore works on this environment at all.
+1. **Confirm the scheduler is actually running.** `archive:backup-run` is now
+   scheduled daily at 03:00 (before 2026-09-16 only the sweep was), but a
+   schedule is worthless if `php artisan schedule:work` is not up — check that
+   `dr-probe`'s `lastBackupAt` really advances.
+2. **Run `backup:dr-drill --force` once, on a copy of production.** Until then
+   RTO is meaningless, and there is no evidence that restore works on this
+   environment at all.
 3. **Keep a copy off the machine.** Backups are written to the same disk they
    protect; losing the host loses them with it.
 4. **Confirm `dr-probe` reports `lastRestoreTestOk` true** and an `rpoHours`

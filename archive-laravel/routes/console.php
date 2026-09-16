@@ -19,7 +19,12 @@ Schedule::command('audit:verify-chain')->daily();
 // re-checksumming stored attachments against what was recorded at upload.
 Schedule::command('files:verify-integrity')->daily();
 Schedule::command('media:prune-jobs')->daily();
-Schedule::command('backup:cleanup')->daily();
+// The retention sweep was scheduled and the backup itself was not, so
+// cleanup ran against backups nothing was creating and RPO stayed unbounded
+// on any install that did not add its own cron. Creation runs first, at a
+// quiet hour, so the sweep has something to age out.
+Schedule::command('archive:backup-run')->dailyAt('03:00')->withoutOverlapping();
+Schedule::command('backup:cleanup')->dailyAt('04:00');
 Schedule::command('trash:prune')->daily();
 // V1-756: hourly is the resolution the storage forecast needs; the daily
 // prune is what keeps an append-only sampler from growing without bound.

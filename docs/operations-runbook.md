@@ -51,12 +51,12 @@ Run by `php artisan schedule:work` inside the application container:
 | `sessions:prune`, `audit:prune`, `metrics:prune`, `trash:prune`, `media:prune-jobs` | daily | Trim expired data |
 | `audit:verify-chain` | daily | Verify the audit log chain |
 | `files:verify-integrity` | daily | Re-check file checksums |
-| `backup:cleanup` | daily | Delete backups past the retention window |
+| `archive:backup-run` | daily 03:00 | Create the backup |
+| `backup:cleanup` | daily 04:00 | Delete backups past the retention window |
 
-**`archive:backup-run` is not on the schedule.** Cleanup is scheduled and
-creation is not, which means **backups do not happen on their own**: the
-operator must schedule it. That is a launch prerequisite, not an operating
-note.
+Creation runs an hour before the sweep, deliberately. Before 2026-09-16 only
+the sweep was scheduled — retention ran against backups nothing was creating,
+so RPO stayed unbounded on any install that had not added its own cron.
 
 ## Daily routine
 
@@ -76,7 +76,6 @@ Run inside the application container (`docker compose exec laravel …`):
 php artisan archive:backup-run --json        # back up now
 php artisan archive:backup-list --json       # available backups
 php artisan archive:backup-verify <name>     # check one backup's integrity
-php artisan backup:dr-drill                  # restore drill, measures RTO
 php artisan dr:report                        # RPO/RTO report
 php artisan files:verify-integrity --json    # re-check file checksums
 php artisan audit:verify-chain --json        # audit chain integrity
@@ -86,6 +85,10 @@ php artisan archive:migrate-safe             # migrate behind a fresh backup
 `archive:migrate-safe` takes a backup first, leaves maintenance mode on and
 exits non-zero if the migration fails — use it instead of bare `migrate` when
 upgrading.
+
+`backup:dr-drill` is deliberately not in that list: it restores over the
+current database and belongs on a disposable copy. See the
+[restore plan](restore-plan.md).
 
 ## Common symptoms
 
