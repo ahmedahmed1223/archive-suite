@@ -12,7 +12,7 @@ import PageToolbar from "@/components/PageToolbar";
 import DataTable from "@/components/ui/DataTable";
 import { FieldError } from "@/components/ui/Form";
 import { useCapability } from "@/components/RoleGate";
-import { createArchiveApiClient, type ManagedUser, type ManagedUserRole, type PendingInvitation } from "@/lib/archive-api";
+import { createArchiveApiClient, isForbidden, type ManagedUser, type ManagedUserRole, type PendingInvitation } from "@/lib/archive-api";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -24,6 +24,7 @@ function formatLocalDate(value: string | undefined, settings: import("@/lib/disp
 type LoadState =
   | { status: "loading" }
   | { status: "ready"; users: ManagedUser[]; invitations: PendingInvitation[] }
+  | { status: "forbidden" }
   | { status: "error"; message: string };
 
 type ActionState = { status: "idle" } | { status: "error"; message: string } | { status: "success"; message: string };
@@ -62,7 +63,9 @@ export default function UsersSettingsPage() {
     setState({ status: "loading" });
     const response = await api.listUsers();
     if (!response.ok) {
-      setState({ status: "error", message: response.error });
+      // This page is admin-only, so a viewer reaching it is the expected case,
+      // not a failure to report as one.
+      setState(isForbidden(response) ? { status: "forbidden" } : { status: "error", message: response.error });
       return;
     }
     setState({ status: "ready", users: response.users, invitations: response.invitations });
@@ -264,6 +267,12 @@ export default function UsersSettingsPage() {
         <h2>{t.pages.settingsUsers.membersHeading}</h2>
 
         {state.status === "loading" && <Skeleton label={t.pages.settingsUsers.loadingMembers} />}
+        {state.status === "forbidden" && (
+          <div className="state-banner" role="status">
+            <strong>{t.pages.settingsUsers.forbiddenTitle}</strong>
+            <p>{t.pages.settingsUsers.forbiddenNote}</p>
+          </div>
+        )}
         {state.status === "error" && <p className="helper-text status-error">{t.pages.settingsUsers.errorPrefix.replace("{message}", state.message)}</p>}
 
         {state.status === "ready" && (

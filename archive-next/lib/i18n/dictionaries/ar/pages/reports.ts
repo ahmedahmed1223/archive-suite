@@ -47,6 +47,7 @@ export const reports = {
   summary: { ariaLabel: "ملخص الامتثال", total: "إجمالي الأحداث", success: "ناجحة", rejected: "مرفوضة", failed: "فاشلة" },
   loading: { title: "جارٍ إعداد تقرير الامتثال", description: "يجري تجميع أحداث التدقيق بحسب الفلاتر المحددة." },
   error: { title: "تعذر إعداد التقرير", retry: "إعادة المحاولة" },
+  forbidden: { title: "تقارير الامتثال للمدراء فقط", description: "لا تملك صلاحية الاطلاع على تقرير الامتثال. راجع مدير النظام إن كنت تحتاج هذا الوصول." },
   empty: { title: "لا توجد أحداث مطابقة", description: "عدّل نطاق التاريخ أو الفلاتر، أو نفّذ عملية موثقة لتظهر ضمن الدليل." },
   table: { ariaLabel: "أحداث تقرير الامتثال", title: "أحداث الدليل", description: "يعرض حتى 100 حدث. يتضمن CSV كل النتائج المطابقة حتى 10,000 حدث.", displayed: "{count} معروض", event: "الحدث", resource: "المورد", identifier: "المعرف", outcome: "النتيجة", code: "الرمز", date: "التاريخ", general: "عام" },
 } as const;

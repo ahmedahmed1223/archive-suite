@@ -7,7 +7,7 @@ import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/Dialog";
-import { createArchiveApiClient, type SystemControlAction, type SystemControlResult } from "@/lib/archive-api";
+import { createArchiveApiClient, isForbidden, type SystemControlAction, type SystemControlResult } from "@/lib/archive-api";
 import { formatKvValue } from "@/lib/kv-format";
 
 type GateState =
@@ -59,10 +59,7 @@ export default function SystemControlPage() {
     try {
       const response = await apiRef.current.systemStatus();
       if (!response.ok) {
-        // ponytail: `error === "Forbidden."` is a transitional fallback for
-        // an older API that predates the `code` field — drop once the API
-        // is guaranteed to always send `code`.
-        if (response.code === "FORBIDDEN" || response.error === "Forbidden.") {
+        if (isForbidden(response)) {
           setGate({ status: "forbidden" });
           return;
         }
@@ -155,8 +152,10 @@ export default function SystemControlPage() {
         </article>
       </section>
 
+      {/* Not an error banner: being a viewer is an expected state, so this
+          neither shouts in red nor interrupts a screen reader with an alert. */}
       {gate.status === "forbidden" ? (
-        <div className="state-banner state-banner-error" role="alert">
+        <div className="state-banner" role="status">
           <strong>{t.pages.systemControl.forbiddenTitle}</strong>
           <p>{t.pages.systemControl.forbiddenNote}</p>
         </div>

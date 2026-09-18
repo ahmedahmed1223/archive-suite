@@ -8,6 +8,8 @@ export const settingsUsers = {
   pageTitle: "Users & Roles",
   pageDescription: "Manage team members and their roles, and invite new members by email. Admins only.",
   adminOnlyBadge: "Admins only",
+  forbiddenTitle: "User management is for admins only",
+  forbiddenNote: "You do not have permission to view team members or change their roles. Ask a system administrator if you need this access.",
   onboardingBannerTitle: "Setup journey: build your team after verifying the admin account",
   onboardingBannerBody: "Add users and roles, then return to readiness to review the next step.",
   onboardingBannerLink: "View setup journey",

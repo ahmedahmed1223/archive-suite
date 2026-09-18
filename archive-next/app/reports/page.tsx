@@ -8,6 +8,7 @@ import PageToolbar from "@/components/PageToolbar";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import {
   createArchiveApiClient,
+  isForbidden,
   type ComplianceReportEntry,
   type ComplianceReportFilters,
   type ComplianceReportSummary,
@@ -22,6 +23,7 @@ import "./reports.css";
 type ReportState =
   | { status: "loading" }
   | { status: "ready"; entries: ComplianceReportEntry[]; summary: ComplianceReportSummary }
+  | { status: "forbidden" }
   | { status: "error"; message: string };
 
 function formatStorageBytes(bytes: number): string {
@@ -56,7 +58,9 @@ export default function ReportsPage() {
     setState({ status: "loading" });
     const response = await api.complianceReport(nextFilters);
     if (!response.ok) {
-      setState({ status: "error", message: response.error || copy.errors.load });
+      // A refusal is not a fault: offering "retry" here retries a request the
+      // server will refuse every time.
+      setState(isForbidden(response) ? { status: "forbidden" } : { status: "error", message: response.error || copy.errors.load });
       return;
     }
     setState({ status: "ready", entries: response.entries, summary: response.summary });
@@ -238,6 +242,7 @@ export default function ReportsPage() {
         </section>
       ) : null}
 
+      {state.status === "forbidden" ? <section className="state-banner" role="status"><ShieldCheck size={18} aria-hidden="true" /><div><strong>{copy.forbidden.title}</strong><p>{copy.forbidden.description}</p></div></section> : null}
       {state.status === "loading" ? <section className="state-banner" role="status" aria-live="polite"><strong>{copy.loading.title}</strong><p>{copy.loading.description}</p></section> : null}
       {state.status === "error" ? <section className="state-banner state-banner-error" role="alert"><TriangleAlert size={18} aria-hidden="true" /><div><strong>{copy.error.title}</strong><p>{redactAdminSecrets(state.message)}</p><button type="button" className="button button-secondary button-sm" onClick={() => void loadReport(appliedFilters)}>{copy.error.retry}</button></div></section> : null}
       {state.status === "ready" && entries.length === 0 ? <EmptyState title={copy.empty.title} description={copy.empty.description} /> : null}

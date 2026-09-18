@@ -103,6 +103,21 @@ export function rightsRefusal(envelope: { ok: boolean } | ApiError): RightsRefus
   return itemId ? { reason, decidedBy, itemId } : { reason, decidedBy };
 }
 
+/**
+ * True when a failed envelope is a permission refusal rather than a fault.
+ * A page that cannot tell them apart shows "something went wrong -- retry" to
+ * someone whose retry can never succeed, which is why this is shared instead
+ * of re-tested inline on every admin surface.
+ *
+ * ponytail: `error === "Forbidden."` is a transitional fallback for an older
+ * API that predates the `code` field -- drop once every 403 carries a code.
+ */
+export function isForbidden(envelope: { ok: boolean } | ApiError): boolean {
+  if (envelope.ok !== false) return false;
+  const { code, error } = envelope as ApiError;
+  return code === "FORBIDDEN" || error === "Forbidden.";
+}
+
 export type ApiEnvelope<T extends object = Record<string, unknown>> = ApiSuccess<T> | ApiError;
 
 /** Errors returned from the synthetic preview endpoints always carry the marker too. */

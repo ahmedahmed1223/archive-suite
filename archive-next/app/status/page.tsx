@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type ApiEnvelope, type DrProbe, type PreservationReadiness, type SystemMetrics } from "@/lib/archive-api";
+import { createArchiveApiClient, isForbidden, type ApiEnvelope, type DrProbe, type PreservationReadiness, type SystemMetrics } from "@/lib/archive-api";
 
 function IconServer() {
   return (
@@ -73,7 +73,8 @@ interface StatusState {
 }
 
 type MetricsState =
-  | { status: "loading" | "forbidden" }
+  | { status: "loading" }
+  | { status: "forbidden" }
   | { status: "ready"; metrics: SystemMetrics; dr: DrProbe; preservation: PreservationReadiness }
   | { status: "error"; message: string };
 
@@ -146,10 +147,7 @@ export default function StatusPage() {
     try {
       const response = await apiRef.current.systemStatus();
       if (!response.ok) {
-        // ponytail: `error === "Forbidden."` is a transitional fallback for
-        // an older API that predates the `code` field — drop once the API
-        // is guaranteed to always send `code`.
-        if (response.code === "FORBIDDEN" || response.error === "Forbidden.") {
+        if (isForbidden(response)) {
           setMetricsState({ status: "forbidden" });
           return;
         }
@@ -411,6 +409,15 @@ export default function StatusPage() {
             </div>
           </div>
         </section>
+      ) : null}
+
+      {/* Without this the three panels above simply vanish for a viewer, with
+          nothing saying why. */}
+      {metricsState.status === "forbidden" ? (
+        <div className="state-banner" role="status">
+          <strong>{copy.metrics.forbiddenTitle}</strong>
+          <p>{copy.metrics.forbiddenNote}</p>
+        </div>
       ) : null}
 
       {metricsState.status === "error" ? (

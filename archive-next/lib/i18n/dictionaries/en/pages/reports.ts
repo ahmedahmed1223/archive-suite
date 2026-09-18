@@ -47,6 +47,7 @@ export const reports = {
   summary: { ariaLabel: "Compliance summary", total: "Total events", success: "Successful", rejected: "Rejected", failed: "Failed" },
   loading: { title: "Preparing the compliance report", description: "Audit events are being collected for the selected filters." },
   error: { title: "Unable to prepare the report", retry: "Try again" },
+  forbidden: { title: "Compliance reports are for admins only", description: "You do not have permission to view the compliance report. Ask a system administrator if you need this access." },
   empty: { title: "No matching events", description: "Adjust the date range or filters, or perform a recorded operation for it to appear in the evidence." },
   table: { ariaLabel: "Compliance report events", title: "Evidence events", description: "Shows up to 100 events. The CSV includes all matching results up to 10,000 events.", displayed: "{count} displayed", event: "Event", resource: "Resource", identifier: "Identifier", outcome: "Outcome", code: "Code", date: "Date", general: "General" },
 } as const;

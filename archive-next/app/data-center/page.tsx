@@ -5,7 +5,7 @@ import { Archive, Database, Gauge, HardDriveDownload, ServerCog, Settings, Shiel
 import AppShell from "@/components/AppShell";
 import MetricStrip from "@/components/MetricStrip";
 import PageToolbar from "@/components/PageToolbar";
-import { createArchiveApiClient, type DrProbe, type SystemMetrics } from "@/lib/archive-api";
+import { createArchiveApiClient, isForbidden, type DrProbe, type SystemMetrics } from "@/lib/archive-api";
 import { assessQueues, type QueueStatus } from "@/lib/queue-health";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
 
@@ -67,10 +67,7 @@ export default function DataCenterPage() {
     try {
       const response = await apiRef.current.systemStatus();
       if (!response.ok) {
-        // ponytail: `error === "Forbidden."` is a transitional fallback for
-        // an older API that predates the `code` field — drop once the API
-        // is guaranteed to always send `code`.
-        if (response.code === "FORBIDDEN" || response.error === "Forbidden.") {
+        if (isForbidden(response)) {
           setSummary({ status: "forbidden" });
           return;
         }
@@ -115,8 +112,10 @@ export default function DataCenterPage() {
         }
       />
 
+      {/* Not an error banner: being a viewer is an expected state, so this
+          neither shouts in red nor interrupts a screen reader with an alert. */}
       {summary.status === "forbidden" ? (
-        <div className="state-banner state-banner-error" role="alert">
+        <div className="state-banner" role="status">
           <strong>{copy.forbidden}</strong><p>{copy.forbiddenDescription}</p>
         </div>
       ) : null}
