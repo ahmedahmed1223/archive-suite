@@ -1,0 +1,7 @@
+# Agent temp files
+*.log
+*.tmp
+.DS_Store
+
+# Keep structure
+!.gitkeep
