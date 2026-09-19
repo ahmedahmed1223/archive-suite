@@ -1,4 +1,4 @@
-FROM node:26.5.0-slim@sha256:715e55e4b84e4bb0ff48e49b398a848f08e55daed8eb6a0ea1839ae53bc57583 AS deps
+FROM node:24-slim@sha256:715e55e4b84e4bb0ff48e49b398a848f08e55daed8eb6a0ea1839ae53bc57583 AS deps
 
 WORKDIR /app
 
@@ -30,7 +30,7 @@ COPY archive-next ./archive-next
 
 RUN pnpm --filter @archive/next run build
 
-FROM node:26.5.0-slim@sha256:715e55e4b84e4bb0ff48e49b398a848f08e55daed8eb6a0ea1839ae53bc57583 AS runner
+FROM node:24-slim@sha256:715e55e4b84e4bb0ff48e49b398a848f08e55daed8eb6a0ea1839ae53bc57583 AS runner
 
 WORKDIR /app
 
@@ -38,7 +38,7 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
-# The pinned node:26.5.0-slim base carries Debian security patches only up to
+# The pinned node:24-slim base carries Debian security patches only up to
 # its own build date; apt-get upgrade here pulls in later trixie-security
 # fixes (e.g. util-linux, openssl) without moving off the pinned Node version.
 RUN apt-get update \

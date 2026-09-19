@@ -39,7 +39,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "26.5.0"
+          node-version: "24"
           cache: pnpm
 
       - name: Install workspace dependencies
@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "26.5.0"
+          node-version: "24"
       - name: Build self-contained installer kit
         run: node scripts/build-installer.mjs ${{ matrix.platform }} installer-kit --smoke
       - name: Run bundled runtime without a global Node dependency
@@ -109,7 +109,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "26.5.0"
+          node-version: "24"
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -202,7 +202,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "26.5.0"
+          node-version: "24"
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -242,6 +242,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
       - name: Build canonical worker image
         run: docker build --tag archive-whisper-release --file archive-laravel/Dockerfile.worker archive-laravel
       - name: Run bounded Whisper release smoke
@@ -272,7 +277,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "26.5.0"
+          node-version: "24"
           cache: pnpm
 
       - name: Setup PHP and Composer

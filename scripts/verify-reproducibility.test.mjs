@@ -15,7 +15,7 @@ test("canonical toolchain pins are declared and consumed without floating runtim
   const workflows = [read(".github/workflows/ci.yml"), read(".github/workflows/release.yml")];
 
   assert.equal(toolchain.schemaVersion, "1.0");
-  assert.match(toolchain.node, /^26\.\d+\.\d+$/);
+  assert.match(toolchain.node, /^24$/);
   assert.match(toolchain.pnpm, /^\d+\.\d+\.\d+$/);
   assert.match(toolchain.php, /^8\.5\.\d+$/);
   assert.match(toolchain.composer, /^2\.\d+\.\d+$/);
@@ -120,7 +120,7 @@ test("the scheduler establishes its health heartbeat before entering its loop", 
 });
 
 test("the runtime gate accepts Node 26 and rejects other major versions", () => {
-  assert.equal(isSupportedNodeVersion("v26.5.0"), true);
+  assert.equal(isSupportedNodeVersion("v24"), true);
   assert.equal(isSupportedNodeVersion("v25.99.0"), false);
   assert.equal(isSupportedNodeVersion("v27.0.0"), false);
 });

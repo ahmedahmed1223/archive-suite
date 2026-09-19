@@ -23,8 +23,8 @@ importers:
   .:
     devDependencies:
       node:
-        specifier: 26.5.0
-        version: 26.5.0
+        specifier: '24'
+        version: 24.21.0
       openapi-typescript:
         specifier: 7.10.1
         version: 7.10.1(typescript@6.0.3)
@@ -2281,8 +2281,8 @@ packages:
     resolution: {integrity: sha512-D9UOmYG3UH1V+ENW56t5QXBwJw1YEY18ruVeus89Rw+SyIgjPkCO84bRzO3uNIYosJbNwiabWVn48o3uJLjxFQ==}
     engines: {node: '>=18'}
 
-  node@26.5.0:
-    resolution: {integrity: sha512-E9wHpJf86DE94L38B9i351DL4YPclYr7dn6h8OwqtVtnTctL+iw5REBKQ5nXmw4kDc8VlV2JReU7aLZCw2qL3g==}
+  node@24.21.0:
+    resolution: {integrity: sha512-GquwdXTr1CyRzrHsP+GVYnKj/yxIX7kUpyGMKu30fKJa9Hqtp9GP/Zu4BXY3gLIQVc/H5eWdMQmBgMBx5veCbw==}
     engines: {npm: '>=5.0.0'}
     hasBin: true
 
@@ -4662,7 +4662,7 @@ snapshots:
 
   node-releases@2.0.53: {}
 
-  node@26.5.0:
+  node@24.21.0:
     dependencies:
       node-bin-setup: 1.1.4
 

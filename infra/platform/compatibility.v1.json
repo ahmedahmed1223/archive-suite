@@ -143,7 +143,7 @@
       "status": "supported",
       "evidence": "docs/evidence/v1.1.0-docker/README.md",
       "requirements": {
-        "node": ">=26.5.0 <27 on host; baseline 26.5.0",
+        "node": ">=24 <27 on host; baseline 24",
         "docker": "Docker Desktop with Docker Compose v2",
         "php": "8.5.8 provided by the Laravel container",
         "composer": "2.10.2 provided by the Laravel container",
@@ -162,7 +162,7 @@
       "status": "supported",
       "evidence": "docs/evidence/v1.1.0-docker/README.md",
       "requirements": {
-        "node": ">=26.5.0 <27 on host; baseline 26.5.0",
+        "node": ">=24 <27 on host; baseline 24",
         "docker": "Docker Engine with Docker Compose v2",
         "php": "8.5.8 provided by the Laravel container",
         "composer": "2.10.2 provided by the Laravel container",
@@ -181,7 +181,7 @@
       "status": "supported",
       "evidence": "docs/evidence/v1.1.0-native/README.md",
       "requirements": {
-        "node": ">=26.5.0 <27",
+        "node": ">=24 <27",
         "docker": "not required on the target host",
         "php": "8.5.8 (bundled, NTS, portable); pcntl is unavailable on Windows and guarded by Laravel",
         "composer": "used only to build the bundle (composer install --no-dev); not required on the target host",
@@ -200,7 +200,7 @@
       "status": "supported",
       "evidence": "docs/evidence/v1.1.0-native/README.md",
       "requirements": {
-        "node": ">=26.5.0 <27",
+        "node": ">=24 <27",
         "docker": "not required on the target host",
         "php": "8.5.8 (bundled, static-php-cli, portable); pcntl is available and required on Linux",
         "composer": "used only to build the bundle (composer install --no-dev); not required on the target host",
