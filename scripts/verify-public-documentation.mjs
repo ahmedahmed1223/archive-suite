@@ -186,7 +186,17 @@ function readRepositoryDocumentation(root = ROOT) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const input = readRepositoryDocumentation();
-  const result = validateDocumentation(input);
+  const result = validateDocumentation({
+    ...input,
+    excludedTrees: [
+      { path: ".agents/" },
+      { path: ".worktrees/" },
+      { path: "node_modules/" },
+      { path: ".pnpm/" },
+      { path: ".stitch/" },
+      { path: "docs/agent-briefs/" },
+    ],
+  });
   if (result.errors.length) {
     console.error("Public documentation validation failed:");
     for (const error of result.errors) console.error(`- ${error}`);
