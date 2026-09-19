@@ -8,6 +8,14 @@ describe("release notes", () => {
     expect(getReleaseNotes("1.3.1")?.en).toContain("direction");
   });
 
+  test("loads the Arabic and English notes for v2.0.0", () => {
+    expect(getReleaseNotes("2.0.0")).toMatchObject({ version: "2.0.0" });
+    expect(getReleaseNotes("2.0.0")?.ar).toContain("تمثيلات الوسائط");
+    expect(getReleaseNotes("2.0.0")?.ar).toContain("نتائج بحث زمني");
+    expect(getReleaseNotes("2.0.0")?.en).toContain("Media representations");
+    expect(getReleaseNotes("2.0.0")?.en).toContain("time-aware search");
+  });
+
   test("loads the Arabic and English notes for v1.4.0", () => {
     expect(getReleaseNotes("1.4.0")).toMatchObject({ version: "1.4.0" });
     // V14-REL-001 (Task 10): the notes must name the headline UX changes.
