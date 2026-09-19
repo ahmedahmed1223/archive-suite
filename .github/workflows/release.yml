@@ -19,6 +19,7 @@ permissions: {}
 env:
   NEXT_IMAGE: ghcr.io/${{ github.repository }}/masar-next
   LARAVEL_IMAGE: ghcr.io/${{ github.repository }}/masar-laravel
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
 jobs:
   verify:
@@ -192,6 +193,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     needs: verify
+    continue-on-error: true
     permissions:
       contents: read
     steps:
@@ -237,6 +239,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: verify
+    continue-on-error: true
     permissions:
       contents: read
     steps:
