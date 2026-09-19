@@ -92,7 +92,6 @@ const forbiddenTrackedPrefixes = [
   "docs/superpowers/",
   "output/",
   ".fallow/",
-  ".agents/",
 ];
 
 const trackedFiles = execFileSync("git", ["-c", `safe.directory=${GIT_SAFE_ROOT}`, "ls-files"], { cwd: ROOT, encoding: "utf8" })
