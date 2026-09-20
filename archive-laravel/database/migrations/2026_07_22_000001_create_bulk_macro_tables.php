@@ -31,9 +31,12 @@ return new class extends Migration
             $table->unsignedInteger('failed_count')->default(0);
             $table->timestamps();
 
-            $table->foreign('macro_id')->references('id')->on('bulk_macros')->cascadeOnDelete();
             $table->index(['macro_id', 'created_at']);
             $table->index(['user_id', 'created_at']);
+        });
+
+        Schema::table('bulk_macros', function (Blueprint $table): void {
+            $table->foreign('macro_id')->references('id')->on('bulk_macros')->cascadeOnDelete();
         });
     }
 
