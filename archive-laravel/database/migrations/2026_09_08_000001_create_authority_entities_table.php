@@ -17,8 +17,11 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
-            $table->foreign('merged_into_id')->references('id')->on('authority_entities')->nullOnDelete();
             $table->index(['kind', 'preferred_label']);
+        });
+
+        Schema::table('authority_entities', function (Blueprint $table): void {
+            $table->foreign('merged_into_id')->references('id')->on('authority_entities')->nullOnDelete();
         });
     }
 
