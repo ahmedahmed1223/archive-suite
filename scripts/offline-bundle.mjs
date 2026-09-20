@@ -173,6 +173,12 @@ function rehearsal(dir, evidencePath) {
       throw new Error(`${error.message}\n${details}`, { cause: error });
     }
     evidence.healthy = true;
+    // Bring app out of maintenance mode if migrations left it there
+    try {
+      run("docker", [...compose, "exec", "-T", "laravel-fpm", "php", "artisan", "up"], { env: childEnv, stdio: "ignore" });
+    } catch {
+      // Ignore — may not be in maintenance mode
+    }
     run("curl", ["--fail", "--silent", "--show-error", `http://localhost:${httpPort}/`], { stdio: "ignore" });
     evidence.http = true;
   } finally {
