@@ -20,9 +20,8 @@ return new class extends Migration
             $table->index(['kind', 'preferred_label']);
         });
 
-        Schema::table('authority_entities', function (Blueprint $table): void {
-            $table->foreign('merged_into_id')->references('id')->on('authority_entities')->nullOnDelete();
-        });
+        // Self-referencing foreign key deferred to a separate migration
+        // to avoid 'no unique constraint' on table creation
     }
 
     public function down(): void
