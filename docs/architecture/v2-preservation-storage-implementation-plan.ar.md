@@ -1,7 +1,9 @@
-# خطة تنفيذ تخزين تمثيلات الحفظ للإصدار 2
+# الخطة النهائية لتنفيذ تخزين تمثيلات الحفظ للإصدار 2
 
 > **للوكلاء المنفذين:** استخدم `superpowers:executing-plans` لتنفيذ هذه الخطة
 > مهمة بمهمة. تستخدم الخطوات مربعات اختيار لتتبع التقدم.
+
+**الحالة:** معتمدة للتنفيذ على دفعات متسلسلة.
 
 **الهدف:** بناء تمثيلات حفظ وMezzanine ونسخ مادية قابلة للتحقق، بسياسة محلية أو
 خارجية أساسية وواجهات تشغيل عربية صادقة.
@@ -32,6 +34,36 @@ Next.js 16، React 19، TypeScript، OpenAPI، Vitest وPlaywright.
 - محاولة حذف آخر نسخة جاهزة أو نسخة تحت تعليق قانوني يجب أن ترد 422 مدققة.
 - لا يسمح الاستدعاء غير الإداري بتغيير سياسة التخزين أو بدء استعادة أو رؤية أسرار.
 
+## قرار التنفيذ والدفعات
+
+ينفذ العمل على `master` في ثماني دفعات، ولا تبدأ دفعة قبل أن تمر اختبارات الدفعة
+السابقة. الدفعات 1–4 تبني الخادم ونزاهة البيانات، والدفعتان 5–6 تفتحان العقد
+والواجهات، والدفعة 8 هي القبول الحي. لا ينشر أي موصل خارجي حقيقي أو يطلب صلاحية
+OAuth قبل أن تنجح الموصلات المزيفة والعقد والواجهات.
+
+| الدفعة | النتيجة | حاجز الانتقال |
+| --- | --- | --- |
+| 1 | نموذج `MediaReplica` والسياسة | اختبارات Laravel والهجرة الخضراء |
+| 2 | قدرات الموصلات وموصلات مزيفة | اختبارات الوحدة الخضراء |
+| 3 | موصلات المزودين الفعلية | اختبارات تكامل الموصلات الخضراء |
+| 4 | النسخ والتحقق والتجهيز المرحلي | اختبارات الوسائط الخضراء |
+| 5 | الاحتفاظ والحذف والاستعادة | اختبارات الصلاحيات والتدقيق الخضراء |
+| 6 | OpenAPI ومسارات الإدارة | العقد والعميل المولّد أخضران |
+| 7 | واجهات التشغيل العربية | Vitest وTypeScript أخضران |
+| 8 | قبول حي وإصدار | `pnpm verify` والقبول الحي وجاهزية الإصدار خضراء |
+
+## حدود الإصدار
+
+- يطبق الإصدار الأول الموصل المحلي بالكامل وموصلات Dropbox وGoogle Drive وS3
+  وAzure Blob عبر واجهات القدرات نفسها.
+- يبدأ Dropbox وGoogle Drive بحساب إعداد خادمي أو اتصال OAuth إداري؛ لا تحفظ
+  رموز الوصول في قاعدة البيانات أو ترسل للمتصفح. تخزن في إعداد خادم مشفر أو
+  مدير أسرار تابع لبيئة النشر.
+- لا يسمح `external_primary` لـ Dropbox أو Google Drive إلا بعد أن يعلن الموصل
+  رفعًا قابلًا للاستئناف والتحقق بالقراءة واسترجاع إصدار. وإلا يبقيهما النظام
+  وجهتي استيراد أو نسخ احتياطي فقط.
+- LTO وBagIt/PREMIS والتكرار التلقائي بين مزودين خارجيين خارج هذه الدفعات.
+
 ---
 
 ### المهمة 1: مخطط النسخ المادية والسياسة
@@ -60,6 +92,7 @@ Next.js 16، React 19، TypeScript، OpenAPI، Vitest وPlaywright.
 **الملفات:**
 - أنشئ: `archive-laravel/app/Services/Storage/ReplicaConnector.php`
 - أنشئ: `archive-laravel/app/Services/Storage/ReplicaConnectorCatalog.php`
+- أنشئ: `archive-laravel/app/Services/Storage/ReplicaCredentialResolver.php`
 - أنشئ: `archive-laravel/tests/Fakes/FakeReplicaConnector.php`
 - اختبر: `archive-laravel/tests/Unit/Services/Storage/ReplicaConnectorCatalogTest.php`
 
@@ -71,10 +104,35 @@ Next.js 16، React 19، TypeScript، OpenAPI، Vitest وPlaywright.
   وأن موصل S3 يعلن الرفع المستأنف والتحقق.
 - [ ] شغّل اختبار الوحدة؛ المتوقع: فشل لغياب الكتالوج.
 - [ ] نفذ الواجهة والكتالوج والموصل المزيف؛ لا تستدعِ SDK خارجيًا في هذا الطور.
+- [ ] نفذ `ReplicaCredentialResolver` ليعيد بيانات اعتماد الخادم للقرص المختار
+  فقط، وليمنع إرجاع أي سر إلى controller أو response أو سجل تدقيق.
 - [ ] شغّل الاختبار واختبارات خدمة التخزين الحالية؛ المتوقع: نجاح.
 - [ ] ثبّت: `git commit -m "feat(storage): add replica connector capability catalog"`.
 
-### المهمة 3: خدمة النسخ والتحقق والاستعادة
+### المهمة 3: موصلات المزودين الفعلية وحساباتهم
+
+**الملفات:**
+- أنشئ: `archive-laravel/app/Services/Storage/Connectors/LocalReplicaConnector.php`
+- أنشئ: `archive-laravel/app/Services/Storage/Connectors/S3ReplicaConnector.php`
+- أنشئ: `archive-laravel/app/Services/Storage/Connectors/AzureReplicaConnector.php`
+- أنشئ: `archive-laravel/app/Services/Storage/Connectors/DropboxReplicaConnector.php`
+- أنشئ: `archive-laravel/app/Services/Storage/Connectors/GoogleDriveReplicaConnector.php`
+- أنشئ: `archive-laravel/tests/Feature/ReplicaConnectorIntegrationTest.php`
+
+**الواجهات:** تسجل الموصلات قدراتها عند الإقلاع ولا تتصل بالمزود إلا عبر
+`ReplicaCredentialResolver`. يستخدم موصل Google Drive الرفع القابل للاستئناف
+والتحقق بـ API رسمي؛ ويعيد موصل Dropbox وGoogle Drive `provider_version` إن
+وفره المزود وإلا يعلن غيابه صراحة.
+
+- [ ] اكتب اختبارات فاشلة بمحاكاة HTTP للتحقق من رفع محلي وS3/Azure، ومنع
+  `external_primary` لموصل Drive أو Dropbox لا يعلن القدرة المطلوبة.
+- [ ] شغّل: `node scripts/laravel-docker.mjs test tests/Feature/ReplicaConnectorIntegrationTest.php`.
+- [ ] نفذ الموصلات ووقت انتهاء بيانات الاعتماد واختبار الاتصال من دون كتابة
+  رموز OAuth في قاعدة البيانات أو السجل أو الردود.
+- [ ] شغّل الاختبار واختبارات الكتالوج؛ المتوقع: نجاح.
+- [ ] ثبّت: `git commit -m "feat(storage): add verified replica provider connectors"`.
+
+### المهمة 4: خدمة النسخ والتحقق والاستعادة
 
 **الملفات:**
 - أنشئ: `archive-laravel/app/Services/Media/MediaReplicaService.php`
@@ -95,7 +153,7 @@ Next.js 16، React 19، TypeScript، OpenAPI، Vitest وPlaywright.
 - [ ] شغّل الاختبار ثم اختبارات `MediaDerivativesApiTest`؛ المتوقع: نجاح.
 - [ ] ثبّت: `git commit -m "feat(media): verify and restore physical replicas"`.
 
-### المهمة 4: الاحتفاظ والحذف والتدقيق
+### المهمة 5: الاحتفاظ والحذف والتدقيق
 
 **الملفات:**
 - أنشئ: `archive-laravel/app/Services/Storage/ReplicaRetentionService.php`
@@ -111,11 +169,12 @@ Next.js 16، React 19، TypeScript، OpenAPI، Vitest وPlaywright.
 - [ ] شغّل اختبار الميزة واختبارات التدقيق؛ المتوقع: نجاح.
 - [ ] ثبّت: `git commit -m "feat(storage): guard replica retention and deletion"`.
 
-### المهمة 5: العقد ومسارات الإدارة
+### المهمة 6: العقد ومسارات الإدارة
 
 **الملفات:**
 - عدّل: `docs/api/archive-contract.openapi.json`
 - أنشئ: `archive-laravel/app/Http/Controllers/Api/V1/MediaReplicasController.php`
+- أنشئ: `archive-laravel/app/Http/Controllers/Api/V1/StoragePolicyController.php`
 - عدّل: `archive-laravel/routes/api.php`
 - عدّل: `archive-next/lib/archive-api.ts`
 - أعد توليد: `archive-next/lib/generated/archive-api.ts`
@@ -124,13 +183,13 @@ Next.js 16، React 19، TypeScript، OpenAPI، Vitest وPlaywright.
 - [ ] اكتب اختبار API فاشل لقائمة نسخ مادية منقحة، معاينة سياسة، استعادة إدارية،
   ومنع غير الإداري.
 - [ ] شغّل الاختبار؛ المتوقع: 404 أو فشل مخطط الاستجابة.
-- [ ] أضف مخططات `MediaReplica`, `StoragePolicy` وطلبات الاستعادة والحذف إلى
-  OpenAPI، ثم نفذ المسارات التي تعيد حقولًا منقحة فقط.
+- [ ] أضف مخططات `MediaReplica`, `StoragePolicy` وطلبات الاستعادة والحذف واختبار
+  الموصل إلى OpenAPI، ثم نفذ المسارات التي تعيد حقولًا منقحة فقط.
 - [ ] شغّل `pnpm verify:api-contracts` و`pnpm verify:api-generated` واختبارات
   Laravel API؛ المتوقع: نجاح.
 - [ ] ثبّت: `git commit -m "feat(api): expose safe media replica operations"`.
 
-### المهمة 6: واجهات السجل والاستوديو والإدارة
+### المهمة 7: واجهات السجل والاستوديو والإدارة
 
 **الملفات:**
 - عدّل: `archive-next/app/archive/[id]/MediaRepresentationsPanel.tsx`
@@ -148,7 +207,7 @@ Next.js 16، React 19، TypeScript، OpenAPI، Vitest وPlaywright.
 - [ ] شغّل اختبارات المكونات و`pnpm typecheck`؛ المتوقع: نجاح.
 - [ ] ثبّت: `git commit -m "feat(ui): manage preservation replicas and policy"`.
 
-### المهمة 7: القبول الحي ووثائق التشغيل
+### المهمة 8: القبول الحي ووثائق التشغيل
 
 **الملفات:**
 - أنشئ: `archive-next/e2e/v2-preservation-replicas.authed.spec.ts`
@@ -163,3 +222,12 @@ Next.js 16، React 19، TypeScript، OpenAPI، Vitest وPlaywright.
   المهمة بدليل الأمر والنتيجة فقط بعد نجاح القبول.
 - [ ] أعد تشغيل `pnpm verify`, `pnpm verify:laravel-next:live`, و`pnpm release:verify`.
 - [ ] ثبّت: `git commit -m "test(release): accept v2 preservation replicas"`.
+
+## تعريف الإنجاز
+
+لا تعد V2-MEDIA-002 مكتملة قبل تحقق جميع الآتي: تمثيل حفظ وMezzanine فعليان
+لملف فيديو حقيقي؛ نسخة مادية محلية متحققة؛ نسخة خارجية متحققة عند تفعيل موصل
+مدعوم؛ سياسة `local_primary` و`external_primary` مفهومة ومفروضة؛ الاستعادة
+والحذف المحكوم والتعليق القانوني مدققة؛ الواجهة العربية تعمل عند 1280 و768 و375
+من دون أسرار؛ و`pnpm verify` و`pnpm verify:laravel-next:live` و`pnpm release:verify`
+تنجح على SHA نفسه.
