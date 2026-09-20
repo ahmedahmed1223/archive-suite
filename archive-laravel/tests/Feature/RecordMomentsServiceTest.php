@@ -21,7 +21,7 @@ class RecordMomentsServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RecordMomentsService(new TranscriptSearchService());
+        $this->service = new RecordMomentsService(new TranscriptSearchService);
     }
 
     private const TRANSCRIPT = "00:00:05 --> 00:00:09\nالأرشيف الوطني يحفظ الوثائق\n\n00:01:30 --> 00:01:34\nمبنى الأرشيف القديم\n";

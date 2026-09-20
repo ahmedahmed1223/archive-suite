@@ -17,10 +17,18 @@ final class MediaApprovalService
 
     public function override(MediaInspection $inspection, User $actor, string $reason): MediaQcOverride
     {
-        if (Gate::forUser($actor)->denies('media.qc.override')) throw new RuntimeException('forbidden');
-        if ($inspection->inspection_type !== 'qc' || $inspection->status !== 'failed') throw new RuntimeException('qc_not_failed');
-        if (! $this->inspections->isCurrentVersion($inspection)) throw new RuntimeException('stale_qc');
-        if (trim($reason) === '') throw new RuntimeException('override_reason_required');
+        if (Gate::forUser($actor)->denies('media.qc.override')) {
+            throw new RuntimeException('forbidden');
+        }
+        if ($inspection->inspection_type !== 'qc' || $inspection->status !== 'failed') {
+            throw new RuntimeException('qc_not_failed');
+        }
+        if (! $this->inspections->isCurrentVersion($inspection)) {
+            throw new RuntimeException('stale_qc');
+        }
+        if (trim($reason) === '') {
+            throw new RuntimeException('override_reason_required');
+        }
 
         return MediaQcOverride::query()->firstOrCreate(
             ['media_inspection_id' => $inspection->id],
@@ -45,7 +53,9 @@ final class MediaApprovalService
             $recordStore = $source['recordStore'] ?? null;
             $recordId = $source['recordId'] ?? null;
             $versionToken = $source['sourceVersionToken'] ?? null;
-            if (! is_string($recordStore) || ! is_string($recordId) || ! is_string($versionToken)) continue;
+            if (! is_string($recordStore) || ! is_string($recordId) || ! is_string($versionToken)) {
+                continue;
+            }
             $inspection = MediaInspection::query()->where([
                 'record_store' => $recordStore, 'record_uid' => $recordId,
                 'inspection_type' => 'qc', 'status' => 'failed', 'version_token' => $versionToken,
@@ -54,6 +64,7 @@ final class MediaApprovalService
                 $errors["qc.$recordId"] = 'Current source QC failed and has not received an authorized override.';
             }
         }
+
         return $errors;
     }
 }

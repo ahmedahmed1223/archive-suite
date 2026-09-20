@@ -36,10 +36,14 @@ final class IngestDerivativeService
         $type = in_array($extension, self::VIDEO_EXTENSIONS, true)
             ? 'proxy'
             : (in_array($extension, self::AUDIO_EXTENSIONS, true) ? 'waveform' : null);
-        if ($type === null) return;
+        if ($type === null) {
+            return;
+        }
 
         $found = $this->derivatives->findOrBuildPending($recordId, null, null, $type, [], null);
-        if (! $found['isNew']) return;
+        if (! $found['isNew']) {
+            return;
+        }
 
         $mediaJob = MediaJob::query()->create([
             'id' => (string) Str::uuid(),

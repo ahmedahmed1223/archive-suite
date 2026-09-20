@@ -26,20 +26,25 @@ class MontageInterchangeController extends Controller
 
     public function previewCmx(Request $request, string $id, Cmx3600Codec $codec): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $project = MontageProject::query()->find($id);
         $actor = $this->archiveUser($request);
         if (! $project || $actor === null || Gate::forUser($actor)->denies('update', $project)) {
             return response()->json(ApiError::envelope('Montage project not found.', 404), 404);
         }
         $data = $request->validate(['edl' => ['required', 'string', 'max:1048576']]);
+
         return response()->json(['ok' => true, 'format' => 'cmx3600', 'preview' => $codec->preview($data['edl'])]);
     }
 
     /** Apply supported CMX cuts only after the editor supplies explicit reel-to-source mappings. */
     public function applyCmx(Request $request, string $id, Cmx3600Codec $codec): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
         $project = MontageProject::query()->find($id);
         $actor = $this->archiveUser($request);
         if (! $project || $actor === null || Gate::forUser($actor)->denies('saveRevision', $project)) {
@@ -67,10 +72,10 @@ class MontageInterchangeController extends Controller
             try {
                 $currentToken = $this->versions->resolveVersionToken('archive-items', $mapping['recordId'], null);
             } catch (\RuntimeException) {
-                return response()->json([...ApiError::envelope('CMX source mapping is unavailable.', 422), 'errors' => ['mappings' => "Unknown record {$mapping['recordId']}." ]], 422);
+                return response()->json([...ApiError::envelope('CMX source mapping is unavailable.', 422), 'errors' => ['mappings' => "Unknown record {$mapping['recordId']}."]], 422);
             }
             if (! hash_equals($currentToken, $mapping['sourceVersionToken'])) {
-                return response()->json([...ApiError::envelope('CMX source mapping is stale.', 422), 'errors' => ['mappings' => "Stale source version for {$mapping['reel']}." ]], 422);
+                return response()->json([...ApiError::envelope('CMX source mapping is stale.', 422), 'errors' => ['mappings' => "Stale source version for {$mapping['reel']}."]], 422);
             }
             $mappings[$mapping['reel']] = $mapping;
         }
@@ -88,7 +93,7 @@ class MontageInterchangeController extends Controller
         foreach ($preview['accepted'] as $index => $event) {
             $mapping = $mappings[$event['reel']] ?? null;
             if ($mapping === null) {
-                return response()->json([...ApiError::envelope('CMX source mapping is incomplete.', 422), 'errors' => ['mappings' => "No source is mapped for reel {$event['reel']}." ]], 422);
+                return response()->json([...ApiError::envelope('CMX source mapping is incomplete.', 422), 'errors' => ['mappings' => "No source is mapped for reel {$event['reel']}."]], 422);
             }
             $clips[] = [
                 'id' => (string) Str::uuid(),
@@ -116,6 +121,7 @@ class MontageInterchangeController extends Controller
     private function seconds(string $timecode, float $rate): float
     {
         [$hours, $minutes, $seconds, $frames] = array_map('intval', explode(':', $timecode));
+
         return ($hours * 3600) + ($minutes * 60) + $seconds + ($frames / $rate);
     }
 }

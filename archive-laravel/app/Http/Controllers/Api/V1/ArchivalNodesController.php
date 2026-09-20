@@ -138,9 +138,12 @@ class ArchivalNodesController extends Controller
     {
         $cursor = ArchivalNode::query()->find($candidateId);
         while ($cursor && $cursor->parent_id !== null) {
-            if ($cursor->parent_id === $ancestorId) return true;
+            if ($cursor->parent_id === $ancestorId) {
+                return true;
+            }
             $cursor = ArchivalNode::query()->find($cursor->parent_id);
         }
+
         return false;
     }
 
@@ -153,6 +156,7 @@ class ArchivalNodesController extends Controller
             $count += count($children);
             $pending = $children;
         }
+
         return $count;
     }
 }

@@ -35,7 +35,7 @@ return new class extends Migration
             $table->index(['user_id', 'created_at']);
         });
 
-        Schema::table('bulk_macros', function (Blueprint $table): void {
+        Schema::table('bulk_macro_runs', function (Blueprint $table): void {
             $table->foreign('macro_id')->references('id')->on('bulk_macros')->cascadeOnDelete();
         });
     }

@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\MediaInspection;
-use App\Services\Media\MediaInspectionService;
 use App\Services\Media\MediaApprovalService;
+use App\Services\Media\MediaInspectionService;
 use App\Support\ApiError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

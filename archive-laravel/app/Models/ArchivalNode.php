@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class ArchivalNode extends Model
 {
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     /** @var list<string> */

@@ -31,7 +31,8 @@ class MediaQcServiceTest extends TestCase
 
     public function test_it_runs_real_qc_filters_and_retains_timed_findings(): void
     {
-        $runner = new class implements ProcessRunner {
+        $runner = new class implements ProcessRunner
+        {
             /** @var list<array<int, string>> */
             public array $commands = [];
 
@@ -56,6 +57,7 @@ class MediaQcServiceTest extends TestCase
                 if (in_array('-af', $command, true)) {
                     return ['exitCode' => 0, 'stdout' => '', 'stderr' => 'I: -30.5 LUFS'];
                 }
+
                 return ['exitCode' => 0, 'stdout' => '', 'stderr' => ''];
             }
         };

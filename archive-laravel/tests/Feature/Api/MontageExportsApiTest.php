@@ -3,8 +3,8 @@
 namespace Tests\Feature\Api;
 
 use App\Jobs\ProcessMediaWorkflow;
-use App\Models\MediaJob;
 use App\Models\MediaInspection;
+use App\Models\MediaJob;
 use App\Models\MediaQcOverride;
 use App\Models\MontageProject;
 use App\Models\MontageProjectRevision;

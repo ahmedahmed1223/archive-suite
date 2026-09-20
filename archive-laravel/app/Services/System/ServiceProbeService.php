@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class ServiceProbeService
 {
     private const CACHE_KEY = 'service_probes';
+
     private const CACHE_TTL = 60; // 60 seconds
 
     public function probe(): array
@@ -33,6 +34,7 @@ class ServiceProbeService
             if ($output && strpos($output, 'ffmpeg version') !== false) {
                 return ['state' => 'available', 'reason' => null];
             }
+
             return ['state' => 'down', 'reason' => 'ffmpeg binary not found'];
         } catch (\Throwable) {
             return ['state' => 'down', 'reason' => 'ffmpeg probe failed'];
@@ -46,6 +48,7 @@ class ServiceProbeService
             if ($output && strpos($output, 'ffprobe version') !== false) {
                 return ['state' => 'available', 'reason' => null];
             }
+
             return ['state' => 'down', 'reason' => 'ffprobe binary not found'];
         } catch (\Throwable) {
             return ['state' => 'down', 'reason' => 'ffprobe probe failed'];
@@ -72,6 +75,7 @@ class ServiceProbeService
             if ($httpCode === 200) {
                 return ['state' => 'available', 'reason' => null];
             }
+
             return ['state' => 'down', 'reason' => "Whisper responded with HTTP {$httpCode}"];
         } catch (\Throwable) {
             return ['state' => 'down', 'reason' => 'Whisper health check failed'];
@@ -91,8 +95,10 @@ class ServiceProbeService
             $fp = fsockopen($reverbHost, $reverbPort, $errno, $errstr, 2);
             if ($fp) {
                 fclose($fp);
+
                 return ['state' => 'available', 'reason' => null];
             }
+
             return ['state' => 'down', 'reason' => "Cannot connect to Reverb: {$errstr}"];
         } catch (\Throwable) {
             return ['state' => 'down', 'reason' => 'Reverb connection failed'];
@@ -112,6 +118,7 @@ class ServiceProbeService
             if ($output === null || empty(trim($output))) {
                 return ['state' => 'down', 'reason' => 'nvidia-smi not found or no GPU detected'];
             }
+
             return ['state' => 'available', 'reason' => null];
         } catch (\Throwable) {
             return ['state' => 'down', 'reason' => 'GPU probe failed'];

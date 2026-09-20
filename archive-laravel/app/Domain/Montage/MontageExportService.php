@@ -9,10 +9,10 @@ use App\Models\MontageExport;
 use App\Models\MontageProject;
 use App\Models\MontageProjectRevision;
 use App\Models\User;
+use App\Services\Media\MediaApprovalService;
 use App\Services\Media\MediaJobExecutor;
 use App\Services\Media\MediaJobProgressBroadcaster;
 use App\Services\Media\MediaJobQueueRouter;
-use App\Services\Media\MediaApprovalService;
 use App\Services\RightsEnforcementService;
 use App\Support\RequestCorrelation;
 use Illuminate\Database\QueryException;
@@ -198,6 +198,8 @@ class MontageExportService
     private function assertSourceQcReady(MontageRenderManifest $manifest): void
     {
         $errors = $this->mediaApprovals->exportBlockingFailures($manifest->sources);
-        if ($errors !== []) throw new MontageValidationException($errors);
+        if ($errors !== []) {
+            throw new MontageValidationException($errors);
+        }
     }
 }

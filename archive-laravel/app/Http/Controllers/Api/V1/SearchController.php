@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\TimedDescriptionSegment;
 use App\Repositories\StorageRowRepository;
+use App\Services\Media\RecordMediaSummaryService;
 use App\Services\Search\EmbeddingService;
 use App\Services\Search\RecordMomentsService;
 use App\Services\Search\TranscriptSearchService;
-use App\Services\Media\RecordMediaSummaryService;
 use App\Support\StorageRowPayload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -236,7 +236,7 @@ class SearchController extends Controller
      * Runs on the page slice only, so the cost scales with the page and not
      * with the size of the archive.
      *
-     * @param Collection<int, array<string, mixed>> $records
+     * @param  Collection<int, array<string, mixed>>  $records
      */
     private function withMoments(Collection $records, string $query): Collection
     {

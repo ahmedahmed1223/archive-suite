@@ -357,9 +357,9 @@ class SearchApiTest extends TestCase
                 'title' => 'Riyadh archive interview',
                 'description' => 'City planning',
                 'type' => 'video',
-                'transcript' => "00:00:05 --> 00:00:09
+                'transcript' => '00:00:05 --> 00:00:09
 Riyadh planning discussion
-",
+',
             ], JSON_THROW_ON_ERROR),
         ]);
 

@@ -22,11 +22,15 @@ final class MediaInspectionService
     /** @param array<int, array<string, mixed>> $artifacts */
     public function persistCompletedProbe(MediaJob $job, array $artifacts): void
     {
-        if (! in_array($job->operation, ['media_probe', 'media_qc'], true)) return;
+        if (! in_array($job->operation, ['media_probe', 'media_qc'], true)) {
+            return;
+        }
 
         $type = $job->operation === 'media_qc' ? 'qc' : 'probe';
         $report = $this->report($artifacts, $type);
-        if ($report === null) return;
+        if ($report === null) {
+            return;
+        }
 
         try {
             ['recordStore' => $recordStore, 'recordUid' => $recordUid] = $this->identity->assertRecordExists($job->record_id);
@@ -37,7 +41,9 @@ final class MediaInspectionService
         }
 
         $inspection = MediaInspection::query()->firstOrNew(['media_job_id' => $job->id]);
-        if (! $inspection->exists) $inspection->id = (string) Str::uuid();
+        if (! $inspection->exists) {
+            $inspection->id = (string) Str::uuid();
+        }
 
         $inspection->forceFill([
             'record_store' => $recordStore,
@@ -67,8 +73,11 @@ final class MediaInspectionService
     {
         $kind = $type === 'qc' ? 'media_qc_report' : 'media_probe_report';
         foreach ($artifacts as $artifact) {
-            if (($artifact['kind'] ?? null) === $kind && is_array($artifact['report'] ?? null)) return $artifact['report'];
+            if (($artifact['kind'] ?? null) === $kind && is_array($artifact['report'] ?? null)) {
+                return $artifact['report'];
+            }
         }
+
         return null;
     }
 }

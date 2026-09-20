@@ -40,7 +40,7 @@ class ShareController extends Controller
         $itemIds = array_values(array_filter((array) ($validated['scope']['itemIds'] ?? []), 'is_string'));
         foreach ($itemIds as $itemId) {
             $decision = $this->rightsEnforcement->enforceForItem($itemId, 'digital_public');
-            if (!$decision->allowed) {
+            if (! $decision->allowed) {
                 return response()->json([
                     ...ApiError::envelope('Access denied by rights enforcement.', 403),
                     'reason' => $decision->reason,

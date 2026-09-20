@@ -19,14 +19,18 @@ class AuthorityEntitiesController extends Controller
     {
         $query = AuthorityEntity::query()->whereNull('merged_into_id')->orderBy('kind')->orderBy('preferred_label');
         $kind = $request->string('kind')->trim()->toString();
-        if ($kind !== '') $query->where('kind', $kind);
+        if ($kind !== '') {
+            $query->where('kind', $kind);
+        }
 
         return response()->json(['ok' => true, 'entities' => $query->get()->map(fn (AuthorityEntity $entity): array => $this->payload($entity))->values()]);
     }
 
     public function store(Request $request): JsonResponse
     {
-        if ($denied = $this->requireEditor($request)) return $denied;
+        if ($denied = $this->requireEditor($request)) {
+            return $denied;
+        }
 
         $data = $request->validate([
             'kind' => ['required', 'string', 'in:'.implode(',', self::KINDS)],

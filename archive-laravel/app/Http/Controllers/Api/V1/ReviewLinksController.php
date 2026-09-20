@@ -42,7 +42,7 @@ class ReviewLinksController extends Controller
 
         // Enforce rights before creating external review link
         $decision = $this->rightsEnforcement->enforceForItem($mediaUid, 'digital_public');
-        if (!$decision->allowed) {
+        if (! $decision->allowed) {
             return response()->json([
                 ...ApiError::envelope('Access denied by rights enforcement.', 403),
                 'reason' => $decision->reason,

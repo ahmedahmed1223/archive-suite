@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class MediaInspection extends Model
 {
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     /** @var list<string> */

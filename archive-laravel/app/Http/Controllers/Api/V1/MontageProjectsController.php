@@ -150,7 +150,10 @@ class MontageProjectsController extends Controller
 
         $attributes = array_filter($validated, fn ($v) => $v !== null);
         foreach (['frameRateNumerator' => 'frame_rate_numerator', 'frameRateDenominator' => 'frame_rate_denominator', 'timecodeMode' => 'timecode_mode', 'startTimecode' => 'start_timecode'] as $input => $column) {
-            if (array_key_exists($input, $attributes)) { $attributes[$column] = $attributes[$input]; unset($attributes[$input]); }
+            if (array_key_exists($input, $attributes)) {
+                $attributes[$column] = $attributes[$input];
+                unset($attributes[$input]);
+            }
         }
         $project->update($attributes);
 

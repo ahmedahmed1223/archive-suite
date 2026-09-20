@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -35,5 +36,16 @@ class ArchiveSchemaTest extends TestCase
         ] as $column) {
             $this->assertTrue(Schema::hasColumn('rights_records', $column), "rights_records should include {$column}");
         }
+    }
+
+    public function test_bulk_macro_runs_reference_their_macro(): void
+    {
+        $foreignKeys = DB::select("PRAGMA foreign_key_list('bulk_macro_runs')");
+
+        $this->assertTrue(collect($foreignKeys)->contains(
+            fn (object $foreignKey): bool => $foreignKey->from === 'macro_id'
+                && $foreignKey->table === 'bulk_macros'
+                && $foreignKey->to === 'id',
+        ));
     }
 }

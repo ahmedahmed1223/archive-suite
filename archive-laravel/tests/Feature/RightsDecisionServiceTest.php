@@ -18,7 +18,7 @@ class RightsDecisionServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new RightsDecisionService();
+        $this->service = new RightsDecisionService;
     }
 
     /**

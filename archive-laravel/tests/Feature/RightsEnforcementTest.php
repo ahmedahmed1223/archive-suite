@@ -45,7 +45,7 @@ class RightsEnforcementTest extends TestCase
         return User::factory()->create();
     }
 
-    public function testShareLinkRejectedWhenNoRightsRecord(): void
+    public function test_share_link_rejected_when_no_rights_record(): void
     {
         $itemId = 'item-no-rights';
 
@@ -59,7 +59,7 @@ class RightsEnforcementTest extends TestCase
         $this->assertTrue(isset($response->json()['decidedBy']));
     }
 
-    public function testShareLinkAllowedWithValidGrantedWindow(): void
+    public function test_share_link_allowed_with_valid_granted_window(): void
     {
         $itemId = 'item-with-rights';
         $record = $this->createRightsRecord($itemId);

@@ -24,5 +24,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void { Schema::dropIfExists('timed_description_segments'); }
+    public function down(): void
+    {
+        Schema::dropIfExists('timed_description_segments');
+    }
 };

@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\Support\AuthenticatesArchiveRequests;
 use Tests\TestCase;
 
@@ -79,7 +80,7 @@ class FilesApiTest extends TestCase
 
     public function test_it_streams_media_with_the_path_scoped_playback_cookie(): void
     {
-        \App\Models\User::query()->create([
+        User::query()->create([
             'name' => 'Playback user',
             'email' => 'playback@example.test',
             'password' => Hash::make('secret-password'),

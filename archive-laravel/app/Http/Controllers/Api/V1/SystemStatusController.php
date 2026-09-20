@@ -19,8 +19,7 @@ class SystemStatusController extends Controller
         SystemMetricsService $metrics,
         DrReadinessService $dr,
         PreservationReadinessService $preservation,
-    ): JsonResponse
-    {
+    ): JsonResponse {
         if ($denied = $this->requireAdmin($request)) {
             return $denied;
         }

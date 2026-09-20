@@ -65,7 +65,7 @@ class RightsDecisionService
         // Check each window
         foreach ($windows as $window) {
             // Check if granted
-            if (!$window->granted) {
+            if (! $window->granted) {
                 return new RightsDecision(
                     allowed: false,
                     reason: sprintf('لم تُمنح هذه النافذة: %s', $window->id),
@@ -77,19 +77,19 @@ class RightsDecisionService
             $startsAtValid = $window->starts_at === null || $window->starts_at->lte($requestTime);
             $endsAtValid = $window->ends_at === null || $window->ends_at->gte($requestTime);
 
-            if (!$startsAtValid || !$endsAtValid) {
+            if (! $startsAtValid || ! $endsAtValid) {
                 continue;
             }
 
             // Check territory
             $windowTerritories = $window->territories ?? [];
-            if (!empty($windowTerritories) && !in_array($territory, $windowTerritories, true)) {
+            if (! empty($windowTerritories) && ! in_array($territory, $windowTerritories, true)) {
                 continue;
             }
 
             // Check platform
             $windowPlatforms = $window->platforms ?? [];
-            if (!empty($windowPlatforms) && !in_array($platform, $windowPlatforms, true)) {
+            if (! empty($windowPlatforms) && ! in_array($platform, $windowPlatforms, true)) {
                 continue;
             }
 
@@ -103,6 +103,7 @@ class RightsDecisionService
 
         // No window matched all criteria
         $firstWindow = $windows->first();
+
         return new RightsDecision(
             allowed: false,
             reason: sprintf('النافذة %s لا تطابق المعايير (الإقليم أو المنصة أو الصلاحية الزمنية)', $firstWindow?->id ?? 'unknown'),

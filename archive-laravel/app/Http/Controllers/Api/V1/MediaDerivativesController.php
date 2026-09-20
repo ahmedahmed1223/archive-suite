@@ -215,7 +215,7 @@ class MediaDerivativesController extends Controller
 
         // Enforce rights for editorial_reuse (internal export of derivatives)
         $decision = $this->rightsEnforcement->enforceForItem($derivative->record_uid, 'editorial_reuse');
-        if (!$decision->allowed) {
+        if (! $decision->allowed) {
             return response()->json([
                 ...ApiError::envelope('Access denied by rights enforcement.', 403),
                 'reason' => $decision->reason,

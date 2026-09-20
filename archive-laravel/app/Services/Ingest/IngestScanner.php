@@ -3,8 +3,8 @@
 namespace App\Services\Ingest;
 
 use App\Jobs\ProcessMediaWorkflow;
-use App\Support\RequestCorrelation;
 use App\Services\Media\IngestDerivativeService;
+use App\Support\RequestCorrelation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;

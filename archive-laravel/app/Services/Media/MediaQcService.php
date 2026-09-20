@@ -76,7 +76,10 @@ final class MediaQcService
     private function run(array $command, ?callable $shouldCancel): array
     {
         $result = $this->runner->run($command, null, $shouldCancel);
-        if (($result['canceled'] ?? false) === true) throw new RuntimeException('Media QC was canceled.');
+        if (($result['canceled'] ?? false) === true) {
+            throw new RuntimeException('Media QC was canceled.');
+        }
+
         return $result;
     }
 
@@ -85,6 +88,7 @@ final class MediaQcService
     {
         $statuses = array_column($findings, 'status');
         $status = in_array('failed', $statuses, true) ? 'failed' : (in_array('warning', $statuses, true) ? 'warning' : 'passed');
+
         return ['status' => $status, 'findings' => $findings, 'metrics' => $metrics];
     }
 
@@ -98,6 +102,7 @@ final class MediaQcService
     private function blackFindings(string $log): array
     {
         preg_match_all('/black_start:([\d.]+)\s+black_end:([\d.]+)\s+black_duration:([\d.]+)/', $log, $matches, PREG_SET_ORDER);
+
         return array_map(fn (array $m): array => $this->finding('black_frame', (float) $m[1], (float) $m[2], 'warning', "Black segment duration: {$m[3]} seconds."), $matches);
     }
 
@@ -105,6 +110,7 @@ final class MediaQcService
     private function freezeFindings(string $log): array
     {
         preg_match_all('/freeze_start: ([\d.]+).*?freeze_end: ([\d.]+).*?freeze_duration: ([\d.]+)/s', $log, $matches, PREG_SET_ORDER);
+
         return array_map(fn (array $m): array => $this->finding('frozen_frame', (float) $m[1], (float) $m[2], 'warning', "Frozen segment duration: {$m[3]} seconds."), $matches);
     }
 
@@ -112,6 +118,7 @@ final class MediaQcService
     private function silenceFindings(string $log): array
     {
         preg_match_all('/silence_start: ([\d.]+).*?silence_end: ([\d.]+).*?silence_duration: ([\d.]+)/s', $log, $matches, PREG_SET_ORDER);
+
         return array_map(fn (array $m): array => $this->finding('silence', (float) $m[1], (float) $m[2], 'warning', "Silent segment duration: {$m[3]} seconds."), $matches);
     }
 
@@ -129,7 +136,9 @@ final class MediaQcService
     private function hasStreamType(array $streams, string $type): bool
     {
         foreach ($streams as $stream) {
-            if (is_array($stream) && ($stream['type'] ?? null) === $type) return true;
+            if (is_array($stream) && ($stream['type'] ?? null) === $type) {
+                return true;
+            }
         }
 
         return false;

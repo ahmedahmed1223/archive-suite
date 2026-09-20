@@ -20,5 +20,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void { Schema::dropIfExists('record_authority_entities'); }
+    public function down(): void
+    {
+        Schema::dropIfExists('record_authority_entities');
+    }
 };
