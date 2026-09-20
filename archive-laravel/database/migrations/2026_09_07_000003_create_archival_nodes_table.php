@@ -20,9 +20,13 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
-            $table->foreign('parent_id')->references('id')->on('archival_nodes')->nullOnDelete();
             $table->index(['parent_id', 'position']);
             $table->index(['record_store', 'record_uid']);
+        });
+
+        // Add foreign key after table creation so the primary key constraint exists
+        Schema::table('archival_nodes', function (Blueprint $table): void {
+            $table->foreign('parent_id')->references('id')->on('archival_nodes')->nullOnDelete();
         });
     }
 
