@@ -115,6 +115,13 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Switch Docker Desktop to Linux containers
+        shell: powershell
+        run: |
+          # windows-latest runners default Docker Desktop to Windows containers,
+          # but archive-laravel/Dockerfile.worker (built below) is a Linux image.
+          & "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchLinuxEngine
+          docker version
       - name: Validate Windows data-service inputs
         env:
           POSTGRES_URL: ${{ vars.WINDOWS_POSTGRES_URL }}
