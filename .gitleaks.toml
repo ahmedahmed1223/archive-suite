@@ -1,0 +1,13 @@
+title = "archive-suite gitleaks config"
+
+[extend]
+useDefault = true
+
+# ponytail: known false positives (checksum pins / test fixtures / public emulator
+# credential), not real secrets. Add new entries here instead of disabling the scan.
+[allowlist]
+regexes = [
+  '''ARG VALKEY_SHA256=''',                 # build-time checksum pin, not a secret
+  '''idempotency_?[Kk]ey''',                # test-fixture idempotency keys in PHP tests
+  '''devstoreaccount1''',                   # Azurite/Azure Storage Emulator's public well-known dev key
+]
