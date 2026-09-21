@@ -136,8 +136,8 @@ export default function CueEditor() {
     }
 
     setLocked(response.version.locked);
-    setInfo(copy.saveSuccess);
     await loadTranscript({ preserveMessage: true });
+    setInfo(copy.saveSuccess);
   }, [copy, cues.length, dialogs, errors.length, loadTranscript, persistVersion, recordId, setError, setInfo]);
 
   const lock = useCallback(async () => {
@@ -151,8 +151,8 @@ export default function CueEditor() {
       return;
     }
     setLocked(true);
-    setInfo(copy.lockSuccess);
     await loadTranscript({ preserveMessage: true });
+    setInfo(copy.lockSuccess);
   }, [api, copy, dialogs, loadTranscript, recordId, setError, setInfo, store]);
 
   const restore = useCallback(
@@ -173,8 +173,8 @@ export default function CueEditor() {
         return;
       }
 
-      setInfo(copy.restoreSuccess);
       await loadTranscript({ preserveMessage: true });
+      setInfo(copy.restoreSuccess);
     },
     [api, copy, dialogs, loadTranscript, recordId, setError, setInfo, store]
   );
