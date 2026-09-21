@@ -54,10 +54,10 @@ export default function CueEditor() {
   const setInfo = useCallback((text: string) => setMessage({ tone: "status", text }), []);
   const setError = useCallback((text: string) => setMessage({ tone: "error", text }), []);
 
-  const loadTranscript = useCallback(async () => {
+  const loadTranscript = useCallback(async (options?: { preserveMessage?: boolean }) => {
     if (!recordId.trim()) return;
     setLoading(true);
-    setMessage(null);
+    if (!options?.preserveMessage) setMessage(null);
     const response = await api.transcriptVersions(recordId.trim(), { store: store.trim() || undefined });
     setLoading(false);
     if (!response.ok) {
@@ -137,7 +137,7 @@ export default function CueEditor() {
 
     setLocked(response.version.locked);
     setInfo(copy.saveSuccess);
-    await loadTranscript();
+    await loadTranscript({ preserveMessage: true });
   }, [copy, cues.length, dialogs, errors.length, loadTranscript, persistVersion, recordId, setError, setInfo]);
 
   const lock = useCallback(async () => {
@@ -152,7 +152,7 @@ export default function CueEditor() {
     }
     setLocked(true);
     setInfo(copy.lockSuccess);
-    await loadTranscript();
+    await loadTranscript({ preserveMessage: true });
   }, [api, copy, dialogs, loadTranscript, recordId, setError, setInfo, store]);
 
   const restore = useCallback(
@@ -174,7 +174,7 @@ export default function CueEditor() {
       }
 
       setInfo(copy.restoreSuccess);
-      await loadTranscript();
+      await loadTranscript({ preserveMessage: true });
     },
     [api, copy, dialogs, loadTranscript, recordId, setError, setInfo, store]
   );

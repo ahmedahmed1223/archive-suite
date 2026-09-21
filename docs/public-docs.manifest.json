@@ -69,6 +69,8 @@
     { "path": "docs/v2-design-gap-report.ar.md", "lifecycle": "internal-design-record" },
     { "path": "docs/v2-rights-decision-design.ar.md", "lifecycle": "internal-design-record" },
     { "path": "docs/v2-handoff-2026-09-15.ar.md", "lifecycle": "internal-task-tracking" },
-    { "path": "TASKS.md", "lifecycle": "internal-task-tracking" }
+    { "path": "TASKS.md", "lifecycle": "internal-task-tracking" },
+    { "path": "docs/architecture/v2-preservation-storage-design.ar.md", "lifecycle": "internal-design-record" },
+    { "path": "docs/architecture/v2-preservation-storage-implementation-plan.ar.md", "lifecycle": "internal-design-record" }
   ]
 }
