@@ -32,8 +32,12 @@ export function buildNativeReleaseMetadata({ version, assetsRoot, builtAt = new 
       return { platform: `${match[2]}-x64`, name, sha256: sha256(path), path: relative(root, path).replaceAll("\\", "/") };
     })
     .sort((left, right) => left.platform.localeCompare(right.platform));
-  if (archives.length !== 2 || new Set(archives.map((archive) => archive.platform)).size !== 2) {
-    throw new Error("The release requires exactly one Windows and one Linux Native archive.");
+  // Native archives are optional: a release may ship with zero (Docker-only,
+  // e.g. while native packaging infra is broken) or exactly one of each
+  // platform. Exactly one platform present is a partial/inconsistent build
+  // and stays rejected.
+  if (archives.length !== 0 && (archives.length !== 2 || new Set(archives.map((archive) => archive.platform)).size !== 2)) {
+    throw new Error("The release requires either zero Native archives or exactly one Windows and one Linux Native archive.");
   }
   if (!/Z$/u.test(builtAt)) throw new Error("builtAt must be an ISO-8601 UTC timestamp.");
   return {

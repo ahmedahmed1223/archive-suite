@@ -25,3 +25,22 @@ test("rejects missing or mismatched Native archives", () => {
     assert.throws(() => buildNativeReleaseMetadata({ version: "1.5.1", assetsRoot: root }), /exactly one Windows and one Linux|version does not match/i);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
+
+test("allows a Docker-only release with zero Native archives", () => {
+  const root = mkdtempSync(join(tmpdir(), "release-meta-empty-"));
+  try {
+    const metadata = buildNativeReleaseMetadata({ version: "1.5.1", assetsRoot: root, builtAt: "2026-08-30T12:00:00Z" });
+    assert.deepEqual(metadata.nativeArchives, []);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("rejects exactly one Native archive as a partial build", () => {
+  const root = mkdtempSync(join(tmpdir(), "release-meta-partial-"));
+  try {
+    writeFileSync(join(root, "archive-suite-v1.5.1-windows-native.tar.gz"), "windows");
+    assert.throws(
+      () => buildNativeReleaseMetadata({ version: "1.5.1", assetsRoot: root }),
+      /requires either zero Native archives or exactly one Windows and one Linux/i
+    );
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

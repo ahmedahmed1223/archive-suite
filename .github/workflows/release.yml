@@ -515,6 +515,12 @@ jobs:
             > OFFLINE-BUNDLE-README.txt
           cp "release-offline/${evidence_asset}" "${evidence_asset}"
           node scripts/build-release-notes.mjs "${GITHUB_REF_NAME#v}" release-notes.md
+          # Native archives (Postgres+Redis+pgvector+app bundled) run 7-8GB,
+          # far past GitHub's 2GB per-asset limit -- they were never
+          # shippable as raw release assets. Drop them before generating
+          # metadata/assets so a lone successful platform build doesn't trip
+          # the "zero or exactly one pair" check. Ship Docker-only for now.
+          find native-release-assets -type f -name 'archive-suite-v*-*-native.tar.gz' -delete
           node scripts/build-native-release-metadata.mjs "${GITHUB_REF_NAME#v}" RELEASE.json native-release-assets
           mapfile -t native_assets < <(find native-release-assets -type f -print | sort)
           artifacts=(release-images.txt next-image.spdx.json laravel-image.spdx.json pnpm-licenses.json composer-licenses.json OFFLINE-BUNDLE-README.txt OFFLINE-BUNDLE-SHA256 RELEASE.json release-installers/Archive-Suite-Installer-Windows.zip release-installers/archive-suite-installer-linux.tar.gz "${offline_parts[@]}" "${evidence_asset}" "${native_assets[@]}")
