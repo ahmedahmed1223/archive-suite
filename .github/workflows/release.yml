@@ -80,7 +80,10 @@ jobs:
 
   windows-native-build:
     name: Build Windows Native package
-    runs-on: windows-latest
+    # windows-latest dropped Docker Desktop; pin to windows-2022, which still
+    # ships it, so the Linux-container docker build below (archive-laravel/
+    # Dockerfile.worker) has an engine to switch to.
+    runs-on: windows-2022
     timeout-minutes: 60
     needs: verify
     continue-on-error: true
